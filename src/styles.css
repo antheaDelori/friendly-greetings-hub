@@ -5,18 +5,12 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Design system definition.
- *
- * The @theme inline block maps CSS custom properties to Tailwind utility
- * classes (e.g. --color-primary -> bg-primary, text-primary).
- *
- * The :root and .dark blocks define the actual color values using oklch.
- * All colors MUST use oklch format.
- *
- * To add a new semantic color:
- * 1. Add the variable to :root (light value) and .dark (dark value)
- * 2. Register it in @theme inline as --color-<name>: var(--<name>)
+ * LIBERIAMO LA MENTE — Design System
+ * Stile: Letterario ribelle / bold ("READ OR PERISH")
+ * Palette: navy profondo, nero inchiostro, rosso manifesto, oro foglia, crema carta.
  */
+
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&display=swap');
 
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
@@ -59,77 +53,90 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-ink: var(--ink);
+  --color-paper: var(--paper);
+  --color-blood: var(--blood);
+  --color-gold: var(--gold);
+  --font-display: 'Bebas Neue', 'Impact', sans-serif;
+  --font-serif: 'Cormorant Garamond', 'Georgia', serif;
+  --font-sans: 'Inter', system-ui, sans-serif;
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.129 0.042 264.695);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
+  --radius: 0.25rem;
+  /* Carta crema, inchiostro, sangue, oro */
+  --paper: oklch(0.965 0.018 85);
+  --ink: oklch(0.16 0.025 260);
+  --blood: oklch(0.52 0.22 25);
+  --gold: oklch(0.78 0.13 80);
+
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --card: oklch(0.985 0.012 85);
+  --card-foreground: var(--ink);
+  --popover: oklch(0.985 0.012 85);
+  --popover-foreground: var(--ink);
+  --primary: var(--ink);
+  --primary-foreground: var(--paper);
+  --secondary: oklch(0.92 0.02 85);
+  --secondary-foreground: var(--ink);
+  --muted: oklch(0.92 0.02 85);
+  --muted-foreground: oklch(0.42 0.02 260);
+  --accent: var(--blood);
+  --accent-foreground: var(--paper);
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: var(--paper);
+  --border: oklch(0.85 0.02 85);
+  --input: oklch(0.85 0.02 85);
+  --ring: var(--blood);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.984 0.003 247.858);
-  --sidebar-foreground: oklch(0.129 0.042 264.695);
-  --sidebar-primary: oklch(0.208 0.042 265.755);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.968 0.007 247.896);
-  --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
-  --sidebar-border: oklch(0.929 0.013 255.508);
-  --sidebar-ring: oklch(0.704 0.04 256.788);
+  --sidebar: var(--ink);
+  --sidebar-foreground: var(--paper);
+  --sidebar-primary: var(--blood);
+  --sidebar-primary-foreground: var(--paper);
+  --sidebar-accent: oklch(0.22 0.025 260);
+  --sidebar-accent-foreground: var(--paper);
+  --sidebar-border: oklch(0.25 0.025 260);
+  --sidebar-ring: var(--blood);
 }
 
 .dark {
-  --background: oklch(0.129 0.042 264.695);
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.208 0.042 265.755);
-  --card-foreground: oklch(0.984 0.003 247.858);
-  --popover: oklch(0.208 0.042 265.755);
-  --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
-  --primary-foreground: oklch(0.208 0.042 265.755);
-  --secondary: oklch(0.279 0.041 260.031);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(1 0 0 / 10%);
+  --background: oklch(0.12 0.02 260);
+  --foreground: var(--paper);
+  --card: oklch(0.18 0.025 260);
+  --card-foreground: var(--paper);
+  --popover: oklch(0.18 0.025 260);
+  --popover-foreground: var(--paper);
+  --primary: var(--paper);
+  --primary-foreground: var(--ink);
+  --secondary: oklch(0.22 0.025 260);
+  --secondary-foreground: var(--paper);
+  --muted: oklch(0.22 0.025 260);
+  --muted-foreground: oklch(0.7 0.02 85);
+  --accent: var(--blood);
+  --accent-foreground: var(--paper);
+  --destructive: oklch(0.6 0.22 25);
+  --destructive-foreground: var(--paper);
+  --border: oklch(1 0 0 / 12%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
+  --ring: var(--blood);
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.208 0.042 265.755);
-  --sidebar-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.279 0.041 260.031);
-  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
+  --sidebar: oklch(0.1 0.02 260);
+  --sidebar-foreground: var(--paper);
+  --sidebar-primary: var(--blood);
+  --sidebar-primary-foreground: var(--paper);
+  --sidebar-accent: oklch(0.22 0.025 260);
+  --sidebar-accent-foreground: var(--paper);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.551 0.027 264.364);
+  --sidebar-ring: var(--blood);
 }
 
 @layer base {
@@ -140,5 +147,77 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, .font-display {
+    font-family: var(--font-display);
+    letter-spacing: 0.02em;
+  }
+
+  .font-serif {
+    font-family: var(--font-serif);
+  }
+
+  .font-sans {
+    font-family: var(--font-sans);
+  }
+}
+
+@layer utilities {
+  .bg-paper { background-color: var(--paper); }
+  .bg-ink { background-color: var(--ink); }
+  .bg-blood { background-color: var(--blood); }
+  .bg-gold { background-color: var(--gold); }
+  .text-paper { color: var(--paper); }
+  .text-ink { color: var(--ink); }
+  .text-blood { color: var(--blood); }
+  .text-gold { color: var(--gold); }
+  .border-ink { border-color: var(--ink); }
+  .border-blood { border-color: var(--blood); }
+  .border-gold { border-color: var(--gold); }
+
+  /* Texture carta sottile */
+  .paper-texture {
+    background-color: var(--paper);
+    background-image:
+      radial-gradient(at 20% 30%, oklch(0.78 0.13 80 / 0.08) 0px, transparent 50%),
+      radial-gradient(at 80% 70%, oklch(0.52 0.22 25 / 0.04) 0px, transparent 50%);
+  }
+
+  .ink-texture {
+    background-color: var(--ink);
+    background-image:
+      radial-gradient(at 10% 0%, oklch(0.52 0.22 25 / 0.25) 0px, transparent 50%),
+      radial-gradient(at 90% 100%, oklch(0.78 0.13 80 / 0.15) 0px, transparent 50%);
+  }
+
+  .stamp-border {
+    border: 2px solid currentColor;
+    box-shadow: 4px 4px 0 0 currentColor;
+  }
+
+  .text-stroke-paper {
+    -webkit-text-stroke: 2px var(--paper);
+    color: transparent;
+  }
+
+  .marquee {
+    animation: marquee 40s linear infinite;
+  }
+
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  .fade-up {
+    animation: fadeUp 0.8s ease-out both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 }
