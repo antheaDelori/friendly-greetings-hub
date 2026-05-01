@@ -9,10 +9,17 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as RegolamentoRouteImport } from './routes/regolamento'
 import { Route as CatalogoRouteImport } from './routes/catalogo'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LeggiSlugRouteImport } from './routes/leggi.$slug'
+import { Route as LeggiRouteImport } from './routes/leggi.'
 
+const RegolamentoRoute = RegolamentoRouteImport.update({
+  id: '/regolamento',
+  path: '/regolamento',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CatalogoRoute = CatalogoRouteImport.update({
   id: '/catalogo',
   path: '/catalogo',
@@ -28,39 +35,65 @@ const LeggiSlugRoute = LeggiSlugRouteImport.update({
   path: '/leggi/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LeggiRoute = LeggiRouteImport.update({
+  id: '/leggi/',
+  path: '/leggi/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/catalogo': typeof CatalogoRoute
+  '/regolamento': typeof RegolamentoRoute
+  '/leggi/': typeof LeggiRoute
   '/leggi/$slug': typeof LeggiSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/catalogo': typeof CatalogoRoute
+  '/regolamento': typeof RegolamentoRoute
+  '/leggi': typeof LeggiRoute
   '/leggi/$slug': typeof LeggiSlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/catalogo': typeof CatalogoRoute
+  '/regolamento': typeof RegolamentoRoute
+  '/leggi/': typeof LeggiRoute
   '/leggi/$slug': typeof LeggiSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/catalogo' | '/leggi/$slug'
+  fullPaths: '/' | '/catalogo' | '/regolamento' | '/leggi/' | '/leggi/$slug'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/catalogo' | '/leggi/$slug'
-  id: '__root__' | '/' | '/catalogo' | '/leggi/$slug'
+  to: '/' | '/catalogo' | '/regolamento' | '/leggi' | '/leggi/$slug'
+  id:
+    | '__root__'
+    | '/'
+    | '/catalogo'
+    | '/regolamento'
+    | '/leggi/'
+    | '/leggi/$slug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CatalogoRoute: typeof CatalogoRoute
+  RegolamentoRoute: typeof RegolamentoRoute
+  LeggiRoute: typeof LeggiRoute
   LeggiSlugRoute: typeof LeggiSlugRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/regolamento': {
+      id: '/regolamento'
+      path: '/regolamento'
+      fullPath: '/regolamento'
+      preLoaderRoute: typeof RegolamentoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/catalogo': {
       id: '/catalogo'
       path: '/catalogo'
@@ -82,12 +115,21 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LeggiSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/leggi/': {
+      id: '/leggi/'
+      path: '/leggi'
+      fullPath: '/leggi/'
+      preLoaderRoute: typeof LeggiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CatalogoRoute: CatalogoRoute,
+  RegolamentoRoute: RegolamentoRoute,
+  LeggiRoute: LeggiRoute,
   LeggiSlugRoute: LeggiSlugRoute,
 }
 export const routeTree = rootRouteImport

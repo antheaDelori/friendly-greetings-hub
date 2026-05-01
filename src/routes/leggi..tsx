@@ -4,7 +4,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { getBookBySlug } from "@/data/books";
 
-export const Route = createFileRoute("/leggi/$slug")({
+export const Route = createFileRoute("/leggi/")({
   loader: ({ params }) => {
     const book = getBookBySlug(params.slug);
     if (!book) throw notFound();
