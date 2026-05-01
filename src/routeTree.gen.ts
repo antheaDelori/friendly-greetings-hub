@@ -19,11 +19,10 @@ import { Route as AreaAutoreRouteImport } from './routes/area-autore'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthIndexRouteImport } from './routes/auth.index'
 import { Route as LeggiSlugRouteImport } from './routes/leggi.$slug'
+import { Route as CommunitySlugRouteImport } from './routes/community.$slug'
 import { Route as AuthRegistrazioneRouteImport } from './routes/auth.registrazione'
 import { Route as AuthProfiloAutoreRouteImport } from './routes/auth.profilo-autore'
-import { Route as LeggiRouteImport } from './routes/leggi.'
 import { Route as DownloadRouteImport } from './routes/download.'
-import { Route as CommunityRouteImport } from './routes/community.'
 
 const RegolamentoRoute = RegolamentoRouteImport.update({
   id: '/regolamento',
@@ -75,6 +74,11 @@ const LeggiSlugRoute = LeggiSlugRouteImport.update({
   path: '/leggi/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CommunitySlugRoute = CommunitySlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => CommunityRoute,
+} as any)
 const AuthRegistrazioneRoute = AuthRegistrazioneRouteImport.update({
   id: '/registrazione',
   path: '/registrazione',
@@ -85,20 +89,10 @@ const AuthProfiloAutoreRoute = AuthProfiloAutoreRouteImport.update({
   path: '/profilo-autore',
   getParentRoute: () => AuthRoute,
 } as any)
-const LeggiRoute = LeggiRouteImport.update({
-  id: '/leggi/',
-  path: '/leggi/',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const DownloadRoute = DownloadRouteImport.update({
   id: '/download/',
   path: '/download/',
   getParentRoute: () => rootRouteImport,
-} as any)
-const CommunityRoute = CommunityRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => CommunityRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -110,11 +104,10 @@ export interface FileRoutesByFullPath {
   '/donazioni': typeof DonazioniRoute
   '/gestione': typeof GestioneRoute
   '/regolamento': typeof RegolamentoRoute
-  '/community/': typeof CommunityRoute
   '/download/': typeof DownloadRoute
-  '/leggi/': typeof LeggiRoute
   '/auth/profilo-autore': typeof AuthProfiloAutoreRoute
   '/auth/registrazione': typeof AuthRegistrazioneRoute
+  '/community/$slug': typeof CommunitySlugRoute
   '/leggi/$slug': typeof LeggiSlugRoute
   '/auth/': typeof AuthIndexRoute
 }
@@ -122,14 +115,14 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/area-autore': typeof AreaAutoreRoute
   '/catalogo': typeof CatalogoRoute
+  '/community': typeof CommunityRouteWithChildren
   '/donazioni': typeof DonazioniRoute
   '/gestione': typeof GestioneRoute
   '/regolamento': typeof RegolamentoRoute
-  '/community': typeof CommunityRoute
   '/download': typeof DownloadRoute
-  '/leggi': typeof LeggiRoute
   '/auth/profilo-autore': typeof AuthProfiloAutoreRoute
   '/auth/registrazione': typeof AuthRegistrazioneRoute
+  '/community/$slug': typeof CommunitySlugRoute
   '/leggi/$slug': typeof LeggiSlugRoute
   '/auth': typeof AuthIndexRoute
 }
@@ -143,11 +136,10 @@ export interface FileRoutesById {
   '/donazioni': typeof DonazioniRoute
   '/gestione': typeof GestioneRoute
   '/regolamento': typeof RegolamentoRoute
-  '/community/': typeof CommunityRoute
   '/download/': typeof DownloadRoute
-  '/leggi/': typeof LeggiRoute
   '/auth/profilo-autore': typeof AuthProfiloAutoreRoute
   '/auth/registrazione': typeof AuthRegistrazioneRoute
+  '/community/$slug': typeof CommunitySlugRoute
   '/leggi/$slug': typeof LeggiSlugRoute
   '/auth/': typeof AuthIndexRoute
 }
@@ -162,11 +154,10 @@ export interface FileRouteTypes {
     | '/donazioni'
     | '/gestione'
     | '/regolamento'
-    | '/community/'
     | '/download/'
-    | '/leggi/'
     | '/auth/profilo-autore'
     | '/auth/registrazione'
+    | '/community/$slug'
     | '/leggi/$slug'
     | '/auth/'
   fileRoutesByTo: FileRoutesByTo
@@ -174,14 +165,14 @@ export interface FileRouteTypes {
     | '/'
     | '/area-autore'
     | '/catalogo'
+    | '/community'
     | '/donazioni'
     | '/gestione'
     | '/regolamento'
-    | '/community'
     | '/download'
-    | '/leggi'
     | '/auth/profilo-autore'
     | '/auth/registrazione'
+    | '/community/$slug'
     | '/leggi/$slug'
     | '/auth'
   id:
@@ -194,11 +185,10 @@ export interface FileRouteTypes {
     | '/donazioni'
     | '/gestione'
     | '/regolamento'
-    | '/community/'
     | '/download/'
-    | '/leggi/'
     | '/auth/profilo-autore'
     | '/auth/registrazione'
+    | '/community/$slug'
     | '/leggi/$slug'
     | '/auth/'
   fileRoutesById: FileRoutesById
@@ -213,7 +203,6 @@ export interface RootRouteChildren {
   GestioneRoute: typeof GestioneRoute
   RegolamentoRoute: typeof RegolamentoRoute
   DownloadRoute: typeof DownloadRoute
-  LeggiRoute: typeof LeggiRoute
   LeggiSlugRoute: typeof LeggiSlugRoute
 }
 
@@ -289,6 +278,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LeggiSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/community/$slug': {
+      id: '/community/$slug'
+      path: '/$slug'
+      fullPath: '/community/$slug'
+      preLoaderRoute: typeof CommunitySlugRouteImport
+      parentRoute: typeof CommunityRoute
+    }
     '/auth/registrazione': {
       id: '/auth/registrazione'
       path: '/registrazione'
@@ -303,26 +299,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthProfiloAutoreRouteImport
       parentRoute: typeof AuthRoute
     }
-    '/leggi/': {
-      id: '/leggi/'
-      path: '/leggi'
-      fullPath: '/leggi/'
-      preLoaderRoute: typeof LeggiRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/download/': {
       id: '/download/'
       path: '/download'
       fullPath: '/download/'
       preLoaderRoute: typeof DownloadRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/community/': {
-      id: '/community/'
-      path: '/'
-      fullPath: '/community/'
-      preLoaderRoute: typeof CommunityRouteImport
-      parentRoute: typeof CommunityRoute
     }
   }
 }
@@ -342,11 +324,11 @@ const AuthRouteChildren: AuthRouteChildren = {
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 interface CommunityRouteChildren {
-  CommunityRoute: typeof CommunityRoute
+  CommunitySlugRoute: typeof CommunitySlugRoute
 }
 
 const CommunityRouteChildren: CommunityRouteChildren = {
-  CommunityRoute: CommunityRoute,
+  CommunitySlugRoute: CommunitySlugRoute,
 }
 
 const CommunityRouteWithChildren = CommunityRoute._addFileChildren(
@@ -363,7 +345,6 @@ const rootRouteChildren: RootRouteChildren = {
   GestioneRoute: GestioneRoute,
   RegolamentoRoute: RegolamentoRoute,
   DownloadRoute: DownloadRoute,
-  LeggiRoute: LeggiRoute,
   LeggiSlugRoute: LeggiSlugRoute,
 }
 export const routeTree = rootRouteImport

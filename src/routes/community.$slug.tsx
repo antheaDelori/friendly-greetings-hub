@@ -4,7 +4,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { HudPanel, PageShell, HudButton } from "@/components/HudPanel";
 import { getBookBySlug } from "@/data/books";
 
-export const Route = createFileRoute("/community/")({
+export const Route = createFileRoute("/community/$slug")({
   loader: ({ params }) => {
     const book = getBookBySlug(params.slug);
     if (!book) throw notFound();
