@@ -1,5 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Link } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { BookCard } from "@/components/BookCard";
@@ -10,7 +9,7 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Liberiamo la mente — Read or Perish" },
-      { name: "description", content: "La piattaforma indipendente per leggere libri, racconti, saggi e articoli direttamente dagli autori. Iscriviti, leggi, commenta, sostieni." },
+      { name: "description", content: "Biblioteca olografica indipendente. Libri, racconti, saggi e articoli pubblicati direttamente dagli autori. Read or perish." },
     ],
   }),
   component: Index,
@@ -26,53 +25,56 @@ function Index() {
   };
 
   return (
-    <div className="min-h-screen paper-texture flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <SiteHeader />
 
       {/* HERO */}
-      <section className="relative ink-texture text-paper overflow-hidden">
-        <div className="absolute inset-0 opacity-[0.04] pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent 0 31px, rgba(255,255,255,.6) 31px 32px)" }} />
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10 py-20 md:py-28 grid lg:grid-cols-12 gap-10 items-center relative">
+      <section className="relative overflow-hidden scanlines">
+        {/* glow ambient */}
+        <div className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full bg-cyan/15 blur-[120px] pointer-events-none" />
+        <div className="absolute top-20 -right-40 w-[500px] h-[500px] rounded-full bg-magenta/10 blur-[120px] pointer-events-none" />
+
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10 py-20 md:py-32 grid lg:grid-cols-12 gap-10 items-center relative">
           <div className="lg:col-span-7 fade-up">
-            <div className="inline-flex items-center gap-2 border border-paper/30 px-3 py-1 font-display tracking-[0.25em] text-[10px] text-gold">
-              <span className="h-1.5 w-1.5 bg-blood rounded-full animate-pulse" />
-              il mondo dei creativi
+            <div className="inline-flex items-center gap-3 border border-cyan/40 bg-cyan/5 px-3 py-1.5 font-mono tracking-[0.3em] text-[10px] text-cyan uppercase">
+              <span className="h-1.5 w-1.5 bg-cyan rounded-full animate-pulse" />
+              SYS // il mondo dei creativi · 2076
             </div>
-            <h1 className="mt-6 font-display text-[clamp(3.5rem,9vw,8rem)] leading-[0.9] tracking-tight">
-              READ
-              <br />
-              <span className="text-blood">OR</span> PERISH.
+            <h1 className="mt-6 font-display text-[clamp(3.5rem,9vw,8.5rem)] leading-[0.88] tracking-tight text-bone">
+              <span className="block">READ</span>
+              <span className="block"><span className="text-magenta text-glow-magenta">OR</span> PERISH<span className="text-cyan text-glow-cyan">.</span></span>
             </h1>
-            <p className="mt-8 font-serif text-xl md:text-2xl text-paper/80 max-w-xl leading-relaxed">
-              Libri, racconti, saggi e articoli pubblicati direttamente dagli autori.
-              Una piattaforma per <em className="text-gold not-italic">liberare la mente</em> — la tua, e la loro.
+            <p className="mt-8 font-serif text-xl md:text-2xl text-bone/75 max-w-xl leading-relaxed italic">
+              Una biblioteca sospesa nel vetro. Libri, racconti, saggi e articoli
+              pubblicati direttamente dagli autori, senza algoritmi che urlano.
+              Solo <span className="text-cyan not-italic font-mono text-base tracking-widest">parole_vive</span>.
             </p>
             <div className="mt-10 flex flex-wrap gap-4">
               <Link
                 to="/catalogo"
-                className="inline-flex items-center gap-3 bg-blood px-7 py-4 font-display tracking-widest text-sm uppercase text-paper hover:bg-paper hover:text-ink transition-colors"
+                className="group relative inline-flex items-center gap-3 border border-cyan/70 bg-cyan/15 px-7 py-4 font-mono tracking-[0.22em] text-xs uppercase text-cyan hover:bg-cyan hover:text-void hover:glow-cyan transition-all hud-frame"
               >
-                Esplora il catalogo →
+                ▸ Esplora il catalogo
               </Link>
-              <button
-                type="button"
-                className="inline-flex items-center gap-3 border border-paper/40 px-7 py-4 font-display tracking-widest text-sm uppercase text-paper hover:border-gold hover:text-gold transition-colors"
+              <Link
+                to="/auth/registrazione"
+                className="inline-flex items-center gap-3 border border-magenta/60 bg-magenta/10 px-7 py-4 font-mono tracking-[0.22em] text-xs uppercase text-magenta hover:bg-magenta hover:text-void hover:glow-magenta transition-all"
               >
-                Diventa autore
-              </button>
+                ◆ Diventa autore
+              </Link>
             </div>
 
-            <dl className="mt-14 grid grid-cols-3 gap-6 max-w-lg">
+            <dl className="mt-16 grid grid-cols-3 gap-4 max-w-2xl">
               {[
-                { k: "opere", v: totals.opere, label: "opere pubblicate" },
-                { k: "autori", v: totals.autori, label: "autori indipendenti" },
-                { k: "letture", v: totals.letture, label: "letture totali" },
+                { k: "opere", v: totals.opere, label: "opere indicizzate", c: "text-cyan" },
+                { k: "autori", v: totals.autori, label: "autori connessi", c: "text-magenta" },
+                { k: "letture", v: totals.letture, label: "letture totali", c: "text-amber" },
               ].map((s) => (
-                <div key={s.k} className="border-l-2 border-blood pl-4">
-                  <dt className="font-display text-3xl md:text-4xl text-paper">
+                <div key={s.k} className="glass p-4 hud-frame">
+                  <dt className={`font-display text-3xl md:text-4xl ${s.c}`}>
                     {s.v.toLocaleString("it-IT")}
                   </dt>
-                  <dd className="font-sans text-[11px] uppercase tracking-widest text-paper/60 mt-1">
+                  <dd className="font-mono text-[9px] uppercase tracking-widest text-bone/50 mt-2">
                     {s.label}
                   </dd>
                 </div>
@@ -80,35 +82,54 @@ function Index() {
             </dl>
           </div>
 
+          {/* HOLO LOGO */}
           <div className="lg:col-span-5 relative fade-up" style={{ animationDelay: "0.2s" }}>
-            <div className="relative mx-auto w-full max-w-md aspect-square">
-              <div className="absolute inset-0 bg-blood rotate-3" />
-              <div className="absolute inset-0 bg-gold -rotate-2 translate-x-3 translate-y-3" />
-              <img
-                src={logo}
-                alt="Logo Liberiamo la mente"
-                className="relative h-full w-full object-cover ring-4 ring-paper"
-              />
-              <div className="absolute -bottom-6 -right-6 bg-paper text-ink px-5 py-3 stamp-border">
-                <div className="font-display tracking-[0.2em] text-xs">EST. 2026</div>
-                <div className="font-serif italic text-sm">indipendente · libero</div>
+            <div className="relative mx-auto w-full max-w-md aspect-square scan-sweep">
+              {/* outer ring */}
+              <div className="absolute inset-0 border border-cyan/30 rotate-45" />
+              <div className="absolute inset-3 border border-cyan/20 rotate-12 animate-[spin_60s_linear_infinite]" />
+              <div className="absolute inset-8 border border-magenta/30 -rotate-6 animate-[spin_40s_linear_infinite_reverse]" />
+
+              {/* glow halo */}
+              <div className="absolute inset-10 rounded-full bg-cyan/20 blur-3xl" />
+
+              {/* logo plate */}
+              <div className="absolute inset-12 glass overflow-hidden hud-frame flicker">
+                <img
+                  src={logo}
+                  alt="Logo Liberiamo la mente"
+                  className="absolute inset-0 h-full w-full object-cover opacity-90 mix-blend-screen"
+                />
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan/30 via-transparent to-magenta/20" />
+                <div className="absolute inset-0" style={{
+                  backgroundImage: "repeating-linear-gradient(0deg, transparent 0, transparent 2px, oklch(0.82 0.16 200 / 0.08) 2px, oklch(0.82 0.16 200 / 0.08) 3px)"
+                }} />
+              </div>
+
+              {/* coordinates */}
+              <div className="absolute -bottom-2 left-0 font-mono text-[9px] tracking-widest text-cyan/80">
+                ▸ ARTIFACT_001 / EST.2076
+              </div>
+              <div className="absolute -top-2 right-0 font-mono text-[9px] tracking-widest text-magenta/80">
+                STATUS: ALIVE
               </div>
             </div>
           </div>
         </div>
 
         {/* Marquee */}
-        <div className="border-y border-paper/15 bg-ink/40 overflow-hidden">
-          <div className="marquee flex gap-12 py-4 whitespace-nowrap font-display tracking-[0.3em] text-sm text-paper/70">
+        <div className="border-y border-cyan/15 bg-deep/60 backdrop-blur overflow-hidden">
+          <div className="marquee flex gap-12 py-4 whitespace-nowrap font-mono tracking-[0.3em] text-xs text-bone/60 uppercase">
             {Array.from({ length: 2 }).map((_, i) => (
               <div key={i} className="flex gap-12 shrink-0">
-                <span>· LEGGI ONLINE</span>
-                <span className="text-blood">· READ OR PERISH</span>
-                <span>· SCARICA IN PDF</span>
-                <span className="text-gold">· COMMENTA L'AUTORE</span>
-                <span>· SOSTIENI CON UNA DONAZIONE</span>
-                <span className="text-blood">· LIBERIAMO LA MENTE</span>
-                <span>· LIBRI · RACCONTI · SAGGI · ARTICOLI</span>
+                <span>▸ leggi online</span>
+                <span className="text-magenta">▸ read or perish</span>
+                <span>▸ scarica in pdf / e-book</span>
+                <span className="text-cyan">▸ commenta l'autore</span>
+                <span>▸ sostieni con donazione</span>
+                <span className="text-amber">▸ liberiamo la mente</span>
+                <span>▸ libri · racconti · saggi · articoli</span>
+                <span className="text-magenta">▸ holo interface v7</span>
               </div>
             ))}
           </div>
@@ -119,17 +140,17 @@ function Index() {
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10 py-20">
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-12">
           <div>
-            <div className="font-display tracking-[0.25em] text-xs text-blood">— in evidenza</div>
-            <h2 className="mt-3 font-display text-5xl md:text-6xl text-ink">Le opere che mordono</h2>
-            <p className="mt-3 font-serif text-lg text-ink/70 max-w-xl">
-              Selezionate dalla redazione e dai lettori. Carta e inchiostro digitali, ma con denti.
+            <div className="font-mono tracking-[0.3em] text-[10px] text-cyan uppercase">// in_evidenza</div>
+            <h2 className="mt-3 font-display text-4xl md:text-5xl text-bone tracking-tight">Le opere che mordono</h2>
+            <p className="mt-3 font-serif italic text-lg text-bone/65 max-w-xl">
+              Selezionate dalla redazione e dai lettori. Pixel e inchiostro digitali, ma con denti.
             </p>
           </div>
           <Link
             to="/catalogo"
-            className="font-display tracking-widest text-xs uppercase text-ink border-b-2 border-blood pb-1 hover:text-blood transition-colors self-start md:self-auto"
+            className="font-mono tracking-[0.22em] text-[10px] uppercase text-cyan border-b border-cyan/60 pb-1 hover:text-magenta hover:border-magenta transition-colors self-start md:self-auto"
           >
-            Vedi tutto il catalogo →
+            ▸ vedi tutto il catalogo
           </Link>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -138,26 +159,28 @@ function Index() {
       </section>
 
       {/* MANIFESTO */}
-      <section className="bg-ink text-paper py-24 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-5 pointer-events-none text-stroke-paper font-display text-[20rem] leading-none flex items-center justify-center select-none">
-          MANIFESTO
+      <section className="relative py-24 overflow-hidden scanlines">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 font-display text-[16rem] md:text-[22rem] tracking-tighter text-cyan/[0.04] select-none">
+            MANIFESTO
+          </div>
         </div>
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-10 relative">
-          <div className="font-display tracking-[0.25em] text-xs text-gold">— manifesto</div>
-          <h2 className="mt-3 font-display text-5xl md:text-7xl leading-none">
-            Tre regole.<br /><span className="text-blood">Niente di più.</span>
+          <div className="font-mono tracking-[0.3em] text-[10px] text-magenta uppercase">// manifesto.txt</div>
+          <h2 className="mt-3 font-display text-5xl md:text-7xl leading-none text-bone tracking-tight">
+            Tre regole.<br /><span className="text-magenta text-glow-magenta">Niente di più.</span>
           </h2>
-          <ol className="mt-12 space-y-10">
+          <ol className="mt-12 space-y-6">
             {[
               { n: "01", t: "I diritti restano agli autori.", d: "Chi scrive decide cosa pubblicare, cosa rendere scaricabile, cosa lasciare protetto. Sempre." },
               { n: "02", t: "I lettori contano.", d: "Recensioni, commenti capitolo per capitolo, possibilità di seguire chi ti emoziona. La community è la spina dorsale." },
               { n: "03", t: "Niente algoritmi che urlano.", d: "Filtri trasparenti: più letti, più recenti, per genere. Tu scegli cosa leggere — non un'IA per te." },
             ].map((r) => (
-              <li key={r.n} className="grid grid-cols-[auto_1fr] gap-6 md:gap-10 items-baseline border-b border-paper/15 pb-8">
-                <div className="font-display text-5xl md:text-6xl text-blood">{r.n}</div>
+              <li key={r.n} className="glass p-6 md:p-8 grid grid-cols-[auto_1fr] gap-6 md:gap-10 items-baseline">
+                <div className="font-display text-5xl md:text-6xl text-cyan text-glow-cyan">{r.n}</div>
                 <div>
-                  <h3 className="font-serif text-2xl md:text-3xl">{r.t}</h3>
-                  <p className="mt-3 font-sans text-paper/70 text-base md:text-lg max-w-2xl leading-relaxed">{r.d}</p>
+                  <h3 className="font-display text-2xl md:text-3xl text-bone tracking-tight">{r.t}</h3>
+                  <p className="mt-3 font-serif italic text-bone/70 text-base md:text-lg max-w-2xl leading-relaxed">{r.d}</p>
                 </div>
               </li>
             ))}
@@ -169,8 +192,11 @@ function Index() {
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10 py-20">
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-12">
           <div>
-            <div className="font-display tracking-[0.25em] text-xs text-blood">— ultime pubblicazioni</div>
-            <h2 className="mt-3 font-display text-5xl md:text-6xl text-ink">Appena usciti</h2>
+            <div className="font-mono tracking-[0.3em] text-[10px] text-magenta uppercase">// ultime_pubblicazioni</div>
+            <h2 className="mt-3 font-display text-4xl md:text-5xl text-bone tracking-tight">Appena usciti</h2>
+          </div>
+          <div className="font-mono text-[10px] tracking-widest text-cyan/60 uppercase blink">
+            uplink in tempo reale
           </div>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -178,33 +204,31 @@ function Index() {
         </div>
       </section>
 
-      {/* CTA AUTORI */}
-      <section id="community" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10 pb-20">
-        <div className="grid lg:grid-cols-2 gap-0 border-2 border-ink">
-          <div className="bg-paper p-10 md:p-14">
-            <div className="font-display tracking-[0.25em] text-xs text-blood">— per gli autori</div>
-            <h2 className="mt-3 font-display text-4xl md:text-5xl text-ink leading-none">
+      {/* CTA AUTORI / LETTORI */}
+      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10 pb-24">
+        <div className="grid lg:grid-cols-2 gap-6">
+          <div className="glass p-10 md:p-14 hud-frame">
+            <div className="font-mono tracking-[0.3em] text-[10px] text-cyan uppercase">// per_gli_autori</div>
+            <h2 className="mt-3 font-display text-4xl md:text-5xl text-bone leading-none tracking-tight">
               Hai qualcosa<br />da dire?
             </h2>
-            <p className="mt-6 font-serif text-lg text-ink/75 max-w-md">
+            <p className="mt-6 font-serif italic text-lg text-bone/70 max-w-md">
               Pubblica direttamente: libri, racconti, saggi o articoli. Mantieni i diritti, scegli cosa rendere scaricabile, ricevi donazioni dai lettori che ti seguono.
             </p>
-            <button className="mt-8 inline-flex items-center gap-3 bg-ink text-paper px-7 py-4 font-display tracking-widest text-sm uppercase hover:bg-blood transition-colors">
-              Crea il tuo profilo autore
-            </button>
+            <Link to="/auth/profilo-autore" className="mt-8 inline-flex items-center gap-3 border border-cyan bg-cyan/10 text-cyan px-7 py-4 font-mono tracking-[0.22em] text-[11px] uppercase hover:bg-cyan hover:text-void hover:glow-cyan transition-all">
+              ▸ Crea profilo autore
+            </Link>
           </div>
-          <div className="bg-blood text-paper p-10 md:p-14 flex flex-col justify-between">
-            <div>
-              <div className="font-display tracking-[0.25em] text-xs text-gold">— per i lettori</div>
-              <h2 className="mt-3 font-display text-4xl md:text-5xl leading-none">
-                Vuoi solo<br />leggere?
-              </h2>
-              <p className="mt-6 font-serif text-lg text-paper/85 max-w-md">
-                Accesso gratuito a tutti i contenuti pubblici. Commenta, segui gli autori, scarica nei limiti previsti, sostieni chi ami con una donazione libera.
-              </p>
-            </div>
-            <Link to="/catalogo" className="mt-8 inline-flex items-center gap-3 bg-paper text-ink px-7 py-4 font-display tracking-widest text-sm uppercase hover:bg-ink hover:text-paper transition-colors self-start">
-              Inizia a leggere →
+          <div className="glass p-10 md:p-14 hud-frame-x relative">
+            <div className="font-mono tracking-[0.3em] text-[10px] text-magenta uppercase">// per_i_lettori</div>
+            <h2 className="mt-3 font-display text-4xl md:text-5xl text-bone leading-none tracking-tight">
+              Vuoi solo<br /><span className="text-magenta text-glow-magenta">leggere?</span>
+            </h2>
+            <p className="mt-6 font-serif italic text-lg text-bone/70 max-w-md">
+              Accesso gratuito a tutti i contenuti pubblici. Commenta, segui gli autori, scarica nei limiti previsti, sostieni chi ami con una donazione libera.
+            </p>
+            <Link to="/catalogo" className="mt-8 inline-flex items-center gap-3 border border-magenta bg-magenta/10 text-magenta px-7 py-4 font-mono tracking-[0.22em] text-[11px] uppercase hover:bg-magenta hover:text-void hover:glow-magenta transition-all">
+              ◆ Inizia a leggere
             </Link>
           </div>
         </div>
