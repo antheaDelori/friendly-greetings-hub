@@ -21,8 +21,6 @@ const reviews = [
   { user: "@tommaso_b", book: "Lessico della rivolta", text: "Cento parole, cento bisturi. Da tenere sul comodino.", time: "2g fa", rate: 5 },
 ];
 
-export default function _empty() { return null; }
-
 function CommunityPage() {
   return (
     <div className="min-h-screen flex flex-col">
