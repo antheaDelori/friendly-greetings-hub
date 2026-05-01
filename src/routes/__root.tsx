@@ -4,19 +4,19 @@ import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          The page you're looking for doesn't exist or has been moved.
+    <div className="flex min-h-screen items-center justify-center px-4">
+      <div className="glass p-10 hud-frame max-w-md text-center">
+        <h1 className="font-display text-7xl text-magenta text-glow-magenta">404</h1>
+        <h2 className="mt-4 font-display text-2xl text-bone tracking-tight">Pagina non trovata</h2>
+        <p className="mt-2 font-mono text-[10px] tracking-widest text-cyan/60 uppercase">
+          ERR / NODE_NOT_IN_GRID
         </p>
         <div className="mt-6">
           <Link
             to="/"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="inline-flex items-center justify-center border border-cyan bg-cyan/10 text-cyan px-5 py-3 font-mono text-[10px] uppercase tracking-widest hover:bg-cyan hover:text-void transition-all"
           >
-            Go home
+            ▸ torna alla home
           </Link>
         </div>
       </div>
@@ -52,7 +52,7 @@ export const Route = createRootRoute({
 
 function RootShell({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="it">
       <head>
         <HeadContent />
       </head>

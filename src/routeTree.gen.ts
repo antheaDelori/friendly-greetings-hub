@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RegolamentoRouteImport } from './routes/regolamento'
 import { Route as GestioneRouteImport } from './routes/gestione'
+import { Route as DonazioniRouteImport } from './routes/donazioni'
 import { Route as CommunityRouteImport } from './routes/community'
 import { Route as CatalogoRouteImport } from './routes/catalogo'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -32,6 +33,11 @@ const RegolamentoRoute = RegolamentoRouteImport.update({
 const GestioneRoute = GestioneRouteImport.update({
   id: '/gestione',
   path: '/gestione',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DonazioniRoute = DonazioniRouteImport.update({
+  id: '/donazioni',
+  path: '/donazioni',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CommunityRoute = CommunityRouteImport.update({
@@ -101,6 +107,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRouteWithChildren
   '/catalogo': typeof CatalogoRoute
   '/community': typeof CommunityRouteWithChildren
+  '/donazioni': typeof DonazioniRoute
   '/gestione': typeof GestioneRoute
   '/regolamento': typeof RegolamentoRoute
   '/community/': typeof CommunityRoute
@@ -115,6 +122,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/area-autore': typeof AreaAutoreRoute
   '/catalogo': typeof CatalogoRoute
+  '/donazioni': typeof DonazioniRoute
   '/gestione': typeof GestioneRoute
   '/regolamento': typeof RegolamentoRoute
   '/community': typeof CommunityRoute
@@ -132,6 +140,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRouteWithChildren
   '/catalogo': typeof CatalogoRoute
   '/community': typeof CommunityRouteWithChildren
+  '/donazioni': typeof DonazioniRoute
   '/gestione': typeof GestioneRoute
   '/regolamento': typeof RegolamentoRoute
   '/community/': typeof CommunityRoute
@@ -150,6 +159,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/catalogo'
     | '/community'
+    | '/donazioni'
     | '/gestione'
     | '/regolamento'
     | '/community/'
@@ -164,6 +174,7 @@ export interface FileRouteTypes {
     | '/'
     | '/area-autore'
     | '/catalogo'
+    | '/donazioni'
     | '/gestione'
     | '/regolamento'
     | '/community'
@@ -180,6 +191,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/catalogo'
     | '/community'
+    | '/donazioni'
     | '/gestione'
     | '/regolamento'
     | '/community/'
@@ -197,6 +209,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRouteWithChildren
   CatalogoRoute: typeof CatalogoRoute
   CommunityRoute: typeof CommunityRouteWithChildren
+  DonazioniRoute: typeof DonazioniRoute
   GestioneRoute: typeof GestioneRoute
   RegolamentoRoute: typeof RegolamentoRoute
   DownloadRoute: typeof DownloadRoute
@@ -218,6 +231,13 @@ declare module '@tanstack/react-router' {
       path: '/gestione'
       fullPath: '/gestione'
       preLoaderRoute: typeof GestioneRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/donazioni': {
+      id: '/donazioni'
+      path: '/donazioni'
+      fullPath: '/donazioni'
+      preLoaderRoute: typeof DonazioniRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/community': {
@@ -339,6 +359,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRouteWithChildren,
   CatalogoRoute: CatalogoRoute,
   CommunityRoute: CommunityRouteWithChildren,
+  DonazioniRoute: DonazioniRoute,
   GestioneRoute: GestioneRoute,
   RegolamentoRoute: RegolamentoRoute,
   DownloadRoute: DownloadRoute,
