@@ -19,10 +19,10 @@ import { Route as AreaAutoreRouteImport } from './routes/area-autore'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthIndexRouteImport } from './routes/auth.index'
 import { Route as LeggiSlugRouteImport } from './routes/leggi.$slug'
+import { Route as DownloadSlugRouteImport } from './routes/download.$slug'
 import { Route as CommunitySlugRouteImport } from './routes/community.$slug'
 import { Route as AuthRegistrazioneRouteImport } from './routes/auth.registrazione'
 import { Route as AuthProfiloAutoreRouteImport } from './routes/auth.profilo-autore'
-import { Route as DownloadRouteImport } from './routes/download.'
 
 const RegolamentoRoute = RegolamentoRouteImport.update({
   id: '/regolamento',
@@ -74,6 +74,11 @@ const LeggiSlugRoute = LeggiSlugRouteImport.update({
   path: '/leggi/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DownloadSlugRoute = DownloadSlugRouteImport.update({
+  id: '/download/$slug',
+  path: '/download/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CommunitySlugRoute = CommunitySlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
@@ -89,11 +94,6 @@ const AuthProfiloAutoreRoute = AuthProfiloAutoreRouteImport.update({
   path: '/profilo-autore',
   getParentRoute: () => AuthRoute,
 } as any)
-const DownloadRoute = DownloadRouteImport.update({
-  id: '/download/',
-  path: '/download/',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -104,10 +104,10 @@ export interface FileRoutesByFullPath {
   '/donazioni': typeof DonazioniRoute
   '/gestione': typeof GestioneRoute
   '/regolamento': typeof RegolamentoRoute
-  '/download/': typeof DownloadRoute
   '/auth/profilo-autore': typeof AuthProfiloAutoreRoute
   '/auth/registrazione': typeof AuthRegistrazioneRoute
   '/community/$slug': typeof CommunitySlugRoute
+  '/download/$slug': typeof DownloadSlugRoute
   '/leggi/$slug': typeof LeggiSlugRoute
   '/auth/': typeof AuthIndexRoute
 }
@@ -119,10 +119,10 @@ export interface FileRoutesByTo {
   '/donazioni': typeof DonazioniRoute
   '/gestione': typeof GestioneRoute
   '/regolamento': typeof RegolamentoRoute
-  '/download': typeof DownloadRoute
   '/auth/profilo-autore': typeof AuthProfiloAutoreRoute
   '/auth/registrazione': typeof AuthRegistrazioneRoute
   '/community/$slug': typeof CommunitySlugRoute
+  '/download/$slug': typeof DownloadSlugRoute
   '/leggi/$slug': typeof LeggiSlugRoute
   '/auth': typeof AuthIndexRoute
 }
@@ -136,10 +136,10 @@ export interface FileRoutesById {
   '/donazioni': typeof DonazioniRoute
   '/gestione': typeof GestioneRoute
   '/regolamento': typeof RegolamentoRoute
-  '/download/': typeof DownloadRoute
   '/auth/profilo-autore': typeof AuthProfiloAutoreRoute
   '/auth/registrazione': typeof AuthRegistrazioneRoute
   '/community/$slug': typeof CommunitySlugRoute
+  '/download/$slug': typeof DownloadSlugRoute
   '/leggi/$slug': typeof LeggiSlugRoute
   '/auth/': typeof AuthIndexRoute
 }
@@ -154,10 +154,10 @@ export interface FileRouteTypes {
     | '/donazioni'
     | '/gestione'
     | '/regolamento'
-    | '/download/'
     | '/auth/profilo-autore'
     | '/auth/registrazione'
     | '/community/$slug'
+    | '/download/$slug'
     | '/leggi/$slug'
     | '/auth/'
   fileRoutesByTo: FileRoutesByTo
@@ -169,10 +169,10 @@ export interface FileRouteTypes {
     | '/donazioni'
     | '/gestione'
     | '/regolamento'
-    | '/download'
     | '/auth/profilo-autore'
     | '/auth/registrazione'
     | '/community/$slug'
+    | '/download/$slug'
     | '/leggi/$slug'
     | '/auth'
   id:
@@ -185,10 +185,10 @@ export interface FileRouteTypes {
     | '/donazioni'
     | '/gestione'
     | '/regolamento'
-    | '/download/'
     | '/auth/profilo-autore'
     | '/auth/registrazione'
     | '/community/$slug'
+    | '/download/$slug'
     | '/leggi/$slug'
     | '/auth/'
   fileRoutesById: FileRoutesById
@@ -202,7 +202,7 @@ export interface RootRouteChildren {
   DonazioniRoute: typeof DonazioniRoute
   GestioneRoute: typeof GestioneRoute
   RegolamentoRoute: typeof RegolamentoRoute
-  DownloadRoute: typeof DownloadRoute
+  DownloadSlugRoute: typeof DownloadSlugRoute
   LeggiSlugRoute: typeof LeggiSlugRoute
 }
 
@@ -278,6 +278,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LeggiSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/download/$slug': {
+      id: '/download/$slug'
+      path: '/download/$slug'
+      fullPath: '/download/$slug'
+      preLoaderRoute: typeof DownloadSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/community/$slug': {
       id: '/community/$slug'
       path: '/$slug'
@@ -298,13 +305,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/auth/profilo-autore'
       preLoaderRoute: typeof AuthProfiloAutoreRouteImport
       parentRoute: typeof AuthRoute
-    }
-    '/download/': {
-      id: '/download/'
-      path: '/download'
-      fullPath: '/download/'
-      preLoaderRoute: typeof DownloadRouteImport
-      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -344,7 +344,7 @@ const rootRouteChildren: RootRouteChildren = {
   DonazioniRoute: DonazioniRoute,
   GestioneRoute: GestioneRoute,
   RegolamentoRoute: RegolamentoRoute,
-  DownloadRoute: DownloadRoute,
+  DownloadSlugRoute: DownloadSlugRoute,
   LeggiSlugRoute: LeggiSlugRoute,
 }
 export const routeTree = rootRouteImport
