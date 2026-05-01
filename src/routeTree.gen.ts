@@ -11,8 +11,13 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RegolamentoRouteImport } from './routes/regolamento'
 import { Route as CatalogoRouteImport } from './routes/catalogo'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AreaAutoreRouteImport } from './routes/area-autore'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthIndexRouteImport } from './routes/auth.index'
 import { Route as LeggiSlugRouteImport } from './routes/leggi.$slug'
+import { Route as AuthRegistrazioneRouteImport } from './routes/auth.registrazione'
+import { Route as AuthProfiloAutoreRouteImport } from './routes/auth.profilo-autore'
 import { Route as LeggiRouteImport } from './routes/leggi.'
 
 const RegolamentoRoute = RegolamentoRouteImport.update({
@@ -25,15 +30,40 @@ const CatalogoRoute = CatalogoRouteImport.update({
   path: '/catalogo',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AreaAutoreRoute = AreaAutoreRouteImport.update({
+  id: '/area-autore',
+  path: '/area-autore',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthIndexRoute = AuthIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthRoute,
+} as any)
 const LeggiSlugRoute = LeggiSlugRouteImport.update({
   id: '/leggi/$slug',
   path: '/leggi/$slug',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRegistrazioneRoute = AuthRegistrazioneRouteImport.update({
+  id: '/registrazione',
+  path: '/registrazione',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthProfiloAutoreRoute = AuthProfiloAutoreRouteImport.update({
+  id: '/profilo-autore',
+  path: '/profilo-autore',
+  getParentRoute: () => AuthRoute,
 } as any)
 const LeggiRoute = LeggiRouteImport.update({
   id: '/leggi/',
@@ -43,42 +73,82 @@ const LeggiRoute = LeggiRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/area-autore': typeof AreaAutoreRoute
+  '/auth': typeof AuthRouteWithChildren
   '/catalogo': typeof CatalogoRoute
   '/regolamento': typeof RegolamentoRoute
   '/leggi/': typeof LeggiRoute
+  '/auth/profilo-autore': typeof AuthProfiloAutoreRoute
+  '/auth/registrazione': typeof AuthRegistrazioneRoute
   '/leggi/$slug': typeof LeggiSlugRoute
+  '/auth/': typeof AuthIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/area-autore': typeof AreaAutoreRoute
   '/catalogo': typeof CatalogoRoute
   '/regolamento': typeof RegolamentoRoute
   '/leggi': typeof LeggiRoute
+  '/auth/profilo-autore': typeof AuthProfiloAutoreRoute
+  '/auth/registrazione': typeof AuthRegistrazioneRoute
   '/leggi/$slug': typeof LeggiSlugRoute
+  '/auth': typeof AuthIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/area-autore': typeof AreaAutoreRoute
+  '/auth': typeof AuthRouteWithChildren
   '/catalogo': typeof CatalogoRoute
   '/regolamento': typeof RegolamentoRoute
   '/leggi/': typeof LeggiRoute
+  '/auth/profilo-autore': typeof AuthProfiloAutoreRoute
+  '/auth/registrazione': typeof AuthRegistrazioneRoute
   '/leggi/$slug': typeof LeggiSlugRoute
+  '/auth/': typeof AuthIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/catalogo' | '/regolamento' | '/leggi/' | '/leggi/$slug'
-  fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/catalogo' | '/regolamento' | '/leggi' | '/leggi/$slug'
-  id:
-    | '__root__'
+  fullPaths:
     | '/'
+    | '/area-autore'
+    | '/auth'
     | '/catalogo'
     | '/regolamento'
     | '/leggi/'
+    | '/auth/profilo-autore'
+    | '/auth/registrazione'
     | '/leggi/$slug'
+    | '/auth/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/area-autore'
+    | '/catalogo'
+    | '/regolamento'
+    | '/leggi'
+    | '/auth/profilo-autore'
+    | '/auth/registrazione'
+    | '/leggi/$slug'
+    | '/auth'
+  id:
+    | '__root__'
+    | '/'
+    | '/area-autore'
+    | '/auth'
+    | '/catalogo'
+    | '/regolamento'
+    | '/leggi/'
+    | '/auth/profilo-autore'
+    | '/auth/registrazione'
+    | '/leggi/$slug'
+    | '/auth/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AreaAutoreRoute: typeof AreaAutoreRoute
+  AuthRoute: typeof AuthRouteWithChildren
   CatalogoRoute: typeof CatalogoRoute
   RegolamentoRoute: typeof RegolamentoRoute
   LeggiRoute: typeof LeggiRoute
@@ -101,6 +171,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CatalogoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/area-autore': {
+      id: '/area-autore'
+      path: '/area-autore'
+      fullPath: '/area-autore'
+      preLoaderRoute: typeof AreaAutoreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -108,12 +192,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/': {
+      id: '/auth/'
+      path: '/'
+      fullPath: '/auth/'
+      preLoaderRoute: typeof AuthIndexRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/leggi/$slug': {
       id: '/leggi/$slug'
       path: '/leggi/$slug'
       fullPath: '/leggi/$slug'
       preLoaderRoute: typeof LeggiSlugRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/auth/registrazione': {
+      id: '/auth/registrazione'
+      path: '/registrazione'
+      fullPath: '/auth/registrazione'
+      preLoaderRoute: typeof AuthRegistrazioneRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/profilo-autore': {
+      id: '/auth/profilo-autore'
+      path: '/profilo-autore'
+      fullPath: '/auth/profilo-autore'
+      preLoaderRoute: typeof AuthProfiloAutoreRouteImport
+      parentRoute: typeof AuthRoute
     }
     '/leggi/': {
       id: '/leggi/'
@@ -125,8 +230,24 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthRouteChildren {
+  AuthProfiloAutoreRoute: typeof AuthProfiloAutoreRoute
+  AuthRegistrazioneRoute: typeof AuthRegistrazioneRoute
+  AuthIndexRoute: typeof AuthIndexRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthProfiloAutoreRoute: AuthProfiloAutoreRoute,
+  AuthRegistrazioneRoute: AuthRegistrazioneRoute,
+  AuthIndexRoute: AuthIndexRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AreaAutoreRoute: AreaAutoreRoute,
+  AuthRoute: AuthRouteWithChildren,
   CatalogoRoute: CatalogoRoute,
   RegolamentoRoute: RegolamentoRoute,
   LeggiRoute: LeggiRoute,
