@@ -2,10 +2,10 @@ import { Link } from "@tanstack/react-router";
 import type { Book } from "@/data/books";
 
 const genreColor: Record<string, string> = {
-  libro: "bg-ink text-paper",
-  racconto: "bg-blood text-paper",
-  saggio: "bg-gold text-ink",
-  articolo: "bg-paper text-ink border border-ink",
+  libro: "text-cyan border-cyan/60",
+  racconto: "text-magenta border-magenta/60",
+  saggio: "text-amber border-amber/60",
+  articolo: "text-bone border-bone/40",
 };
 
 export function BookCard({ book }: { book: Book }) {
@@ -13,37 +13,52 @@ export function BookCard({ book }: { book: Book }) {
     <Link
       to="/leggi/$slug"
       params={{ slug: book.slug }}
-      className="group flex flex-col bg-card border border-ink/10 hover:border-blood transition-all duration-300 hover:-translate-y-1 hover:shadow-[6px_6px_0_0_var(--blood)]"
+      className="group relative flex flex-col glass holo-hover hover:glow-cyan"
     >
-      <div className="relative aspect-[3/4] overflow-hidden bg-ink">
+      {/* HUD corners */}
+      <span className="absolute top-1.5 left-1.5 w-3 h-3 border-l border-t border-cyan/70 z-10" />
+      <span className="absolute top-1.5 right-1.5 w-3 h-3 border-r border-t border-cyan/70 z-10" />
+      <span className="absolute bottom-1.5 left-1.5 w-3 h-3 border-l border-b border-cyan/70 z-10" />
+      <span className="absolute bottom-1.5 right-1.5 w-3 h-3 border-r border-b border-cyan/70 z-10" />
+
+      <div className="relative aspect-[3/4] overflow-hidden bg-void">
         <img
           src={book.cover}
           alt={book.title}
-          className="absolute inset-0 h-full w-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
+          className="absolute inset-0 h-full w-full object-cover opacity-70 group-hover:opacity-90 group-hover:scale-105 transition-all duration-700"
         />
+        {/* holo overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-cyan/20 via-transparent to-magenta/15 mix-blend-overlay" />
+        <div className="absolute inset-0" style={{
+          backgroundImage: "repeating-linear-gradient(0deg, transparent 0, transparent 2px, oklch(0.82 0.16 200 / 0.06) 2px, oklch(0.82 0.16 200 / 0.06) 3px)"
+        }} />
+
         <span
-          className={`absolute top-3 left-3 ${genreColor[book.genre]} font-display tracking-widest text-[10px] uppercase px-2 py-1`}
+          className={`absolute top-3 left-3 ${genreColor[book.genre]} bg-void/70 backdrop-blur font-mono tracking-[0.2em] text-[9px] uppercase px-2 py-1 border`}
         >
-          {book.genre}
+          ◆ {book.genre}
         </span>
-        <div className="absolute bottom-0 inset-x-0 h-24 bg-gradient-to-t from-ink/90 to-transparent" />
-        <div className="absolute bottom-3 left-3 right-3 text-paper">
-          <div className="font-display text-xs tracking-widest opacity-80">{book.year}</div>
+
+        <div className="absolute top-3 right-3 font-mono text-[9px] tracking-widest text-cyan/80">
+          ID:{book.slug.slice(0, 6).toUpperCase()}
         </div>
+
+        <div className="absolute bottom-0 inset-x-0 h-24 bg-gradient-to-t from-void via-void/70 to-transparent" />
       </div>
-      <div className="p-4 flex flex-col flex-1">
-        <h3 className="font-serif text-xl text-ink leading-tight group-hover:text-blood transition-colors">
+      <div className="p-4 flex flex-col flex-1 relative">
+        <h3 className="font-display text-lg text-bone leading-tight tracking-tight group-hover:text-cyan group-hover:text-glow-cyan transition-all">
           {book.title}
         </h3>
-        <p className="mt-1 font-sans text-sm text-muted-foreground italic">
-          di {book.author}
+        <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-cyan/70">
+          ↳ {book.author}
         </p>
-        <p className="mt-3 font-serif text-[15px] text-ink/75 line-clamp-2 flex-1">
+        <p className="mt-3 font-serif italic text-[14px] text-bone/65 line-clamp-2 flex-1 leading-snug">
           {book.tagline}
         </p>
-        <div className="mt-4 flex items-center justify-between text-xs font-display tracking-widest text-ink/60">
-          <span>{book.reads.toLocaleString("it-IT")} letture</span>
-          <span className="text-blood">★ {book.rating.toFixed(1)}</span>
+        <div className="mt-4 pt-3 border-t border-cyan/15 flex items-center justify-between font-mono text-[10px] tracking-widest text-bone/50">
+          <span>{book.reads.toLocaleString("it-IT")} READS</span>
+          <span className="text-amber">★ {book.rating.toFixed(1)}</span>
+          <span className="text-cyan/60">{book.year}</span>
         </div>
       </div>
     </Link>
