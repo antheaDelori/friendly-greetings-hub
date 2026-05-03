@@ -25,7 +25,7 @@ export function SiteHeader() {
       {/* main bar */}
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-6 px-4 sm:px-6 lg:px-10">
         <Link to="/" className="flex items-center gap-3 group">
-          <div className="relative h-10 w-10 hud-frame">
+          <div className="relative h-10 w-10 hud-frame bg-deep/60 overflow-hidden">
             <img
               src={logo}
               alt="Liberiamo la mente"
