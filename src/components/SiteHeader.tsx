@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import logo from "@/assets/logo-liberiamo.jpg";
+import logo from "@/assets/liberiamo-hero.png";
 
 export function SiteHeader() {
   const linkBase =

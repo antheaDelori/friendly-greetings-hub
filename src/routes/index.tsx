@@ -3,7 +3,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { BookCard } from "@/components/BookCard";
 import { books } from "@/data/books";
-import logo from "@/assets/logo-liberiamo.jpg";
+import logo from "@/assets/liberiamo-hero.png";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -82,31 +82,28 @@ function Index() {
             </dl>
           </div>
 
-          {/* HOLO LOGO */}
+          {/* HOLO ARTIFACT */}
           <div className="lg:col-span-5 relative fade-up" style={{ animationDelay: "0.2s" }}>
-            <div className="relative mx-auto w-full max-w-md aspect-square scan-sweep">
-              {/* outer ring */}
-              <div className="absolute inset-0 border border-cyan/30 rotate-45" />
-              <div className="absolute inset-3 border border-cyan/20 rotate-12 animate-[spin_60s_linear_infinite]" />
-              <div className="absolute inset-8 border border-magenta/30 -rotate-6 animate-[spin_40s_linear_infinite_reverse]" />
+            <div className="relative mx-auto w-full max-w-lg aspect-square scan-sweep">
+              {/* rotating rings */}
+              <div className="absolute inset-0 border border-cyan/25 rotate-45" />
+              <div className="absolute inset-4 border border-cyan/15 animate-[spin_80s_linear_infinite]" />
+              <div className="absolute inset-10 border border-magenta/20 animate-[spin_50s_linear_infinite_reverse]" />
 
-              {/* glow halo */}
-              <div className="absolute inset-10 rounded-full bg-cyan/20 blur-3xl" />
+              {/* glow halo behind artifact */}
+              <div className="absolute inset-16 rounded-full bg-cyan/30 blur-3xl" />
+              <div className="absolute inset-20 rounded-full bg-magenta/15 blur-2xl" />
 
-              {/* logo plate */}
-              <div className="absolute inset-12 glass overflow-hidden hud-frame flicker">
+              {/* artifact image — the glass book */}
+              <div className="absolute inset-6 hud-frame">
                 <img
                   src={logo}
-                  alt="Logo Liberiamo la mente"
-                  className="absolute inset-0 h-full w-full object-cover opacity-90 mix-blend-screen"
+                  alt="Liberiamo la mente — libro di vetro olografico"
+                  className="relative h-full w-full object-contain drop-shadow-[0_0_40px_oklch(0.82_0.16_200/0.6)]"
                 />
-                <div className="absolute inset-0 bg-gradient-to-br from-cyan/30 via-transparent to-magenta/20" />
-                <div className="absolute inset-0" style={{
-                  backgroundImage: "repeating-linear-gradient(0deg, transparent 0, transparent 2px, oklch(0.82 0.16 200 / 0.08) 2px, oklch(0.82 0.16 200 / 0.08) 3px)"
-                }} />
               </div>
 
-              {/* coordinates */}
+              {/* coordinates HUD */}
               <div className="absolute -bottom-2 left-0 font-mono text-[9px] tracking-widest text-cyan/80">
                 ▸ ARTIFACT_001 / EST.2076
               </div>
