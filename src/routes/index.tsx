@@ -99,7 +99,7 @@ function Index() {
                 <img
                   src={logo}
                   alt="Liberiamo la mente — libro di vetro olografico"
-                  className="relative h-full w-full object-contain drop-shadow-[0_0_40px_oklch(0.82_0.16_200/0.6)]"
+                  className="h-full w-full object-cover object-center drop-shadow-[0_0_40px_oklch(0.82_0.16_200/0.6)]"
                 />
               </div>
 
