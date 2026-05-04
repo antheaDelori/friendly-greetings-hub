@@ -84,32 +84,32 @@ function Index() {
 
           {/* HOLO ARTIFACT */}
           <div className="lg:col-span-5 relative fade-up" style={{ animationDelay: "0.2s" }}>
-            <div className="relative mx-auto w-full max-w-lg aspect-square scan-sweep">
-              {/* rotating rings */}
-              <div className="absolute inset-0 border border-cyan/25 rotate-45" />
-              <div className="absolute inset-4 border border-cyan/15 animate-[spin_80s_linear_infinite]" />
-              <div className="absolute inset-10 border border-magenta/20 animate-[spin_50s_linear_infinite_reverse]" />
-
+            <div className="relative mx-auto w-full max-w-lg scan-sweep">
               {/* glow halo behind artifact */}
-              <div className="absolute inset-16 rounded-full bg-cyan/30 blur-3xl" />
-              <div className="absolute inset-20 rounded-full bg-magenta/15 blur-2xl" />
+              <div className="absolute inset-16 rounded-full bg-cyan/30 blur-3xl pointer-events-none" />
+              <div className="absolute inset-20 rounded-full bg-magenta/15 blur-2xl pointer-events-none" />
 
-              {/* artifact image — the glass book */}
-              <div className="absolute inset-6 hud-frame">
+              {/* rotating rings — sopra all'immagine, decorativi */}
+              <div className="absolute inset-0 border border-cyan/25 rotate-45 pointer-events-none" />
+              <div className="absolute inset-4 border border-cyan/15 animate-[spin_80s_linear_infinite] pointer-events-none" />
+              <div className="absolute inset-10 border border-magenta/20 animate-[spin_50s_linear_infinite_reverse] pointer-events-none" />
+
+              {/* artifact image — proporzioni naturali, nessun ritaglio */}
+              <div className="relative hud-frame m-6">
                 <img
                   src={logo}
                   alt="Liberiamo la mente — libro di vetro olografico"
-                  className="h-full w-full object-cover object-center drop-shadow-[0_0_40px_oklch(0.82_0.16_200/0.6)]"
+                  className="w-full h-auto block drop-shadow-[0_0_40px_oklch(0.82_0.16_200/0.6)]"
                 />
               </div>
 
               {/* coordinates HUD */}
-              <div className="absolute -bottom-2 left-0 font-mono text-[9px] tracking-widest text-cyan/80">
+              <div className="font-mono text-[9px] tracking-widest text-cyan/80 pl-2 mt-1">
                 ▸ ARTIFACT_001 / EST.2076
               </div>
-              <div className="absolute -top-2 right-0 font-mono text-[9px] tracking-widest text-magenta/80">
-                STATUS: ALIVE
-              </div>
+            </div>
+            <div className="absolute -top-2 right-0 font-mono text-[9px] tracking-widest text-magenta/80">
+              STATUS: ALIVE
             </div>
           </div>
         </div>
