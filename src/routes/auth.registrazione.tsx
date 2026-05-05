@@ -52,7 +52,7 @@ const inputClass = "mt-2 w-full bg-void/40 border border-cyan/30 px-4 py-3 font-
 
 function RegistrazionePage() {
   const [serverError, setServerError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [showAuthorModal, setShowAuthorModal] = useState(false);
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -81,34 +81,52 @@ function RegistrazionePage() {
       return;
     }
 
-    setSuccess(true);
+    setShowAuthorModal(true);
   };
 
-  if (success) {
-    return (
-      <PageShell code="// AUTH/REGISTER.ok" title="Registrazione completata" subtitle="">
-        <div className="max-w-lg">
-          <HudPanel label="conferma" tone="cyan">
-            <div className="font-display text-5xl text-cyan text-glow-cyan">✓</div>
-            <h2 className="mt-4 font-display text-2xl text-bone">Benvenuto/a nella biblioteca!</h2>
-            <p className="mt-3 font-serif italic text-bone/70">
-              Controlla la tua email e clicca il link di conferma per attivare l'account.
-            </p>
-            <div className="mt-6 flex gap-3">
-              <Link to="/" className="inline-block">
-                <HudButton variant="primary">▸ Vai alla home</HudButton>
-              </Link>
-              <Link to="/auth" className="inline-block">
-                <HudButton variant="ghost">Accedi</HudButton>
-              </Link>
-            </div>
-          </HudPanel>
-        </div>
-      </PageShell>
-    );
-  }
-
   return (
+    <>
+    {/* Modal autore */}
+    {showAuthorModal && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+        {/* overlay scuro */}
+        <div className="absolute inset-0 bg-void/80 backdrop-blur-sm" />
+
+        {/* pannello */}
+        <div className="relative glass hud-frame max-w-lg w-full p-10 text-center">
+          {/* angoli decorativi extra */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-px w-32 h-px bg-gradient-to-r from-transparent via-cyan/80 to-transparent" />
+
+          <div className="font-mono text-[10px] tracking-[0.35em] text-cyan uppercase mb-6">
+            // trasmissione_in_arrivo · 2076
+          </div>
+
+          <div className="font-display text-4xl md:text-5xl text-bone leading-tight tracking-tight">
+            Nel 2076 tutti<br />
+            <span className="text-magenta text-glow-magenta">vogliono scrivere.</span>
+          </div>
+
+          <p className="mt-6 font-serif italic text-xl text-bone/75 leading-relaxed">
+            Che ne pensi di configurare anche un profilo autore?<br />
+            <span className="text-cyan not-italic font-mono text-sm tracking-widest">Puoi sempre farlo dopo.</span>
+          </p>
+
+          <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
+            <Link to="/auth/profilo-autore">
+              <HudButton variant="magenta" className="w-full sm:w-auto text-base px-8 py-4">
+                ◆ Sì, voglio essere autore
+              </HudButton>
+            </Link>
+            <Link to="/">
+              <HudButton variant="ghost" className="w-full sm:w-auto px-8 py-4">
+                ▸ No, solo lettore
+              </HudButton>
+            </Link>
+          </div>
+        </div>
+      </div>
+    )}
+
     <PageShell code="// AUTH/REGISTER.form" title="Nuovo terminale" subtitle="Tre passi e sei dentro. I campi obbligatori sono in cyan.">
       <div className="grid lg:grid-cols-[1fr_360px] gap-6">
         <HudPanel label="dati_principali" code="REQ ★">
@@ -202,5 +220,6 @@ function RegistrazionePage() {
         </HudPanel>
       </div>
     </PageShell>
+    </>
   );
 }
