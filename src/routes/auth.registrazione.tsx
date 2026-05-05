@@ -53,13 +53,15 @@ const inputClass = "mt-2 w-full bg-void/40 border border-cyan/30 px-4 py-3 font-
 function RegistrazionePage() {
   const [serverError, setServerError] = useState<string | null>(null);
   const [showAuthorModal, setShowAuthorModal] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
   });
 
   const onSubmit = async (data: FormData) => {
     setServerError(null);
+    setLoading(true);
     const { error } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
@@ -76,6 +78,7 @@ function RegistrazionePage() {
       },
     });
 
+    setLoading(false);
     if (error) {
       setServerError(error.message);
       return;
@@ -195,8 +198,8 @@ function RegistrazionePage() {
             )}
 
             <div className="flex flex-wrap gap-3 items-center pt-2">
-              <HudButton type="submit" variant="primary" disabled={isSubmitting}>
-                {isSubmitting ? "▸ Invio in corso..." : "▸ Conferma registrazione"}
+              <HudButton type="submit" variant="primary" disabled={loading}>
+                {loading ? "▸ Invio in corso..." : "▸ Conferma registrazione"}
               </HudButton>
               <Link to="/auth" className="font-mono text-[10px] tracking-widest uppercase text-bone/60 hover:text-cyan transition-colors">
                 annulla
