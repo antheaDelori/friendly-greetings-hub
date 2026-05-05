@@ -114,6 +114,8 @@ export function HudButton({
     <button
       {...rest}
       className={`inline-flex items-center justify-center gap-2 border px-5 py-3 font-mono text-[11px] uppercase tracking-[0.22em] transition-all ${styles} ${className}`}
-    />
+    >
+      {children}
+    </button>
   );
 }
