@@ -21,15 +21,18 @@ function AuthLanding() {
     e.preventDefault();
     setError(null);
     setLoading(true);
-
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-
-    setLoading(false);
-    if (error) {
-      setError("Credenziali non valide. Riprova.");
-      return;
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        setError("Credenziali non valide. Riprova.");
+        return;
+      }
+      window.location.href = "/";
+    } catch {
+      setError("Errore di connessione. Riprova.");
+    } finally {
+      setLoading(false);
     }
-    navigate({ to: "/" });
   };
 
   return (
