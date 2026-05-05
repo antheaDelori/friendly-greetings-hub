@@ -27,6 +27,7 @@ const schema = z.object({
   pseudonimo: z.string().optional(),
   indirizzo: z.string().optional(),
   data_nascita: z.string().optional(),
+  avatar_url: z.string().url("Inserisci un URL valido").optional().or(z.literal("")),
 }).refine((d) => d.email === d.email_conferma, {
   message: "Le email non coincidono",
   path: ["email_conferma"],
@@ -70,6 +71,7 @@ function RegistrazionePage() {
           pseudonimo: data.pseudonimo ?? null,
           indirizzo: data.indirizzo ?? null,
           data_nascita: data.data_nascita ?? null,
+          avatar_url: data.avatar_url || null,
         },
       },
     });
@@ -149,17 +151,22 @@ function RegistrazionePage() {
                 <HudField label="Telefono">
                   <input {...register("telefono")} placeholder="+39 ..." className={inputClass} />
                 </HudField>
-                <HudField label="Pseudonimo">
-                  <input {...register("pseudonimo")} placeholder="Nome d'arte" className={inputClass} />
+                <HudField label="Nome d'arte / Pseudonimo">
+                  <input {...register("pseudonimo")} placeholder="Es. AntheaDelori" className={inputClass} />
+                </HudField>
+                <HudField label="Data di nascita">
+                  <input {...register("data_nascita")} type="date" className={inputClass} />
                 </HudField>
                 <div className="sm:col-span-2">
                   <HudField label="Indirizzo">
                     <input {...register("indirizzo")} placeholder="Via, città, CAP" className={inputClass} />
                   </HudField>
                 </div>
-                <HudField label="Data di nascita">
-                  <input {...register("data_nascita")} type="date" className={inputClass} />
-                </HudField>
+                <div className="sm:col-span-2">
+                  <HudField label="Avatar (URL immagine profilo)" error={errors.avatar_url?.message}>
+                    <input {...register("avatar_url")} placeholder="https://..." className={inputClass} />
+                  </HudField>
+                </div>
               </div>
             </details>
 
