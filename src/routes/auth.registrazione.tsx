@@ -50,7 +50,6 @@ function HudField({ label, error, children }: { label: string; error?: string; c
 const inputClass = "mt-2 w-full bg-void/40 border border-cyan/30 px-4 py-3 font-mono text-bone placeholder:text-bone/30 focus:outline-none focus:border-cyan focus:bg-void/60 transition-all";
 
 function RegistrazionePage() {
-  const navigate = useNavigate();
   const [serverError, setServerError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
