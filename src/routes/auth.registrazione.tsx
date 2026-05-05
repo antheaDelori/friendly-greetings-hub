@@ -62,29 +62,32 @@ function RegistrazionePage() {
   const onSubmit = async (data: FormData) => {
     setServerError(null);
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email: data.email,
-      password: data.password,
-      options: {
-        data: {
-          nome: data.nome,
-          cognome: data.cognome,
-          telefono: data.telefono ?? null,
-          pseudonimo: data.pseudonimo ?? null,
-          indirizzo: data.indirizzo ?? null,
-          data_nascita: data.data_nascita ?? null,
-          avatar_url: data.avatar_url || null,
+    try {
+      const { error } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          data: {
+            nome: data.nome,
+            cognome: data.cognome,
+            telefono: data.telefono ?? null,
+            pseudonimo: data.pseudonimo ?? null,
+            indirizzo: data.indirizzo ?? null,
+            data_nascita: data.data_nascita ?? null,
+            avatar_url: data.avatar_url || null,
+          },
         },
-      },
-    });
-
-    setLoading(false);
-    if (error) {
-      setServerError(error.message);
-      return;
+      });
+      if (error) {
+        setServerError(error.message);
+        return;
+      }
+      setShowAuthorModal(true);
+    } catch (e) {
+      setServerError("Errore di connessione. Riprova.");
+    } finally {
+      setLoading(false);
     }
-
-    setShowAuthorModal(true);
   };
 
   return (
