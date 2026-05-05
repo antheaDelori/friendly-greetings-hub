@@ -60,7 +60,6 @@ function RegistrazionePage() {
   });
 
   const onSubmit = async (data: FormData) => {
-    console.log("[REG v3] submit avviato");
     setServerError(null);
     setLoading(true);
     try {
@@ -82,15 +81,14 @@ function RegistrazionePage() {
           },
         },
       }), timeout]);
-      console.log("[REG v3] risultato signUp:", JSON.stringify({ error: result.error?.message, userId: result.data?.user?.id }));
       if (result.error) {
         setServerError(result.error.message);
         return;
       }
       setShowAuthorModal(true);
-    } catch (e) {
-      console.error("[REG v3] eccezione:", e);
-      setServerError("Errore di connessione. Riprova.");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Errore di connessione. Riprova.";
+      setServerError(msg);
     } finally {
       setLoading(false);
     }
