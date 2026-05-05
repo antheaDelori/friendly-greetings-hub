@@ -64,7 +64,10 @@ function RegistrazionePage() {
     setServerError(null);
     setLoading(true);
     try {
-      const result = await supabase.auth.signUp({
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Timeout: riprova tra qualche minuto con la stessa email.")), 15000)
+      );
+      const result = await Promise.race([supabase.auth.signUp({
         email: data.email,
         password: data.password,
         options: {
@@ -78,7 +81,7 @@ function RegistrazionePage() {
             avatar_url: data.avatar_url || null,
           },
         },
-      });
+      }), timeout]);
       console.log("[REG v3] risultato signUp:", JSON.stringify({ error: result.error?.message, userId: result.data?.user?.id }));
       if (result.error) {
         setServerError(result.error.message);
