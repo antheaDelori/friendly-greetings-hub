@@ -19,42 +19,47 @@ function AuthLanding() {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("[AUTH]", event, "loginAttempted:", loginAttempted.current, "session:", !!session);
       if (event !== "SIGNED_IN" || !loginAttempted.current || !session) return;
 
-      const userId = session.user.id;
-      const userEmail = session.user.email ?? "";
+      try {
+        const userId = session.user.id;
+        const userEmail = session.user.email ?? "";
 
-      // Controlla se l'utente è bloccato
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("is_blocked, block_reason")
-        .eq("id", userId)
-        .single();
+        console.log("[AUTH] controllo profilo per", userId);
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("is_blocked, block_reason")
+          .eq("id", userId)
+          .single();
+        console.log("[AUTH] profilo:", profile, "errore:", profileError?.message);
 
-      if (profile?.is_blocked) {
-        await supabase.from("access_logs").insert({
-          user_id: userId,
-          email: userEmail,
-          event: "blocked",
-          status: "blocked",
-          reason: profile.block_reason ?? "Account bloccato",
+        if (profile?.is_blocked) {
+          await supabase.from("access_logs").insert({
+            user_id: userId, email: userEmail,
+            event: "blocked", status: "blocked",
+            reason: profile.block_reason ?? "Account bloccato",
+          });
+          await supabase.auth.signOut();
+          loginAttempted.current = false;
+          setError(`Accesso bloccato: ${profile.block_reason ?? "contatta l'amministratore"}`);
+          setLoading(false);
+          return;
+        }
+
+        console.log("[AUTH] inserisco log accesso");
+        const { error: logError } = await supabase.from("access_logs").insert({
+          user_id: userId, email: userEmail,
+          event: "login", status: "success",
         });
-        await supabase.auth.signOut();
-        loginAttempted.current = false;
-        setError(`Accesso bloccato: ${profile.block_reason ?? "contatta l'amministratore"}`);
-        setLoading(false);
-        return;
+        console.log("[AUTH] log inserito, errore:", logError?.message);
+
+        console.log("[AUTH] navigo a /");
+        window.location.replace("/");
+      } catch (err) {
+        console.error("[AUTH] eccezione nella callback:", err);
+        window.location.replace("/");
       }
-
-      // Log accesso riuscito
-      await supabase.from("access_logs").insert({
-        user_id: userId,
-        email: userEmail,
-        event: "login",
-        status: "success",
-      });
-
-      window.location.replace("/");
     });
     return () => subscription.unsubscribe();
   }, []);
