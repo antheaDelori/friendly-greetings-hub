@@ -1,5 +1,5 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState, useEffect, useRef } from "react";
 import { HudPanel, PageShell, HudButton } from "@/components/HudPanel";
 import { supabase } from "@/lib/supabase";
 
@@ -11,24 +11,34 @@ const inputClass = "mt-2 w-full bg-void/40 border border-cyan/30 px-4 py-3 font-
 const labelClass = "font-mono text-[10px] tracking-[0.25em] text-cyan/70 uppercase";
 
 function AuthLanding() {
-  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const loginAttempted = useRef(false);
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN" && loginAttempted.current) {
+        window.location.replace("/");
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
+    loginAttempted.current = true;
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
+        loginAttempted.current = false;
         setError("Credenziali non valide. Riprova.");
-        return;
       }
-      window.location.href = "/";
     } catch {
+      loginAttempted.current = false;
       setError("Errore di connessione. Riprova.");
     } finally {
       setLoading(false);
