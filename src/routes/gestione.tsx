@@ -10,6 +10,8 @@ type Book = {
   titolo: string;
   sottotitolo: string | null;
   genere: string;
+  tipo: string | null;
+  target: string | null;
   edizione: string | null;
   anno: number | null;
   lingua: string;
@@ -28,6 +30,20 @@ type Book = {
 
 const GENERI = ["libro", "racconto", "saggio", "articolo"] as const;
 const ACCESSI = ["gratuito", "premium", "riservato"] as const;
+const TARGET = ["tutti", "bambini (0–8)", "ragazzi (9–12)", "adolescenti (13–17)", "adulti (18+)"] as const;
+const TIPI = [
+  "— Narrativa —",
+  "Romanzo", "Romanzo storico", "Fantasy", "Fantascienza", "Thriller",
+  "Legal thriller", "Giallo / Noir", "Horror", "Distopia",
+  "Romanzo sentimentale", "Avventura", "Umorismo",
+  "— Saggistica —",
+  "Saggio storico", "Saggio scientifico", "Saggio filosofico", "Saggio politico",
+  "Autobiografia", "Biografia", "Memoir", "Self-help", "Divulgazione", "Psicologia",
+  "— Per ragazzi —",
+  "Favola / Fiaba", "Racconto per ragazzi", "Avventura per ragazzi",
+  "— —",
+  "Altro",
+] as const;
 
 const inputClass = "mt-2 w-full bg-void/40 border border-cyan/30 px-4 py-3 font-mono text-bone placeholder:text-bone/30 focus:outline-none focus:border-cyan focus:bg-void/60 transition-all";
 const labelClass = "font-mono text-[10px] tracking-[0.25em] text-cyan/70 uppercase";
@@ -70,6 +86,9 @@ function GestionePage() {
   const [anno, setAnno] = useState(String(new Date().getFullYear()));
   const [lingua, setLingua] = useState("it");
   const [accesso, setAccesso] = useState("gratuito");
+  const [tipo, setTipo] = useState("");
+  const [tipoAltro, setTipoAltro] = useState("");
+  const [target, setTarget] = useState("tutti");
   const [descrizione, setDescrizione] = useState("");
   const [estratto, setEstratto] = useState("");
   const [tagStr, setTagStr] = useState("");
@@ -102,6 +121,7 @@ function GestionePage() {
   const resetForm = () => {
     setTitolo(""); setSottotitolo(""); setGenere("libro"); setEdizione("");
     setAnno(String(new Date().getFullYear())); setLingua("it"); setAccesso("gratuito");
+    setTipo(""); setTipoAltro(""); setTarget("tutti");
     setDescrizione(""); setEstratto(""); setTagStr("");
     setCopertina(null); setFilePdf(null); setSaveError(null);
   };
@@ -147,6 +167,8 @@ function GestionePage() {
         titolo: titolo.trim(),
         sottotitolo: sottotitolo.trim() || null,
         genere,
+        tipo: tipo === "Altro" ? (tipoAltro.trim() || null) : (tipo || null),
+        target: target || null,
         edizione: edizione.trim() || null,
         anno: anno ? parseInt(anno) : null,
         lingua,
@@ -248,6 +270,44 @@ function GestionePage() {
                         ◆ {g}
                       </button>
                     ))}
+                  </div>
+                </div>
+
+                {/* Tipo e Target */}
+                <div className="grid sm:grid-cols-2 gap-5">
+                  <div>
+                    <span className={labelClass}>↳ Tipo / Sottogenere</span>
+                    <select value={tipo} onChange={e => { setTipo(e.target.value); setTipoAltro(""); }}
+                      className={inputClass + " cursor-pointer"}>
+                      <option value="">— Seleziona —</option>
+                      {TIPI.map(t => (
+                        <option
+                          key={t}
+                          value={t}
+                          disabled={t.startsWith("—")}
+                          className={t.startsWith("—") ? "text-bone/40 font-bold" : ""}
+                        >
+                          {t}
+                        </option>
+                      ))}
+                    </select>
+                    {tipo === "Altro" && (
+                      <input
+                        value={tipoAltro}
+                        onChange={e => setTipoAltro(e.target.value)}
+                        placeholder="Specifica il tipo..."
+                        className={inputClass + " mt-2"}
+                      />
+                    )}
+                  </div>
+                  <div>
+                    <span className={labelClass}>↳ Target / Fascia di pubblico</span>
+                    <select value={target} onChange={e => setTarget(e.target.value)}
+                      className={inputClass + " cursor-pointer"}>
+                      {TARGET.map(t => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
@@ -355,6 +415,8 @@ function GestionePage() {
                   {selected.sottotitolo && <p className="mt-1 font-serif italic text-bone/60">{selected.sottotitolo}</p>}
                   <div className="mt-2 flex gap-2 flex-wrap">
                     <span className="font-mono text-[9px] uppercase tracking-widest border border-cyan/30 px-2 py-1 text-cyan/70">{selected.accesso}</span>
+                    {selected.tipo && <span className="font-mono text-[9px] uppercase tracking-widest border border-cyan/30 px-2 py-1 text-bone/60">{selected.tipo}</span>}
+                    {selected.target && <span className="font-mono text-[9px] uppercase tracking-widest border border-magenta/30 px-2 py-1 text-magenta/60">{selected.target}</span>}
                     <span className="font-mono text-[9px] uppercase tracking-widest border border-cyan/30 px-2 py-1 text-bone/50">
                       {selected.disponibile ? "disponibile" : "non disponibile"}
                     </span>
