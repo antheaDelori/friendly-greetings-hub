@@ -1,10 +1,9 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import logo from "@/assets/liberiamo-hero.png";
 import { supabase } from "@/lib/supabase";
 
 export function SiteHeader() {
-  const navigate = useNavigate();
   const [displayName, setDisplayName] = useState<string | null>(null);
 
   useEffect(() => {
@@ -23,7 +22,7 @@ export function SiteHeader() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    navigate({ to: "/" });
+    window.location.href = "/";
   };
 
   const linkBase = "text-[11px] font-mono tracking-[0.18em] uppercase text-bone/70 hover:text-cyan transition-colors";
