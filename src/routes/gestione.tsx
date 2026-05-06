@@ -12,6 +12,7 @@ type Book = {
   genere: string;
   tipo: string | null;
   target: string | null;
+  isbn: string | null;
   edizione: string | null;
   anno: number | null;
   lingua: string;
@@ -45,6 +46,8 @@ const TIPI = [
   "Altro",
 ] as const;
 
+const TIPI_SELEZIONABILI = TIPI.filter(t => !t.startsWith("—"));
+
 const inputClass = "mt-2 w-full bg-void/40 border border-cyan/30 px-4 py-3 font-mono text-bone placeholder:text-bone/30 focus:outline-none focus:border-cyan focus:bg-void/60 transition-all";
 const labelClass = "font-mono text-[10px] tracking-[0.25em] text-cyan/70 uppercase";
 
@@ -77,6 +80,8 @@ function GestionePage() {
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   // Campi form
   const [titolo, setTitolo] = useState("");
@@ -89,11 +94,14 @@ function GestionePage() {
   const [tipo, setTipo] = useState("");
   const [tipoAltro, setTipoAltro] = useState("");
   const [target, setTarget] = useState("tutti");
+  const [isbn, setIsbn] = useState("");
   const [descrizione, setDescrizione] = useState("");
   const [estratto, setEstratto] = useState("");
   const [tagStr, setTagStr] = useState("");
   const [copertina, setCopertina] = useState<File | null>(null);
   const [filePdf, setFilePdf] = useState<File | null>(null);
+  const [existingCopertinaUrl, setExistingCopertinaUrl] = useState<string | null>(null);
+  const [existingFileUrl, setExistingFileUrl] = useState<string | null>(null);
 
   const copertRef = useRef<HTMLInputElement>(null);
   const pdfRef = useRef<HTMLInputElement>(null);
@@ -121,14 +129,58 @@ function GestionePage() {
   const resetForm = () => {
     setTitolo(""); setSottotitolo(""); setGenere("libro"); setEdizione("");
     setAnno(String(new Date().getFullYear())); setLingua("it"); setAccesso("gratuito");
-    setTipo(""); setTipoAltro(""); setTarget("tutti");
+    setTipo(""); setTipoAltro(""); setTarget("tutti"); setIsbn("");
     setDescrizione(""); setEstratto(""); setTagStr("");
     setCopertina(null); setFilePdf(null); setSaveError(null);
+    setEditingId(null); setConfirmDelete(false);
+    setExistingCopertinaUrl(null); setExistingFileUrl(null);
   };
 
   const handleNewBook = () => {
     resetForm();
     setSelected(null);
+    setShowForm(true);
+  };
+
+  const handleSelectBook = (b: Book) => {
+    setSelected(b);
+    setShowForm(false);
+    setEditingId(null);
+    setConfirmDelete(false);
+  };
+
+  const handleModifica = () => {
+    if (!selected) return;
+    const b = selected;
+    setTitolo(b.titolo);
+    setSottotitolo(b.sottotitolo ?? "");
+    setGenere(b.genere);
+    setEdizione(b.edizione ?? "");
+    setAnno(b.anno ? String(b.anno) : "");
+    setLingua(b.lingua);
+    setAccesso(b.accesso);
+    if (b.tipo && (TIPI_SELEZIONABILI as readonly string[]).includes(b.tipo)) {
+      setTipo(b.tipo);
+      setTipoAltro("");
+    } else if (b.tipo) {
+      setTipo("Altro");
+      setTipoAltro(b.tipo);
+    } else {
+      setTipo("");
+      setTipoAltro("");
+    }
+    setTarget(b.target ?? "tutti");
+    setIsbn(b.isbn ?? "");
+    setDescrizione(b.descrizione ?? "");
+    setEstratto(b.estratto ?? "");
+    setTagStr(b.tag.join(", "));
+    setCopertina(null);
+    setFilePdf(null);
+    setExistingCopertinaUrl(b.copertina_url);
+    setExistingFileUrl(b.file_url);
+    setEditingId(b.id);
+    setSaveError(null);
+    setConfirmDelete(false);
     setShowForm(true);
   };
 
@@ -148,41 +200,75 @@ function GestionePage() {
     setSaveError(null);
 
     try {
-      const slug = generateSlug(titolo) + "-" + Date.now().toString(36);
-      let copertina_url: string | null = null;
-      let file_url: string | null = null;
+      let copertina_url: string | null = existingCopertinaUrl;
+      let file_url: string | null = existingFileUrl;
 
-      if (copertina) {
-        const ext = copertina.name.split(".").pop();
-        copertina_url = await uploadFile(copertina, "copertine", `${userId}/${slug}.${ext}`);
+      if (editingId) {
+        if (copertina) {
+          const ext = copertina.name.split(".").pop();
+          copertina_url = await uploadFile(copertina, "copertine", `${userId}/${editingId}-cover.${ext}`);
+        }
+        if (filePdf) {
+          const ext = filePdf.name.split(".").pop();
+          file_url = await uploadFile(filePdf, "libri", `${userId}/${editingId}-file.${ext}`);
+        }
+
+        const { error } = await supabase.from("books").update({
+          titolo: titolo.trim(),
+          sottotitolo: sottotitolo.trim() || null,
+          genere,
+          tipo: tipo === "Altro" ? (tipoAltro.trim() || null) : (tipo || null),
+          target: target || null,
+          isbn: isbn.trim() || null,
+          edizione: edizione.trim() || null,
+          anno: anno ? parseInt(anno) : null,
+          lingua,
+          accesso,
+          descrizione: descrizione.trim() || null,
+          estratto: estratto.trim() || null,
+          tag: tagStr ? tagStr.split(",").map(t => t.trim()).filter(Boolean) : [],
+          copertina_url,
+          file_url,
+        }).eq("id", editingId);
+
+        if (error) { setSaveError(error.message); return; }
+      } else {
+        const slug = generateSlug(titolo) + "-" + Date.now().toString(36);
+        if (copertina) {
+          const ext = copertina.name.split(".").pop();
+          copertina_url = await uploadFile(copertina, "copertine", `${userId}/${slug}.${ext}`);
+        }
+        if (filePdf) {
+          const ext = filePdf.name.split(".").pop();
+          file_url = await uploadFile(filePdf, "libri", `${userId}/${slug}.${ext}`);
+        }
+
+        const { error } = await supabase.from("books").insert({
+          author_id: userId,
+          slug,
+          titolo: titolo.trim(),
+          sottotitolo: sottotitolo.trim() || null,
+          genere,
+          tipo: tipo === "Altro" ? (tipoAltro.trim() || null) : (tipo || null),
+          target: target || null,
+          isbn: isbn.trim() || null,
+          edizione: edizione.trim() || null,
+          anno: anno ? parseInt(anno) : null,
+          lingua,
+          accesso,
+          descrizione: descrizione.trim() || null,
+          estratto: estratto.trim() || null,
+          tag: tagStr ? tagStr.split(",").map(t => t.trim()).filter(Boolean) : [],
+          copertina_url,
+          file_url,
+        });
+
+        if (error) { setSaveError(error.message); return; }
       }
-      if (filePdf) {
-        const ext = filePdf.name.split(".").pop();
-        file_url = await uploadFile(filePdf, "libri", `${userId}/${slug}.${ext}`);
-      }
-
-      const { error } = await supabase.from("books").insert({
-        author_id: userId,
-        slug,
-        titolo: titolo.trim(),
-        sottotitolo: sottotitolo.trim() || null,
-        genere,
-        tipo: tipo === "Altro" ? (tipoAltro.trim() || null) : (tipo || null),
-        target: target || null,
-        edizione: edizione.trim() || null,
-        anno: anno ? parseInt(anno) : null,
-        lingua,
-        accesso,
-        descrizione: descrizione.trim() || null,
-        estratto: estratto.trim() || null,
-        tag: tagStr ? tagStr.split(",").map(t => t.trim()).filter(Boolean) : [],
-        copertina_url,
-        file_url,
-      });
-
-      if (error) { setSaveError(error.message); return; }
 
       setShowForm(false);
+      setEditingId(null);
+      setSelected(null);
       await loadBooks(userId);
     } catch {
       setSaveError("Errore durante il salvataggio. Riprova.");
@@ -190,6 +276,26 @@ function GestionePage() {
       setSaving(false);
     }
   };
+
+  const handleElimina = async () => {
+    if (!selected || !userId) return;
+    const { error } = await supabase.from("books").update({ disponibile: false }).eq("id", selected.id);
+    if (!error) {
+      setSelected(null);
+      setConfirmDelete(false);
+      await loadBooks(userId);
+    }
+  };
+
+  const handleRipristina = async (book: Book) => {
+    if (!userId) return;
+    await supabase.from("books").update({ disponibile: true }).eq("id", book.id);
+    if (selected?.id === book.id) setSelected({ ...book, disponibile: true });
+    await loadBooks(userId);
+  };
+
+  const activeBooks = books.filter(b => b.disponibile);
+  const archivedBooks = books.filter(b => !b.disponibile);
 
   if (loading) {
     return (
@@ -210,17 +316,17 @@ function GestionePage() {
         <div className="grid lg:grid-cols-[280px_1fr] gap-6">
 
           {/* Lista opere */}
-          <HudPanel label="le tue opere" code={`${books.length}`} tone="cyan">
-            {books.length === 0 && (
+          <HudPanel label="le tue opere" code={`${activeBooks.length}`} tone="cyan">
+            {activeBooks.length === 0 && (
               <p className="font-mono text-[10px] text-bone/40 uppercase tracking-widest mb-4">
                 Nessuna opera ancora.
               </p>
             )}
             <ul className="space-y-2">
-              {books.map((b) => (
+              {activeBooks.map((b) => (
                 <li key={b.id}>
                   <button
-                    onClick={() => { setSelected(b); setShowForm(false); }}
+                    onClick={() => handleSelectBook(b)}
                     className={`w-full text-left p-3 border transition-all ${
                       selected?.id === b.id && !showForm
                         ? "border-cyan bg-cyan/15 text-cyan"
@@ -241,11 +347,37 @@ function GestionePage() {
             >
               ◆ + nuova opera
             </button>
+
+            {archivedBooks.length > 0 && (
+              <>
+                <div className="hud-divider my-4" />
+                <div className="font-mono text-[9px] tracking-[0.3em] text-bone/30 uppercase mb-2">// archivio</div>
+                <ul className="space-y-2">
+                  {archivedBooks.map((b) => (
+                    <li key={b.id}>
+                      <button
+                        onClick={() => handleSelectBook(b)}
+                        className={`w-full text-left p-3 border transition-all opacity-50 hover:opacity-80 ${
+                          selected?.id === b.id && !showForm
+                            ? "border-magenta/60 bg-magenta/10 text-magenta"
+                            : "border-magenta/20 text-bone/50 hover:border-magenta/40"
+                        }`}
+                      >
+                        <div className="font-display text-sm tracking-tight truncate">{b.titolo}</div>
+                        <div className="font-mono text-[9px] tracking-widest opacity-60 uppercase mt-1">
+                          archiviata · {b.anno ?? "—"}
+                        </div>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
           </HudPanel>
 
-          {/* Form nuova opera */}
+          {/* Form nuova / modifica opera */}
           {showForm && (
-            <HudPanel label="nuova opera" code="NEW">
+            <HudPanel label={editingId ? "modifica opera" : "nuova opera"} code={editingId ? "EDIT" : "NEW"}>
               <div className="space-y-5">
 
                 <div className="grid sm:grid-cols-2 gap-5">
@@ -311,7 +443,7 @@ function GestionePage() {
                   </div>
                 </div>
 
-                <div className="grid sm:grid-cols-3 gap-5">
+                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
                   <div>
                     <span className={labelClass}>↳ Edizione</span>
                     <input value={edizione} onChange={e => setEdizione(e.target.value)} placeholder="Prima edizione" className={inputClass} />
@@ -323,6 +455,10 @@ function GestionePage() {
                   <div>
                     <span className={labelClass}>↳ Lingua</span>
                     <input value={lingua} onChange={e => setLingua(e.target.value)} placeholder="it" className={inputClass} />
+                  </div>
+                  <div>
+                    <span className={labelClass}>↳ ISBN</span>
+                    <input value={isbn} onChange={e => setIsbn(e.target.value)} placeholder="978-88-..." className={inputClass} />
                   </div>
                 </div>
 
@@ -366,7 +502,7 @@ function GestionePage() {
                       onChange={e => setCopertina(e.target.files?.[0] ?? null)} className="hidden" />
                     <button type="button" onClick={() => copertRef.current?.click()}
                       className="mt-2 w-full border border-cyan/30 px-4 py-3 font-mono text-[10px] text-left uppercase tracking-widest hover:border-cyan hover:text-cyan transition-all text-bone/60">
-                      {copertina ? `✓ ${copertina.name}` : "▸ Scegli immagine"}
+                      {copertina ? `✓ ${copertina.name}` : existingCopertinaUrl ? "✓ copertina esistente (cambia)" : "▸ Scegli immagine"}
                     </button>
                   </div>
                   <div>
@@ -375,7 +511,7 @@ function GestionePage() {
                       onChange={e => setFilePdf(e.target.files?.[0] ?? null)} className="hidden" />
                     <button type="button" onClick={() => pdfRef.current?.click()}
                       className="mt-2 w-full border border-cyan/30 px-4 py-3 font-mono text-[10px] text-left uppercase tracking-widest hover:border-cyan hover:text-cyan transition-all text-bone/60">
-                      {filePdf ? `✓ ${filePdf.name}` : "▸ Scegli file"}
+                      {filePdf ? `✓ ${filePdf.name}` : existingFileUrl ? "✓ file esistente (cambia)" : "▸ Scegli file"}
                     </button>
                   </div>
                 </div>
@@ -388,9 +524,9 @@ function GestionePage() {
 
                 <div className="flex gap-3">
                   <HudButton variant="primary" onClick={handleSave} disabled={saving || !titolo.trim()}>
-                    {saving ? "▸ Salvataggio..." : "▸ Salva opera"}
+                    {saving ? "▸ Salvataggio..." : editingId ? "▸ Aggiorna opera" : "▸ Salva opera"}
                   </HudButton>
-                  <HudButton variant="ghost" onClick={() => setShowForm(false)}>
+                  <HudButton variant="ghost" onClick={() => { setShowForm(false); setEditingId(null); }}>
                     annulla
                   </HudButton>
                 </div>
@@ -417,10 +553,13 @@ function GestionePage() {
                     <span className="font-mono text-[9px] uppercase tracking-widest border border-cyan/30 px-2 py-1 text-cyan/70">{selected.accesso}</span>
                     {selected.tipo && <span className="font-mono text-[9px] uppercase tracking-widest border border-cyan/30 px-2 py-1 text-bone/60">{selected.tipo}</span>}
                     {selected.target && <span className="font-mono text-[9px] uppercase tracking-widest border border-magenta/30 px-2 py-1 text-magenta/60">{selected.target}</span>}
-                    <span className="font-mono text-[9px] uppercase tracking-widest border border-cyan/30 px-2 py-1 text-bone/50">
-                      {selected.disponibile ? "disponibile" : "non disponibile"}
+                    <span className={`font-mono text-[9px] uppercase tracking-widest border px-2 py-1 ${selected.disponibile ? "border-cyan/30 text-bone/50" : "border-magenta/40 text-magenta/60"}`}>
+                      {selected.disponibile ? "disponibile" : "archiviata"}
                     </span>
                   </div>
+                  {selected.isbn && (
+                    <p className="mt-2 font-mono text-[9px] tracking-widest text-bone/40 uppercase">ISBN: {selected.isbn}</p>
+                  )}
                 </div>
               </div>
 
@@ -446,8 +585,24 @@ function GestionePage() {
               </div>
 
               <div className="mt-5 flex flex-wrap gap-3">
-                <HudButton variant="ghost">◆ Modifica</HudButton>
-                <HudButton variant="ghost">⊗ Elimina</HudButton>
+                {selected.disponibile ? (
+                  <>
+                    <HudButton variant="ghost" onClick={handleModifica}>◆ Modifica</HudButton>
+                    {confirmDelete ? (
+                      <>
+                        <HudButton variant="magenta" onClick={handleElimina}>⚠ Conferma archiviazione</HudButton>
+                        <HudButton variant="ghost" onClick={() => setConfirmDelete(false)}>annulla</HudButton>
+                      </>
+                    ) : (
+                      <HudButton variant="ghost" onClick={() => setConfirmDelete(true)}>⊗ Archivia</HudButton>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <HudButton variant="ghost" onClick={handleModifica}>◆ Modifica</HudButton>
+                    <HudButton variant="primary" onClick={() => handleRipristina(selected)}>▸ Ripristina</HudButton>
+                  </>
+                )}
               </div>
             </HudPanel>
           )}
