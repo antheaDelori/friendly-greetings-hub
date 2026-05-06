@@ -16,7 +16,7 @@ export function SiteHeader() {
 
     loadUser();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => loadUser());
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => { loadUser(); });
     return () => subscription.unsubscribe();
   }, []);
 
