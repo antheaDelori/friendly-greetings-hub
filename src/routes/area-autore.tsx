@@ -1,112 +1,226 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState, useEffect } from "react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
-import { HudPanel, PageShell, HudInput, HudButton } from "@/components/HudPanel";
-import { books } from "@/data/books";
+import { HudPanel, PageShell, HudButton } from "@/components/HudPanel";
+import { supabase } from "@/lib/supabase";
+
+type Profile = {
+  nome: string | null;
+  cognome: string | null;
+  pseudonimo: string | null;
+  is_blocked: boolean;
+  block_reason: string | null;
+  created_at: string;
+};
+
+type AuthorProfile = {
+  bio: string | null;
+  generi: string[];
+};
+
+type BookStats = {
+  count: number;
+  letture: number;
+  downloads: number;
+};
+
+type AccessLog = {
+  id: string;
+  event: string;
+  status: string;
+  created_at: string;
+};
 
 export const Route = createFileRoute("/area-autore")({
   head: () => ({
     meta: [
-      { title: "Area riservata autore — Liberiamo la mente" },
-      { name: "description", content: "Statistiche, KPI, mailing list e gestione opere per l'autore registrato." },
+      { title: "Area riservata — Liberiamo la mente" },
+      { name: "description", content: "Dashboard autore: opere, profilo, accessi." },
     ],
   }),
   component: AreaAutorePage,
 });
 
 function AreaAutorePage() {
-  const myBooks = books.slice(0, 3);
-  const kpis = [
-    { label: "accessi", value: 18420, c: "text-cyan", sub: "ultimi 30g" },
-    { label: "download", value: 942, c: "text-magenta", sub: "PDF + e-book" },
-    { label: "bozze private", value: 4, c: "text-amber", sub: "non pubblicate" },
-    { label: "rilasci futuri", value: 2, c: "text-bone", sub: "in coda" },
-  ];
+  const [loading, setLoading] = useState(true);
+  const [email, setEmail] = useState<string | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [authorProfile, setAuthorProfile] = useState<AuthorProfile | null>(null);
+  const [bookStats, setBookStats] = useState<BookStats>({ count: 0, letture: 0, downloads: 0 });
+  const [logs, setLogs] = useState<AccessLog[]>([]);
+
+  useEffect(() => {
+    const init = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { window.location.replace("/auth"); return; }
+
+      setEmail(user.email ?? null);
+      const uid = user.id;
+
+      const [profileRes, authorRes, booksRes, logsRes] = await Promise.all([
+        supabase.from("profiles").select("nome, cognome, pseudonimo, is_blocked, block_reason, created_at").eq("id", uid).single(),
+        supabase.from("author_profiles").select("bio, generi").eq("id", uid).maybeSingle(),
+        supabase.from("books").select("letture, downloads").eq("author_id", uid),
+        supabase.from("access_logs").select("id, event, status, created_at").eq("user_id", uid).order("created_at", { ascending: false }).limit(5),
+      ]);
+
+      if (profileRes.data) setProfile(profileRes.data);
+      if (authorRes.data) setAuthorProfile(authorRes.data);
+
+      if (booksRes.data) {
+        setBookStats({
+          count: booksRes.data.length,
+          letture: booksRes.data.reduce((s, b) => s + (b.letture ?? 0), 0),
+          downloads: booksRes.data.reduce((s, b) => s + (b.downloads ?? 0), 0),
+        });
+      }
+
+      if (logsRes.data) setLogs(logsRes.data);
+      setLoading(false);
+    };
+    init();
+  }, []);
+
+  const displayName = profile?.pseudonimo || profile?.nome || email?.split("@")[0] || "autore";
+  const fullName = [profile?.nome, profile?.cognome].filter(Boolean).join(" ");
+
+  const formatDate = (iso: string) =>
+    new Date(iso).toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <SiteHeader />
+        <PageShell code="// MODULE/AUTHOR_DASH" title="Area riservata" subtitle="">
+          <p className="font-mono text-cyan text-sm animate-pulse">▸ caricamento in corso...</p>
+        </PageShell>
+        <SiteFooter />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
       <SiteHeader />
-      <PageShell code="// MODULE/AUTHOR_DASH" title="Area riservata" subtitle="Centro di controllo del tuo channel. Statistiche, lettori, opere — tutto in un colpo d'occhio.">
-        {/* KPI grid */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {kpis.map((k) => (
-            <div key={k.label} className="glass p-5 hud-frame relative scan-sweep">
-              <div className="font-mono text-[10px] tracking-widest text-bone/50 uppercase">// {k.label}</div>
-              <div className={`mt-3 font-display text-5xl tracking-tight ${k.c}`}>
-                {k.value.toLocaleString("it-IT")}
-              </div>
-              <div className="mt-2 font-mono text-[9px] tracking-widest text-bone/40 uppercase">{k.sub}</div>
-            </div>
-          ))}
+      <PageShell
+        code="// MODULE/AUTHOR_DASH"
+        title="Area riservata"
+        subtitle="Centro di controllo del tuo canale. Opere, profilo e accessi in un colpo d'occhio."
+      >
+        {/* Intestazione autore */}
+        <div className="glass hud-frame p-6 mb-8 flex flex-col sm:flex-row items-center sm:items-start gap-6">
+          <div className="relative w-20 h-20 hud-frame flex-shrink-0">
+            <div className="absolute inset-0 bg-gradient-to-br from-cyan/30 to-magenta/20" />
+            <div className="absolute inset-0 flex items-center justify-center font-display text-3xl text-bone/60">◊</div>
+          </div>
+          <div className="flex-1 text-center sm:text-left">
+            <div className="font-mono text-[10px] tracking-[0.3em] text-cyan/70 uppercase">// terminale_autore</div>
+            <h2 className="mt-1 font-display text-3xl text-bone tracking-tight">
+              {displayName.toUpperCase()}
+            </h2>
+            {fullName && <p className="mt-1 font-serif italic text-bone/60">{fullName}</p>}
+            <p className="mt-1 font-mono text-[10px] tracking-widest text-bone/40">{email}</p>
+            {profile?.created_at && (
+              <p className="mt-1 font-mono text-[10px] tracking-widest text-bone/30 uppercase">
+                iscritto dal {new Date(profile.created_at).toLocaleDateString("it-IT", { day: "2-digit", month: "long", year: "numeric" })}
+              </p>
+            )}
+          </div>
+          <div className="flex-shrink-0">
+            {profile?.is_blocked ? (
+              <span className="font-mono text-[10px] uppercase tracking-widest border border-magenta/60 bg-magenta/10 text-magenta px-3 py-2">
+                ⚠ Account bloccato
+              </span>
+            ) : (
+              <span className="font-mono text-[10px] uppercase tracking-widest border border-cyan/40 bg-cyan/5 text-cyan/70 px-3 py-2">
+                ✓ Account attivo
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
-          {/* Statistiche dettaglio */}
-          <HudPanel label="trend_letture" code="↗ +12%" tone="cyan" className="lg:col-span-2">
-            <h3 className="font-display text-xl text-bone tracking-tight">Andamento letture · 12 settimane</h3>
-            <div className="mt-6 flex items-end gap-1 h-40">
-              {[20, 35, 28, 42, 38, 55, 48, 62, 70, 65, 80, 92].map((h, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center justify-end gap-1">
-                  <div
-                    className="w-full bg-gradient-to-t from-cyan/30 to-cyan/80 hover:to-magenta transition-colors"
-                    style={{ height: `${h}%` }}
-                  />
-                  <div className="font-mono text-[8px] text-bone/40">w{i + 1}</div>
-                </div>
-              ))}
-            </div>
-          </HudPanel>
 
-          {/* Mailing list */}
-          <HudPanel label="mailing_list" code="124 sub" tone="magenta">
-            <h3 className="font-display text-xl text-bone tracking-tight">Iscritti</h3>
-            <div className="mt-4 space-y-2 font-mono text-[11px] text-bone/70 max-h-44 overflow-y-auto">
-              {["antheaDelori@live.it", "marco.r@holo.net", "iris@conforti.io", "tommaso.b@uplink", "sara.v@books", "giulia@reads", "leo@notte"].map((m) => (
-                <div key={m} className="flex items-center justify-between border-b border-cyan/10 pb-1">
-                  <span>▸ {m}</span>
-                  <span className="text-cyan/50 text-[9px]">ON</span>
-                </div>
-              ))}
-            </div>
-            <button className="mt-4 w-full font-mono text-[10px] tracking-widest text-magenta uppercase border border-magenta/40 py-2 hover:bg-magenta/10 transition-colors">
-              ◆ Invia newsletter
-            </button>
-          </HudPanel>
-
-          {/* Le mie opere */}
-          <HudPanel label="le_mie_opere" code={`${myBooks.length} pub`} tone="amber" className="lg:col-span-2">
-            <div className="flex items-center justify-between">
-              <h3 className="font-display text-xl text-bone tracking-tight">Catalogo personale</h3>
-              <Link to="/gestione" className="font-mono text-[10px] tracking-widest text-amber uppercase hover:text-cyan transition-colors">
-                ▸ gestisci
-              </Link>
-            </div>
-            <ul className="mt-5 space-y-3">
-              {myBooks.map((b) => (
-                <li key={b.slug} className="flex items-center gap-4 border border-cyan/15 p-3 hover:border-cyan/40 transition-colors">
-                  <img src={b.cover} alt="" className="w-12 h-16 object-cover ring-1 ring-cyan/30" />
-                  <div className="flex-1 min-w-0">
-                    <div className="font-display text-bone truncate">{b.title}</div>
-                    <div className="font-mono text-[9px] tracking-widest text-bone/40 uppercase">{b.genre} · {b.year}</div>
+          {/* Opere */}
+          <HudPanel label="le mie opere" code={`${bookStats.count} pub`} tone="cyan">
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { label: "opere", value: bookStats.count, color: "text-cyan" },
+                  { label: "letture", value: bookStats.letture, color: "text-bone" },
+                  { label: "download", value: bookStats.downloads, color: "text-magenta" },
+                ].map(k => (
+                  <div key={k.label} className="text-center border border-cyan/15 py-3">
+                    <div className={`font-display text-2xl ${k.color}`}>{k.value}</div>
+                    <div className="font-mono text-[9px] tracking-widest text-bone/40 uppercase mt-1">{k.label}</div>
                   </div>
-                  <div className="text-right">
-                    <div className="font-mono text-xs text-cyan">{b.reads.toLocaleString("it-IT")}</div>
-                    <div className="font-mono text-[9px] text-bone/40 tracking-widest">READS</div>
-                  </div>
-                </li>
-              ))}
-            </ul>
+                ))}
+              </div>
+              {bookStats.count === 0 && (
+                <p className="font-serif italic text-bone/50 text-sm">Nessuna opera pubblicata ancora.</p>
+              )}
+            </div>
+            <div className="hud-divider my-5" />
+            <Link to="/gestione">
+              <HudButton variant="primary" className="w-full">▸ Gestisci opere</HudButton>
+            </Link>
           </HudPanel>
 
-          {/* Ricerche DB */}
-          <HudPanel label="db_query" tone="cyan">
-            <h3 className="font-display text-xl text-bone tracking-tight">Ricerche a DB</h3>
-            <p className="mt-3 font-serif italic text-sm text-bone/65">Cerca tra commenti, recensioni, lettori che ti seguono.</p>
-            <div className="mt-4 space-y-3">
-              <HudInput label="query" placeholder="es. capitolo 3 'splendore'" />
-              <HudButton variant="primary" type="button" className="w-full">▸ Esegui</HudButton>
-            </div>
+          {/* Profilo autore */}
+          <HudPanel label="profilo autore" tone="magenta">
+            {authorProfile ? (
+              <div className="space-y-4">
+                {authorProfile.bio ? (
+                  <p className="font-serif italic text-bone/70 text-sm leading-relaxed line-clamp-4">
+                    {authorProfile.bio}
+                  </p>
+                ) : (
+                  <p className="font-serif italic text-bone/40 text-sm">Nessuna bio inserita.</p>
+                )}
+                {authorProfile.generi?.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {authorProfile.generi.map(g => (
+                      <span key={g} className="font-mono text-[9px] uppercase tracking-widest border border-magenta/40 px-2 py-1 text-magenta/70">
+                        ◆ {g}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="font-serif italic text-bone/50 text-sm">Profilo autore non configurato.</p>
+            )}
+            <div className="hud-divider my-5" />
+            <Link to="/auth/profilo-autore">
+              <HudButton variant="magenta" className="w-full">◆ Modifica profilo</HudButton>
+            </Link>
           </HudPanel>
+
+          {/* Ultimi accessi */}
+          <HudPanel label="ultimi accessi" tone="cyan">
+            {logs.length === 0 ? (
+              <p className="font-serif italic text-bone/40 text-sm">Nessun accesso registrato.</p>
+            ) : (
+              <ul className="space-y-2">
+                {logs.map(log => (
+                  <li key={log.id} className="border-b border-cyan/10 pb-2">
+                    <div className="flex items-center justify-between">
+                      <span className={`font-mono text-[10px] uppercase tracking-widest ${
+                        log.status === "blocked" ? "text-magenta" : "text-cyan/70"
+                      }`}>
+                        {log.status === "blocked" ? "⚠ bloccato" : "✓ " + log.event}
+                      </span>
+                    </div>
+                    <div className="font-mono text-[9px] text-bone/30 tracking-widest mt-0.5">
+                      {formatDate(log.created_at)}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </HudPanel>
+
         </div>
       </PageShell>
       <SiteFooter />

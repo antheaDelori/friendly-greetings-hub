@@ -86,6 +86,7 @@ export function SiteHeader() {
               <Link
                 to="/area-autore"
                 className="hidden sm:inline-flex font-mono tracking-widest text-[10px] uppercase text-cyan hover:text-magenta transition-colors px-3 py-2"
+                title="Area riservata autore"
               >
                 [{displayName}]
               </Link>
