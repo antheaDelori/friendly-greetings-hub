@@ -584,24 +584,36 @@ function GestionePage() {
                 <span>▸ {selected.downloads} download</span>
               </div>
 
-              <div className="mt-5 flex flex-wrap gap-3">
-                {selected.disponibile ? (
-                  <>
-                    <HudButton variant="ghost" onClick={handleModifica}>◆ Modifica</HudButton>
-                    {confirmDelete ? (
-                      <>
-                        <HudButton variant="magenta" onClick={handleElimina}>⚠ Conferma archiviazione</HudButton>
-                        <HudButton variant="ghost" onClick={() => setConfirmDelete(false)}>annulla</HudButton>
-                      </>
-                    ) : (
-                      <HudButton variant="ghost" onClick={() => setConfirmDelete(true)}>⊗ Archivia</HudButton>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <HudButton variant="ghost" onClick={handleModifica}>◆ Modifica</HudButton>
-                    <HudButton variant="primary" onClick={() => handleRipristina(selected)}>▸ Ripristina</HudButton>
-                  </>
+              <div className="mt-5 space-y-4">
+                <div className="flex flex-wrap gap-3">
+                  {selected.disponibile ? (
+                    <>
+                      <HudButton variant="ghost" onClick={handleModifica} disabled={confirmDelete}>◆ Modifica</HudButton>
+                      <HudButton
+                        variant="ghost"
+                        onClick={() => setConfirmDelete(true)}
+                        disabled={confirmDelete}
+                      >
+                        ⊗ Archivia
+                      </HudButton>
+                    </>
+                  ) : (
+                    <>
+                      <HudButton variant="ghost" onClick={handleModifica}>◆ Modifica</HudButton>
+                      <HudButton variant="primary" onClick={() => handleRipristina(selected)}>▸ Ripristina</HudButton>
+                    </>
+                  )}
+                </div>
+                {confirmDelete && (
+                  <div className="border border-magenta/50 bg-magenta/5 p-4 space-y-3">
+                    <p className="font-mono text-[10px] tracking-widest text-magenta uppercase">
+                      ⚠ L'opera verrà archiviata. Potrai ripristinarla in qualsiasi momento.
+                    </p>
+                    <div className="flex gap-3">
+                      <HudButton variant="magenta" onClick={handleElimina}>Conferma</HudButton>
+                      <HudButton variant="ghost" onClick={() => setConfirmDelete(false)}>Annulla</HudButton>
+                    </div>
+                  </div>
                 )}
               </div>
             </HudPanel>
