@@ -5,6 +5,16 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { HudPanel, PageShell, HudButton } from "@/components/HudPanel";
 import { supabase } from "@/lib/supabase";
 
+type Edizione = {
+  id: string;
+  book_id: string;
+  edizione: string | null;
+  anno: number | null;
+  isbn: string | null;
+  copertina_url: string | null;
+  created_at: string;
+};
+
 type Book = {
   id: string;
   titolo: string;
@@ -83,6 +93,16 @@ function GestionePage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
+  // Edizioni aggiuntive
+  const [edizioni, setEdizioni] = useState<Edizione[]>([]);
+  const [showEditionForm, setShowEditionForm] = useState(false);
+  const [savingEdition, setSavingEdition] = useState(false);
+  const [edEdizione, setEdEdizione] = useState("");
+  const [edAnno, setEdAnno] = useState("");
+  const [edIsbn, setEdIsbn] = useState("");
+  const [edCopertina, setEdCopertina] = useState<File | null>(null);
+  const edCopertinaRef = useRef<HTMLInputElement>(null);
+
   // Campi form
   const [titolo, setTitolo] = useState("");
   const [sottotitolo, setSottotitolo] = useState("");
@@ -141,6 +161,16 @@ function GestionePage() {
     setSelected(null);
     setShowForm(true);
   };
+
+  useEffect(() => {
+    if (!selected) { setEdizioni([]); setShowEditionForm(false); return; }
+    const loadEdizioni = async () => {
+      const { data } = await supabase.from("edizioni").select("*").eq("book_id", selected.id).order("created_at");
+      setEdizioni(data ?? []);
+    };
+    loadEdizioni();
+    setShowEditionForm(false);
+  }, [selected?.id]);
 
   const handleSelectBook = (b: Book) => {
     setSelected(b);
@@ -292,6 +322,39 @@ function GestionePage() {
     await supabase.from("books").update({ disponibile: true }).eq("id", book.id);
     if (selected?.id === book.id) setSelected({ ...book, disponibile: true });
     await loadBooks(userId);
+  };
+
+  const handleSaveEdizione = async () => {
+    if (!selected || !userId) return;
+    setSavingEdition(true);
+    try {
+      let copertina_url: string | null = null;
+      if (edCopertina) {
+        const ext = edCopertina.name.split(".").pop();
+        const path = `${userId}/${selected.id}-ed-${Date.now()}.${ext}`;
+        copertina_url = await uploadFile(edCopertina, "copertine", path);
+      }
+      const { error } = await supabase.from("edizioni").insert({
+        book_id: selected.id,
+        edizione: edEdizione.trim() || null,
+        anno: edAnno ? parseInt(edAnno) : null,
+        isbn: edIsbn.trim() || null,
+        copertina_url,
+      });
+      if (!error) {
+        setShowEditionForm(false);
+        setEdEdizione(""); setEdAnno(""); setEdIsbn(""); setEdCopertina(null);
+        const { data } = await supabase.from("edizioni").select("*").eq("book_id", selected.id).order("created_at");
+        setEdizioni(data ?? []);
+      }
+    } finally {
+      setSavingEdition(false);
+    }
+  };
+
+  const handleDeleteEdizione = async (id: string) => {
+    await supabase.from("edizioni").delete().eq("id", id);
+    setEdizioni(prev => prev.filter(e => e.id !== id));
   };
 
   const activeBooks = books.filter(b => b.disponibile);
@@ -583,6 +646,73 @@ function GestionePage() {
                 <span>▸ {selected.letture} letture</span>
                 <span>▸ {selected.downloads} download</span>
               </div>
+
+              {/* Edizioni aggiuntive */}
+              <div className="hud-divider my-5" />
+              <div className="flex items-center justify-between mb-3">
+                <span className="font-mono text-[10px] tracking-widest text-cyan/70 uppercase">// edizioni aggiuntive</span>
+                {!showEditionForm && (
+                  <button
+                    onClick={() => { setShowEditionForm(true); setEdEdizione(""); setEdAnno(String(new Date().getFullYear())); setEdIsbn(""); setEdCopertina(null); }}
+                    className="font-mono text-[10px] tracking-widest text-magenta uppercase hover:text-cyan transition-colors"
+                  >
+                    + nuova edizione
+                  </button>
+                )}
+              </div>
+
+              {edizioni.length === 0 && !showEditionForm && (
+                <p className="font-serif italic text-bone/40 text-sm mb-3">Nessuna edizione aggiuntiva.</p>
+              )}
+
+              {edizioni.map(e => (
+                <div key={e.id} className="flex items-start gap-3 border border-cyan/10 p-3 mb-2">
+                  {e.copertina_url && (
+                    <img src={e.copertina_url} alt="" className="w-12 h-16 object-cover ring-1 ring-cyan/20 flex-shrink-0" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    {e.edizione && <div className="font-mono text-[10px] uppercase tracking-widest text-cyan/70">{e.edizione}</div>}
+                    <div className="font-mono text-[9px] text-bone/50 tracking-widest mt-1">
+                      {[e.anno, e.isbn].filter(Boolean).join(" · ")}
+                    </div>
+                  </div>
+                  <button onClick={() => handleDeleteEdizione(e.id)} className="font-mono text-[9px] text-magenta/40 hover:text-magenta transition-colors flex-shrink-0">✕</button>
+                </div>
+              ))}
+
+              {showEditionForm && (
+                <div className="border border-cyan/20 bg-cyan/5 p-4 space-y-4 mt-3">
+                  <div className="font-mono text-[9px] tracking-[0.3em] text-cyan/60 uppercase">// nuova edizione</div>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <span className={labelClass}>↳ Edizione</span>
+                      <input value={edEdizione} onChange={e => setEdEdizione(e.target.value)} placeholder="Es. Seconda edizione" className={inputClass} />
+                    </div>
+                    <div>
+                      <span className={labelClass}>↳ Anno</span>
+                      <input value={edAnno} onChange={e => setEdAnno(e.target.value)} type="number" className={inputClass} />
+                    </div>
+                    <div>
+                      <span className={labelClass}>↳ ISBN</span>
+                      <input value={edIsbn} onChange={e => setEdIsbn(e.target.value)} placeholder="978-88-..." className={inputClass} />
+                    </div>
+                    <div>
+                      <span className={labelClass}>↳ Copertina</span>
+                      <input ref={edCopertinaRef} type="file" accept="image/*" onChange={e => setEdCopertina(e.target.files?.[0] ?? null)} className="hidden" />
+                      <button type="button" onClick={() => edCopertinaRef.current?.click()}
+                        className="mt-2 w-full border border-cyan/30 px-4 py-3 font-mono text-[10px] text-left uppercase tracking-widest hover:border-cyan hover:text-cyan transition-all text-bone/60">
+                        {edCopertina ? `✓ ${edCopertina.name}` : "▸ Scegli immagine"}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <HudButton variant="primary" onClick={handleSaveEdizione} disabled={savingEdition}>
+                      {savingEdition ? "▸ Salvataggio..." : "▸ Salva edizione"}
+                    </HudButton>
+                    <HudButton variant="ghost" onClick={() => setShowEditionForm(false)}>annulla</HudButton>
+                  </div>
+                </div>
+              )}
 
               <div className="mt-5 space-y-4">
                 <div className="flex flex-wrap gap-3">
