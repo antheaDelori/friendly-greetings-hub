@@ -26,12 +26,21 @@ export function BookCard({ book }: { book: Book }) {
           src={book.cover}
           alt={book.title}
           className="absolute inset-0 h-full w-full object-contain
-            saturate-[30%] brightness-[0.4]
+            saturate-[30%] brightness-[0.55]
             group-hover:saturate-100 group-hover:brightness-100
             group-hover:scale-105 transition-all duration-700"
         />
-        {/* vetro museo — sparisce all'hover */}
-        <div className="absolute inset-0 bg-gradient-to-b from-blue-950/50 via-cyan/5 to-blue-900/40 group-hover:opacity-0 transition-opacity duration-700 pointer-events-none" />
+        {/* vetro museo con punto di luce — sparisce all'hover */}
+        <div
+          className="absolute inset-0 group-hover:opacity-0 transition-opacity duration-700 pointer-events-none"
+          style={{
+            background: [
+              "radial-gradient(ellipse 55% 25% at 30% 6%, rgba(190,225,255,0.28) 0%, transparent 100%)",
+              "linear-gradient(135deg, rgba(220,240,255,0.09) 0%, transparent 38%)",
+              "linear-gradient(to bottom, rgba(8,18,55,0.58) 0%, rgba(4,22,60,0.22) 55%, rgba(8,18,55,0.50) 100%)",
+            ].join(", "),
+          }}
+        />
         {/* holo overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-cyan/20 via-transparent to-magenta/15 mix-blend-overlay group-hover:opacity-30 transition-opacity duration-700" />
         <div className="absolute inset-0" style={{
