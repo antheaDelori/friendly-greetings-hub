@@ -139,17 +139,16 @@ function GestionePage() {
         .eq("id", user.id)
         .single();
       const name =
-        profileData?.pseudonimo ||
         [profileData?.nome, profileData?.cognome].filter(Boolean).join(" ") ||
+        profileData?.pseudonimo ||
         "Autore";
       setAuthorName(name);
 
-      // backfill libri già inseriti senza author_name
+      // aggiorna author_name su tutti i libri dell'autore
       await supabase
         .from("books")
         .update({ author_name: name })
-        .eq("author_id", user.id)
-        .is("author_name", null);
+        .eq("author_id", user.id);
 
       await loadBooks(user.id);
       setLoading(false);

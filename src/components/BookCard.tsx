@@ -35,7 +35,7 @@ export function BookCard({ book }: { book: Book }) {
           className="absolute inset-0 group-hover:opacity-0 transition-opacity duration-700 pointer-events-none"
           style={{
             background: [
-              "radial-gradient(ellipse 65% 35% at 30% 5%, rgba(210,238,255,0.55) 0%, rgba(180,220,255,0.15) 55%, transparent 100%)",
+              "radial-gradient(ellipse 65% 35% at 50% 5%, rgba(210,238,255,0.55) 0%, rgba(180,220,255,0.15) 55%, transparent 100%)",
               "linear-gradient(135deg, rgba(220,240,255,0.13) 0%, transparent 35%)",
               "linear-gradient(to bottom, rgba(8,18,55,0.58) 0%, rgba(4,22,60,0.22) 55%, rgba(8,18,55,0.50) 100%)",
             ].join(", "),
