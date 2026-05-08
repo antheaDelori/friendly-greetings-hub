@@ -26,7 +26,7 @@ export function BookCard({ book }: { book: Book }) {
           src={book.cover}
           alt={book.title}
           className="absolute inset-0 h-full w-full object-contain
-            saturate-[30%] brightness-[0.6]
+            saturate-[30%] brightness-[0.4]
             group-hover:saturate-100 group-hover:brightness-100
             group-hover:scale-105 transition-all duration-700"
         />
