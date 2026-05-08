@@ -25,10 +25,15 @@ export function BookCard({ book }: { book: Book }) {
         <img
           src={book.cover}
           alt={book.title}
-          className="absolute inset-0 h-full w-full object-contain opacity-70 group-hover:opacity-90 group-hover:scale-105 transition-all duration-700"
+          className="absolute inset-0 h-full w-full object-contain
+            saturate-[30%] brightness-[0.6]
+            group-hover:saturate-100 group-hover:brightness-100
+            group-hover:scale-105 transition-all duration-700"
         />
+        {/* vetro museo — sparisce all'hover */}
+        <div className="absolute inset-0 bg-gradient-to-b from-blue-950/50 via-cyan/5 to-blue-900/40 group-hover:opacity-0 transition-opacity duration-700 pointer-events-none" />
         {/* holo overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-cyan/20 via-transparent to-magenta/15 mix-blend-overlay" />
+        <div className="absolute inset-0 bg-gradient-to-br from-cyan/20 via-transparent to-magenta/15 mix-blend-overlay group-hover:opacity-30 transition-opacity duration-700" />
         <div className="absolute inset-0" style={{
           backgroundImage: "repeating-linear-gradient(0deg, transparent 0, transparent 2px, oklch(0.82 0.16 200 / 0.06) 2px, oklch(0.82 0.16 200 / 0.06) 3px)"
         }} />
