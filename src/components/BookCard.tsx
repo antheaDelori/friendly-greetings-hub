@@ -25,7 +25,7 @@ export function BookCard({ book }: { book: Book }) {
         <img
           src={book.cover}
           alt={book.title}
-          className="absolute inset-0 h-full w-full object-cover opacity-70 group-hover:opacity-90 group-hover:scale-105 transition-all duration-700"
+          className="absolute inset-0 h-full w-full object-contain opacity-70 group-hover:opacity-90 group-hover:scale-105 transition-all duration-700"
         />
         {/* holo overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-cyan/20 via-transparent to-magenta/15 mix-blend-overlay" />
