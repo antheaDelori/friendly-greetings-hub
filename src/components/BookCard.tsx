@@ -57,7 +57,7 @@ export function BookCard({ book }: { book: Book }) {
         </p>
         <div className="mt-4 pt-3 border-t border-cyan/15 flex items-center justify-between font-mono text-[10px] tracking-widest text-bone/50">
           <span>{book.reads.toLocaleString("it-IT")} READS</span>
-          <span className="text-amber">★ {book.rating.toFixed(1)}</span>
+          <span className="text-amber">{book.rating > 0 ? `★ ${book.rating.toFixed(1)}` : "✦ new"}</span>
           <span className="text-cyan/60">{book.year}</span>
         </div>
       </div>

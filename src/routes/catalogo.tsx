@@ -1,9 +1,43 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { BookCard } from "@/components/BookCard";
-import { books, genres, type Genre } from "@/data/books";
+import { books as staticBooks, genres, type Genre, type Book } from "@/data/books";
+import { supabase } from "@/lib/supabase";
+import logo from "@/assets/logo-liberiamo.jpg";
+
+// Un solo placeholder fittizio (il terzo libro, inserito domani)
+const PLACEHOLDER: Book[] = [staticBooks[2]];
+
+type DbBook = {
+  slug: string;
+  titolo: string;
+  descrizione: string | null;
+  genere: string;
+  anno: number | null;
+  letture: number;
+  copertina_url: string | null;
+  author_name: string | null;
+};
+
+function dbToBook(b: DbBook): Book {
+  const author = b.author_name || "Autore";
+  return {
+    slug: b.slug,
+    title: b.titolo,
+    author,
+    authorSlug: author.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-"),
+    genre: (["libro", "racconto", "saggio", "articolo"].includes(b.genere) ? b.genere : "libro") as Genre,
+    year: b.anno ?? new Date().getFullYear(),
+    reads: b.letture,
+    rating: 0,
+    cover: b.copertina_url ?? logo,
+    tagline: b.descrizione?.slice(0, 140) ?? "",
+    description: b.descrizione ?? "",
+    chapters: [],
+  };
+}
 
 export const Route = createFileRoute("/catalogo")({
   head: () => ({
@@ -22,10 +56,28 @@ type Sort = "letti" | "recenti" | "anno" | "rating";
 function CatalogoPage() {
   const [q, setQ] = useState("");
   const [genre, setGenre] = useState<Genre | "tutti">("tutti");
-  const [sort, setSort] = useState<Sort>("letti");
+  const [sort, setSort] = useState<Sort>("recenti");
+  const [dbBooks, setDbBooks] = useState<Book[]>([]);
+
+  useEffect(() => {
+    const fetchBooks = async () => {
+      const { data } = await supabase
+        .from("books")
+        .select("slug, titolo, descrizione, genere, anno, letture, copertina_url, author_name")
+        .eq("disponibile", true)
+        .order("created_at", { ascending: false });
+      setDbBooks((data ?? []).map(dbToBook));
+    };
+    fetchBooks();
+  }, []);
+
+  const allBooks = useMemo(() => {
+    const realSlugs = new Set(dbBooks.map(b => b.slug));
+    return [...dbBooks, ...PLACEHOLDER.filter(b => !realSlugs.has(b.slug))];
+  }, [dbBooks]);
 
   const results = useMemo(() => {
-    const filtered = books.filter((b) => {
+    const filtered = allBooks.filter((b) => {
       const matchesGenre = genre === "tutti" || b.genre === genre;
       const text = q.trim().toLowerCase();
       const matchesQ =
@@ -41,7 +93,7 @@ function CatalogoPage() {
       if (sort === "anno") return a.year - b.year;
       return b.rating - a.rating;
     });
-  }, [q, genre, sort]);
+  }, [allBooks, q, genre, sort]);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -97,8 +149,8 @@ function CatalogoPage() {
           <div className="flex items-center gap-3">
             <span className="font-mono tracking-[0.22em] text-[10px] uppercase text-bone/50">sort:</span>
             {([
-              ["letti", "Più letti"],
               ["recenti", "Più recenti"],
+              ["letti", "Più letti"],
               ["rating", "Top rated"],
               ["anno", "Anno ↑"],
             ] as [Sort, string][]).map(([key, label]) => (

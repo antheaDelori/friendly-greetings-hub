@@ -92,6 +92,7 @@ function GestionePage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [authorName, setAuthorName] = useState("");
 
   // Edizioni aggiuntive
   const [edizioni, setEdizioni] = useState<Edizione[]>([]);
@@ -131,6 +132,25 @@ function GestionePage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { window.location.replace("/auth"); return; }
       setUserId(user.id);
+
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("pseudonimo, nome, cognome")
+        .eq("id", user.id)
+        .single();
+      const name =
+        profileData?.pseudonimo ||
+        [profileData?.nome, profileData?.cognome].filter(Boolean).join(" ") ||
+        "Autore";
+      setAuthorName(name);
+
+      // backfill libri già inseriti senza author_name
+      await supabase
+        .from("books")
+        .update({ author_name: name })
+        .eq("author_id", user.id)
+        .is("author_name", null);
+
       await loadBooks(user.id);
       setLoading(false);
     };
@@ -259,6 +279,7 @@ function GestionePage() {
           tag: tagStr ? tagStr.split(",").map(t => t.trim()).filter(Boolean) : [],
           copertina_url,
           file_url,
+          author_name: authorName || null,
         }).eq("id", editingId);
 
         if (error) { setSaveError(error.message); return; }
@@ -291,6 +312,7 @@ function GestionePage() {
           tag: tagStr ? tagStr.split(",").map(t => t.trim()).filter(Boolean) : [],
           copertina_url,
           file_url,
+          author_name: authorName || null,
         });
 
         if (error) { setSaveError(error.message); return; }
