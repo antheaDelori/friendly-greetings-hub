@@ -18,6 +18,7 @@ export type Book = {
   reads: number;
   rating: number;
   cover: string;
+  lastra?: string;
   tagline: string;
   description: string;
   chapters: Chapter[];

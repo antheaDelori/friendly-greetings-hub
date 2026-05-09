@@ -31,6 +31,7 @@ type Book = {
   estratto: string | null;
   tag: string[];
   copertina_url: string | null;
+  lastra_url: string | null;
   file_url: string | null;
   disponibile: boolean;
   slug: string;
@@ -120,11 +121,14 @@ function GestionePage() {
   const [estratto, setEstratto] = useState("");
   const [tagStr, setTagStr] = useState("");
   const [copertina, setCopertina] = useState<File | null>(null);
+  const [lastra, setLastra] = useState<File | null>(null);
   const [filePdf, setFilePdf] = useState<File | null>(null);
   const [existingCopertinaUrl, setExistingCopertinaUrl] = useState<string | null>(null);
+  const [existingLastraUrl, setExistingLastraUrl] = useState<string | null>(null);
   const [existingFileUrl, setExistingFileUrl] = useState<string | null>(null);
 
   const copertRef = useRef<HTMLInputElement>(null);
+  const lastraRef = useRef<HTMLInputElement>(null);
   const pdfRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -170,9 +174,9 @@ function GestionePage() {
     setAnno(String(new Date().getFullYear())); setLingua("it"); setAccesso("gratuito");
     setTipo(""); setTipoAltro(""); setTarget("tutti"); setIsbn("");
     setDescrizione(""); setEstratto(""); setTagStr("");
-    setCopertina(null); setFilePdf(null); setSaveError(null);
+    setCopertina(null); setLastra(null); setFilePdf(null); setSaveError(null);
     setEditingId(null); setConfirmDelete(false);
-    setExistingCopertinaUrl(null); setExistingFileUrl(null);
+    setExistingCopertinaUrl(null); setExistingLastraUrl(null); setExistingFileUrl(null);
   };
 
   const handleNewBook = () => {
@@ -224,8 +228,10 @@ function GestionePage() {
     setEstratto(b.estratto ?? "");
     setTagStr(b.tag.join(", "));
     setCopertina(null);
+    setLastra(null);
     setFilePdf(null);
     setExistingCopertinaUrl(b.copertina_url);
+    setExistingLastraUrl(b.lastra_url);
     setExistingFileUrl(b.file_url);
     setEditingId(b.id);
     setSaveError(null);
@@ -250,12 +256,17 @@ function GestionePage() {
 
     try {
       let copertina_url: string | null = existingCopertinaUrl;
+      let lastra_url: string | null = existingLastraUrl;
       let file_url: string | null = existingFileUrl;
 
       if (editingId) {
         if (copertina) {
           const ext = copertina.name.split(".").pop();
           copertina_url = await uploadFile(copertina, "copertine", `${userId}/${editingId}-cover.${ext}`);
+        }
+        if (lastra) {
+          const ext = lastra.name.split(".").pop();
+          lastra_url = await uploadFile(lastra, "copertine", `${userId}/${editingId}-lastra.${ext}`);
         }
         if (filePdf) {
           const ext = filePdf.name.split(".").pop();
@@ -277,6 +288,7 @@ function GestionePage() {
           estratto: estratto.trim() || null,
           tag: tagStr ? tagStr.split(",").map(t => t.trim()).filter(Boolean) : [],
           copertina_url,
+          lastra_url,
           file_url,
           author_name: authorName || null,
         }).eq("id", editingId);
@@ -287,6 +299,10 @@ function GestionePage() {
         if (copertina) {
           const ext = copertina.name.split(".").pop();
           copertina_url = await uploadFile(copertina, "copertine", `${userId}/${slug}.${ext}`);
+        }
+        if (lastra) {
+          const ext = lastra.name.split(".").pop();
+          lastra_url = await uploadFile(lastra, "copertine", `${userId}/${slug}-lastra.${ext}`);
         }
         if (filePdf) {
           const ext = filePdf.name.split(".").pop();
@@ -310,6 +326,7 @@ function GestionePage() {
           estratto: estratto.trim() || null,
           tag: tagStr ? tagStr.split(",").map(t => t.trim()).filter(Boolean) : [],
           copertina_url,
+          lastra_url,
           file_url,
           author_name: authorName || null,
         });
@@ -579,14 +596,23 @@ function GestionePage() {
                   <input value={tagStr} onChange={e => setTagStr(e.target.value)} placeholder="fantascienza, distopia, futuro" className={inputClass} />
                 </div>
 
-                <div className="grid sm:grid-cols-2 gap-5">
+                <div className="grid sm:grid-cols-3 gap-5">
                   <div>
-                    <span className={labelClass}>↳ Copertina (immagine)</span>
+                    <span className={labelClass}>↳ Copertina (hover)</span>
                     <input ref={copertRef} type="file" accept="image/*"
                       onChange={e => setCopertina(e.target.files?.[0] ?? null)} className="hidden" />
                     <button type="button" onClick={() => copertRef.current?.click()}
                       className="mt-2 w-full border border-cyan/30 px-4 py-3 font-mono text-[10px] text-left uppercase tracking-widest hover:border-cyan hover:text-cyan transition-all text-bone/60">
-                      {copertina ? `✓ ${copertina.name}` : existingCopertinaUrl ? "✓ copertina esistente (cambia)" : "▸ Scegli immagine"}
+                      {copertina ? `✓ ${copertina.name}` : existingCopertinaUrl ? "✓ esistente (cambia)" : "▸ Scegli immagine"}
+                    </button>
+                  </div>
+                  <div>
+                    <span className={labelClass}>↳ Lastra (catalogo)</span>
+                    <input ref={lastraRef} type="file" accept="image/*"
+                      onChange={e => setLastra(e.target.files?.[0] ?? null)} className="hidden" />
+                    <button type="button" onClick={() => lastraRef.current?.click()}
+                      className="mt-2 w-full border border-magenta/30 px-4 py-3 font-mono text-[10px] text-left uppercase tracking-widest hover:border-magenta hover:text-magenta transition-all text-bone/60">
+                      {lastra ? `✓ ${lastra.name}` : existingLastraUrl ? "✓ esistente (cambia)" : "▸ Scegli lastra"}
                     </button>
                   </div>
                   <div>
@@ -595,7 +621,7 @@ function GestionePage() {
                       onChange={e => setFilePdf(e.target.files?.[0] ?? null)} className="hidden" />
                     <button type="button" onClick={() => pdfRef.current?.click()}
                       className="mt-2 w-full border border-cyan/30 px-4 py-3 font-mono text-[10px] text-left uppercase tracking-widest hover:border-cyan hover:text-cyan transition-all text-bone/60">
-                      {filePdf ? `✓ ${filePdf.name}` : existingFileUrl ? "✓ file esistente (cambia)" : "▸ Scegli file"}
+                      {filePdf ? `✓ ${filePdf.name}` : existingFileUrl ? "✓ esistente (cambia)" : "▸ Scegli file"}
                     </button>
                   </div>
                 </div>
