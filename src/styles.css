@@ -338,3 +338,23 @@
       0 30px 80px -20px oklch(0.10 0.03 260 / 0.9);
   }
 }
+
+  /* === CHAPTER PROSE — rendering HTML da editor ricco === */
+  .chapter-prose p { margin-bottom: 1.4em; }
+  .chapter-prose p:first-child::first-letter {
+    font-family: var(--font-display);
+    font-size: 4.5rem;
+    line-height: 1;
+    float: left;
+    margin-right: 0.15em;
+    color: var(--blood);
+  }
+  .chapter-prose strong { font-weight: 700; }
+  .chapter-prose em { font-style: italic; }
+  .chapter-prose u { text-decoration: underline; }
+  .chapter-prose h2 { font-family: var(--font-serif); font-size: 1.5em; font-weight: 600; margin: 1.8em 0 0.6em; }
+  .chapter-prose h3 { font-family: var(--font-serif); font-size: 1.2em; font-weight: 600; margin: 1.4em 0 0.5em; }
+  .chapter-prose ul { list-style: disc; padding-left: 1.5em; margin-bottom: 1.2em; }
+  .chapter-prose ol { list-style: decimal; padding-left: 1.5em; margin-bottom: 1.2em; }
+  .chapter-prose li { margin-bottom: 0.4em; }
+  .chapter-prose blockquote { border-left: 2px solid var(--blood); padding-left: 1em; font-style: italic; opacity: 0.75; margin: 1.4em 0; }

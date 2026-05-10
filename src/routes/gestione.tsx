@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { HudPanel, PageShell, HudButton } from "@/components/HudPanel";
+import { RichTextEditor } from "@/components/RichTextEditor";
 import { supabase } from "@/lib/supabase";
 
 type Capitolo = {
@@ -897,12 +898,7 @@ function GestionePage() {
                   </div>
                   <div>
                     <span className={labelClass}>↳ Testo</span>
-                    <textarea
-                      value={capTesto}
-                      onChange={e => setCapTesto(e.target.value)}
-                      placeholder="Il testo del capitolo. Separa i paragrafi con una riga vuota."
-                      className="mt-2 w-full min-h-48 bg-void/40 border border-cyan/30 px-4 py-3 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-cyan transition-all"
-                    />
+                    <RichTextEditor value={capTesto} onChange={setCapTesto} />
                   </div>
                   <div className="flex gap-3">
                     <HudButton variant="primary" onClick={handleSaveCapitolo} disabled={savingCapitolo || !capTitolo.trim()}>

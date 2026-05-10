@@ -37,7 +37,8 @@ export const Route = createFileRoute("/leggi/$slug")({
         ? capData.map((c: { id: string; titolo: string; testo: string }) => ({
             id: c.id,
             title: c.titolo,
-            content: c.testo.split(/\n\n+/).filter((p: string) => p.trim()),
+            content: [c.testo],
+            isHtml: true,
           }))
         : data.estratto
           ? [{ id: "estratto", title: "Estratto", content: data.estratto.split(/\n\n+/).filter((p: string) => p.trim()) }]
@@ -294,16 +295,24 @@ function ReadPage() {
                 <div className="absolute inset-y-0 left-0 bg-blood" style={{ width: `${((currentIdx + 1) / book.chapters.length) * 100}%` }} />
               </div>
 
-              <div
-                className="mt-10 font-serif text-ink/90 leading-[1.8] space-y-6 max-w-prose"
-                style={{ fontSize: `${1.125 * fontScale}rem` }}
-              >
-                {chapter.content.map((p: string, i: number) => (
-                  <p key={i} className={i === 0 ? "first-letter:font-display first-letter:text-7xl first-letter:float-left first-letter:mr-3 first-letter:leading-none first-letter:text-blood" : ""}>
-                    {p}
-                  </p>
-                ))}
-              </div>
+              {chapter.isHtml ? (
+                <div
+                  className="mt-10 font-serif text-ink/90 leading-[1.8] max-w-prose chapter-prose"
+                  style={{ fontSize: `${1.125 * fontScale}rem` }}
+                  dangerouslySetInnerHTML={{ __html: chapter.content[0] }}
+                />
+              ) : (
+                <div
+                  className="mt-10 font-serif text-ink/90 leading-[1.8] space-y-6 max-w-prose"
+                  style={{ fontSize: `${1.125 * fontScale}rem` }}
+                >
+                  {chapter.content.map((p: string, i: number) => (
+                    <p key={i} className={i === 0 ? "first-letter:font-display first-letter:text-7xl first-letter:float-left first-letter:mr-3 first-letter:leading-none first-letter:text-blood" : ""}>
+                      {p}
+                    </p>
+                  ))}
+                </div>
+              )}
 
               {book.chapters.length > 1 && (
                 <div className="mt-16 flex items-center justify-between border-t border-ink/10 pt-6">
