@@ -340,7 +340,15 @@
 }
 
   /* === CHAPTER PROSE — rendering HTML da editor ricco === */
-  .chapter-prose p { margin-bottom: 1.4em; }
+  .chapter-prose {
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  .chapter-prose p { margin-bottom: 1.4em; font-weight: 400; }
+  .chapter-prose p[style*="text-align:right"], .chapter-prose p[style*="text-align: right"] { text-align: right; }
+  .chapter-prose p[style*="text-align:center"], .chapter-prose p[style*="text-align: center"] { text-align: center; }
+  .chapter-prose p[style*="text-align:justify"], .chapter-prose p[style*="text-align: justify"] { text-align: justify; }
   .chapter-prose p:first-child::first-letter {
     font-family: var(--font-display);
     font-size: 4.5rem;
