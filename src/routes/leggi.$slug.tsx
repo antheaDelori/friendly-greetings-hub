@@ -1,5 +1,5 @@
 import { createFileRoute, Link, notFound, useRouter } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { getBookBySlug, type Book, type Genre } from "@/data/books";
@@ -18,12 +18,30 @@ export const Route = createFileRoute("/leggi/$slug")({
     // Poi cerca su Supabase
     const { data } = await supabase
       .from("books")
-      .select("slug, titolo, descrizione, estratto, genere, anno, letture, copertina_url, file_url, author_name")
+      .select("id, slug, titolo, descrizione, estratto, genere, anno, letture, copertina_url, file_url, author_name")
       .eq("slug", params.slug)
       .eq("disponibile", true)
       .maybeSingle();
 
     if (!data) throw notFound();
+
+    // Carica i capitoli dalla tabella capitoli
+    const { data: capData } = await supabase
+      .from("capitoli")
+      .select("id, ordine, titolo, testo")
+      .eq("book_id", data.id)
+      .order("ordine");
+
+    const chapters: import("@/data/books").Chapter[] =
+      capData && capData.length > 0
+        ? capData.map((c: { id: string; titolo: string; testo: string }) => ({
+            id: c.id,
+            title: c.titolo,
+            content: c.testo.split(/\n\n+/).filter((p: string) => p.trim()),
+          }))
+        : data.estratto
+          ? [{ id: "estratto", title: "Estratto", content: data.estratto.split(/\n\n+/).filter((p: string) => p.trim()) }]
+          : [];
 
     const author = data.author_name || "Autore";
     const book: Book = {
@@ -40,13 +58,7 @@ export const Route = createFileRoute("/leggi/$slug")({
       cover: data.copertina_url ?? logo,
       tagline: data.descrizione?.slice(0, 140) ?? "",
       description: data.descrizione ?? "",
-      chapters: data.estratto
-        ? [{
-            id: "estratto",
-            title: "Estratto",
-            content: data.estratto.split(/\n\n+/).filter((p: string) => p.trim()),
-          }]
-        : [],
+      chapters,
     };
 
     const { data: { session } } = await supabase.auth.getSession();
@@ -115,6 +127,28 @@ function ReadPage() {
   const router = useRouter();
   const [currentIdx, setCurrentIdx] = useState(0);
   const [fontScale, setFontScale] = useState(1);
+  const [resumeBanner, setResumeBanner] = useState(false);
+  const savedIdxRef = useRef<number>(0);
+
+  const bookmarkKey = `reading_pos_${book.slug}`;
+
+  // Leggi il segnalibro salvato al mount
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    const saved = localStorage.getItem(bookmarkKey);
+    if (!saved) return;
+    const { chapterIdx } = JSON.parse(saved) as { chapterIdx: number };
+    if (chapterIdx > 0 && chapterIdx < book.chapters.length) {
+      savedIdxRef.current = chapterIdx;
+      setResumeBanner(true);
+    }
+  }, []);
+
+  // Salva la posizione quando cambia capitolo
+  useEffect(() => {
+    if (!isLoggedIn || book.chapters.length === 0) return;
+    localStorage.setItem(bookmarkKey, JSON.stringify({ chapterIdx: currentIdx }));
+  }, [currentIdx, isLoggedIn]);
 
   const hasChapters = book.chapters.length > 0;
   const chapter = hasChapters ? book.chapters[currentIdx] : null;
@@ -205,6 +239,31 @@ function ReadPage() {
 
         {/* Testo */}
         <article className={!hasChapters ? "lg:col-span-2" : ""}>
+          {resumeBanner && (
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border border-blood/30 bg-blood/5 px-4 py-3">
+              <p className="font-serif italic text-sm text-ink/70">
+                ◈ Segnalibro al capitolo {savedIdxRef.current + 1}
+                {book.chapters[savedIdxRef.current] && (
+                  <span className="text-blood"> — {book.chapters[savedIdxRef.current].title}</span>
+                )}
+              </p>
+              <div className="flex gap-4">
+                <button
+                  onClick={() => { setCurrentIdx(savedIdxRef.current); setResumeBanner(false); }}
+                  className="font-display tracking-widest text-[10px] uppercase text-blood hover:underline"
+                >
+                  Riprendi
+                </button>
+                <button
+                  onClick={() => { localStorage.removeItem(bookmarkKey); setResumeBanner(false); }}
+                  className="font-display tracking-widest text-[10px] uppercase text-ink/30 hover:text-ink"
+                >
+                  Ignora
+                </button>
+              </div>
+            </div>
+          )}
+
           {!isLoggedIn ? (
             <div className="py-20 text-center border-2 border-ink/10 flex flex-col items-center">
               <div className="font-display text-6xl text-ink/15">◈</div>

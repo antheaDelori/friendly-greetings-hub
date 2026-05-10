@@ -5,6 +5,15 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { HudPanel, PageShell, HudButton } from "@/components/HudPanel";
 import { supabase } from "@/lib/supabase";
 
+type Capitolo = {
+  id: string;
+  book_id: string;
+  ordine: number;
+  titolo: string;
+  testo: string;
+  created_at: string;
+};
+
 type Edizione = {
   id: string;
   book_id: string;
@@ -105,6 +114,15 @@ function GestionePage() {
   const [edCopertina, setEdCopertina] = useState<File | null>(null);
   const edCopertinaRef = useRef<HTMLInputElement>(null);
 
+  // Capitoli
+  const [capitoli, setCapitoli] = useState<Capitolo[]>([]);
+  const [showCapitoloForm, setShowCapitoloForm] = useState(false);
+  const [savingCapitolo, setSavingCapitolo] = useState(false);
+  const [editingCapitoloId, setEditingCapitoloId] = useState<string | null>(null);
+  const [capTitolo, setCapTitolo] = useState("");
+  const [capTesto, setCapTesto] = useState("");
+  const [capOrdine, setCapOrdine] = useState(1);
+
   // Campi form
   const [titolo, setTitolo] = useState("");
   const [sottotitolo, setSottotitolo] = useState("");
@@ -186,13 +204,23 @@ function GestionePage() {
   };
 
   useEffect(() => {
-    if (!selected) { setEdizioni([]); setShowEditionForm(false); return; }
+    if (!selected) {
+      setEdizioni([]); setShowEditionForm(false);
+      setCapitoli([]); setShowCapitoloForm(false);
+      return;
+    }
     const loadEdizioni = async () => {
       const { data } = await supabase.from("edizioni").select("*").eq("book_id", selected.id).order("created_at");
       setEdizioni(data ?? []);
     };
+    const loadCapitoli = async () => {
+      const { data } = await supabase.from("capitoli").select("*").eq("book_id", selected.id).order("ordine");
+      setCapitoli(data ?? []);
+    };
     loadEdizioni();
+    loadCapitoli();
     setShowEditionForm(false);
+    setShowCapitoloForm(false);
   }, [selected?.id]);
 
   const handleSelectBook = (b: Book) => {
@@ -393,6 +421,51 @@ function GestionePage() {
   const handleDeleteEdizione = async (id: string) => {
     await supabase.from("edizioni").delete().eq("id", id);
     setEdizioni(prev => prev.filter(e => e.id !== id));
+  };
+
+  const reloadCapitoli = async (bookId: string) => {
+    const { data } = await supabase.from("capitoli").select("*").eq("book_id", bookId).order("ordine");
+    setCapitoli(data ?? []);
+  };
+
+  const handleSaveCapitolo = async () => {
+    if (!selected || !userId || !capTitolo.trim()) return;
+    setSavingCapitolo(true);
+    try {
+      if (editingCapitoloId) {
+        await supabase.from("capitoli").update({
+          titolo: capTitolo.trim(),
+          testo: capTesto.trim(),
+          ordine: capOrdine,
+        }).eq("id", editingCapitoloId);
+      } else {
+        await supabase.from("capitoli").insert({
+          book_id: selected.id,
+          titolo: capTitolo.trim(),
+          testo: capTesto.trim(),
+          ordine: capOrdine,
+        });
+      }
+      await reloadCapitoli(selected.id);
+      setShowCapitoloForm(false);
+      setEditingCapitoloId(null);
+      setCapTitolo(""); setCapTesto(""); setCapOrdine(1);
+    } finally {
+      setSavingCapitolo(false);
+    }
+  };
+
+  const handleDeleteCapitolo = async (id: string) => {
+    await supabase.from("capitoli").delete().eq("id", id);
+    setCapitoli(prev => prev.filter(c => c.id !== id));
+  };
+
+  const handleEditCapitolo = (c: Capitolo) => {
+    setEditingCapitoloId(c.id);
+    setCapTitolo(c.titolo);
+    setCapTesto(c.testo);
+    setCapOrdine(c.ordine);
+    setShowCapitoloForm(true);
   };
 
   const activeBooks = books.filter(b => b.disponibile);
@@ -757,6 +830,87 @@ function GestionePage() {
                       {savingEdition ? "▸ Salvataggio..." : "▸ Salva edizione"}
                     </HudButton>
                     <HudButton variant="ghost" onClick={() => setShowEditionForm(false)}>annulla</HudButton>
+                  </div>
+                </div>
+              )}
+
+              {/* Capitoli */}
+              <div className="hud-divider my-5" />
+              <div className="flex items-center justify-between mb-3">
+                <span className="font-mono text-[10px] tracking-widest text-cyan/70 uppercase">// capitoli</span>
+                {!showCapitoloForm && (
+                  <button
+                    onClick={() => {
+                      setEditingCapitoloId(null);
+                      setCapTitolo("");
+                      setCapTesto("");
+                      setCapOrdine(capitoli.length + 1);
+                      setShowCapitoloForm(true);
+                    }}
+                    className="font-mono text-[10px] tracking-widest text-magenta uppercase hover:text-cyan transition-colors"
+                  >
+                    + nuovo capitolo
+                  </button>
+                )}
+              </div>
+
+              {capitoli.length === 0 && !showCapitoloForm && (
+                <p className="font-serif italic text-bone/40 text-sm mb-3">Nessun capitolo aggiunto.</p>
+              )}
+
+              {capitoli.map((c) => (
+                <div key={c.id} className="flex items-center gap-3 border border-cyan/10 p-3 mb-2">
+                  <span className="font-mono text-[10px] text-cyan/40 w-6 flex-shrink-0">{String(c.ordine).padStart(2, "0")}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-mono text-[10px] uppercase tracking-widest text-bone/70 truncate">{c.titolo}</div>
+                    <div className="font-mono text-[9px] text-bone/30 mt-0.5 truncate">{c.testo.slice(0, 80)}…</div>
+                  </div>
+                  <button onClick={() => handleEditCapitolo(c)} className="font-mono text-[9px] text-cyan/40 hover:text-cyan transition-colors flex-shrink-0">✎</button>
+                  <button onClick={() => handleDeleteCapitolo(c.id)} className="font-mono text-[9px] text-magenta/40 hover:text-magenta transition-colors flex-shrink-0">✕</button>
+                </div>
+              ))}
+
+              {showCapitoloForm && (
+                <div className="border border-cyan/20 bg-cyan/5 p-4 space-y-4 mt-3">
+                  <div className="font-mono text-[9px] tracking-[0.3em] text-cyan/60 uppercase">
+                    // {editingCapitoloId ? "modifica capitolo" : "nuovo capitolo"}
+                  </div>
+                  <div className="grid sm:grid-cols-4 gap-4">
+                    <div>
+                      <span className={labelClass}>↳ Ordine</span>
+                      <input
+                        value={capOrdine}
+                        onChange={e => setCapOrdine(parseInt(e.target.value) || 1)}
+                        type="number" min={1}
+                        className={inputClass}
+                      />
+                    </div>
+                    <div className="sm:col-span-3">
+                      <span className={labelClass}>↳ Titolo capitolo</span>
+                      <input
+                        value={capTitolo}
+                        onChange={e => setCapTitolo(e.target.value)}
+                        placeholder="Es. Capitolo I — L'inizio"
+                        className={inputClass}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <span className={labelClass}>↳ Testo</span>
+                    <textarea
+                      value={capTesto}
+                      onChange={e => setCapTesto(e.target.value)}
+                      placeholder="Il testo del capitolo. Separa i paragrafi con una riga vuota."
+                      className="mt-2 w-full min-h-48 bg-void/40 border border-cyan/30 px-4 py-3 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-cyan transition-all"
+                    />
+                  </div>
+                  <div className="flex gap-3">
+                    <HudButton variant="primary" onClick={handleSaveCapitolo} disabled={savingCapitolo || !capTitolo.trim()}>
+                      {savingCapitolo ? "▸ Salvataggio..." : editingCapitoloId ? "▸ Aggiorna capitolo" : "▸ Salva capitolo"}
+                    </HudButton>
+                    <HudButton variant="ghost" onClick={() => { setShowCapitoloForm(false); setEditingCapitoloId(null); }}>
+                      annulla
+                    </HudButton>
                   </div>
                 </div>
               )}
