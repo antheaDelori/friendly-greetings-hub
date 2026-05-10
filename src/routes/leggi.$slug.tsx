@@ -2,13 +2,51 @@ import { createFileRoute, Link, notFound, useRouter } from "@tanstack/react-rout
 import { useState } from "react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
-import { getBookBySlug } from "@/data/books";
+import { getBookBySlug, type Book, type Genre } from "@/data/books";
+import { supabase } from "@/lib/supabase";
+import logo from "@/assets/logo-liberiamo.jpg";
 
 export const Route = createFileRoute("/leggi/$slug")({
-  loader: ({ params }) => {
-    const book = getBookBySlug(params.slug);
-    if (!book) throw notFound();
-    return { book };
+  loader: async ({ params }) => {
+    // Prima cerca nei libri statici
+    const staticBook = getBookBySlug(params.slug);
+    if (staticBook) return { book: staticBook, fileUrl: null as string | null };
+
+    // Poi cerca su Supabase
+    const { data } = await supabase
+      .from("books")
+      .select("slug, titolo, descrizione, estratto, genere, anno, letture, copertina_url, file_url, author_name")
+      .eq("slug", params.slug)
+      .eq("disponibile", true)
+      .maybeSingle();
+
+    if (!data) throw notFound();
+
+    const author = data.author_name || "Autore";
+    const book: Book = {
+      slug: data.slug,
+      title: data.titolo,
+      author,
+      authorSlug: author.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-"),
+      genre: (["libro", "racconto", "saggio", "articolo"].includes(data.genere)
+        ? data.genere
+        : "libro") as Genre,
+      year: data.anno ?? new Date().getFullYear(),
+      reads: data.letture,
+      rating: 0,
+      cover: data.copertina_url ?? logo,
+      tagline: data.descrizione?.slice(0, 140) ?? "",
+      description: data.descrizione ?? "",
+      chapters: data.estratto
+        ? [{
+            id: "estratto",
+            title: "Estratto",
+            content: data.estratto.split(/\n\n+/).filter((p: string) => p.trim()),
+          }]
+        : [],
+    };
+
+    return { book, fileUrl: data.file_url as string | null };
   },
   head: ({ loaderData }) => ({
     meta: loaderData
@@ -69,10 +107,12 @@ function ReadNotFound() {
 }
 
 function ReadPage() {
-  const { book } = Route.useLoaderData();
+  const { book, fileUrl } = Route.useLoaderData();
   const [currentIdx, setCurrentIdx] = useState(0);
   const [fontScale, setFontScale] = useState(1);
-  const chapter = book.chapters[currentIdx];
+
+  const hasChapters = book.chapters.length > 0;
+  const chapter = hasChapters ? book.chapters[currentIdx] : null;
 
   return (
     <div className="min-h-screen paper-texture flex flex-col">
@@ -81,16 +121,22 @@ function ReadPage() {
       {/* Header opera */}
       <section className="border-b border-ink/10 bg-card">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-10 py-8 flex flex-col md:flex-row gap-8 items-start">
-          <img src={book.cover} alt="" className="w-32 md:w-40 aspect-[3/4] object-cover ring-1 ring-ink/15 shrink-0" />
+          <img src={book.cover} alt="" className="w-32 md:w-40 aspect-[3/4] object-contain ring-1 ring-ink/15 shrink-0 bg-ink/5" />
           <div className="flex-1">
             <div className="font-display tracking-[0.25em] text-xs text-blood uppercase">{book.genre} · {book.year}</div>
             <h1 className="mt-2 font-serif text-4xl md:text-5xl text-ink leading-tight">{book.title}</h1>
             <p className="mt-2 font-serif italic text-lg text-ink/70">di {book.author}</p>
             <p className="mt-4 font-serif text-base text-ink/80 max-w-2xl">{book.description}</p>
             <div className="mt-5 flex flex-wrap gap-3">
-              <button className="inline-flex items-center gap-2 bg-ink text-paper px-4 py-2 font-display tracking-widest text-xs uppercase hover:bg-blood transition-colors">
-                ↓ Scarica
-              </button>
+              {fileUrl ? (
+                <span className="inline-flex items-center gap-2 bg-ink/40 text-paper px-4 py-2 font-display tracking-widest text-xs uppercase cursor-not-allowed opacity-60" title="Download disponibile dopo il login">
+                  ↓ Scarica
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-2 bg-ink/20 text-ink/40 px-4 py-2 font-display tracking-widest text-xs uppercase cursor-not-allowed">
+                  ↓ File non caricato
+                </span>
+              )}
               <button className="inline-flex items-center gap-2 border border-ink text-ink px-4 py-2 font-display tracking-widest text-xs uppercase hover:bg-ink hover:text-paper transition-colors">
                 ★ Recensisci
               </button>
@@ -104,86 +150,101 @@ function ReadPage() {
 
       {/* Lettore */}
       <section className="mx-auto max-w-6xl w-full px-4 sm:px-6 lg:px-10 py-10 grid lg:grid-cols-[260px_1fr] gap-10 flex-1">
-        {/* Sidebar capitoli */}
-        <aside className="lg:sticky lg:top-24 lg:self-start">
-          <div className="font-display tracking-[0.2em] text-xs text-ink/50 mb-4">— capitoli</div>
-          <ol className="space-y-1">
-            {book.chapters.map((c, i) => (
-              <li key={c.id}>
-                <button
-                  onClick={() => setCurrentIdx(i)}
-                  className={`w-full text-left px-3 py-2 font-serif text-base transition-colors border-l-2 ${
-                    i === currentIdx
-                      ? "border-blood bg-card text-ink"
-                      : "border-transparent text-ink/60 hover:text-ink hover:border-ink/30"
-                  }`}
-                >
-                  <span className="font-display text-xs tracking-widest text-ink/40 mr-2">{String(i + 1).padStart(2, "0")}</span>
-                  {c.title}
-                </button>
-              </li>
-            ))}
-          </ol>
 
-          <div className="mt-8 border-t border-ink/10 pt-6">
-            <div className="font-display tracking-[0.2em] text-xs text-ink/50 mb-3">— testo</div>
-            <div className="flex items-center gap-2">
-              <button onClick={() => setFontScale((s) => Math.max(0.85, s - 0.1))} className="font-serif text-sm border border-ink/20 px-3 py-1 hover:border-ink">A−</button>
-              <button onClick={() => setFontScale(1)} className="font-serif text-sm border border-ink/20 px-3 py-1 hover:border-ink">A</button>
-              <button onClick={() => setFontScale((s) => Math.min(1.4, s + 0.1))} className="font-serif text-lg border border-ink/20 px-3 py-1 hover:border-ink">A+</button>
+        {/* Sidebar capitoli */}
+        {hasChapters && (
+          <aside className="lg:sticky lg:top-24 lg:self-start">
+            <div className="font-display tracking-[0.2em] text-xs text-ink/50 mb-4">— capitoli</div>
+            <ol className="space-y-1">
+              {book.chapters.map((c, i) => (
+                <li key={c.id}>
+                  <button
+                    onClick={() => setCurrentIdx(i)}
+                    className={`w-full text-left px-3 py-2 font-serif text-base transition-colors border-l-2 ${
+                      i === currentIdx
+                        ? "border-blood bg-card text-ink"
+                        : "border-transparent text-ink/60 hover:text-ink hover:border-ink/30"
+                    }`}
+                  >
+                    <span className="font-display text-xs tracking-widest text-ink/40 mr-2">{String(i + 1).padStart(2, "0")}</span>
+                    {c.title}
+                  </button>
+                </li>
+              ))}
+            </ol>
+
+            <div className="mt-8 border-t border-ink/10 pt-6">
+              <div className="font-display tracking-[0.2em] text-xs text-ink/50 mb-3">— testo</div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setFontScale((s) => Math.max(0.85, s - 0.1))} className="font-serif text-sm border border-ink/20 px-3 py-1 hover:border-ink">A−</button>
+                <button onClick={() => setFontScale(1)} className="font-serif text-sm border border-ink/20 px-3 py-1 hover:border-ink">A</button>
+                <button onClick={() => setFontScale((s) => Math.min(1.4, s + 0.1))} className="font-serif text-lg border border-ink/20 px-3 py-1 hover:border-ink">A+</button>
+              </div>
             </div>
-          </div>
-        </aside>
+          </aside>
+        )}
 
         {/* Testo */}
-        <article>
-          <div className="font-display tracking-[0.25em] text-xs text-blood">capitolo {currentIdx + 1} di {book.chapters.length}</div>
-          <h2 className="mt-2 font-serif text-3xl md:text-4xl text-ink">{chapter.title}</h2>
+        <article className={!hasChapters ? "lg:col-span-2" : ""}>
+          {chapter ? (
+            <>
+              <div className="font-display tracking-[0.25em] text-xs text-blood">capitolo {currentIdx + 1} di {book.chapters.length}</div>
+              <h2 className="mt-2 font-serif text-3xl md:text-4xl text-ink">{chapter.title}</h2>
 
-          {/* progress */}
-          <div className="mt-6 h-[2px] bg-ink/10 relative">
-            <div className="absolute inset-y-0 left-0 bg-blood" style={{ width: `${((currentIdx + 1) / book.chapters.length) * 100}%` }} />
-          </div>
+              <div className="mt-6 h-[2px] bg-ink/10 relative">
+                <div className="absolute inset-y-0 left-0 bg-blood" style={{ width: `${((currentIdx + 1) / book.chapters.length) * 100}%` }} />
+              </div>
 
-          <div
-            className="mt-10 font-serif text-ink/90 leading-[1.8] space-y-6 max-w-prose"
-            style={{ fontSize: `${1.125 * fontScale}rem` }}
-          >
-            {chapter.content.map((p, i) => (
-              <p key={i} className={i === 0 ? "first-letter:font-display first-letter:text-7xl first-letter:float-left first-letter:mr-3 first-letter:leading-none first-letter:text-blood" : ""}>
-                {p}
-              </p>
-            ))}
-          </div>
+              <div
+                className="mt-10 font-serif text-ink/90 leading-[1.8] space-y-6 max-w-prose"
+                style={{ fontSize: `${1.125 * fontScale}rem` }}
+              >
+                {chapter.content.map((p, i) => (
+                  <p key={i} className={i === 0 ? "first-letter:font-display first-letter:text-7xl first-letter:float-left first-letter:mr-3 first-letter:leading-none first-letter:text-blood" : ""}>
+                    {p}
+                  </p>
+                ))}
+              </div>
 
-          {/* Nav */}
-          <div className="mt-16 flex items-center justify-between border-t border-ink/10 pt-6">
-            <button
-              disabled={currentIdx === 0}
-              onClick={() => setCurrentIdx((i) => Math.max(0, i - 1))}
-              className="font-display tracking-widest text-xs uppercase text-ink hover:text-blood disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            >
-              ← Capitolo precedente
-            </button>
-            <span className="font-display text-xs tracking-widest text-ink/40">
-              {String(currentIdx + 1).padStart(2, "0")} / {String(book.chapters.length).padStart(2, "0")}
-            </span>
-            <button
-              disabled={currentIdx === book.chapters.length - 1}
-              onClick={() => setCurrentIdx((i) => Math.min(book.chapters.length - 1, i + 1))}
-              className="font-display tracking-widest text-xs uppercase text-ink hover:text-blood disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            >
-              Capitolo successivo →
-            </button>
-          </div>
+              {book.chapters.length > 1 && (
+                <div className="mt-16 flex items-center justify-between border-t border-ink/10 pt-6">
+                  <button
+                    disabled={currentIdx === 0}
+                    onClick={() => setCurrentIdx((i) => Math.max(0, i - 1))}
+                    className="font-display tracking-widest text-xs uppercase text-ink hover:text-blood disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  >
+                    ← Capitolo precedente
+                  </button>
+                  <span className="font-display text-xs tracking-widest text-ink/40">
+                    {String(currentIdx + 1).padStart(2, "0")} / {String(book.chapters.length).padStart(2, "0")}
+                  </span>
+                  <button
+                    disabled={currentIdx === book.chapters.length - 1}
+                    onClick={() => setCurrentIdx((i) => Math.min(book.chapters.length - 1, i + 1))}
+                    className="font-display tracking-widest text-xs uppercase text-ink hover:text-blood disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Capitolo successivo →
+                  </button>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="py-16 text-center border-2 border-ink/10">
+              <div className="font-display text-5xl text-ink/20">◊</div>
+              <p className="mt-4 font-serif italic text-xl text-ink/50">Nessun estratto disponibile per questa opera.</p>
+              {fileUrl && (
+                <p className="mt-2 font-serif text-sm text-ink/40">Scarica il file per leggere il contenuto completo.</p>
+              )}
+            </div>
+          )}
 
           {/* Community placeholder */}
           <div className="mt-16 border-2 border-ink p-6 md:p-8 bg-card">
             <div className="font-display tracking-[0.25em] text-xs text-blood">— community</div>
-            <h3 className="mt-2 font-serif text-2xl text-ink">Cosa ne pensi di questo capitolo?</h3>
-            <p className="mt-2 font-serif text-ink/70">Lascia un commento, una recensione o segui l'autore. (Disponibile dopo il login — Step 2.)</p>
+            <h3 className="mt-2 font-serif text-2xl text-ink">Cosa ne pensi?</h3>
+            <p className="mt-2 font-serif text-ink/70">Lascia un commento, una recensione o segui l'autore. (Disponibile dopo il login.)</p>
             <textarea
-              placeholder="Scrivi un commento al capitolo..."
+              placeholder="Scrivi un commento..."
               className="mt-4 w-full min-h-24 bg-paper border border-ink/20 p-3 font-serif focus:outline-none focus:border-blood transition-colors"
               disabled
             />
