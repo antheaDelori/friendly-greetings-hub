@@ -1,9 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect, useRef } from "react";
+import { z } from "zod";
 import { HudPanel, PageShell, HudButton } from "@/components/HudPanel";
 import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/auth/")({
+  validateSearch: z.object({
+    returnTo: z.string().optional(),
+  }),
   component: AuthLanding,
 });
 
@@ -11,11 +15,18 @@ const inputClass = "mt-2 w-full bg-void/40 border border-cyan/30 px-4 py-3 font-
 const labelClass = "font-mono text-[10px] tracking-[0.25em] text-cyan/70 uppercase";
 
 function AuthLanding() {
+  const { returnTo } = Route.useSearch();
+  const returnToRef = useRef(returnTo);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const loginAttempted = useRef(false);
+
+  useEffect(() => {
+    returnToRef.current = returnTo;
+  }, [returnTo]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -51,9 +62,9 @@ function AuthLanding() {
             event: "login", status: "success",
           });
 
-          window.location.replace("/");
+          window.location.replace(returnToRef.current || "/");
         } catch {
-          window.location.replace("/");
+          window.location.replace(returnToRef.current || "/");
         }
       }, 0);
     });
@@ -78,6 +89,18 @@ function AuthLanding() {
       setError("Errore di connessione. Riprova.");
       setLoading(false);
     }
+  };
+
+  const handleGuestLogin = async () => {
+    setError(null);
+    setLoading(true);
+    const { error } = await supabase.auth.signInAnonymously();
+    if (error) {
+      setError("Errore durante l'accesso come ospite. Riprova.");
+      setLoading(false);
+      return;
+    }
+    window.location.replace(returnTo || "/catalogo");
   };
 
   return (
@@ -135,9 +158,11 @@ function AuthLanding() {
         <HudPanel label="opzione 03 — solo lettore" tone="amber">
           <h3 className="font-display text-2xl text-bone tracking-tight">Solo lettore</h3>
           <p className="mt-3 font-serif italic text-bone/70">Accesso gratuito a tutti i contenuti pubblici. Nessuna registrazione.</p>
-          <Link to="/catalogo" className="mt-6 inline-block">
-            <HudButton variant="ghost">▸ Entra come ospite</HudButton>
-          </Link>
+          <button onClick={handleGuestLogin} disabled={loading} className="mt-6 inline-block">
+            <HudButton variant="ghost" disabled={loading}>
+              {loading ? "▸ Accesso..." : "▸ Entra come ospite"}
+            </HudButton>
+          </button>
         </HudPanel>
 
       </div>

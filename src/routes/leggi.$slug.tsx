@@ -148,7 +148,7 @@ function ReadPage() {
                   ↓ Scarica
                 </span>
               ) : fileUrl && !isLoggedIn ? (
-                <Link to="/auth/" className="inline-flex items-center gap-2 bg-ink text-paper px-4 py-2 font-display tracking-widest text-xs uppercase hover:bg-blood transition-colors">
+                <Link to="/auth/" search={{ returnTo: `/leggi/${book.slug}` }} className="inline-flex items-center gap-2 bg-ink text-paper px-4 py-2 font-display tracking-widest text-xs uppercase hover:bg-blood transition-colors">
                   ↓ Scarica (accedi)
                 </Link>
               ) : (
@@ -214,6 +214,7 @@ function ReadPage() {
               </p>
               <Link
                 to="/auth/"
+                search={{ returnTo: `/leggi/${book.slug}` }}
                 className="mt-7 inline-block bg-ink text-paper px-7 py-3 font-display tracking-widest text-xs uppercase hover:bg-blood transition-colors"
               >
                 Accedi o registrati
