@@ -96,7 +96,7 @@ function AuthLanding() {
     setLoading(true);
     const { error } = await supabase.auth.signInAnonymously();
     if (error) {
-      setError("Errore durante l'accesso come ospite. Riprova.");
+      setError(`Ospite: ${error.message}`);
       setLoading(false);
       return;
     }
