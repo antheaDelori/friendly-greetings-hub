@@ -10,7 +10,10 @@ export const Route = createFileRoute("/leggi/$slug")({
   loader: async ({ params }) => {
     // Prima cerca nei libri statici
     const staticBook = getBookBySlug(params.slug);
-    if (staticBook) return { book: staticBook, fileUrl: null as string | null };
+    if (staticBook) {
+      const { data: { session } } = await supabase.auth.getSession();
+      return { book: staticBook, fileUrl: null as string | null, isLoggedIn: !!session };
+    }
 
     // Poi cerca su Supabase
     const { data } = await supabase
@@ -46,7 +49,8 @@ export const Route = createFileRoute("/leggi/$slug")({
         : [],
     };
 
-    return { book, fileUrl: data.file_url as string | null };
+    const { data: { session } } = await supabase.auth.getSession();
+    return { book, fileUrl: data.file_url as string | null, isLoggedIn: !!session };
   },
   head: ({ loaderData }) => ({
     meta: loaderData
@@ -107,7 +111,7 @@ function ReadNotFound() {
 }
 
 function ReadPage() {
-  const { book, fileUrl } = Route.useLoaderData();
+  const { book, fileUrl, isLoggedIn } = Route.useLoaderData();
   const [currentIdx, setCurrentIdx] = useState(0);
   const [fontScale, setFontScale] = useState(1);
 
@@ -128,10 +132,14 @@ function ReadPage() {
             <p className="mt-2 font-serif italic text-lg text-ink/70">di {book.author}</p>
             <p className="mt-4 font-serif text-base text-ink/80 max-w-2xl">{book.description}</p>
             <div className="mt-5 flex flex-wrap gap-3">
-              {fileUrl ? (
-                <span className="inline-flex items-center gap-2 bg-ink/40 text-paper px-4 py-2 font-display tracking-widest text-xs uppercase cursor-not-allowed opacity-60" title="Download disponibile dopo il login">
+              {fileUrl && isLoggedIn ? (
+                <span className="inline-flex items-center gap-2 bg-ink/40 text-paper px-4 py-2 font-display tracking-widest text-xs uppercase cursor-not-allowed opacity-60" title="Download in arrivo">
                   ↓ Scarica
                 </span>
+              ) : fileUrl && !isLoggedIn ? (
+                <Link to="/auth/" className="inline-flex items-center gap-2 bg-ink text-paper px-4 py-2 font-display tracking-widest text-xs uppercase hover:bg-blood transition-colors">
+                  ↓ Scarica (accedi)
+                </Link>
               ) : (
                 <span className="inline-flex items-center gap-2 bg-ink/20 text-ink/40 px-4 py-2 font-display tracking-widest text-xs uppercase cursor-not-allowed">
                   ↓ File non caricato
@@ -156,7 +164,7 @@ function ReadPage() {
           <aside className="lg:sticky lg:top-24 lg:self-start">
             <div className="font-display tracking-[0.2em] text-xs text-ink/50 mb-4">— capitoli</div>
             <ol className="space-y-1">
-              {book.chapters.map((c, i) => (
+              {book.chapters.map((c: { id: string; title: string; content: string[] }, i: number) => (
                 <li key={c.id}>
                   <button
                     onClick={() => setCurrentIdx(i)}
@@ -186,7 +194,24 @@ function ReadPage() {
 
         {/* Testo */}
         <article className={!hasChapters ? "lg:col-span-2" : ""}>
-          {chapter ? (
+          {!isLoggedIn ? (
+            <div className="py-20 text-center border-2 border-ink/10 flex flex-col items-center">
+              <div className="font-display text-6xl text-ink/15">◈</div>
+              <h2 className="mt-4 font-serif text-2xl text-ink">Contenuto riservato</h2>
+              <p className="mt-3 font-serif italic text-ink/60 max-w-sm">
+                L'estratto e i capitoli sono disponibili per i lettori registrati. L'accesso è gratuito.
+              </p>
+              <Link
+                to="/auth/"
+                className="mt-7 inline-block bg-ink text-paper px-7 py-3 font-display tracking-widest text-xs uppercase hover:bg-blood transition-colors"
+              >
+                Accedi o registrati
+              </Link>
+              <p className="mt-4 font-serif text-xs text-ink/30">
+                Puoi continuare a sfogliare il catalogo senza accesso.
+              </p>
+            </div>
+          ) : chapter ? (
             <>
               <div className="font-display tracking-[0.25em] text-xs text-blood">capitolo {currentIdx + 1} di {book.chapters.length}</div>
               <h2 className="mt-2 font-serif text-3xl md:text-4xl text-ink">{chapter.title}</h2>
@@ -199,7 +224,7 @@ function ReadPage() {
                 className="mt-10 font-serif text-ink/90 leading-[1.8] space-y-6 max-w-prose"
                 style={{ fontSize: `${1.125 * fontScale}rem` }}
               >
-                {chapter.content.map((p, i) => (
+                {chapter.content.map((p: string, i: number) => (
                   <p key={i} className={i === 0 ? "first-letter:font-display first-letter:text-7xl first-letter:float-left first-letter:mr-3 first-letter:leading-none first-letter:text-blood" : ""}>
                     {p}
                   </p>
