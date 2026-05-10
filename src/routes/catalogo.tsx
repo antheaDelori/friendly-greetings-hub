@@ -1,11 +1,18 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState, useEffect } from "react";
+import { z } from "zod";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { BookCard } from "@/components/BookCard";
 import { books as staticBooks, genres, type Genre, type Book } from "@/data/books";
 import { supabase } from "@/lib/supabase";
 import logo from "@/assets/logo-liberiamo.jpg";
+
+const searchSchema = z.object({
+  q: z.string().default(""),
+  genre: z.enum(["tutti", "libro", "racconto", "saggio", "articolo"]).default("tutti"),
+  sort: z.enum(["letti", "recenti", "anno", "rating"]).default("recenti"),
+});
 
 // Un solo placeholder fittizio (il terzo libro, inserito domani)
 const PLACEHOLDER: Book[] = [staticBooks[2]];
@@ -42,6 +49,7 @@ function dbToBook(b: DbBook): Book {
 }
 
 export const Route = createFileRoute("/catalogo")({
+  validateSearch: searchSchema,
   head: () => ({
     meta: [
       { title: "Catalogo — Liberiamo la mente" },
@@ -53,13 +61,18 @@ export const Route = createFileRoute("/catalogo")({
   component: CatalogoPage,
 });
 
-type Sort = "letti" | "recenti" | "anno" | "rating";
-
 function CatalogoPage() {
-  const [q, setQ] = useState("");
-  const [genre, setGenre] = useState<Genre | "tutti">("tutti");
-  const [sort, setSort] = useState<Sort>("recenti");
+  const { q, genre, sort } = Route.useSearch();
+  const navigate = useNavigate({ from: "/catalogo" });
   const [dbBooks, setDbBooks] = useState<Book[]>([]);
+
+  type Search = z.infer<typeof searchSchema>;
+  const setQ = (val: string) =>
+    navigate({ search: (prev: Search) => ({ ...prev, q: val }), replace: true });
+  const setGenre = (val: Genre | "tutti") =>
+    navigate({ search: (prev: Search) => ({ ...prev, genre: val }), replace: true });
+  const setSort = (val: "letti" | "recenti" | "anno" | "rating") =>
+    navigate({ search: (prev: Search) => ({ ...prev, sort: val }), replace: true });
 
   useEffect(() => {
     const fetchBooks = async () => {
@@ -155,7 +168,7 @@ function CatalogoPage() {
               ["letti", "Più letti"],
               ["rating", "Top rated"],
               ["anno", "Anno ↑"],
-            ] as [Sort, string][]).map(([key, label]) => (
+            ] as ["letti" | "recenti" | "anno" | "rating", string][]).map(([key, label]) => (
               <button
                 key={key}
                 onClick={() => setSort(key)}

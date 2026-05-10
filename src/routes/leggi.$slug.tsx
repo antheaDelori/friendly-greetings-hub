@@ -112,6 +112,7 @@ function ReadNotFound() {
 
 function ReadPage() {
   const { book, fileUrl, isLoggedIn } = Route.useLoaderData();
+  const router = useRouter();
   const [currentIdx, setCurrentIdx] = useState(0);
   const [fontScale, setFontScale] = useState(1);
 
@@ -122,8 +123,18 @@ function ReadPage() {
     <div className="min-h-screen paper-texture flex flex-col">
       <SiteHeader />
 
+      {/* Breadcrumb back */}
+      <div className="mx-auto max-w-6xl w-full px-4 sm:px-6 lg:px-10 pt-5">
+        <button
+          onClick={() => router.history.back()}
+          className="inline-flex items-center gap-1.5 font-display tracking-widest text-[10px] uppercase text-ink/40 hover:text-ink transition-colors"
+        >
+          ← Indietro
+        </button>
+      </div>
+
       {/* Header opera */}
-      <section className="border-b border-ink/10 bg-card">
+      <section className="border-b border-ink/10 bg-card mt-3">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-10 py-8 flex flex-col md:flex-row gap-8 items-start">
           <img src={book.cover} alt="" className="w-32 md:w-40 aspect-[3/4] object-contain ring-1 ring-ink/15 shrink-0 bg-ink/5" />
           <div className="flex-1">
@@ -207,9 +218,12 @@ function ReadPage() {
               >
                 Accedi o registrati
               </Link>
-              <p className="mt-4 font-serif text-xs text-ink/30">
-                Puoi continuare a sfogliare il catalogo senza accesso.
-              </p>
+              <button
+                onClick={() => router.history.back()}
+                className="mt-3 font-display tracking-widest text-[10px] uppercase text-ink/40 hover:text-ink transition-colors"
+              >
+                ← Torna al catalogo
+              </button>
             </div>
           ) : chapter ? (
             <>
