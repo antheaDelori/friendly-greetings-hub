@@ -119,6 +119,7 @@ function GestionePage() {
   const [capitoli, setCapitoli] = useState<Capitolo[]>([]);
   const [showCapitoloForm, setShowCapitoloForm] = useState(false);
   const [savingCapitolo, setSavingCapitolo] = useState(false);
+  const [capError, setCapError] = useState<string | null>(null);
   const [editingCapitoloId, setEditingCapitoloId] = useState<string | null>(null);
   const [capTitolo, setCapTitolo] = useState("");
   const [capTesto, setCapTesto] = useState("");
@@ -432,25 +433,31 @@ function GestionePage() {
   const handleSaveCapitolo = async () => {
     if (!selected || !userId || !capTitolo.trim()) return;
     setSavingCapitolo(true);
+    setCapError(null);
     try {
       if (editingCapitoloId) {
-        await supabase.from("capitoli").update({
+        const { error } = await supabase.from("capitoli").update({
           titolo: capTitolo.trim(),
-          testo: capTesto.trim(),
+          testo: capTesto || "",
           ordine: capOrdine,
         }).eq("id", editingCapitoloId);
+        if (error) throw error;
       } else {
-        await supabase.from("capitoli").insert({
+        const { error } = await supabase.from("capitoli").insert({
           book_id: selected.id,
           titolo: capTitolo.trim(),
-          testo: capTesto.trim(),
+          testo: capTesto || "",
           ordine: capOrdine,
         });
+        if (error) throw error;
       }
       await reloadCapitoli(selected.id);
       setShowCapitoloForm(false);
       setEditingCapitoloId(null);
       setCapTitolo(""); setCapTesto(""); setCapOrdine(1);
+    } catch (err: unknown) {
+      const msg = (err as { message?: string })?.message ?? "Errore durante il salvataggio.";
+      setCapError(msg);
     } finally {
       setSavingCapitolo(false);
     }
@@ -846,6 +853,7 @@ function GestionePage() {
                       setCapTitolo("");
                       setCapTesto("");
                       setCapOrdine(capitoli.length + 1);
+                      setCapError(null);
                       setShowCapitoloForm(true);
                     }}
                     className="font-mono text-[10px] tracking-widest text-magenta uppercase hover:text-cyan transition-colors"
@@ -900,11 +908,16 @@ function GestionePage() {
                     <span className={labelClass}>↳ Testo</span>
                     <RichTextEditor value={capTesto} onChange={setCapTesto} />
                   </div>
+                  {capError && (
+                    <p className="font-mono text-[11px] text-magenta border border-magenta/30 bg-magenta/5 px-4 py-3">
+                      ⚠ {capError}
+                    </p>
+                  )}
                   <div className="flex gap-3">
                     <HudButton variant="primary" onClick={handleSaveCapitolo} disabled={savingCapitolo || !capTitolo.trim()}>
                       {savingCapitolo ? "▸ Salvataggio..." : editingCapitoloId ? "▸ Aggiorna capitolo" : "▸ Salva capitolo"}
                     </HudButton>
-                    <HudButton variant="ghost" onClick={() => { setShowCapitoloForm(false); setEditingCapitoloId(null); }}>
+                    <HudButton variant="ghost" onClick={() => { setShowCapitoloForm(false); setEditingCapitoloId(null); setCapError(null); }}>
                       annulla
                     </HudButton>
                   </div>
