@@ -152,6 +152,7 @@ function GestionePage() {
   const [allegaDescrizione, setAllegaDescrizione] = useState("");
   const [allegaFile, setAllegaFile] = useState<File | null>(null);
   const [confirmDeleteAllegatoId, setConfirmDeleteAllegatoId] = useState<string | null>(null);
+  const [editingAllegatoId, setEditingAllegatoId] = useState<string | null>(null);
   const allegaFileRef = useRef<HTMLInputElement>(null);
 
   // Campi form
@@ -504,32 +505,64 @@ function GestionePage() {
     setCapitoli(prev => prev.filter(c => c.id !== id));
   };
 
+  const handleEditAllegato = (a: Allegato) => {
+    setEditingAllegatoId(a.id);
+    setAllegaTitolo(a.titolo);
+    setAllegaDescrizione(a.descrizione ?? "");
+    setAllegaFile(null);
+    if (allegaFileRef.current) allegaFileRef.current.value = "";
+    setAllegaError(null);
+    setShowAllegatoForm(true);
+  };
+
   const handleSaveAllegato = async () => {
-    if (!selected || !allegaFile || !allegaTitolo.trim()) return;
+    if (!selected || !allegaTitolo.trim()) return;
+    if (!editingAllegatoId && !allegaFile) return;
     setSavingAllegato(true);
     setAllegaError(null);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Non autenticato.");
-      const ext = allegaFile.name.split(".").pop()?.toLowerCase() ?? "bin";
-      const path = `${user.id}/${selected.id}-${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage.from("allegati").upload(path, allegaFile, { upsert: false });
-      if (upErr) throw upErr;
-      const { data: urlData } = supabase.storage.from("allegati").getPublicUrl(path);
       const imageExts = ["jpg", "jpeg", "png", "gif", "webp", "svg"];
-      const tipo = imageExts.includes(ext) ? "immagine" : ext === "pdf" ? "pdf" : "altro";
-      const { error: dbErr } = await supabase.from("allegati").insert({
-        book_id: selected.id,
-        titolo: allegaTitolo.trim(),
-        descrizione: allegaDescrizione.trim() || null,
-        file_url: urlData.publicUrl,
-        tipo,
-        ordine: allegati.length + 1,
-      });
-      if (dbErr) throw dbErr;
+
+      let file_url: string | undefined;
+      let tipo: string | undefined;
+
+      if (allegaFile) {
+        const ext = allegaFile.name.split(".").pop()?.toLowerCase() ?? "bin";
+        const path = `${user.id}/${selected.id}-${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("allegati").upload(path, allegaFile, { upsert: false });
+        if (upErr) throw upErr;
+        const { data: urlData } = supabase.storage.from("allegati").getPublicUrl(path);
+        file_url = urlData.publicUrl;
+        tipo = imageExts.includes(ext) ? "immagine" : ext === "pdf" ? "pdf" : "altro";
+      }
+
+      if (editingAllegatoId) {
+        const update: Record<string, unknown> = {
+          titolo: allegaTitolo.trim(),
+          descrizione: allegaDescrizione.trim() || null,
+        };
+        if (file_url) { update.file_url = file_url; update.tipo = tipo; }
+        const { error: dbErr } = await supabase.from("allegati").update(update).eq("id", editingAllegatoId);
+        if (dbErr) throw dbErr;
+      } else {
+        const ext = allegaFile!.name.split(".").pop()?.toLowerCase() ?? "bin";
+        const { error: dbErr } = await supabase.from("allegati").insert({
+          book_id: selected.id,
+          titolo: allegaTitolo.trim(),
+          descrizione: allegaDescrizione.trim() || null,
+          file_url,
+          tipo: imageExts.includes(ext) ? "immagine" : ext === "pdf" ? "pdf" : "altro",
+          ordine: allegati.length + 1,
+        });
+        if (dbErr) throw dbErr;
+      }
+
       const { data } = await supabase.from("allegati").select("*").eq("book_id", selected.id).order("ordine");
       setAllegati(data ?? []);
       setAllegaTitolo(""); setAllegaDescrizione(""); setAllegaFile(null);
+      setEditingAllegatoId(null);
       if (allegaFileRef.current) allegaFileRef.current.value = "";
       setShowAllegatoForm(false);
     } catch (err: unknown) {
@@ -1074,17 +1107,28 @@ function GestionePage() {
                         className="font-mono text-[9px] text-bone/50 border border-bone/20 hover:border-bone/50 hover:text-bone px-2 py-1 transition-colors">No</button>
                     </div>
                   ) : (
-                    <button onClick={() => setConfirmDeleteAllegatoId(a.id)}
-                      className="flex items-center gap-1 font-mono text-[10px] text-magenta/50 hover:text-magenta border border-transparent hover:border-magenta/40 hover:bg-magenta/5 px-2 py-1 transition-colors flex-shrink-0">
-                      ✕ <span className="hidden sm:inline tracking-widest uppercase">Elimina</span>
-                    </button>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <button
+                        onClick={() => handleEditAllegato(a)}
+                        title="Modifica materiale"
+                        className="flex items-center gap-1 font-mono text-[10px] text-cyan/50 hover:text-cyan border border-transparent hover:border-cyan/40 hover:bg-cyan/5 px-2 py-1 transition-colors"
+                      >
+                        ✎ <span className="hidden sm:inline tracking-widest uppercase">Modifica</span>
+                      </button>
+                      <button onClick={() => setConfirmDeleteAllegatoId(a.id)}
+                        className="flex items-center gap-1 font-mono text-[10px] text-magenta/50 hover:text-magenta border border-transparent hover:border-magenta/40 hover:bg-magenta/5 px-2 py-1 transition-colors">
+                        ✕ <span className="hidden sm:inline tracking-widest uppercase">Elimina</span>
+                      </button>
+                    </div>
                   )}
                 </div>
               ))}
 
               {showAllegatoForm && (
                 <div className="border border-cyan/20 bg-cyan/5 p-4 space-y-4 mt-3">
-                  <div className="font-mono text-[9px] tracking-[0.3em] text-cyan/60 uppercase">// nuovo materiale</div>
+                  <div className="font-mono text-[9px] tracking-[0.3em] text-cyan/60 uppercase">
+                    {editingAllegatoId ? "// modifica materiale" : "// nuovo materiale"}
+                  </div>
                   <div>
                     <span className={labelClass}>↳ Titolo</span>
                     <input value={allegaTitolo} onChange={e => setAllegaTitolo(e.target.value)}
@@ -1102,7 +1146,9 @@ function GestionePage() {
                     />
                   </div>
                   <div>
-                    <span className={labelClass}>↳ File (immagine o PDF)</span>
+                    <span className={labelClass}>
+                      ↳ File (immagine o PDF){editingAllegatoId && " — lascia vuoto per mantenere quello attuale"}
+                    </span>
                     <input ref={allegaFileRef} type="file" accept="image/*,.pdf"
                       onChange={e => setAllegaFile(e.target.files?.[0] ?? null)}
                       className={inputClass + " cursor-pointer file:mr-3 file:font-mono file:text-[10px] file:border file:border-cyan/30 file:bg-transparent file:text-cyan/70 file:px-2 file:py-1"} />
@@ -1114,10 +1160,11 @@ function GestionePage() {
                     <p className="font-mono text-[11px] text-magenta border border-magenta/30 bg-magenta/5 px-4 py-3">⚠ {allegaError}</p>
                   )}
                   <div className="flex gap-3">
-                    <HudButton variant="primary" onClick={handleSaveAllegato} disabled={savingAllegato || !allegaTitolo.trim() || !allegaFile}>
-                      {savingAllegato ? "▸ Caricamento..." : "▸ Salva materiale"}
+                    <HudButton variant="primary" onClick={handleSaveAllegato}
+                      disabled={savingAllegato || !allegaTitolo.trim() || (!editingAllegatoId && !allegaFile)}>
+                      {savingAllegato ? "▸ Salvataggio..." : editingAllegatoId ? "▸ Aggiorna materiale" : "▸ Salva materiale"}
                     </HudButton>
-                    <HudButton variant="ghost" onClick={() => { setShowAllegatoForm(false); setAllegaError(null); }}>annulla</HudButton>
+                    <HudButton variant="ghost" onClick={() => { setShowAllegatoForm(false); setEditingAllegatoId(null); setAllegaError(null); }}>annulla</HudButton>
                   </div>
                 </div>
               )}
