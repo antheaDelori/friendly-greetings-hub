@@ -142,17 +142,28 @@ function ReadPage() {
 
   const bookmarkKey = `reading_pos_${book.slug}`;
 
+  const [downloading, setDownloading] = useState(false);
+
   const handleDownload = async () => {
-    if (!fileUrl) return;
+    if (!fileUrl || downloading) return;
     const match = fileUrl.match(/\/storage\/v1\/object\/(?:public|authenticated)\/libri\/(.+)$/);
-    if (!match) { window.open(fileUrl); return; }
+    if (!match) { window.open(fileUrl, "_blank"); return; }
     const path = decodeURIComponent(match[1]);
-    const { data, error } = await supabase.storage.from("libri").createSignedUrl(path, 120);
-    if (error || !data) { alert("Errore nel download. Riprova."); return; }
-    const a = document.createElement("a");
-    a.href = data.signedUrl;
-    a.download = path.split("/").pop() ?? "download";
-    a.click();
+    setDownloading(true);
+    try {
+      const { data: blob, error } = await supabase.storage.from("libri").download(path);
+      if (error || !blob) { alert("Errore nel download. Riprova."); return; }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = path.split("/").pop() ?? "libro";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } finally {
+      setDownloading(false);
+    }
   };
 
   // Leggi il segnalibro salvato al mount
@@ -203,9 +214,10 @@ function ReadPage() {
               {fileUrl && isLoggedIn && !isAnonymous ? (
                 <button
                   onClick={handleDownload}
-                  className="inline-flex items-center gap-2 bg-ink text-paper px-4 py-2 font-display tracking-widest text-xs uppercase hover:bg-blood transition-colors"
+                  disabled={downloading}
+                  className="inline-flex items-center gap-2 bg-ink text-paper px-4 py-2 font-display tracking-widest text-xs uppercase hover:bg-blood transition-colors disabled:opacity-50 disabled:cursor-wait"
                 >
-                  ↓ Scarica
+                  {downloading ? "↓ Scaricamento…" : "↓ Scarica"}
                 </button>
               ) : fileUrl && isLoggedIn && isAnonymous ? (
                 <Link
