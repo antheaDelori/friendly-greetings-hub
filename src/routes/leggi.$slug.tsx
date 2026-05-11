@@ -62,8 +62,20 @@ export const Route = createFileRoute("/leggi/$slug")({
       chapters,
     };
 
+    const { data: allegatiData } = await supabase
+      .from("allegati")
+      .select("id, titolo, file_url, tipo, ordine")
+      .eq("book_id", data.id)
+      .order("ordine");
+
     const { data: { session } } = await supabase.auth.getSession();
-    return { book, fileUrl: data.file_url as string | null, isLoggedIn: !!session, isAnonymous: session?.user?.is_anonymous ?? false };
+    return {
+      book,
+      fileUrl: data.file_url as string | null,
+      isLoggedIn: !!session,
+      isAnonymous: session?.user?.is_anonymous ?? false,
+      allegati: (allegatiData ?? []) as { id: string; titolo: string; file_url: string; tipo: string; ordine: number }[],
+    };
   },
   head: ({ loaderData }) => ({
     meta: loaderData
@@ -133,7 +145,8 @@ function chapterReadingTime(chapter: import("@/data/books").Chapter): string {
 }
 
 function ReadPage() {
-  const { book, fileUrl, isLoggedIn, isAnonymous } = Route.useLoaderData();
+  const { book, fileUrl, isLoggedIn, isAnonymous, allegati } = Route.useLoaderData();
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const router = useRouter();
   const [currentIdx, setCurrentIdx] = useState(0);
   const [fontScale, setFontScale] = useState(1);
@@ -409,6 +422,44 @@ function ReadPage() {
             </div>
           )}
 
+          {/* Materiali extra */}
+          {allegati.length > 0 && (
+            <div className="mt-16">
+              <div className="font-display tracking-[0.25em] text-xs text-blood mb-4">— materiali extra</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {allegati.map(a => (
+                  <div key={a.id} className="border border-ink/20 bg-card p-4 flex gap-4 items-start">
+                    {a.tipo === "immagine" ? (
+                      <>
+                        <button onClick={() => setLightboxUrl(a.file_url)} className="flex-shrink-0 w-20 h-20 overflow-hidden border border-ink/10 hover:border-blood transition-colors">
+                          <img src={a.file_url} alt={a.titolo} className="w-full h-full object-cover" />
+                        </button>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-display tracking-widest text-xs uppercase text-ink">{a.titolo}</div>
+                          <button onClick={() => setLightboxUrl(a.file_url)}
+                            className="mt-2 font-mono text-[10px] tracking-widest text-blood uppercase hover:underline">
+                            ◈ Visualizza
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex-shrink-0 w-20 h-20 flex items-center justify-center border border-ink/10 text-3xl text-ink/30">↓</div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-display tracking-widest text-xs uppercase text-ink">{a.titolo}</div>
+                          <a href={a.file_url} target="_blank" rel="noopener noreferrer"
+                            className="mt-2 inline-block font-mono text-[10px] tracking-widest text-blood uppercase hover:underline">
+                            ↓ Scarica
+                          </a>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Community placeholder */}
           <div className="mt-16 border-2 border-ink p-6 md:p-8 bg-card">
             <div className="font-display tracking-[0.25em] text-xs text-blood">— community</div>
@@ -428,6 +479,25 @@ function ReadPage() {
       </section>
 
       <SiteFooter />
+
+      {/* Lightbox immagine */}
+      {lightboxUrl && (
+        <div
+          className="fixed inset-0 z-50 bg-void/95 flex items-center justify-center p-4 cursor-zoom-out"
+          onClick={() => setLightboxUrl(null)}
+        >
+          <button
+            onClick={() => setLightboxUrl(null)}
+            className="absolute top-4 right-5 font-mono text-ink/50 hover:text-ink text-2xl transition-colors"
+          >✕</button>
+          <img
+            src={lightboxUrl}
+            alt=""
+            className="max-w-full max-h-[90vh] object-contain shadow-2xl cursor-default"
+            onClick={e => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 }
