@@ -804,7 +804,13 @@ function GestionePage() {
                       {[e.anno, e.isbn].filter(Boolean).join(" · ")}
                     </div>
                   </div>
-                  <button onClick={() => handleDeleteEdizione(e.id)} className="font-mono text-[9px] text-magenta/40 hover:text-magenta transition-colors flex-shrink-0">✕</button>
+                  <button
+                    onClick={() => handleDeleteEdizione(e.id)}
+                    title="Elimina edizione"
+                    className="flex items-center gap-1 font-mono text-[10px] text-magenta/50 hover:text-magenta border border-transparent hover:border-magenta/40 hover:bg-magenta/5 px-2 py-1 transition-colors flex-shrink-0"
+                  >
+                    ✕ <span className="hidden sm:inline tracking-widest uppercase">Elimina</span>
+                  </button>
                 </div>
               ))}
 
@@ -874,8 +880,20 @@ function GestionePage() {
                     <div className="font-mono text-[10px] uppercase tracking-widest text-bone/70 truncate">{c.titolo}</div>
                     <div className="font-mono text-[9px] text-bone/30 mt-0.5 truncate">{c.testo.slice(0, 80)}…</div>
                   </div>
-                  <button onClick={() => handleEditCapitolo(c)} className="font-mono text-[9px] text-cyan/40 hover:text-cyan transition-colors flex-shrink-0">✎</button>
-                  <button onClick={() => handleDeleteCapitolo(c.id)} className="font-mono text-[9px] text-magenta/40 hover:text-magenta transition-colors flex-shrink-0">✕</button>
+                  <button
+                    onClick={() => handleEditCapitolo(c)}
+                    title="Modifica capitolo"
+                    className="flex items-center gap-1 font-mono text-[10px] text-cyan/50 hover:text-cyan border border-transparent hover:border-cyan/40 hover:bg-cyan/5 px-2 py-1 transition-colors flex-shrink-0"
+                  >
+                    ✎ <span className="hidden sm:inline tracking-widest uppercase">Modifica</span>
+                  </button>
+                  <button
+                    onClick={() => handleDeleteCapitolo(c.id)}
+                    title="Elimina capitolo"
+                    className="flex items-center gap-1 font-mono text-[10px] text-magenta/50 hover:text-magenta border border-transparent hover:border-magenta/40 hover:bg-magenta/5 px-2 py-1 transition-colors flex-shrink-0"
+                  >
+                    ✕ <span className="hidden sm:inline tracking-widest uppercase">Elimina</span>
+                  </button>
                 </div>
               ))}
 
