@@ -146,13 +146,18 @@ function ReadPage() {
 
   const handleDownload = async () => {
     if (!fileUrl || downloading) return;
-    const match = fileUrl.match(/\/storage\/v1\/object\/(?:public|authenticated)\/libri\/(.+)$/);
-    if (!match) { window.open(fileUrl, "_blank"); return; }
-    const path = decodeURIComponent(match[1]);
     setDownloading(true);
     try {
+      // Estrae il path dal file_url (full URL Supabase) o lo usa direttamente se è già un path
+      const match = fileUrl.match(/\/storage\/v1\/object\/(?:public|authenticated)\/libri\/(.+?)(?:\?.*)?$/);
+      const path = match ? decodeURIComponent(match[1]) : fileUrl.startsWith("http") ? null : fileUrl;
+      if (!path) { window.open(fileUrl, "_blank"); return; }
+
       const { data: blob, error } = await supabase.storage.from("libri").download(path);
-      if (error || !blob) { alert("Errore nel download. Riprova."); return; }
+      if (error || !blob) {
+        alert(`Errore nel download: ${error?.message ?? "file non trovato"}`);
+        return;
+      }
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -161,6 +166,9 @@ function ReadPage() {
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (e) {
+      console.error("Download error:", e);
+      alert("Errore nel download. Riprova.");
     } finally {
       setDownloading(false);
     }
