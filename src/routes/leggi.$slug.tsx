@@ -309,7 +309,7 @@ function ReadPage() {
 
               {chapter.isHtml ? (
                 <div
-                  className="mt-10 font-serif text-ink/90 leading-[1.8] max-w-prose chapter-prose"
+                  className="mt-10 font-serif text-ink/90 leading-[1.65] max-w-prose chapter-prose"
                   style={{ fontSize: `${1.125 * fontScale}rem` }}
                   dangerouslySetInnerHTML={{ __html: chapter.content[0] }}
                 />

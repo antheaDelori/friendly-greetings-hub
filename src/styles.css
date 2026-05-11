@@ -345,7 +345,7 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
-  .chapter-prose p { margin-bottom: 1.4em; font-weight: 400; }
+  .chapter-prose p { margin-bottom: 0.65em; font-weight: 400; }
   .chapter-prose p[style*="text-align:right"], .chapter-prose p[style*="text-align: right"] { text-align: right; }
   .chapter-prose p[style*="text-align:center"], .chapter-prose p[style*="text-align: center"] { text-align: center; }
   .chapter-prose p[style*="text-align:justify"], .chapter-prose p[style*="text-align: justify"] { text-align: justify; }
@@ -357,7 +357,7 @@
     margin-right: 0.15em;
     color: var(--blood);
   }
-  .chapter-prose strong { font-weight: 700; }
+  .chapter-prose strong, .chapter-prose b { font-weight: 600; }
   .chapter-prose em { font-style: italic; }
   .chapter-prose u { text-decoration: underline; }
   .chapter-prose h2 { font-family: var(--font-serif); font-size: 1.5em; font-weight: 600; margin: 1.8em 0 0.6em; }
