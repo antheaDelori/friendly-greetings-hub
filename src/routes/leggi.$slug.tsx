@@ -196,13 +196,14 @@ function ReadPage() {
                   ↓ Scarica
                 </a>
               ) : fileUrl && isLoggedIn && isAnonymous ? (
-                <span
-                  className="inline-flex items-center gap-2 bg-ink/20 text-ink/40 px-4 py-2 font-display tracking-widest text-xs uppercase cursor-not-allowed"
+                <Link
+                  to="/auth/"
+                  search={{ returnTo: `/leggi/${book.slug}` }}
+                  className="inline-flex items-center gap-2 bg-ink text-paper px-4 py-2 font-display tracking-widest text-xs uppercase hover:bg-blood transition-colors"
                   title="Registrati per scaricare il file"
                 >
-                  ↓ Scarica
-                  <span className="text-[9px] tracking-normal normal-case opacity-70">(registrati)</span>
-                </span>
+                  ↓ Scarica (registrati)
+                </Link>
               ) : fileUrl && !isLoggedIn ? (
                 <Link
                   to="/auth/"
