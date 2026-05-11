@@ -159,7 +159,8 @@ function ReadPage() {
         alert(`Errore nel download: ${error?.message ?? "file non trovato"}`);
         return;
       }
-      const url = URL.createObjectURL(blob);
+      const forcedBlob = new Blob([await blob.arrayBuffer()], { type: "application/octet-stream" });
+      const url = URL.createObjectURL(forcedBlob);
       const a = document.createElement("a");
       a.href = url;
       a.download = path.split("/").pop() ?? "libro";
