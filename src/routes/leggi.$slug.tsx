@@ -123,6 +123,15 @@ function ReadNotFound() {
   );
 }
 
+function chapterReadingTime(chapter: import("@/data/books").Chapter): string {
+  const raw = chapter.isHtml
+    ? chapter.content[0].replace(/<[^>]+>/g, " ")
+    : chapter.content.join(" ");
+  const words = raw.trim().split(/\s+/).filter(Boolean).length;
+  const minutes = Math.max(1, Math.round(words / 200));
+  return `~ ${minutes} min`;
+}
+
 function ReadPage() {
   const { book, fileUrl, isLoggedIn } = Route.useLoaderData();
   const router = useRouter();
@@ -288,7 +297,10 @@ function ReadPage() {
             </div>
           ) : chapter ? (
             <>
-              <div className="font-display tracking-[0.25em] text-xs text-blood">capitolo {currentIdx + 1} di {book.chapters.length}</div>
+              <div className="flex items-center justify-between">
+                <div className="font-display tracking-[0.25em] text-xs text-blood">capitolo {currentIdx + 1} di {book.chapters.length}</div>
+                <div className="font-display tracking-[0.2em] text-xs text-ink/30">{chapterReadingTime(chapter)}</div>
+              </div>
               <h2 className="mt-2 font-serif text-3xl md:text-4xl text-ink">{chapter.title}</h2>
 
               <div className="mt-6 h-[2px] bg-ink/10 relative">
