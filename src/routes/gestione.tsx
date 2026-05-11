@@ -55,19 +55,25 @@ const ACCESSI = ["gratuito", "premium", "riservato"] as const;
 const TARGET = ["tutti", "bambini (0–8)", "ragazzi (9–12)", "adolescenti (13–17)", "adulti (18+)"] as const;
 const TIPI = [
   "— Narrativa —",
-  "Romanzo", "Romanzo storico", "Fantasy", "Fantascienza", "Thriller",
-  "Legal thriller", "Giallo / Noir", "Horror", "Distopia",
-  "Romanzo sentimentale", "Avventura", "Umorismo",
+  "Romanzo", "Romanzo storico", "Romanzo di formazione", "Romanzo epistolare",
+  "Fantasy", "Fantasy epico", "Fantasy urbano",
+  "Fantascienza", "Fantascienza letteraria", "Fantascienza sociale", "Distopia", "Ucronia",
+  "Thriller", "Legal thriller", "Thriller psicologico",
+  "Giallo / Noir", "Horror", "Gotico",
+  "Romanzo sentimentale", "Avventura", "Umorismo", "Realismo magico",
   "— Saggistica —",
   "Saggio storico", "Saggio scientifico", "Saggio filosofico", "Saggio politico",
   "Autobiografia", "Biografia", "Memoir", "Self-help", "Divulgazione", "Psicologia",
+  "— Racconti —",
+  "Raccolta di racconti", "Racconto lungo / Novella",
   "— Per ragazzi —",
   "Favola / Fiaba", "Racconto per ragazzi", "Avventura per ragazzi",
   "— —",
-  "Altro",
+  "Altro (specifica sotto)",
 ] as const;
 
 const TIPI_SELEZIONABILI = TIPI.filter(t => !t.startsWith("—"));
+const ALTRO_TIPO = "Altro (specifica sotto)";
 
 const inputClass = "mt-2 w-full bg-void/40 border border-cyan/30 px-4 py-3 font-mono text-bone placeholder:text-bone/30 focus:outline-none focus:border-cyan focus:bg-void/60 transition-all";
 const labelClass = "font-mono text-[10px] tracking-[0.25em] text-cyan/70 uppercase";
@@ -247,7 +253,7 @@ function GestionePage() {
       setTipo(b.tipo);
       setTipoAltro("");
     } else if (b.tipo) {
-      setTipo("Altro");
+      setTipo(ALTRO_TIPO);
       setTipoAltro(b.tipo);
     } else {
       setTipo("");
@@ -308,7 +314,7 @@ function GestionePage() {
           titolo: titolo.trim(),
           sottotitolo: sottotitolo.trim() || null,
           genere,
-          tipo: tipo === "Altro" ? (tipoAltro.trim() || null) : (tipo || null),
+          tipo: tipo === ALTRO_TIPO ? (tipoAltro.trim() || null) : (tipo || null),
           target: target || null,
           isbn: isbn.trim() || null,
           edizione: edizione.trim() || null,
@@ -346,7 +352,7 @@ function GestionePage() {
           titolo: titolo.trim(),
           sottotitolo: sottotitolo.trim() || null,
           genere,
-          tipo: tipo === "Altro" ? (tipoAltro.trim() || null) : (tipo || null),
+          tipo: tipo === ALTRO_TIPO ? (tipoAltro.trim() || null) : (tipo || null),
           target: target || null,
           isbn: isbn.trim() || null,
           edizione: edizione.trim() || null,
@@ -606,13 +612,19 @@ function GestionePage() {
                         </option>
                       ))}
                     </select>
-                    {tipo === "Altro" && (
-                      <input
-                        value={tipoAltro}
-                        onChange={e => setTipoAltro(e.target.value)}
-                        placeholder="Specifica il tipo..."
-                        className={inputClass + " mt-2"}
-                      />
+                    {tipo === ALTRO_TIPO && (
+                      <>
+                        <input
+                          value={tipoAltro}
+                          onChange={e => setTipoAltro(e.target.value)}
+                          placeholder="es. Fantascienza intimista, Romanzo corale…"
+                          className={inputClass + " mt-2"}
+                          autoFocus
+                        />
+                        <p className="mt-1 font-mono text-[9px] text-bone/40 tracking-wide">
+                          Scrivi il genere che meglio descrive l'opera — verrà salvato così.
+                        </p>
+                      </>
                     )}
                   </div>
                   <div>
