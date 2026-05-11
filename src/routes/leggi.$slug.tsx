@@ -310,13 +310,13 @@ function ReadPage() {
               {chapter.isHtml ? (
                 <div
                   className="mt-10 font-serif text-ink/90 leading-[1.65] max-w-prose chapter-prose"
-                  style={{ fontSize: `${1.125 * fontScale}rem` }}
+                  style={{ fontSize: `${1.0 * fontScale}rem` }}
                   dangerouslySetInnerHTML={{ __html: chapter.content[0] }}
                 />
               ) : (
                 <div
                   className="mt-10 font-serif text-ink/90 leading-[1.8] space-y-6 max-w-prose"
-                  style={{ fontSize: `${1.125 * fontScale}rem` }}
+                  style={{ fontSize: `${1.0 * fontScale}rem` }}
                 >
                   {chapter.content.map((p: string, i: number) => (
                     <p key={i} className={i === 0 ? "first-letter:font-display first-letter:text-7xl first-letter:float-left first-letter:mr-3 first-letter:leading-none first-letter:text-blood" : ""}>
