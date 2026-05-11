@@ -143,7 +143,6 @@ function ReadPage() {
   const bookmarkKey = `reading_pos_${book.slug}`;
 
   const [downloading, setDownloading] = useState(false);
-  const [downloadDone, setDownloadDone] = useState(false);
 
   const handleDownload = async () => {
     if (!fileUrl || downloading) return;
@@ -169,8 +168,6 @@ function ReadPage() {
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-      setDownloadDone(true);
-      setTimeout(() => setDownloadDone(false), 4000);
     } catch (e) {
       console.error("Download error:", e);
       alert("Errore nel download. Riprova.");
@@ -225,20 +222,13 @@ function ReadPage() {
             <p className="mt-4 font-serif text-base text-ink/80 max-w-2xl">{book.description}</p>
             <div className="mt-5 flex flex-wrap items-center gap-3">
               {fileUrl && isLoggedIn && !isAnonymous ? (
-                <>
-                  <button
-                    onClick={handleDownload}
-                    disabled={downloading}
-                    className="inline-flex items-center gap-2 bg-ink text-paper px-4 py-2 font-display tracking-widest text-xs uppercase hover:bg-blood transition-colors disabled:opacity-50 disabled:cursor-wait"
-                  >
-                    {downloading ? "↓ Scaricamento…" : "↓ Scarica"}
-                  </button>
-                  {downloadDone && (
-                    <span className="font-mono text-[10px] tracking-widest text-cyan animate-pulse">
-                      ✓ File aperto in una nuova scheda — salvalo dal visualizzatore
-                    </span>
-                  )}
-                </>
+                <button
+                  onClick={handleDownload}
+                  disabled={downloading}
+                  className="inline-flex items-center gap-2 bg-ink text-paper px-4 py-2 font-display tracking-widest text-xs uppercase hover:bg-blood transition-colors disabled:opacity-50 disabled:cursor-wait"
+                >
+                  {downloading ? "↓ Apertura…" : "↓ Scarica"}
+                </button>
               ) : fileUrl && isLoggedIn && isAnonymous ? (
                 <Link
                   to="/auth/"
