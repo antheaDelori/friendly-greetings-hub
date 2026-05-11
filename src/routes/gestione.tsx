@@ -121,6 +121,7 @@ function GestionePage() {
   const [savingCapitolo, setSavingCapitolo] = useState(false);
   const [capError, setCapError] = useState<string | null>(null);
   const [editingCapitoloId, setEditingCapitoloId] = useState<string | null>(null);
+  const [confirmDeleteCapitoloId, setConfirmDeleteCapitoloId] = useState<string | null>(null);
   const [capTitolo, setCapTitolo] = useState("");
   const [capTesto, setCapTesto] = useState("");
   const [capOrdine, setCapOrdine] = useState(1);
@@ -887,13 +888,27 @@ function GestionePage() {
                   >
                     ✎ <span className="hidden sm:inline tracking-widest uppercase">Modifica</span>
                   </button>
-                  <button
-                    onClick={() => handleDeleteCapitolo(c.id)}
-                    title="Elimina capitolo"
-                    className="flex items-center gap-1 font-mono text-[10px] text-magenta/50 hover:text-magenta border border-transparent hover:border-magenta/40 hover:bg-magenta/5 px-2 py-1 transition-colors flex-shrink-0"
-                  >
-                    ✕ <span className="hidden sm:inline tracking-widest uppercase">Elimina</span>
-                  </button>
+                  {confirmDeleteCapitoloId === c.id ? (
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <span className="font-mono text-[9px] text-magenta/80 tracking-widest uppercase">Elimina?</span>
+                      <button
+                        onClick={() => { handleDeleteCapitolo(c.id); setConfirmDeleteCapitoloId(null); }}
+                        className="font-mono text-[9px] text-magenta border border-magenta/50 hover:bg-magenta hover:text-paper px-2 py-1 transition-colors"
+                      >Sì</button>
+                      <button
+                        onClick={() => setConfirmDeleteCapitoloId(null)}
+                        className="font-mono text-[9px] text-bone/50 border border-bone/20 hover:border-bone/50 hover:text-bone px-2 py-1 transition-colors"
+                      >No</button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmDeleteCapitoloId(c.id)}
+                      title="Elimina capitolo"
+                      className="flex items-center gap-1 font-mono text-[10px] text-magenta/50 hover:text-magenta border border-transparent hover:border-magenta/40 hover:bg-magenta/5 px-2 py-1 transition-colors flex-shrink-0"
+                    >
+                      ✕ <span className="hidden sm:inline tracking-widest uppercase">Elimina</span>
+                    </button>
+                  )}
                 </div>
               ))}
 
