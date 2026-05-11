@@ -142,6 +142,19 @@ function ReadPage() {
 
   const bookmarkKey = `reading_pos_${book.slug}`;
 
+  const handleDownload = async () => {
+    if (!fileUrl) return;
+    const match = fileUrl.match(/\/storage\/v1\/object\/(?:public|authenticated)\/libri\/(.+)$/);
+    if (!match) { window.open(fileUrl); return; }
+    const path = decodeURIComponent(match[1]);
+    const { data, error } = await supabase.storage.from("libri").createSignedUrl(path, 120);
+    if (error || !data) { alert("Errore nel download. Riprova."); return; }
+    const a = document.createElement("a");
+    a.href = data.signedUrl;
+    a.download = path.split("/").pop() ?? "download";
+    a.click();
+  };
+
   // Leggi il segnalibro salvato al mount
   useEffect(() => {
     if (!isLoggedIn) return;
@@ -188,13 +201,12 @@ function ReadPage() {
             <p className="mt-4 font-serif text-base text-ink/80 max-w-2xl">{book.description}</p>
             <div className="mt-5 flex flex-wrap gap-3">
               {fileUrl && isLoggedIn && !isAnonymous ? (
-                <a
-                  href={fileUrl}
-                  download
+                <button
+                  onClick={handleDownload}
                   className="inline-flex items-center gap-2 bg-ink text-paper px-4 py-2 font-display tracking-widest text-xs uppercase hover:bg-blood transition-colors"
                 >
                   ↓ Scarica
-                </a>
+                </button>
               ) : fileUrl && isLoggedIn && isAnonymous ? (
                 <Link
                   to="/auth/"
