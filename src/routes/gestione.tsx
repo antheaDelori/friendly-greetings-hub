@@ -19,6 +19,7 @@ type Allegato = {
   id: string;
   book_id: string;
   titolo: string;
+  descrizione: string | null;
   file_url: string;
   tipo: string;
   ordine: number;
@@ -148,6 +149,7 @@ function GestionePage() {
   const [savingAllegato, setSavingAllegato] = useState(false);
   const [allegaError, setAllegaError] = useState<string | null>(null);
   const [allegaTitolo, setAllegaTitolo] = useState("");
+  const [allegaDescrizione, setAllegaDescrizione] = useState("");
   const [allegaFile, setAllegaFile] = useState<File | null>(null);
   const [confirmDeleteAllegatoId, setConfirmDeleteAllegatoId] = useState<string | null>(null);
   const allegaFileRef = useRef<HTMLInputElement>(null);
@@ -519,6 +521,7 @@ function GestionePage() {
       const { error: dbErr } = await supabase.from("allegati").insert({
         book_id: selected.id,
         titolo: allegaTitolo.trim(),
+        descrizione: allegaDescrizione.trim() || null,
         file_url: urlData.publicUrl,
         tipo,
         ordine: allegati.length + 1,
@@ -526,7 +529,7 @@ function GestionePage() {
       if (dbErr) throw dbErr;
       const { data } = await supabase.from("allegati").select("*").eq("book_id", selected.id).order("ordine");
       setAllegati(data ?? []);
-      setAllegaTitolo(""); setAllegaFile(null);
+      setAllegaTitolo(""); setAllegaDescrizione(""); setAllegaFile(null);
       if (allegaFileRef.current) allegaFileRef.current.value = "";
       setShowAllegatoForm(false);
     } catch (err: unknown) {
@@ -1043,7 +1046,7 @@ function GestionePage() {
                 <span className="font-mono text-[10px] tracking-widest text-cyan/70 uppercase">// materiali extra</span>
                 {!showAllegatoForm && (
                   <button
-                    onClick={() => { setAllegaTitolo(""); setAllegaFile(null); setAllegaError(null); setShowAllegatoForm(true); }}
+                    onClick={() => { setAllegaTitolo(""); setAllegaDescrizione(""); setAllegaFile(null); setAllegaError(null); setShowAllegatoForm(true); }}
                     className="font-mono text-[10px] tracking-widest text-magenta uppercase hover:text-cyan transition-colors"
                   >+ Aggiungi materiale</button>
                 )}
@@ -1087,6 +1090,16 @@ function GestionePage() {
                     <input value={allegaTitolo} onChange={e => setAllegaTitolo(e.target.value)}
                       placeholder="Es. Albero genealogico, Mappa del mondo…"
                       className={inputClass} />
+                  </div>
+                  <div>
+                    <span className={labelClass}>↳ Descrizione (opzionale)</span>
+                    <textarea
+                      value={allegaDescrizione}
+                      onChange={e => setAllegaDescrizione(e.target.value)}
+                      placeholder="Breve descrizione del materiale, personaggi principali, come leggerlo…"
+                      rows={3}
+                      className={inputClass + " resize-none"}
+                    />
                   </div>
                   <div>
                     <span className={labelClass}>↳ File (immagine o PDF)</span>

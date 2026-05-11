@@ -64,7 +64,7 @@ export const Route = createFileRoute("/leggi/$slug")({
 
     const { data: allegatiData } = await supabase
       .from("allegati")
-      .select("id, titolo, file_url, tipo, ordine")
+      .select("id, titolo, descrizione, file_url, tipo, ordine")
       .eq("book_id", data.id)
       .order("ordine");
 
@@ -74,7 +74,7 @@ export const Route = createFileRoute("/leggi/$slug")({
       fileUrl: data.file_url as string | null,
       isLoggedIn: !!session,
       isAnonymous: session?.user?.is_anonymous ?? false,
-      allegati: (allegatiData ?? []) as { id: string; titolo: string; file_url: string; tipo: string; ordine: number }[],
+      allegati: (allegatiData ?? []) as { id: string; titolo: string; descrizione: string | null; file_url: string; tipo: string; ordine: number }[],
     };
   },
   head: ({ loaderData }) => ({
@@ -436,6 +436,9 @@ function ReadPage() {
                         </button>
                         <div className="flex-1 min-w-0">
                           <div className="font-display tracking-widest text-xs uppercase text-ink">{a.titolo}</div>
+                          {a.descrizione && (
+                            <p className="mt-1 font-serif text-sm text-ink/60 leading-snug">{a.descrizione}</p>
+                          )}
                           <button onClick={() => setLightboxUrl(a.file_url)}
                             className="mt-2 font-mono text-[10px] tracking-widest text-blood uppercase hover:underline">
                             ◈ Visualizza
@@ -447,6 +450,9 @@ function ReadPage() {
                         <div className="flex-shrink-0 w-20 h-20 flex items-center justify-center border border-ink/10 text-3xl text-ink/30">↓</div>
                         <div className="flex-1 min-w-0">
                           <div className="font-display tracking-widest text-xs uppercase text-ink">{a.titolo}</div>
+                          {a.descrizione && (
+                            <p className="mt-1 font-serif text-sm text-ink/60 leading-snug">{a.descrizione}</p>
+                          )}
                           <a href={a.file_url} target="_blank" rel="noopener noreferrer"
                             className="mt-2 inline-block font-mono text-[10px] tracking-widest text-blood uppercase hover:underline">
                             ↓ Scarica
