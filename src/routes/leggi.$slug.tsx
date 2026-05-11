@@ -12,7 +12,7 @@ export const Route = createFileRoute("/leggi/$slug")({
     const staticBook = getBookBySlug(params.slug);
     if (staticBook) {
       const { data: { session } } = await supabase.auth.getSession();
-      return { book: staticBook, fileUrl: null as string | null, isLoggedIn: !!session };
+      return { book: staticBook, fileUrl: null as string | null, isLoggedIn: !!session, isAnonymous: session?.user?.is_anonymous ?? false };
     }
 
     // Poi cerca su Supabase
@@ -63,7 +63,7 @@ export const Route = createFileRoute("/leggi/$slug")({
     };
 
     const { data: { session } } = await supabase.auth.getSession();
-    return { book, fileUrl: data.file_url as string | null, isLoggedIn: !!session };
+    return { book, fileUrl: data.file_url as string | null, isLoggedIn: !!session, isAnonymous: session?.user?.is_anonymous ?? false };
   },
   head: ({ loaderData }) => ({
     meta: loaderData
@@ -133,7 +133,7 @@ function chapterReadingTime(chapter: import("@/data/books").Chapter): string {
 }
 
 function ReadPage() {
-  const { book, fileUrl, isLoggedIn } = Route.useLoaderData();
+  const { book, fileUrl, isLoggedIn, isAnonymous } = Route.useLoaderData();
   const router = useRouter();
   const [currentIdx, setCurrentIdx] = useState(0);
   const [fontScale, setFontScale] = useState(1);
@@ -187,17 +187,33 @@ function ReadPage() {
             <p className="mt-2 font-serif italic text-lg text-ink/70">di {book.author}</p>
             <p className="mt-4 font-serif text-base text-ink/80 max-w-2xl">{book.description}</p>
             <div className="mt-5 flex flex-wrap gap-3">
-              {fileUrl && isLoggedIn ? (
-                <span className="inline-flex items-center gap-2 bg-ink/40 text-paper px-4 py-2 font-display tracking-widest text-xs uppercase cursor-not-allowed opacity-60" title="Download in arrivo">
+              {fileUrl && isLoggedIn && !isAnonymous ? (
+                <a
+                  href={fileUrl}
+                  download
+                  className="inline-flex items-center gap-2 bg-ink text-paper px-4 py-2 font-display tracking-widest text-xs uppercase hover:bg-blood transition-colors"
+                >
                   ↓ Scarica
+                </a>
+              ) : fileUrl && isLoggedIn && isAnonymous ? (
+                <span
+                  className="inline-flex items-center gap-2 bg-ink/20 text-ink/40 px-4 py-2 font-display tracking-widest text-xs uppercase cursor-not-allowed"
+                  title="Registrati per scaricare il file"
+                >
+                  ↓ Scarica
+                  <span className="text-[9px] tracking-normal normal-case opacity-70">(registrati)</span>
                 </span>
               ) : fileUrl && !isLoggedIn ? (
-                <Link to="/auth/" search={{ returnTo: `/leggi/${book.slug}` }} className="inline-flex items-center gap-2 bg-ink text-paper px-4 py-2 font-display tracking-widest text-xs uppercase hover:bg-blood transition-colors">
+                <Link
+                  to="/auth/"
+                  search={{ returnTo: `/leggi/${book.slug}` }}
+                  className="inline-flex items-center gap-2 bg-ink text-paper px-4 py-2 font-display tracking-widest text-xs uppercase hover:bg-blood transition-colors"
+                >
                   ↓ Scarica (accedi)
                 </Link>
               ) : (
                 <span className="inline-flex items-center gap-2 bg-ink/20 text-ink/40 px-4 py-2 font-display tracking-widest text-xs uppercase cursor-not-allowed">
-                  ↓ File non caricato
+                  ↓ File non disponibile
                 </span>
               )}
               <button className="inline-flex items-center gap-2 border border-ink text-ink px-4 py-2 font-display tracking-widest text-xs uppercase hover:bg-ink hover:text-paper transition-colors">
