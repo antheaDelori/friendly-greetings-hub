@@ -159,11 +159,12 @@ function ReadPage() {
         alert(`Errore nel download: ${error?.message ?? "file non trovato"}`);
         return;
       }
-      const forcedBlob = new Blob([await blob.arrayBuffer()], { type: "application/octet-stream" });
-      const url = URL.createObjectURL(forcedBlob);
+      const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = path.split("/").pop() ?? "libro";
+      a.target = "_blank";
+      a.rel = "noopener";
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -234,7 +235,7 @@ function ReadPage() {
                   </button>
                   {downloadDone && (
                     <span className="font-mono text-[10px] tracking-widest text-cyan animate-pulse">
-                      ✓ File salvato — aprilo dalla cartella Download
+                      ✓ File aperto in una nuova scheda — salvalo dal visualizzatore
                     </span>
                   )}
                 </>
