@@ -253,12 +253,11 @@ function ReadPage() {
     <div className="min-h-screen paper-texture flex flex-col">
       <SiteHeader />
 
-      {/* Lettore: sidebar sticky + testo scorrevole */}
-      <section className="mx-auto max-w-6xl w-full px-4 sm:px-6 lg:px-10 py-8 grid lg:grid-cols-[260px_1fr] gap-10 flex-1 items-start">
+      {/* Lettore: 3 colonne su desktop */}
+      <section className="mx-auto max-w-6xl w-full px-4 sm:px-6 lg:px-10 py-8 grid grid-cols-1 lg:grid-cols-[210px_1fr_130px] gap-6 lg:gap-8 flex-1 items-start">
 
-        {/* Sidebar sinistra sticky */}
-        <aside className="lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
-          {/* Indietro */}
+        {/* Sidebar sinistra: info libro + capitoli */}
+        <aside className="lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:col-start-1">
           <button
             onClick={() => router.history.back()}
             className="inline-flex items-center gap-1.5 font-display tracking-widest text-[10px] uppercase text-ink/40 hover:text-ink transition-colors mb-4"
@@ -266,10 +265,8 @@ function ReadPage() {
             ← Indietro
           </button>
 
-          {/* Copertina */}
           <img src={book.cover} alt="" className="w-full h-auto block ring-1 ring-ink/15 bg-ink/5" />
 
-          {/* Meta */}
           <div className="mt-4">
             <div className="font-display tracking-[0.25em] text-[10px] text-blood uppercase">{book.genre} · {book.year}</div>
             <h1 className="mt-1 font-serif text-xl leading-tight text-ink">{book.title}</h1>
@@ -277,47 +274,6 @@ function ReadPage() {
             <p className="mt-3 font-serif text-sm text-ink/70 leading-relaxed line-clamp-4">{book.description}</p>
           </div>
 
-          {/* Pulsanti azione */}
-          <div className="mt-4 flex flex-col gap-2">
-            {fileUrl && isLoggedIn && !isAnonymous ? (
-              <button
-                onClick={handleDownload}
-                disabled={downloading}
-                className="inline-flex items-center justify-center gap-2 border border-ink text-ink px-3 py-2 font-display tracking-widest text-[10px] uppercase hover:bg-ink hover:text-paper transition-colors disabled:opacity-50 disabled:cursor-wait"
-              >
-                {downloading ? "↓ Apertura…" : "↓ Scarica"}
-              </button>
-            ) : fileUrl && isLoggedIn && isAnonymous ? (
-              <Link
-                to="/auth/"
-                search={{ returnTo: `/leggi/${book.slug}` }}
-                className="inline-flex items-center justify-center gap-2 border border-ink text-ink px-3 py-2 font-display tracking-widest text-[10px] uppercase hover:bg-ink hover:text-paper transition-colors"
-                title="Registrati per scaricare il file"
-              >
-                ↓ Scarica (registrati)
-              </Link>
-            ) : fileUrl && !isLoggedIn ? (
-              <Link
-                to="/auth/"
-                search={{ returnTo: `/leggi/${book.slug}` }}
-                className="inline-flex items-center justify-center gap-2 border border-ink text-ink px-3 py-2 font-display tracking-widest text-[10px] uppercase hover:bg-ink hover:text-paper transition-colors"
-              >
-                ↓ Scarica (accedi)
-              </Link>
-            ) : (
-              <span className="inline-flex items-center justify-center gap-2 border border-ink/20 text-ink/30 px-3 py-2 font-display tracking-widest text-[10px] uppercase cursor-not-allowed">
-                ↓ File non disponibile
-              </span>
-            )}
-            <button className="inline-flex items-center justify-center gap-2 border border-ink text-ink px-3 py-2 font-display tracking-widest text-[10px] uppercase hover:bg-ink hover:text-paper transition-colors">
-              ★ Recensisci
-            </button>
-            <button className="inline-flex items-center justify-center gap-2 border border-blood text-blood px-3 py-2 font-display tracking-widest text-[10px] uppercase hover:bg-blood hover:text-paper transition-colors">
-              ♥ Sostieni l'autore
-            </button>
-          </div>
-
-          {/* Lista capitoli */}
           {hasChapters && (
             <div className="mt-6 border-t border-ink/10 pt-5">
               <div className="font-display tracking-[0.2em] text-xs text-ink/50 mb-3">— capitoli</div>
@@ -340,20 +296,65 @@ function ReadPage() {
               </ol>
             </div>
           )}
+        </aside>
 
-          {/* Controlli testo */}
-          <div className="mt-6 border-t border-ink/10 pt-5">
-            <div className="font-display tracking-[0.2em] text-xs text-ink/50 mb-2">— testo</div>
-            <div className="flex items-center gap-2">
-              <button onClick={() => setFontScale((s) => Math.max(0.85, s - 0.1))} className="font-serif text-sm border border-ink/20 px-3 py-1 hover:border-ink">A−</button>
-              <button onClick={() => setFontScale(1)} className="font-serif text-sm border border-ink/20 px-3 py-1 hover:border-ink">A</button>
-              <button onClick={() => setFontScale((s) => Math.min(1.4, s + 0.1))} className="font-serif text-lg border border-ink/20 px-3 py-1 hover:border-ink">A+</button>
+        {/* Sidebar destra sticky: azioni + font — prima dell'article nel DOM così su mobile appare tra info e testo */}
+        <aside className="lg:sticky lg:top-24 lg:self-start lg:col-start-3 flex flex-row flex-wrap lg:flex-col gap-2">
+          {fileUrl && isLoggedIn && !isAnonymous ? (
+            <button
+              onClick={handleDownload}
+              disabled={downloading}
+              className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors disabled:opacity-50 disabled:cursor-wait"
+            >
+              <span className="text-sm leading-none">↓</span>
+              <span>{downloading ? "Apertura…" : "Scarica"}</span>
+            </button>
+          ) : fileUrl && isLoggedIn && isAnonymous ? (
+            <Link
+              to="/auth/"
+              search={{ returnTo: `/leggi/${book.slug}` }}
+              className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors"
+              title="Registrati per scaricare il file"
+            >
+              <span className="text-sm leading-none">↓</span>
+              <span>Registrati</span>
+            </Link>
+          ) : fileUrl && !isLoggedIn ? (
+            <Link
+              to="/auth/"
+              search={{ returnTo: `/leggi/${book.slug}` }}
+              className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors"
+            >
+              <span className="text-sm leading-none">↓</span>
+              <span>Scarica</span>
+            </Link>
+          ) : (
+            <span className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink/20 text-ink/30 px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase cursor-not-allowed">
+              <span className="text-sm leading-none">↓</span>
+              <span>N/D</span>
+            </span>
+          )}
+          <button className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors">
+            <span className="text-sm leading-none">★</span>
+            <span>Recensisci</span>
+          </button>
+          <button className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-blood text-blood px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-blood hover:text-paper transition-colors">
+            <span className="text-sm leading-none">♥</span>
+            <span>Sostieni</span>
+          </button>
+
+          <div className="w-full lg:mt-4 lg:border-t lg:border-ink/10 lg:pt-4">
+            <div className="hidden lg:block font-display tracking-[0.15em] text-[9px] text-ink/50 mb-2 uppercase">— testo</div>
+            <div className="flex w-full">
+              <button onClick={() => setFontScale((s) => Math.max(0.85, s - 0.1))} className="flex-1 font-serif text-sm border border-ink/20 py-2 hover:border-ink text-center">A−</button>
+              <button onClick={() => setFontScale(1)} className="flex-1 font-serif text-sm border-t border-b border-ink/20 py-2 hover:border-ink text-center">A</button>
+              <button onClick={() => setFontScale((s) => Math.min(1.4, s + 0.1))} className="flex-1 font-serif text-lg border border-ink/20 py-2 hover:border-ink text-center">A+</button>
             </div>
           </div>
         </aside>
 
         {/* Testo capitolo */}
-        <article>
+        <article className="lg:col-start-2">
           {resumeBanner && (
             <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border border-blood/30 bg-blood/5 px-4 py-3">
               <p className="font-serif italic text-sm text-ink/70">
