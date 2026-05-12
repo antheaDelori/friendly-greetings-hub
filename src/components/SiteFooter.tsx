@@ -46,7 +46,7 @@ export function SiteFooter() {
       </div>
       <div className="border-t border-cyan/10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10 py-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-[10px] text-bone/40 font-mono tracking-widest uppercase">
-          <span>© {new Date().getFullYear()} liberiamo.holo // tutti i diritti agli autori</span>
+          <span>© 2076 liberiamo.holo // tutti i diritti agli autori</span>
           <span className="text-cyan/60">il mondo dei creativi</span>
         </div>
       </div>
