@@ -351,6 +351,18 @@ function ReadPage() {
               <button onClick={() => setFontScale((s) => Math.min(1.4, s + 0.1))} className="flex-1 font-serif text-lg border border-ink/20 py-2 hover:border-ink text-center">A+</button>
             </div>
           </div>
+
+          {/* Legenda segnalibro — solo desktop */}
+          <div className="hidden lg:block mt-6 border-t border-ink/10 pt-4">
+            <div className="font-display tracking-[0.15em] text-[9px] text-ink/50 mb-2 uppercase">— segnalibro</div>
+            <p className="font-serif text-[11px] text-ink/50 leading-relaxed italic">
+              Clicca su un paragrafo del testo per salvare il punto di lettura.
+              Al prossimo accesso tornerai esattamente lì.
+            </p>
+            <p className="mt-2 font-serif text-[11px] text-ink/35 italic">
+              Clicca di nuovo per rimuoverlo.
+            </p>
+          </div>
         </aside>
 
         {/* Testo capitolo */}
