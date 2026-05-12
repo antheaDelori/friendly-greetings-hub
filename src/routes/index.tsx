@@ -44,7 +44,7 @@ function Index() {
               <span className="block">READ</span>
               <span className="block"><span className="text-magenta text-glow-magenta">OR</span> PERISH<span className="text-cyan text-glow-cyan">.</span></span>
             </h1>
-            <p className="mt-3 font-mono text-[10px] tracking-widest text-bone/35 uppercase">
+            <p className="mt-3 font-mono text-[10px] tracking-widest text-bone/55 uppercase text-right max-w-xl">
               biblioteca digitale · rete olografica · anno 2076
             </p>
             <p className="mt-6 font-serif text-xl md:text-2xl text-bone/75 max-w-xl leading-relaxed italic">
