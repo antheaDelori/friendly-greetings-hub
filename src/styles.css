@@ -366,3 +366,26 @@
   .chapter-prose ol { list-style: decimal; padding-left: 1.5em; margin-bottom: 1.2em; }
   .chapter-prose li { margin-bottom: 0.4em; }
   .chapter-prose blockquote { border-left: 2px solid var(--blood); padding-left: 1em; font-style: italic; opacity: 0.75; margin: 1.4em 0; }
+
+  /* === SEGNALIBRO DI PARAGRAFO === */
+  .chapter-bookmark-area {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='18' viewBox='0 0 14 18'%3E%3Cpath fill='%23c0392b' d='M1 0h12a1 1 0 0 1 1 1v17l-7-4.5L0 18V1A1 1 0 0 1 1 0z'/%3E%3C/svg%3E") 7 0, crosshair;
+    padding-left: 1.25rem;
+  }
+  .chapter-bookmark-area p.bookmarked-para { position: relative; }
+  .chapter-bookmark-area p.bookmarked-para::before {
+    content: '';
+    position: absolute;
+    left: -1rem;
+    top: 0.55em;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background-color: #c0392b;
+    box-shadow: 0 0 6px rgba(192, 57, 43, 0.55);
+    animation: bookmark-dot-pop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes bookmark-dot-pop {
+    from { transform: scale(0); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }

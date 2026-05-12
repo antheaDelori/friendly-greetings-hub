@@ -154,6 +154,9 @@ function ReadPage() {
   const savedIdxRef = useRef<number>(0);
 
   const bookmarkKey = `reading_pos_${book.slug}`;
+  const bookmarkParaKey = `bookmark_para_${book.slug}`;
+  const proseRef = useRef<HTMLDivElement>(null);
+  const [paraBookmark, setParaBookmark] = useState<{ chapterIdx: number; paragraphIdx: number } | null>(null);
 
   const [downloading, setDownloading] = useState(false);
 
@@ -206,6 +209,42 @@ function ReadPage() {
     if (!isLoggedIn || book.chapters.length === 0) return;
     localStorage.setItem(bookmarkKey, JSON.stringify({ chapterIdx: currentIdx }));
   }, [currentIdx, isLoggedIn]);
+
+  // Carica il segnalibro di paragrafo salvato
+  useEffect(() => {
+    const saved = localStorage.getItem(bookmarkParaKey);
+    if (!saved) return;
+    try { setParaBookmark(JSON.parse(saved)); } catch { /* noop */ }
+  }, []);
+
+  // Marca visivamente il paragrafo e scrolla ad esso quando si cambia capitolo
+  useEffect(() => {
+    if (!proseRef.current) return;
+    const paras = Array.from(proseRef.current.querySelectorAll('p'));
+    paras.forEach(p => p.classList.remove('bookmarked-para'));
+    if (!paraBookmark || paraBookmark.chapterIdx !== currentIdx) return;
+    const target = paras[paraBookmark.paragraphIdx];
+    if (!target) return;
+    target.classList.add('bookmarked-para');
+    setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80);
+  }, [paraBookmark, currentIdx]);
+
+  const handleProseClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if ((window.getSelection()?.toString().length ?? 0) > 0) return;
+    const para = (e.target as HTMLElement).closest('p');
+    if (!para || !proseRef.current) return;
+    const paras = Array.from(proseRef.current.querySelectorAll('p'));
+    const paragraphIdx = paras.indexOf(para as HTMLParagraphElement);
+    if (paragraphIdx === -1) return;
+    if (paraBookmark?.chapterIdx === currentIdx && paraBookmark?.paragraphIdx === paragraphIdx) {
+      setParaBookmark(null);
+      localStorage.removeItem(bookmarkParaKey);
+    } else {
+      const data = { chapterIdx: currentIdx, paragraphIdx };
+      setParaBookmark(data);
+      localStorage.setItem(bookmarkParaKey, JSON.stringify(data));
+    }
+  };
 
   const hasChapters = book.chapters.length > 0;
   const chapter = hasChapters ? book.chapters[currentIdx] : null;
@@ -375,14 +414,18 @@ function ReadPage() {
 
               {chapter.isHtml ? (
                 <div
-                  className="mt-10 font-serif text-ink/90 leading-[1.65] max-w-prose chapter-prose"
+                  ref={proseRef}
+                  className="mt-10 font-serif text-ink/90 leading-[1.65] max-w-prose chapter-prose chapter-bookmark-area"
                   style={{ fontSize: `${1.0 * fontScale}rem` }}
+                  onClick={handleProseClick}
                   dangerouslySetInnerHTML={{ __html: chapter.content[0] }}
                 />
               ) : (
                 <div
-                  className="mt-10 font-serif text-ink/90 leading-[1.8] space-y-6 max-w-prose"
+                  ref={proseRef}
+                  className="mt-10 font-serif text-ink/90 leading-[1.8] space-y-6 max-w-prose chapter-bookmark-area"
                   style={{ fontSize: `${1.0 * fontScale}rem` }}
+                  onClick={handleProseClick}
                 >
                   {chapter.content.map((p: string, i: number) => (
                     <p key={i} className={i === 0 ? "first-letter:font-display first-letter:text-7xl first-letter:float-left first-letter:mr-3 first-letter:leading-none first-letter:text-blood" : ""}>
