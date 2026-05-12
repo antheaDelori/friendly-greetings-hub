@@ -369,7 +369,7 @@
 
   /* === SEGNALIBRO DI PARAGRAFO === */
   .chapter-bookmark-area {
-    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='18' viewBox='0 0 14 18'%3E%3Cpath fill='%230891b2' d='M1 0h12a1 1 0 0 1 1 1v17l-7-4.5L0 18V1A1 1 0 0 1 1 0z'/%3E%3C/svg%3E") 7 0, crosshair;
+    cursor: url("./assets/icona libro mouse.png") 16 16, crosshair;
   }
   .chapter-bookmark-area p.bookmarked-para {
     border-left: 2px solid oklch(0.82 0.16 200 / 0.6);
