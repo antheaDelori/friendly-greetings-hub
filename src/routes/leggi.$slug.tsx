@@ -214,21 +214,19 @@ function ReadPage() {
     <div className="min-h-screen paper-texture flex flex-col">
       <SiteHeader />
 
-      {/* Breadcrumb back */}
-      <div className="mx-auto max-w-6xl w-full px-4 sm:px-6 lg:px-10 pt-5">
-        <button
-          onClick={() => router.history.back()}
-          className="inline-flex items-center gap-1.5 font-display tracking-widest text-[10px] uppercase text-ink/40 hover:text-ink transition-colors"
-        >
-          ← Indietro
-        </button>
-      </div>
-
       {/* Lettore: sidebar sticky + testo scorrevole */}
       <section className="mx-auto max-w-6xl w-full px-4 sm:px-6 lg:px-10 py-8 grid lg:grid-cols-[260px_1fr] gap-10 flex-1 items-start">
 
         {/* Sidebar sinistra sticky */}
         <aside className="lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
+          {/* Indietro */}
+          <button
+            onClick={() => router.history.back()}
+            className="inline-flex items-center gap-1.5 font-display tracking-widest text-[10px] uppercase text-ink/40 hover:text-ink transition-colors mb-4"
+          >
+            ← Indietro
+          </button>
+
           {/* Copertina */}
           <img src={book.cover} alt="" className="w-full max-w-[180px] aspect-[3/4] object-contain ring-1 ring-ink/15 bg-ink/5" />
 
