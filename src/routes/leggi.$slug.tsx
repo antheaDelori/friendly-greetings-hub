@@ -353,7 +353,7 @@ function ReadPage() {
           </div>
 
           {/* Legenda segnalibro — solo desktop */}
-          <div className="hidden lg:block mt-6 border-t border-ink/10 pt-4">
+          <div className="w-full hidden lg:flex lg:flex-col mt-2 border-t border-ink/10 pt-4">
             <div className="font-display tracking-[0.15em] text-[9px] text-ink/50 mb-2 uppercase">— segnalibro</div>
             <p className="font-serif text-[11px] text-ink/50 leading-relaxed italic">
               Clicca su un paragrafo del testo per salvare il punto di lettura.
