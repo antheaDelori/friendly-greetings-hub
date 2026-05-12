@@ -41,6 +41,9 @@ export function SiteFooter() {
             <li className="font-display tracking-[0.25em] text-magenta text-glow-magenta mt-4 text-sm">
               READ OR PERISH
             </li>
+            <li className="font-mono text-[9px] tracking-widest text-bone/30 mt-1 uppercase">
+              biblioteca digitale · rete olografica · anno 2076
+            </li>
           </ul>
         </div>
       </div>
