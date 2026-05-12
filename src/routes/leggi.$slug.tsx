@@ -267,7 +267,7 @@ function ReadPage() {
           </button>
 
           {/* Copertina */}
-          <img src={book.cover} alt="" className="w-full max-w-[180px] aspect-[3/4] object-contain ring-1 ring-ink/15 bg-ink/5" />
+          <img src={book.cover} alt="" className="w-full h-auto block ring-1 ring-ink/15 bg-ink/5" />
 
           {/* Meta */}
           <div className="mt-4">
@@ -283,7 +283,7 @@ function ReadPage() {
               <button
                 onClick={handleDownload}
                 disabled={downloading}
-                className="inline-flex items-center justify-center gap-2 bg-ink text-paper px-3 py-2 font-display tracking-widest text-[10px] uppercase hover:bg-blood transition-colors disabled:opacity-50 disabled:cursor-wait"
+                className="inline-flex items-center justify-center gap-2 border border-ink text-ink px-3 py-2 font-display tracking-widest text-[10px] uppercase hover:bg-ink hover:text-paper transition-colors disabled:opacity-50 disabled:cursor-wait"
               >
                 {downloading ? "↓ Apertura…" : "↓ Scarica"}
               </button>
@@ -291,7 +291,7 @@ function ReadPage() {
               <Link
                 to="/auth/"
                 search={{ returnTo: `/leggi/${book.slug}` }}
-                className="inline-flex items-center justify-center gap-2 bg-ink text-paper px-3 py-2 font-display tracking-widest text-[10px] uppercase hover:bg-blood transition-colors"
+                className="inline-flex items-center justify-center gap-2 border border-ink text-ink px-3 py-2 font-display tracking-widest text-[10px] uppercase hover:bg-ink hover:text-paper transition-colors"
                 title="Registrati per scaricare il file"
               >
                 ↓ Scarica (registrati)
@@ -300,12 +300,12 @@ function ReadPage() {
               <Link
                 to="/auth/"
                 search={{ returnTo: `/leggi/${book.slug}` }}
-                className="inline-flex items-center justify-center gap-2 bg-ink text-paper px-3 py-2 font-display tracking-widest text-[10px] uppercase hover:bg-blood transition-colors"
+                className="inline-flex items-center justify-center gap-2 border border-ink text-ink px-3 py-2 font-display tracking-widest text-[10px] uppercase hover:bg-ink hover:text-paper transition-colors"
               >
                 ↓ Scarica (accedi)
               </Link>
             ) : (
-              <span className="inline-flex items-center justify-center gap-2 bg-ink/20 text-ink/40 px-3 py-2 font-display tracking-widest text-[10px] uppercase cursor-not-allowed">
+              <span className="inline-flex items-center justify-center gap-2 border border-ink/20 text-ink/30 px-3 py-2 font-display tracking-widest text-[10px] uppercase cursor-not-allowed">
                 ↓ File non disponibile
               </span>
             )}
