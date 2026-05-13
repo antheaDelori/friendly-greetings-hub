@@ -77,10 +77,15 @@ function AuthLanding() {
             .filter(k => k.startsWith("reading_pos_"))
             .map(k => {
               const slug = k.replace("reading_pos_", "");
-              const book = books.find(b => b.slug === slug);
-              return book ? { slug, title: book.title, author: book.author } : null;
-            })
-            .filter((b): b is ResumeBook => b !== null);
+              try {
+                const data = JSON.parse(localStorage.getItem(k) || "{}");
+                const title = data.title || books.find(b => b.slug === slug)?.title || slug;
+                const author = data.author || books.find(b => b.slug === slug)?.author || "";
+                return { slug, title, author };
+              } catch {
+                return { slug, title: slug, author: "" };
+              }
+            });
 
           if (inProgress.length > 0) {
             setResumeBooks(inProgress);
