@@ -27,6 +27,7 @@ function AuthLanding() {
 
   type ResumeBook = { slug: string; title: string; author: string };
   const [resumeBooks, setResumeBooks] = useState<ResumeBook[]>([]);
+  const [resumeTotal, setResumeTotal] = useState(0);
 
   useEffect(() => {
     returnToRef.current = returnTo;
@@ -73,17 +74,20 @@ function AuthLanding() {
           }
 
           // Cerca libri in lettura nel localStorage
-          const rawEntries = Object.keys(localStorage)
+          const allEntries = Object.keys(localStorage)
             .filter(k => k.startsWith("reading_pos_"))
             .map(k => {
               const slug = k.replace("reading_pos_", "");
               try {
                 const data = JSON.parse(localStorage.getItem(k) || "{}");
-                return { slug, title: data.title as string | undefined, author: data.author as string | undefined };
+                return { slug, title: data.title as string | undefined, author: data.author as string | undefined, ts: (data.ts as number) || 0 };
               } catch {
-                return { slug, title: undefined, author: undefined };
+                return { slug, title: undefined, author: undefined, ts: 0 };
               }
-            });
+            })
+            .sort((a, b) => b.ts - a.ts);
+          const totalBooks = allEntries.length;
+          const rawEntries = allEntries.slice(0, 4);
 
           if (rawEntries.length > 0) {
             // Per le voci senza titolo (localStorage vecchio), recupera da Supabase
@@ -106,6 +110,7 @@ function AuthLanding() {
             }));
 
             setResumeBooks(inProgress);
+            setResumeTotal(totalBooks);
             setLoading(false);
             return;
           }
@@ -166,20 +171,28 @@ function AuthLanding() {
               <span className="text-bone/50"> — {resumeBooks[0].author}</span>
             </p>
           ) : (
-            <ul className="mt-5 space-y-2">
-              {resumeBooks.map(b => (
-                <li key={b.slug}>
-                  <button
-                    onClick={() => window.location.replace(`/leggi/${b.slug}`)}
-                    className="w-full text-left px-4 py-3 border border-cyan/20 hover:border-cyan hover:bg-cyan/10 transition-all group"
-                  >
-                    <span className="font-mono text-[9px] text-cyan/60 group-hover:text-cyan mr-2 tracking-widest">▸</span>
-                    <span className="font-serif text-bone">{b.title}</span>
-                    {b.author && <span className="font-serif italic text-bone/50 text-sm ml-2">— {b.author}</span>}
-                  </button>
-                </li>
-              ))}
-            </ul>
+            <>
+              <ul className="mt-5 space-y-2">
+                {resumeBooks.map(b => (
+                  <li key={b.slug}>
+                    <button
+                      onClick={() => window.location.replace(`/leggi/${b.slug}`)}
+                      className="w-full text-left px-4 py-3 border border-cyan/20 hover:border-cyan hover:bg-cyan/10 transition-all group"
+                    >
+                      <span className="font-mono text-[9px] text-cyan/60 group-hover:text-cyan mr-2 tracking-widest">▸</span>
+                      <span className="font-serif text-bone">{b.title}</span>
+                      {b.author && <span className="font-serif italic text-bone/50 text-sm ml-2">— {b.author}</span>}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              {resumeTotal > 4 && (
+                <p className="mt-3 font-mono text-[10px] tracking-widest text-bone/35 uppercase">
+                  e altri {resumeTotal - 4} nel{" "}
+                  <Link to="/catalogo" className="text-cyan/60 hover:text-cyan underline underline-offset-2 transition-colors">catalogo</Link>
+                </p>
+              )}
+            </>
           )}
 
           <div className="mt-8 flex flex-col sm:flex-row gap-3">

@@ -207,7 +207,7 @@ function ReadPage() {
   // Salva la posizione quando cambia capitolo (anche per utenti non loggati, così il popup funziona al login)
   useEffect(() => {
     if (book.chapters.length === 0) return;
-    localStorage.setItem(bookmarkKey, JSON.stringify({ chapterIdx: currentIdx, title: book.title, author: book.author }));
+    localStorage.setItem(bookmarkKey, JSON.stringify({ chapterIdx: currentIdx, title: book.title, author: book.author, ts: Date.now() }));
   }, [currentIdx]);
 
   // Carica il segnalibro di paragrafo salvato
