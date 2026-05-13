@@ -192,9 +192,9 @@ function ReadPage() {
     }
   };
 
-  // Leggi il segnalibro salvato al mount
+  // Leggi il segnalibro salvato al mount (non per ospiti anonimi)
   useEffect(() => {
-    if (!isLoggedIn) return;
+    if (!isLoggedIn || isAnonymous) return;
     const saved = localStorage.getItem(bookmarkKey);
     if (!saved) return;
     const { chapterIdx } = JSON.parse(saved) as { chapterIdx: number };
@@ -204,14 +204,15 @@ function ReadPage() {
     }
   }, []);
 
-  // Salva la posizione quando cambia capitolo (anche per utenti non loggati, così il popup funziona al login)
+  // Salva la posizione quando cambia capitolo (non per ospiti anonimi)
   useEffect(() => {
-    if (book.chapters.length === 0) return;
+    if (book.chapters.length === 0 || isAnonymous) return;
     localStorage.setItem(bookmarkKey, JSON.stringify({ chapterIdx: currentIdx, title: book.title, author: book.author, ts: Date.now() }));
   }, [currentIdx]);
 
-  // Carica il segnalibro di paragrafo salvato
+  // Carica il segnalibro di paragrafo salvato (non per ospiti anonimi)
   useEffect(() => {
+    if (isAnonymous) return;
     const saved = localStorage.getItem(bookmarkParaKey);
     if (!saved) return;
     try { setParaBookmark(JSON.parse(saved)); } catch { /* noop */ }
