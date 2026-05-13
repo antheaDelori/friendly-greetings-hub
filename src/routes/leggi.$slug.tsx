@@ -204,11 +204,11 @@ function ReadPage() {
     }
   }, []);
 
-  // Salva la posizione quando cambia capitolo
+  // Salva la posizione quando cambia capitolo (anche per utenti non loggati, così il popup funziona al login)
   useEffect(() => {
-    if (!isLoggedIn || book.chapters.length === 0) return;
+    if (book.chapters.length === 0) return;
     localStorage.setItem(bookmarkKey, JSON.stringify({ chapterIdx: currentIdx }));
-  }, [currentIdx, isLoggedIn]);
+  }, [currentIdx]);
 
   // Carica il segnalibro di paragrafo salvato
   useEffect(() => {
