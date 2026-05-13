@@ -23,6 +23,7 @@ type BookStats = {
   count: number;
   letture: number;
   downloads: number;
+  perGenere: Record<string, number>;
 };
 
 type AccessLog = {
@@ -47,7 +48,7 @@ function AreaAutorePage() {
   const [email, setEmail] = useState<string | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [authorProfile, setAuthorProfile] = useState<AuthorProfile | null>(null);
-  const [bookStats, setBookStats] = useState<BookStats>({ count: 0, letture: 0, downloads: 0 });
+  const [bookStats, setBookStats] = useState<BookStats>({ count: 0, letture: 0, downloads: 0, perGenere: {} });
   const [logs, setLogs] = useState<AccessLog[]>([]);
 
   useEffect(() => {
@@ -61,7 +62,7 @@ function AreaAutorePage() {
       const [profileRes, authorRes, booksRes, logsRes] = await Promise.all([
         supabase.from("profiles").select("nome, cognome, pseudonimo, is_blocked, block_reason, created_at").eq("id", uid).single(),
         supabase.from("author_profiles").select("bio, generi").eq("id", uid).maybeSingle(),
-        supabase.from("books").select("letture, downloads").eq("author_id", uid),
+        supabase.from("books").select("letture, downloads, genere").eq("author_id", uid),
         supabase.from("access_logs").select("id, event, status, created_at").eq("user_id", uid).order("created_at", { ascending: false }).limit(5),
       ]);
 
@@ -69,10 +70,16 @@ function AreaAutorePage() {
       if (authorRes.data) setAuthorProfile(authorRes.data);
 
       if (booksRes.data) {
+        const perGenere: Record<string, number> = {};
+        for (const b of booksRes.data) {
+          const g = b.genere ?? "altro";
+          perGenere[g] = (perGenere[g] ?? 0) + 1;
+        }
         setBookStats({
           count: booksRes.data.length,
           letture: booksRes.data.reduce((s, b) => s + (b.letture ?? 0), 0),
           downloads: booksRes.data.reduce((s, b) => s + (b.downloads ?? 0), 0),
+          perGenere,
         });
       }
 
@@ -145,20 +152,37 @@ function AreaAutorePage() {
           {/* Opere */}
           <HudPanel label="le mie opere" code={`${bookStats.count} pub`} tone="cyan">
             <div className="space-y-4">
-              <div className="grid grid-cols-3 gap-3">
-                {[
-                  { label: "opere", value: bookStats.count, color: "text-cyan" },
-                  { label: "letture", value: bookStats.letture, color: "text-bone" },
-                  { label: "download", value: bookStats.downloads, color: "text-magenta" },
-                ].map(k => (
-                  <div key={k.label} className="text-center border border-cyan/15 py-3">
-                    <div className={`font-display text-2xl ${k.color}`}>{k.value}</div>
-                    <div className="font-mono text-[9px] tracking-widest text-bone/40 uppercase mt-1">{k.label}</div>
-                  </div>
-                ))}
-              </div>
-              {bookStats.count === 0 && (
+              {bookStats.count === 0 ? (
                 <p className="font-serif italic text-bone/50 text-sm">Nessuna opera pubblicata ancora.</p>
+              ) : (
+                <>
+                  {/* Suddivisione per genere */}
+                  <div className="grid grid-cols-2 gap-2">
+                    {(["libro", "racconto", "saggio", "articolo"] as const).map(g => {
+                      const labels: Record<string, string> = { libro: "Libri", racconto: "Racconti", saggio: "Saggi", articolo: "Articoli" };
+                      const n = bookStats.perGenere[g] ?? 0;
+                      return (
+                        <div key={g} className={`text-center border py-2 ${n > 0 ? "border-cyan/25" : "border-cyan/8 opacity-40"}`}>
+                          <div className={`font-display text-xl ${n > 0 ? "text-cyan" : "text-bone/40"}`}>{n}</div>
+                          <div className="font-mono text-[9px] tracking-widest text-bone/40 uppercase mt-0.5">{labels[g]}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {/* Letture e Download */}
+                  <div className="hud-divider" />
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { label: "letture", value: bookStats.letture, color: "text-bone" },
+                      { label: "download", value: bookStats.downloads, color: "text-magenta" },
+                    ].map(k => (
+                      <div key={k.label} className="text-center border border-cyan/15 py-3">
+                        <div className={`font-display text-2xl ${k.color}`}>{k.value}</div>
+                        <div className="font-mono text-[9px] tracking-widest text-bone/40 uppercase mt-1">{k.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
             <div className="hud-divider my-5" />
