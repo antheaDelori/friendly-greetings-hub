@@ -29,8 +29,12 @@ function AuthLanding() {
   const [resumeBooks, setResumeBooks] = useState<ResumeBook[]>([]);
   const [resumeTotal, setResumeTotal] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  const handleRemoveBook = (slug: string) => {
+  const handleRemoveBook = async (slug: string) => {
+    if (currentUserId) {
+      await supabase.from("reading_progress").delete().eq("user_id", currentUserId).eq("book_slug", slug);
+    }
     localStorage.removeItem(`reading_pos_${slug}`);
     localStorage.removeItem(`bookmark_para_${slug}`);
     const updated = resumeBooks.filter(b => b.slug !== slug);
@@ -84,44 +88,47 @@ function AuthLanding() {
             return;
           }
 
-          // Cerca libri in lettura nel localStorage
-          const allEntries = Object.keys(localStorage)
-            .filter(k => k.startsWith("reading_pos_"))
-            .map(k => {
+          // Migra eventuali voci localStorage → Supabase (sessioni precedenti non loggato)
+          const localKeys = Object.keys(localStorage).filter(k => k.startsWith("reading_pos_"));
+          if (localKeys.length > 0) {
+            const migrations = localKeys.map(k => {
               const slug = k.replace("reading_pos_", "");
               try {
-                const data = JSON.parse(localStorage.getItem(k) || "{}");
-                return { slug, title: data.title as string | undefined, author: data.author as string | undefined, ts: (data.ts as number) || 0 };
-              } catch {
-                return { slug, title: undefined, author: undefined, ts: 0 };
-              }
-            })
-            .sort((a, b) => b.ts - a.ts);
-          const totalBooks = allEntries.length;
-          const rawEntries = allEntries.slice(0, 4);
+                const d = JSON.parse(localStorage.getItem(k) || "{}");
+                return { user_id: userId, book_slug: slug, chapter_idx: d.chapterIdx ?? 0, book_title: d.title ?? null, book_author: d.author ?? null, updated_at: d.ts ? new Date(d.ts).toISOString() : new Date().toISOString() };
+              } catch { return null; }
+            }).filter(Boolean);
+            if (migrations.length > 0) {
+              await supabase.from("reading_progress").upsert(migrations as any[], { onConflict: "user_id,book_slug" });
+            }
+            localKeys.forEach(k => localStorage.removeItem(k));
+            Object.keys(localStorage).filter(k => k.startsWith("bookmark_para_")).forEach(k => localStorage.removeItem(k));
+          }
 
-          if (rawEntries.length > 0) {
-            // Per le voci senza titolo (localStorage vecchio), recupera da Supabase
-            const slugsWithoutTitle = rawEntries.filter(e => !e.title).map(e => e.slug);
+          // Recupera i progressi dal database
+          const { data: progressData, count } = await supabase
+            .from("reading_progress")
+            .select("book_slug, book_title, book_author", { count: "exact" })
+            .eq("user_id", userId)
+            .order("updated_at", { ascending: false })
+            .limit(4);
+
+          if (progressData && progressData.length > 0) {
+            // Per voci senza titolo cerca nella tabella books
+            const slugsWithoutTitle = progressData.filter((p: { book_title: string | null }) => !p.book_title).map((p: { book_slug: string }) => p.book_slug);
             let dbTitles: Record<string, { titolo: string; author_name: string }> = {};
             if (slugsWithoutTitle.length > 0) {
-              const { data: dbBooks } = await supabase
-                .from("books")
-                .select("slug, titolo, author_name")
-                .in("slug", slugsWithoutTitle);
-              if (dbBooks) {
-                dbTitles = Object.fromEntries(dbBooks.map(b => [b.slug, b]));
-              }
+              const { data: dbBooks } = await supabase.from("books").select("slug, titolo, author_name").in("slug", slugsWithoutTitle);
+              if (dbBooks) dbTitles = Object.fromEntries(dbBooks.map((b: { slug: string; titolo: string; author_name: string }) => [b.slug, b]));
             }
-
-            const inProgress: ResumeBook[] = rawEntries.map(e => ({
-              slug: e.slug,
-              title: e.title || dbTitles[e.slug]?.titolo || books.find(b => b.slug === e.slug)?.title || e.slug,
-              author: e.author || dbTitles[e.slug]?.author_name || books.find(b => b.slug === e.slug)?.author || "",
+            const inProgress: ResumeBook[] = progressData.map((p: { book_slug: string; book_title: string | null; book_author: string | null }) => ({
+              slug: p.book_slug,
+              title: p.book_title || dbTitles[p.book_slug]?.titolo || p.book_slug,
+              author: p.book_author || dbTitles[p.book_slug]?.author_name || "",
             }));
-
+            setCurrentUserId(userId);
             setResumeBooks(inProgress);
-            setResumeTotal(totalBooks);
+            setResumeTotal(count ?? progressData.length);
             setLoading(false);
             return;
           }

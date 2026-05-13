@@ -12,7 +12,7 @@ export const Route = createFileRoute("/leggi/$slug")({
     const staticBook = getBookBySlug(params.slug);
     if (staticBook) {
       const { data: { session } } = await supabase.auth.getSession();
-      return { book: staticBook, fileUrl: null as string | null, isLoggedIn: !!session, isAnonymous: session?.user?.is_anonymous ?? false };
+      return { book: staticBook, fileUrl: null as string | null, isLoggedIn: !!session, isAnonymous: session?.user?.is_anonymous ?? false, userId: session?.user?.id ?? null };
     }
 
     // Poi cerca su Supabase
@@ -74,6 +74,7 @@ export const Route = createFileRoute("/leggi/$slug")({
       fileUrl: data.file_url as string | null,
       isLoggedIn: !!session,
       isAnonymous: session?.user?.is_anonymous ?? false,
+      userId: session?.user?.id ?? null,
       allegati: (allegatiData ?? []) as { id: string; titolo: string; descrizione: string | null; file_url: string; tipo: string; ordine: number }[],
     };
   },
@@ -145,7 +146,7 @@ function chapterReadingTime(chapter: import("@/data/books").Chapter): string {
 }
 
 function ReadPage() {
-  const { book, fileUrl, isLoggedIn, isAnonymous, allegati } = Route.useLoaderData();
+  const { book, fileUrl, isLoggedIn, isAnonymous, userId, allegati } = Route.useLoaderData();
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const router = useRouter();
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -192,22 +193,39 @@ function ReadPage() {
     }
   };
 
-  // Leggi il segnalibro salvato al mount (non per ospiti anonimi)
+  // Carica il progresso dal database al mount
   useEffect(() => {
-    if (!isLoggedIn || isAnonymous) return;
-    const saved = localStorage.getItem(bookmarkKey);
-    if (!saved) return;
-    const { chapterIdx } = JSON.parse(saved) as { chapterIdx: number };
-    if (chapterIdx > 0 && chapterIdx < book.chapters.length) {
-      savedIdxRef.current = chapterIdx;
-      setResumeBanner(true);
-    }
+    if (!isLoggedIn || isAnonymous || !userId) return;
+    supabase
+      .from("reading_progress")
+      .select("chapter_idx")
+      .eq("user_id", userId)
+      .eq("book_slug", book.slug)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data && data.chapter_idx > 0 && data.chapter_idx < book.chapters.length) {
+          savedIdxRef.current = data.chapter_idx;
+          setResumeBanner(true);
+        }
+      });
   }, []);
 
-  // Salva la posizione quando cambia capitolo (non per ospiti anonimi)
+  // Salva il progresso quando cambia capitolo
   useEffect(() => {
     if (book.chapters.length === 0 || isAnonymous) return;
-    localStorage.setItem(bookmarkKey, JSON.stringify({ chapterIdx: currentIdx, title: book.title, author: book.author, ts: Date.now() }));
+    if (isLoggedIn && userId) {
+      supabase.from("reading_progress").upsert({
+        user_id: userId,
+        book_slug: book.slug,
+        chapter_idx: currentIdx,
+        book_title: book.title,
+        book_author: book.author,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "user_id,book_slug" });
+    } else if (!isLoggedIn) {
+      // Non loggato: salva in localStorage, verrà migrato su Supabase al login
+      localStorage.setItem(bookmarkKey, JSON.stringify({ chapterIdx: currentIdx, title: book.title, author: book.author, ts: Date.now() }));
+    }
   }, [currentIdx]);
 
   // Carica il segnalibro di paragrafo salvato (non per ospiti anonimi)

@@ -24,6 +24,9 @@ export function SiteHeader() {
   }, []);
 
   const handleLogout = async () => {
+    Object.keys(localStorage)
+      .filter(k => k.startsWith("reading_pos_") || k.startsWith("bookmark_para_"))
+      .forEach(k => localStorage.removeItem(k));
     await supabase.auth.signOut();
     window.location.href = "/";
   };
