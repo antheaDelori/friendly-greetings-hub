@@ -166,31 +166,30 @@ function AuthLanding() {
               <span className="text-bone/50"> — {resumeBooks[0].author}</span>
             </p>
           ) : (
-            <ul className="mt-4 space-y-2">
+            <ul className="mt-5 space-y-2">
               {resumeBooks.map(b => (
-                <li key={b.slug} className="font-serif italic text-bone/70">
-                  ▸ <span className="text-bone not-italic">{b.title}</span>
-                  <span className="text-bone/50"> — {b.author}</span>
+                <li key={b.slug}>
+                  <button
+                    onClick={() => window.location.replace(`/leggi/${b.slug}`)}
+                    className="w-full text-left px-4 py-3 border border-cyan/20 hover:border-cyan hover:bg-cyan/10 transition-all group"
+                  >
+                    <span className="font-mono text-[9px] text-cyan/60 group-hover:text-cyan mr-2 tracking-widest">▸</span>
+                    <span className="font-serif text-bone">{b.title}</span>
+                    {b.author && <span className="font-serif italic text-bone/50 text-sm ml-2">— {b.author}</span>}
+                  </button>
                 </li>
               ))}
             </ul>
           )}
 
           <div className="mt-8 flex flex-col sm:flex-row gap-3">
-            {resumeBooks.length === 1 ? (
+            {resumeBooks.length === 1 && (
               <button
                 onClick={() => window.location.replace(`/leggi/${resumeBooks[0].slug}`)}
                 className="flex-1 border border-cyan bg-cyan/10 text-cyan px-6 py-3 font-mono tracking-[0.2em] text-[11px] uppercase hover:bg-cyan hover:text-void transition-all hud-frame"
               >
                 ▸ Sì, riprendi
               </button>
-            ) : (
-              <Link
-                to="/catalogo"
-                className="flex-1 text-center border border-cyan bg-cyan/10 text-cyan px-6 py-3 font-mono tracking-[0.2em] text-[11px] uppercase hover:bg-cyan hover:text-void transition-all hud-frame"
-              >
-                ▸ Scegli quale riprendere
-              </Link>
             )}
             <button
               onClick={() => window.location.replace("/")}
