@@ -224,7 +224,8 @@ function ReadPage() {
         book_title: book.title,
         book_author: book.author,
         updated_at: new Date().toISOString(),
-      }, { onConflict: "user_id,book_slug" });
+      }, { onConflict: "user_id,book_slug" })
+        .then(({ error }) => { if (error) console.error("[reading_progress] upsert fallito:", error); });
     } else if (!isLoggedIn) {
       // Non loggato: salva in localStorage, verrà migrato su Supabase al login
       localStorage.setItem(bookmarkKey, JSON.stringify({ chapterIdx: currentIdx, title: book.title, author: book.author, ts: Date.now() }));
