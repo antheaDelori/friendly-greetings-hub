@@ -73,21 +73,38 @@ function AuthLanding() {
           }
 
           // Cerca libri in lettura nel localStorage
-          const inProgress: ResumeBook[] = Object.keys(localStorage)
+          const rawEntries = Object.keys(localStorage)
             .filter(k => k.startsWith("reading_pos_"))
             .map(k => {
               const slug = k.replace("reading_pos_", "");
               try {
                 const data = JSON.parse(localStorage.getItem(k) || "{}");
-                const title = data.title || books.find(b => b.slug === slug)?.title || slug;
-                const author = data.author || books.find(b => b.slug === slug)?.author || "";
-                return { slug, title, author };
+                return { slug, title: data.title as string | undefined, author: data.author as string | undefined };
               } catch {
-                return { slug, title: slug, author: "" };
+                return { slug, title: undefined, author: undefined };
               }
             });
 
-          if (inProgress.length > 0) {
+          if (rawEntries.length > 0) {
+            // Per le voci senza titolo (localStorage vecchio), recupera da Supabase
+            const slugsWithoutTitle = rawEntries.filter(e => !e.title).map(e => e.slug);
+            let dbTitles: Record<string, { titolo: string; author_name: string }> = {};
+            if (slugsWithoutTitle.length > 0) {
+              const { data: dbBooks } = await supabase
+                .from("books")
+                .select("slug, titolo, author_name")
+                .in("slug", slugsWithoutTitle);
+              if (dbBooks) {
+                dbTitles = Object.fromEntries(dbBooks.map(b => [b.slug, b]));
+              }
+            }
+
+            const inProgress: ResumeBook[] = rawEntries.map(e => ({
+              slug: e.slug,
+              title: e.title || dbTitles[e.slug]?.titolo || books.find(b => b.slug === e.slug)?.title || e.slug,
+              author: e.author || dbTitles[e.slug]?.author_name || books.find(b => b.slug === e.slug)?.author || "",
+            }));
+
             setResumeBooks(inProgress);
             setLoading(false);
             return;
