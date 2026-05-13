@@ -615,30 +615,27 @@ function GestionePage() {
           {/* Lista opere */}
           <HudPanel label="le tue opere" code={`${activeBooks.length}`} tone="cyan">
             {/* Filtro per tipologia */}
-            {activeBooks.length > 0 && (
-              <div className="mb-4 flex flex-wrap gap-1.5">
-                {([null, "libro", "racconto", "saggio", "articolo"] as (string | null)[]).map(g => {
-                  const count = g ? activeBooks.filter(b => b.genere === g).length : activeBooks.length;
-                  const labels: Record<string, string> = { libro: "Libri", racconto: "Racconti", saggio: "Saggi", articolo: "Articoli" };
-                  const label = g ? labels[g] : "Tutti";
-                  const isActive = filterGenere === g;
-                  return (
-                    <button
-                      key={g ?? "tutti"}
-                      onClick={() => { setFilterGenere(g); setSelected(null); setShowForm(false); }}
-                      className={`font-mono text-[9px] uppercase tracking-widest border px-2.5 py-1 transition-all ${
-                        isActive
-                          ? "border-cyan bg-cyan/20 text-cyan"
-                          : "border-cyan/20 text-bone/50 hover:border-cyan/50 hover:text-bone/80"
-                      }`}
-                    >
-                      {label}
-                      {count > 0 && <span className={`ml-1 ${isActive ? "text-cyan/70" : "text-bone/30"}`}>{count}</span>}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+            <div className="mb-4 grid grid-cols-2 gap-1.5">
+              {(["libro", "racconto", "saggio", "articolo"] as const).map(g => {
+                const count = activeBooks.filter(b => b.genere === g).length;
+                const labels: Record<string, string> = { libro: "Libri", racconto: "Racconti", saggio: "Saggi", articolo: "Articoli" };
+                const isActive = filterGenere === g;
+                return (
+                  <button
+                    key={g}
+                    onClick={() => { setFilterGenere(isActive ? null : g); setSelected(null); setShowForm(false); }}
+                    className={`font-mono text-[9px] uppercase tracking-widest border py-2 transition-all ${
+                      isActive
+                        ? "border-cyan bg-cyan/20 text-cyan"
+                        : "border-cyan/20 text-bone/50 hover:border-cyan/50 hover:text-bone/80"
+                    }`}
+                  >
+                    {labels[g]}
+                    {count > 0 && <span className={`ml-1 ${isActive ? "text-cyan/70" : "text-bone/30"}`}>{count}</span>}
+                  </button>
+                );
+              })}
+            </div>
 
             {filteredBooks.length === 0 && (
               <p className="font-mono text-[10px] text-bone/40 uppercase tracking-widest mb-4">
