@@ -28,6 +28,17 @@ function AuthLanding() {
   type ResumeBook = { slug: string; title: string; author: string };
   const [resumeBooks, setResumeBooks] = useState<ResumeBook[]>([]);
   const [resumeTotal, setResumeTotal] = useState(0);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+
+  const handleRemoveBook = (slug: string) => {
+    localStorage.removeItem(`reading_pos_${slug}`);
+    localStorage.removeItem(`bookmark_para_${slug}`);
+    const updated = resumeBooks.filter(b => b.slug !== slug);
+    setResumeBooks(updated);
+    setResumeTotal(t => t - 1);
+    setConfirmDelete(null);
+    if (updated.length === 0) window.location.replace("/");
+  };
 
   useEffect(() => {
     returnToRef.current = returnTo;
@@ -174,15 +185,38 @@ function AuthLanding() {
             <>
               <ul className="mt-5 space-y-2">
                 {resumeBooks.map(b => (
-                  <li key={b.slug}>
-                    <button
-                      onClick={() => window.location.replace(`/leggi/${b.slug}`)}
-                      className="w-full text-left px-4 py-3 border border-cyan/20 hover:border-cyan hover:bg-cyan/10 transition-all group"
-                    >
-                      <span className="font-mono text-[9px] text-cyan/60 group-hover:text-cyan mr-2 tracking-widest">▸</span>
-                      <span className="font-serif text-bone">{b.title}</span>
-                      {b.author && <span className="font-serif italic text-bone/50 text-sm ml-2">— {b.author}</span>}
-                    </button>
+                  <li key={b.slug} className="border border-cyan/20 hover:border-cyan/40 transition-colors">
+                    {confirmDelete === b.slug ? (
+                      <div className="flex items-center justify-between px-4 py-3 bg-magenta/5">
+                        <span className="font-serif italic text-sm text-bone/70">Rimuovere dalla lista?</span>
+                        <div className="flex gap-3 ml-4 shrink-0">
+                          <button
+                            onClick={() => handleRemoveBook(b.slug)}
+                            className="font-mono text-[10px] uppercase tracking-widest text-magenta hover:text-bone transition-colors"
+                          >Sì</button>
+                          <button
+                            onClick={() => setConfirmDelete(null)}
+                            className="font-mono text-[10px] uppercase tracking-widest text-bone/50 hover:text-bone transition-colors"
+                          >No</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center group">
+                        <button
+                          onClick={() => window.location.replace(`/leggi/${b.slug}`)}
+                          className="flex-1 text-left px-4 py-3"
+                        >
+                          <span className="font-mono text-[9px] text-cyan/60 group-hover:text-cyan mr-2 tracking-widest">▸</span>
+                          <span className="font-serif text-bone">{b.title}</span>
+                          {b.author && <span className="font-serif italic text-bone/50 text-sm ml-2">— {b.author}</span>}
+                        </button>
+                        <button
+                          onClick={() => setConfirmDelete(b.slug)}
+                          className="px-3 py-3 font-mono text-bone/25 hover:text-magenta transition-colors text-sm shrink-0"
+                          title="Rimuovi dalla lista"
+                        >✕</button>
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>
