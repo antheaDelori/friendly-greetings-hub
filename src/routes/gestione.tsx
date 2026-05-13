@@ -231,6 +231,7 @@ function GestionePage() {
 
   const handleNewBook = () => {
     resetForm();
+    if (filterGenere) setGenere(filterGenere);
     setSelected(null);
     setShowForm(true);
   };
@@ -713,19 +714,25 @@ function GestionePage() {
                   </div>
                 </div>
 
-                <div>
-                  <span className={labelClass}>↳ Genere ★</span>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {GENERI.map(g => (
-                      <button key={g} type="button" onClick={() => setGenere(g)}
-                        className={`border px-4 py-2 font-mono text-[10px] uppercase tracking-widest transition-all ${
-                          genere === g ? "border-cyan bg-cyan/15 text-cyan" : "border-cyan/30 text-bone/70 hover:border-cyan"
-                        }`}>
-                        ◆ {g}
-                      </button>
-                    ))}
+                {editingId ? (
+                  <div>
+                    <span className={labelClass}>↳ Genere ★</span>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {GENERI.map(g => (
+                        <button key={g} type="button" onClick={() => setGenere(g)}
+                          className={`border px-4 py-2 font-mono text-[10px] uppercase tracking-widest transition-all ${
+                            genere === g ? "border-cyan bg-cyan/15 text-cyan" : "border-cyan/30 text-bone/70 hover:border-cyan"
+                          }`}>
+                          ◆ {g}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="font-mono text-[10px] tracking-widest text-bone/40 uppercase border border-cyan/15 px-4 py-2 inline-flex items-center gap-2">
+                    <span className="text-cyan/50">◆</span> Genere: <span className="text-cyan">{genere}</span>
+                  </div>
+                )}
 
                 {/* Tipo e Target */}
                 <div className="grid sm:grid-cols-2 gap-5">
