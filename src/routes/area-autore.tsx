@@ -53,7 +53,7 @@ function AreaAutorePage() {
   useEffect(() => {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { window.location.replace("/auth"); return; }
+      if (!user || user.is_anonymous) { window.location.replace("/auth"); return; }
 
       setEmail(user.email ?? null);
       const uid = user.id;

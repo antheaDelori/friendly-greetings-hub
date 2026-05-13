@@ -5,11 +5,14 @@ import { supabase } from "@/lib/supabase";
 
 export function SiteHeader() {
   const [displayName, setDisplayName] = useState<string | null>(null);
+  const [isAnonymous, setIsAnonymous] = useState(false);
 
   useEffect(() => {
     const loadUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setDisplayName(null); return; }
+      if (!user) { setDisplayName(null); setIsAnonymous(false); return; }
+      setIsAnonymous(user.is_anonymous ?? false);
+      if (user.is_anonymous) { setDisplayName("ospite"); return; }
       const meta = user.user_metadata;
       setDisplayName(meta?.pseudonimo || meta?.nome || user.email?.split("@")[0] || "utente");
     };
@@ -83,13 +86,19 @@ export function SiteHeader() {
         <div className="flex items-center gap-2">
           {displayName ? (
             <>
-              <Link
-                to="/area-autore"
-                className="hidden sm:inline-flex font-mono tracking-widest text-[10px] uppercase text-cyan hover:text-magenta transition-colors px-3 py-2"
-                title="Area riservata autore"
-              >
-                [{displayName}]
-              </Link>
+              {isAnonymous ? (
+                <span className="hidden sm:inline-flex font-mono tracking-widest text-[10px] uppercase text-bone/40 px-3 py-2">
+                  [ospite]
+                </span>
+              ) : (
+                <Link
+                  to="/area-autore"
+                  className="hidden sm:inline-flex font-mono tracking-widest text-[10px] uppercase text-cyan hover:text-magenta transition-colors px-3 py-2"
+                  title="Area riservata autore"
+                >
+                  [{displayName}]
+                </Link>
+              )}
               <button
                 onClick={handleLogout}
                 className="relative inline-flex items-center gap-2 border border-magenta/60 bg-magenta/10 px-4 py-2 font-mono text-[10px] uppercase tracking-widest text-magenta hover:bg-magenta hover:text-void transition-all"
