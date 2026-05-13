@@ -154,6 +154,9 @@ function ReadPage() {
   const [resumeBanner, setResumeBanner] = useState(false);
   const savedIdxRef = useRef<number>(0);
 
+  // Torna sempre in cima quando si apre il libro
+  useEffect(() => { window.scrollTo({ top: 0, behavior: "instant" }); }, []);
+
   const bookmarkKey = `reading_pos_${book.slug}`;
   const bookmarkParaKey = `bookmark_para_${book.slug}`;
   const proseRef = useRef<HTMLDivElement>(null);
