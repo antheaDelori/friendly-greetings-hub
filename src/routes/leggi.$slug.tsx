@@ -279,14 +279,17 @@ function ReadPage() {
       <section className="mx-auto max-w-6xl w-full px-4 sm:px-6 lg:px-10 py-8 grid grid-cols-1 lg:grid-cols-[210px_1fr_130px] gap-6 lg:gap-8 flex-1 items-start">
 
         {/* Sidebar sinistra: info libro + capitoli */}
-        <aside className="lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:col-start-1">
-          <button
-            onClick={() => router.history.back()}
-            className="inline-flex items-center gap-1.5 font-display tracking-widest text-[10px] uppercase text-ink/40 hover:text-ink transition-colors mb-4"
+        <aside className="lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-7rem)] lg:col-start-1 flex flex-col">
+          {/* Pulsante fisso — sempre visibile anche quando il contenuto scrolla */}
+          <Link
+            to="/catalogo"
+            className="inline-flex items-center gap-1.5 font-display tracking-widest text-[10px] uppercase text-blood/70 hover:text-blood border border-blood/25 hover:border-blood/60 px-3 py-2 transition-colors mb-3 shrink-0"
           >
-            ← Indietro
-          </button>
+            ← Torna al catalogo
+          </Link>
 
+          {/* Contenuto scrollabile: copertina, meta, capitoli */}
+          <div className="lg:overflow-y-auto lg:min-h-0 flex-1">
           <img src={book.cover} alt="" className="w-full h-auto block ring-1 ring-ink/15 bg-ink/5" />
 
           <div className="mt-4">
@@ -318,6 +321,7 @@ function ReadPage() {
               </ol>
             </div>
           )}
+          </div>
         </aside>
 
         {/* Sidebar destra sticky: azioni + font — prima dell'article nel DOM così su mobile appare tra info e testo */}
