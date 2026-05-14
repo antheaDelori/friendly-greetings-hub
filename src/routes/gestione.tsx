@@ -520,6 +520,14 @@ function GestionePage() {
     }
   };
 
+  const handleEliminaDefinitivamente = async () => {
+    if (!selected || !userId) return;
+    await supabase.from("books").delete().eq("id", selected.id);
+    setSelected(null);
+    setConfirmDelete(false);
+    await loadBooks(userId);
+  };
+
   const handleRipristina = async (book: Book) => {
     if (!userId) return;
     await supabase.from("books").update({ disponibile: true }).eq("id", book.id);
@@ -1384,10 +1392,11 @@ function GestionePage() {
                 {confirmDelete && (
                   <div className="border border-magenta/50 bg-magenta/5 p-4 space-y-3">
                     <p className="font-mono text-[10px] tracking-widest text-magenta uppercase">
-                      ⚠ L'opera verrà archiviata. Potrai ripristinarla in qualsiasi momento.
+                      ⚠ Archivia per nasconderla (recuperabile) oppure elimina per rimuoverla dal database.
                     </p>
-                    <div className="flex gap-3">
-                      <HudButton variant="magenta" onClick={handleElimina}>Conferma</HudButton>
+                    <div className="flex flex-wrap gap-3">
+                      <HudButton variant="magenta" onClick={handleElimina}>Archivia</HudButton>
+                      <HudButton variant="magenta" onClick={handleEliminaDefinitivamente}>Elimina definitivamente</HudButton>
                       <HudButton variant="ghost" onClick={() => setConfirmDelete(false)}>Annulla</HudButton>
                     </div>
                   </div>
