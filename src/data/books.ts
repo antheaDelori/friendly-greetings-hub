@@ -74,25 +74,6 @@ export const books: Book[] = [
     ],
   },
   {
-    slug: "racconti-di-mezzanotte",
-    title: "Racconti di mezzanotte",
-    author: "Marco Renzetti",
-    authorSlug: "marco-renzetti",
-    genre: "racconto",
-    year: 2023,
-    reads: 5610,
-    rating: 4.4,
-    cover,
-    tagline: "Sette storie che si leggono in piedi, sull'ultimo treno.",
-    description:
-      "Racconti brevi ambientati nelle ore in cui la città dorme e le idee, finalmente, parlano ad alta voce.",
-    chapters: [
-      { id: "c1", title: "Il barista filosofo", content: lorem(2, "Racconti di mezzanotte") },
-      { id: "c2", title: "La donna che leggeva due libri insieme", content: lorem(2, "Racconti di mezzanotte") },
-      { id: "c3", title: "L'ultimo turno", content: lorem(2, "Racconti di mezzanotte") },
-    ],
-  },
-  {
     slug: "lessico-della-rivolta",
     title: "Lessico della rivolta",
     author: "Iris Conforti",
