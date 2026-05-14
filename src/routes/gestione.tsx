@@ -148,6 +148,7 @@ function GestionePage() {
   const [collanaError, setCollanaError] = useState<string | null>(null);
   const [collanaEditingId, setCollanaEditingId] = useState<string | null>(null);
   const [confirmDeleteCollana, setConfirmDeleteCollana] = useState(false);
+  const [confirmDeleteNovella, setConfirmDeleteNovella] = useState<string | null>(null);
   const [collanaTitolo, setCollanaTitolo] = useState("");
   const [collanaDescrizione, setCollanaDescrizione] = useState("");
   const [collanaCopertina, setCollanaCopertina] = useState<File | null>(null);
@@ -1531,23 +1532,48 @@ function GestionePage() {
                       ? <p className="font-serif italic text-bone/40 text-sm mb-3">Nessuna opera assegnata ancora.</p>
                       : <ul className="space-y-2 mb-3">
                           {collanaBooks.map(b => (
-                            <li key={b.id} className="flex items-center gap-3 border border-cyan/10 p-3">
-                              {b.copertina_url && <img src={b.copertina_url} alt="" className="w-8 h-10 object-cover flex-shrink-0" />}
-                              <div className="flex-1 min-w-0">
-                                <div className="font-mono text-[10px] uppercase tracking-widest text-bone/70 truncate">{b.titolo}</div>
-                                {b.sottotitolo && <div className="font-mono text-[9px] text-bone/40 truncate">{b.sottotitolo}</div>}
+                            <li key={b.id} className="border border-cyan/10">
+                              <div className="flex items-center gap-3 p-3">
+                                {b.copertina_url && <img src={b.copertina_url} alt="" className="w-8 h-10 object-cover flex-shrink-0" />}
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-mono text-[10px] uppercase tracking-widest text-bone/70 truncate">{b.titolo}</div>
+                                  {b.sottotitolo && <div className="font-mono text-[9px] text-bone/40 truncate">{b.sottotitolo}</div>}
+                                </div>
+                                <button
+                                  onClick={() => { setConfirmDeleteNovella(null); setSelected(b); setSelectedCollana(null); setShowCollanaList(false); openEditForm(b); }}
+                                  className="font-mono text-[9px] uppercase tracking-widest text-cyan/60 hover:text-cyan border border-cyan/20 hover:border-cyan/50 px-3 py-1.5 transition-colors flex-shrink-0">
+                                  Modifica
+                                </button>
+                                <button
+                                  onClick={() => setConfirmDeleteNovella(confirmDeleteNovella === b.id ? null : b.id)}
+                                  className="font-mono text-[9px] uppercase tracking-widest text-magenta/60 hover:text-magenta border border-magenta/20 hover:border-magenta/50 px-3 py-1.5 transition-colors flex-shrink-0">
+                                  Elimina
+                                </button>
                               </div>
-                              <button
-                                onClick={() => { setSelected(b); setSelectedCollana(null); setShowCollanaList(false); openEditForm(b); }}
-                                title="Modifica novella"
-                                className="font-mono text-[9px] text-cyan/50 hover:text-cyan border border-transparent hover:border-cyan/40 px-2 py-1 transition-colors flex-shrink-0">
-                                ✎
-                              </button>
-                              <button onClick={() => handleRemoveFromCollana(b.id)}
-                                title="Rimuovi dalla collana"
-                                className="font-mono text-[9px] text-magenta/50 hover:text-magenta border border-transparent hover:border-magenta/40 px-2 py-1 transition-colors flex-shrink-0">
-                                ✕
-                              </button>
+                              {confirmDeleteNovella === b.id && (
+                                <div className="border-t border-magenta/20 bg-magenta/5 px-3 py-3 space-y-2">
+                                  <p className="font-mono text-[9px] tracking-widest text-magenta uppercase">
+                                    ⚠ Archivia per nasconderla (recuperabile) oppure elimina dal database.
+                                  </p>
+                                  <div className="flex flex-wrap gap-2">
+                                    <button
+                                      onClick={async () => { await supabase.from("books").update({ disponibile: false }).eq("id", b.id); setConfirmDeleteNovella(null); if (userId) await loadBooks(userId); }}
+                                      className="font-mono text-[9px] uppercase tracking-widest border border-magenta/50 text-magenta bg-magenta/10 hover:bg-magenta/20 px-3 py-1.5 transition-colors">
+                                      Archivia
+                                    </button>
+                                    <button
+                                      onClick={async () => { await supabase.from("books").delete().eq("id", b.id); setConfirmDeleteNovella(null); if (userId) await loadBooks(userId); }}
+                                      className="font-mono text-[9px] uppercase tracking-widest border border-magenta/50 text-magenta bg-magenta/10 hover:bg-magenta/20 px-3 py-1.5 transition-colors">
+                                      Elimina definitivamente
+                                    </button>
+                                    <button
+                                      onClick={() => setConfirmDeleteNovella(null)}
+                                      className="font-mono text-[9px] uppercase tracking-widest border border-cyan/20 text-bone/50 hover:text-bone hover:border-cyan/50 px-3 py-1.5 transition-colors">
+                                      Annulla
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
                             </li>
                           ))}
                         </ul>
