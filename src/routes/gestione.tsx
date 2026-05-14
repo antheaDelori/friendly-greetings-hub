@@ -709,8 +709,8 @@ function GestionePage() {
   const [booksPage, setBooksPage] = useState(0);
 
   const BOOKS_PER_PAGE = 4;
-  const activeBooks = books.filter(b => b.disponibile);
-  const archivedBooks = books.filter(b => !b.disponibile);
+  const activeBooks = books.filter(b => b.disponibile && !b.collana_id);
+  const archivedBooks = books.filter(b => !b.disponibile && !b.collana_id);
   const filteredBooks = filterGenere ? activeBooks.filter(b => b.genere === filterGenere) : activeBooks;
   const booksTotalPages = Math.ceil(filteredBooks.length / BOOKS_PER_PAGE);
   const pagedBooks = filteredBooks.slice(booksPage * BOOKS_PER_PAGE, (booksPage + 1) * BOOKS_PER_PAGE);
