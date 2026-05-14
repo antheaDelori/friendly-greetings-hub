@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect, useRef } from "react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -1590,10 +1590,9 @@ function GestionePage() {
 
               <div className="hud-divider my-5" />
               <div className="font-mono text-[9px] tracking-widest text-bone/30 uppercase mb-2">// pagina pubblica della collana</div>
-              <a
-                href={`/collane/${selectedCollana.slug}`}
-                target="_blank"
-                rel="noreferrer"
+              <Link
+                to="/collane/$slug"
+                params={{ slug: selectedCollana.slug }}
                 className="flex items-center justify-between gap-3 border border-cyan/20 px-4 py-3 hover:border-cyan hover:bg-cyan/5 transition-all group"
               >
                 <div>
@@ -1605,7 +1604,7 @@ function GestionePage() {
                   </div>
                 </div>
                 <span className="font-mono text-lg text-cyan/30 group-hover:text-cyan transition-colors">▸</span>
-              </a>
+              </Link>
               <div className="flex gap-3 mt-3">
                 <HudButton variant="ghost" onClick={handleEditCollana}>◆ Modifica</HudButton>
                 {confirmDeleteCollana ? (
