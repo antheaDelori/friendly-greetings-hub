@@ -1507,23 +1507,58 @@ function GestionePage() {
               <div className="font-mono text-[10px] tracking-widest text-cyan/70 uppercase mb-3">// opere in questa collana</div>
               {(() => {
                 const collanaBooks = books.filter(b => b.collana_id === selectedCollana.id);
-                return collanaBooks.length === 0
-                  ? <p className="font-serif italic text-bone/40 text-sm">Nessuna opera assegnata ancora.</p>
-                  : <ul className="space-y-2">
-                      {collanaBooks.map(b => (
-                        <li key={b.id} className="flex items-center gap-3 border border-cyan/10 p-3">
-                          {b.copertina_url && <img src={b.copertina_url} alt="" className="w-8 h-10 object-cover flex-shrink-0" />}
-                          <div className="flex-1 min-w-0">
-                            <div className="font-mono text-[10px] uppercase tracking-widest text-bone/70 truncate">{b.titolo}</div>
-                            {b.sottotitolo && <div className="font-mono text-[9px] text-bone/40 truncate">{b.sottotitolo}</div>}
-                          </div>
-                          <button onClick={() => { handleSelectBook(b); setShowCollanaForm(false); setSelectedCollana(null); }}
-                            className="font-mono text-[9px] text-cyan/50 hover:text-cyan border border-transparent hover:border-cyan/40 px-2 py-1 transition-colors flex-shrink-0">
-                            ✎
-                          </button>
-                        </li>
-                      ))}
-                    </ul>;
+                const freeBooks = books.filter(b => b.collana_id !== selectedCollana.id && b.disponibile);
+                const handleAddToCollana = async (bookId: string) => {
+                  await supabase.from("books").update({ collana_id: selectedCollana.id }).eq("id", bookId);
+                  if (userId) await loadBooks(userId);
+                };
+                const handleRemoveFromCollana = async (bookId: string) => {
+                  await supabase.from("books").update({ collana_id: null }).eq("id", bookId);
+                  if (userId) await loadBooks(userId);
+                };
+                return (
+                  <>
+                    {collanaBooks.length === 0
+                      ? <p className="font-serif italic text-bone/40 text-sm mb-3">Nessuna opera assegnata ancora.</p>
+                      : <ul className="space-y-2 mb-3">
+                          {collanaBooks.map(b => (
+                            <li key={b.id} className="flex items-center gap-3 border border-cyan/10 p-3">
+                              {b.copertina_url && <img src={b.copertina_url} alt="" className="w-8 h-10 object-cover flex-shrink-0" />}
+                              <div className="flex-1 min-w-0">
+                                <div className="font-mono text-[10px] uppercase tracking-widest text-bone/70 truncate">{b.titolo}</div>
+                                {b.sottotitolo && <div className="font-mono text-[9px] text-bone/40 truncate">{b.sottotitolo}</div>}
+                              </div>
+                              <button onClick={() => handleRemoveFromCollana(b.id)}
+                                title="Rimuovi dalla collana"
+                                className="font-mono text-[9px] text-magenta/50 hover:text-magenta border border-transparent hover:border-magenta/40 px-2 py-1 transition-colors flex-shrink-0">
+                                ✕
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                    }
+                    {freeBooks.length > 0 && (
+                      <>
+                        <div className="font-mono text-[9px] tracking-widest text-bone/30 uppercase mb-2">+ aggiungi opera</div>
+                        <ul className="space-y-1">
+                          {freeBooks.map(b => (
+                            <li key={b.id}>
+                              <button onClick={() => handleAddToCollana(b.id)}
+                                className="w-full text-left flex items-center gap-3 border border-cyan/[0.12] p-2.5 hover:border-cyan/40 hover:bg-cyan/5 transition-all group">
+                                {b.copertina_url && <img src={b.copertina_url} alt="" className="w-6 h-8 object-cover flex-shrink-0 opacity-60 group-hover:opacity-100" />}
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-mono text-[9px] uppercase tracking-widest text-bone/50 group-hover:text-bone/80 truncate">{b.titolo}</div>
+                                  <div className="font-mono text-[8px] text-bone/25 uppercase tracking-widest">{b.genere}</div>
+                                </div>
+                                <span className="font-mono text-[9px] text-cyan/30 group-hover:text-cyan flex-shrink-0">+</span>
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      </>
+                    )}
+                  </>
+                );
               })()}
 
               <div className="hud-divider my-5" />
