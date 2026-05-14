@@ -44,7 +44,7 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const [featured, setFeatured] = useState<Book[]>(books.slice(0, 4));
-  const fresh = books.slice(4, 8);
+  const [fresh, setFresh] = useState<Book[]>(books.slice(4, 8));
   const totals = {
     opere: books.length * 14,
     autori: 132,
@@ -59,9 +59,9 @@ function Index() {
         .eq("disponibile", true)
         .order("created_at", { ascending: false });
       if (!data || data.length === 0) return;
+      const ALL_GENRES: Genre[] = ["libro", "racconto", "saggio", "articolo", "buonanotte", "poesia"];
       const dbBooks: Book[] = data.map(b => {
         const author = b.author_name || "Autore";
-        const ALL_GENRES: Genre[] = ["libro", "racconto", "saggio", "articolo", "buonanotte", "poesia"];
         return {
           slug: b.slug,
           title: b.titolo,
@@ -78,7 +78,10 @@ function Index() {
           chapters: [],
         };
       });
-      setFeatured(pickFeatured(dbBooks));
+      const featuredBooks = pickFeatured(dbBooks);
+      const featuredSlugs = new Set(featuredBooks.map(b => b.slug));
+      setFeatured(featuredBooks);
+      setFresh(dbBooks.filter(b => !featuredSlugs.has(b.slug)).slice(0, 4));
     };
     fetchFeatured();
   }, []);
