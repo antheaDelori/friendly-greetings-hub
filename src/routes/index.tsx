@@ -1,9 +1,36 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState, useEffect } from "react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { BookCard } from "@/components/BookCard";
-import { books } from "@/data/books";
+import { books, type Book, type Genre } from "@/data/books";
+import { supabase } from "@/lib/supabase";
 import logo from "@/assets/liberiamo-hero.png";
+import logoFallback from "@/assets/logo-liberiamo.jpg";
+
+const FEATURED_GENRES: Genre[] = ["libro", "racconto", "saggio", "poesia"];
+
+function pickFeatured(all: Book[]): Book[] {
+  const byGenre: Partial<Record<Genre, Book[]>> = {};
+  for (const b of all) {
+    (byGenre[b.genre] ??= []).push(b);
+  }
+  const result: Book[] = [];
+  let round = 0;
+  while (result.length < 4) {
+    let added = false;
+    for (const g of FEATURED_GENRES) {
+      if (result.length >= 4) break;
+      if ((byGenre[g]?.length ?? 0) > round) {
+        result.push(byGenre[g]![round]);
+        added = true;
+      }
+    }
+    if (!added) break;
+    round++;
+  }
+  return result;
+}
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -16,13 +43,45 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  const featured = books.slice(0, 4);
+  const [featured, setFeatured] = useState<Book[]>(books.slice(0, 4));
   const fresh = books.slice(4, 8);
   const totals = {
     opere: books.length * 14,
     autori: 132,
     letture: books.reduce((s, b) => s + b.reads, 0),
   };
+
+  useEffect(() => {
+    const fetchFeatured = async () => {
+      const { data } = await supabase
+        .from("books")
+        .select("slug, titolo, descrizione, genere, anno, letture, copertina_url, lastra_url, author_name")
+        .eq("disponibile", true)
+        .order("created_at", { ascending: false });
+      if (!data || data.length === 0) return;
+      const dbBooks: Book[] = data.map(b => {
+        const author = b.author_name || "Autore";
+        const ALL_GENRES: Genre[] = ["libro", "racconto", "saggio", "articolo", "buonanotte", "poesia"];
+        return {
+          slug: b.slug,
+          title: b.titolo,
+          author,
+          authorSlug: author.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-"),
+          genre: (ALL_GENRES.includes(b.genere as Genre) ? b.genere : "libro") as Genre,
+          year: b.anno ?? new Date().getFullYear(),
+          reads: b.letture,
+          rating: 0,
+          cover: b.copertina_url ?? logoFallback,
+          lastra: b.lastra_url ?? undefined,
+          tagline: b.descrizione?.slice(0, 140) ?? "",
+          description: b.descrizione ?? "",
+          chapters: [],
+        };
+      });
+      setFeatured(pickFeatured(dbBooks));
+    };
+    fetchFeatured();
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -143,7 +202,7 @@ function Index() {
             <div className="font-mono tracking-[0.3em] text-[10px] text-cyan uppercase">// in_evidenza</div>
             <h2 className="mt-3 font-display text-4xl md:text-5xl text-bone tracking-tight">Le opere che mordono</h2>
             <p className="mt-3 font-serif italic text-lg text-bone/65 max-w-xl">
-              Selezionate dalla redazione e dai lettori. Pixel e inchiostro digitali, ma con denti.
+              Un libro, un racconto, un saggio, una poesia. Pixel e inchiostro digitali, ma con denti.
             </p>
           </div>
           <Link
