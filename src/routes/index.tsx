@@ -44,7 +44,11 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const [featured, setFeatured] = useState<Book[]>(books.slice(0, 4));
-  const [fresh, setFresh] = useState<Book[]>(books.slice(4, 8));
+  const [fresh, setFresh] = useState<Book[]>(books.slice(0, 8));
+  const [freshPage, setFreshPage] = useState(0);
+  const FRESH_PER_PAGE = 8;
+  const freshTotalPages = Math.max(1, Math.ceil(fresh.length / FRESH_PER_PAGE));
+  const freshVisible = fresh.slice(freshPage * FRESH_PER_PAGE, (freshPage + 1) * FRESH_PER_PAGE);
   const totals = {
     opere: books.length * 14,
     autori: 132,
@@ -79,7 +83,8 @@ function Index() {
         };
       });
       setFeatured(pickFeatured(dbBooks));
-      setFresh(dbBooks.slice(0, 4));
+      setFresh(dbBooks);
+      setFreshPage(0);
     };
     fetchFeatured();
   }, []);
@@ -248,19 +253,42 @@ function Index() {
         </div>
       </section>
 
-      {/* APPENA USCITI */}
+      {/* ULTIME USCITE */}
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10 py-20">
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-12">
           <div>
             <div className="font-mono tracking-[0.3em] text-[10px] text-magenta uppercase">// ultime_pubblicazioni</div>
-            <h2 className="mt-3 font-display text-4xl md:text-5xl text-bone tracking-tight">Appena usciti</h2>
+            <h2 className="mt-3 font-display text-4xl md:text-5xl text-bone tracking-tight">Ultime uscite</h2>
           </div>
-          <div className="font-mono text-[10px] tracking-widest text-cyan/60 uppercase blink">
-            uplink in tempo reale
+          <div className="flex items-center gap-4">
+            {freshTotalPages > 1 && (
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setFreshPage(p => Math.max(0, p - 1))}
+                  disabled={freshPage === 0}
+                  className="font-mono text-[11px] border border-cyan/30 px-3 py-1.5 text-cyan/70 hover:border-cyan hover:text-cyan transition-all disabled:opacity-20 disabled:cursor-not-allowed"
+                >
+                  ←
+                </button>
+                <span className="font-mono text-[10px] tracking-widest text-bone/40 uppercase">
+                  {String(freshPage + 1).padStart(2, "0")} / {String(freshTotalPages).padStart(2, "0")}
+                </span>
+                <button
+                  onClick={() => setFreshPage(p => Math.min(freshTotalPages - 1, p + 1))}
+                  disabled={freshPage === freshTotalPages - 1}
+                  className="font-mono text-[11px] border border-cyan/30 px-3 py-1.5 text-cyan/70 hover:border-cyan hover:text-cyan transition-all disabled:opacity-20 disabled:cursor-not-allowed"
+                >
+                  →
+                </button>
+              </div>
+            )}
+            <div className="font-mono text-[10px] tracking-widest text-cyan/60 uppercase blink">
+              uplink in tempo reale
+            </div>
           </div>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          {fresh.map((b) => <BookCard key={b.slug} book={b} />)}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {freshVisible.map((b) => <BookCard key={b.slug} book={b} compact />)}
         </div>
       </section>
 

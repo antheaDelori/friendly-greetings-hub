@@ -8,7 +8,7 @@ const genreColor: Record<string, string> = {
   articolo: "text-bone border-bone/40",
 };
 
-export function BookCard({ book }: { book: Book }) {
+export function BookCard({ book, compact = false }: { book: Book; compact?: boolean }) {
   const hasLastra = Boolean(book.lastra);
 
   return (
@@ -80,21 +80,25 @@ export function BookCard({ book }: { book: Book }) {
         <div className="absolute bottom-0 inset-x-0 h-24 bg-gradient-to-t from-void via-void/70 to-transparent" />
       </div>
 
-      <div className="p-4 flex flex-col flex-1 relative">
-        <h3 className="font-display text-lg text-bone leading-tight tracking-tight group-hover:text-cyan group-hover:text-glow-cyan transition-all">
+      <div className={`p-3 flex flex-col flex-1 relative ${compact ? "p-3" : "p-4"}`}>
+        <h3 className={`font-display text-bone leading-tight tracking-tight group-hover:text-cyan group-hover:text-glow-cyan transition-all ${compact ? "text-sm" : "text-lg"}`}>
           {book.title}
         </h3>
-        <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-cyan/70">
+        <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-cyan/70 truncate">
           ↳ {book.author}
         </p>
-        <p className="mt-3 font-serif italic text-[14px] text-bone/65 line-clamp-2 flex-1 leading-snug">
-          {book.tagline}
-        </p>
-        <div className="mt-4 pt-3 border-t border-cyan/15 flex items-center justify-between font-mono text-[10px] tracking-widest text-bone/50">
-          <span>{book.reads.toLocaleString("it-IT")} READS</span>
-          <span className="text-amber">{book.rating > 0 ? `★ ${book.rating.toFixed(1)}` : "✦ new"}</span>
-          <span className="text-cyan/60">{book.year}</span>
-        </div>
+        {!compact && (
+          <>
+            <p className="mt-3 font-serif italic text-[14px] text-bone/65 line-clamp-2 flex-1 leading-snug">
+              {book.tagline}
+            </p>
+            <div className="mt-4 pt-3 border-t border-cyan/15 flex items-center justify-between font-mono text-[10px] tracking-widest text-bone/50">
+              <span>{book.reads.toLocaleString("it-IT")} READS</span>
+              <span className="text-amber">{book.rating > 0 ? `★ ${book.rating.toFixed(1)}` : "✦ new"}</span>
+              <span className="text-cyan/60">{book.year}</span>
+            </div>
+          </>
+        )}
       </div>
     </Link>
   );
