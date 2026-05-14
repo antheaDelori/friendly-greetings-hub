@@ -143,6 +143,7 @@ function GestionePage() {
   const [collane, setCollane] = useState<Collana[]>([]);
   const [selectedCollana, setSelectedCollana] = useState<Collana | null>(null);
   const [showCollanaForm, setShowCollanaForm] = useState(false);
+  const [showCollanaList, setShowCollanaList] = useState(false);
   const [savingCollana, setSavingCollana] = useState(false);
   const [collanaError, setCollanaError] = useState<string | null>(null);
   const [collanaEditingId, setCollanaEditingId] = useState<string | null>(null);
@@ -725,15 +726,26 @@ function GestionePage() {
           <HudPanel label="le tue opere" code={`${activeBooks.length}`} tone="cyan">
             {/* Filtro per tipologia */}
             <div className="mb-4 grid grid-cols-2 gap-1.5">
+              <div className="col-span-2 font-mono text-[9px] tracking-[0.25em] text-bone/35 uppercase mb-0.5">// collane</div>
               <button
-                onClick={() => { setSelected(null); setShowForm(false); setSelectedCollana(null); resetCollanaForm(); setShowCollanaForm(true); }}
-                className={`col-span-2 font-mono text-[9px] uppercase tracking-widest border py-2 transition-all ${
-                  showCollanaForm || selectedCollana
+                onClick={() => { setSelected(null); setShowForm(false); setSelectedCollana(null); setShowCollanaList(false); resetCollanaForm(); setShowCollanaForm(true); }}
+                className={`font-mono text-[9px] uppercase tracking-widest border py-2 transition-all ${
+                  showCollanaForm && !collanaEditingId
                     ? "border-magenta bg-magenta/15 text-magenta"
                     : "border-cyan/20 text-bone/40 hover:border-cyan/50 hover:text-bone/70"
                 }`}
               >
-                ◆ Crea / Gestisci collane
+                ◆ Crea
+              </button>
+              <button
+                onClick={() => { setSelected(null); setShowForm(false); setShowCollanaForm(false); resetCollanaForm(); setShowCollanaList(true); setSelectedCollana(null); }}
+                className={`font-mono text-[9px] uppercase tracking-widest border py-2 transition-all ${
+                  showCollanaList || (selectedCollana && !showCollanaForm)
+                    ? "border-magenta bg-magenta/15 text-magenta"
+                    : "border-cyan/20 text-bone/40 hover:border-cyan/50 hover:text-bone/70"
+                }`}
+              >
+                ◆ Modifica
               </button>
               <div className="col-span-2 border-t border-cyan/[0.08]" />
               {GENERI.map(g => {
@@ -1405,11 +1417,36 @@ function GestionePage() {
             </HudPanel>
           )}
 
-          {!showForm && !selected && !showCollanaForm && !selectedCollana && (
+          {!showForm && !selected && !showCollanaForm && !selectedCollana && !showCollanaList && (
             <HudPanel label="area di lavoro" tone="magenta">
               <p className="font-serif italic text-bone/70">
                 Seleziona un'opera dalla lista oppure creane una nuova.
               </p>
+            </HudPanel>
+          )}
+
+          {/* Lista collane per selezione */}
+          {showCollanaList && !selectedCollana && !showCollanaForm && (
+            <HudPanel label="le tue collane" code={`${collane.length}`} tone="cyan">
+              {collane.length === 0 ? (
+                <p className="font-serif italic text-bone/40 text-sm">Nessuna collana ancora. Usa ◆ Crea per aggiungerne una.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {collane.map(c => (
+                    <li key={c.id}>
+                      <button
+                        onClick={() => { setSelectedCollana(c); setShowCollanaList(false); }}
+                        className="w-full text-left p-3 border border-cyan/15 text-bone/70 hover:border-cyan/50 hover:text-bone transition-all"
+                      >
+                        <div className="font-display text-sm tracking-tight truncate">{c.titolo}</div>
+                        {c.descrizione && (
+                          <div className="font-mono text-[9px] tracking-widest opacity-50 uppercase mt-1 truncate">{c.descrizione}</div>
+                        )}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </HudPanel>
           )}
 
