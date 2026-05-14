@@ -1060,7 +1060,7 @@ function GestionePage() {
 
                 <div className="flex gap-3">
                   <HudButton variant="primary" onClick={handleSave} disabled={saving || !titolo.trim()}>
-                    {saving ? "▸ Salvataggio..." : editingId ? "▸ Aggiorna opera" : "▸ Salva opera"}
+                    {saving ? "▸ Salvataggio..." : editingId ? (collanaId ? "▸ Aggiorna novella" : "▸ Aggiorna opera") : (collanaId ? "▸ Salva novella" : "▸ Salva opera")}
                   </HudButton>
                   <HudButton variant="ghost" onClick={() => { setShowForm(false); setEditingId(null); }}>
                     annulla
