@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useMemo, useState, useEffect } from "react";
 import { z } from "zod";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -63,10 +63,14 @@ export const Route = createFileRoute("/catalogo")({
   component: CatalogoPage,
 });
 
+type CollanaCard = { id: string; slug: string; titolo: string; descrizione: string | null; copertina_url: string | null; count: number };
+
 function CatalogoPage() {
   const { q, genre, sort } = Route.useSearch();
   const navigate = useNavigate({ from: "/catalogo" });
   const [dbBooks, setDbBooks] = useState<Book[]>([]);
+  const [collane, setCollane] = useState<CollanaCard[]>([]);
+  const [showCollane, setShowCollane] = useState(false);
 
   type Search = z.infer<typeof searchSchema>;
   const setQ = (val: string) =>
@@ -85,7 +89,25 @@ function CatalogoPage() {
         .order("created_at", { ascending: false });
       setDbBooks((data ?? []).map(dbToBook));
     };
+    const fetchCollane = async () => {
+      const { data: collaneData } = await supabase
+        .from("collane")
+        .select("id, slug, titolo, descrizione, copertina_url")
+        .order("created_at", { ascending: false });
+      if (!collaneData) return;
+      const { data: booksData } = await supabase
+        .from("books")
+        .select("collana_id")
+        .eq("disponibile", true)
+        .not("collana_id", "is", null);
+      const counts: Record<string, number> = {};
+      for (const b of booksData ?? []) {
+        if (b.collana_id) counts[b.collana_id] = (counts[b.collana_id] ?? 0) + 1;
+      }
+      setCollane(collaneData.map(c => ({ ...c, count: counts[c.id] ?? 0 })));
+    };
     fetchBooks();
+    fetchCollane();
   }, []);
 
   const allBooks = useMemo(() => {
@@ -149,10 +171,19 @@ function CatalogoPage() {
       <section className="border-y border-cyan/15 bg-deep/40 backdrop-blur sticky top-[5.75rem] z-30">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10 py-4 flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
           <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => { setShowCollane(v => !v); setGenre(""); }}
+              className={`font-mono tracking-[0.22em] text-[10px] uppercase px-4 py-2 border transition-all ${
+                showCollane ? "border-magenta bg-magenta/15 text-magenta" : "border-magenta/30 text-bone/60 hover:border-magenta/60 hover:text-magenta"
+              }`}
+            >
+              ◆ Collane{collane.length > 0 && <span className={`ml-1 ${showCollane ? "text-magenta/70" : "text-bone/30"}`}>{collane.length}</span>}
+            </button>
+            <div className="w-px bg-cyan/20 self-stretch mx-1" />
             {genres.map((g) => (
               <button
                 key={g.value}
-                onClick={() => setGenre(genre === g.value ? "" : g.value)}
+                onClick={() => { setShowCollane(false); setGenre(genre === g.value ? "" : g.value); }}
                 className={`relative group font-mono tracking-[0.22em] text-[10px] uppercase px-4 py-2 border transition-all ${
                   genre === g.value
                     ? "border-cyan bg-cyan/15 text-cyan glow-cyan"
@@ -191,7 +222,36 @@ function CatalogoPage() {
       </section>
 
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10 py-12 flex-1">
-        {results.length === 0 ? (
+        {showCollane ? (
+          collane.length === 0 ? (
+            <div className="text-center py-24 glass p-12 hud-frame">
+              <div className="font-display text-7xl text-magenta">∅</div>
+              <p className="mt-4 font-serif italic text-xl text-bone/70">Nessuna collana ancora presente in archivio.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+              {collane.map(c => (
+                <Link key={c.id} to="/collane/$slug" params={{ slug: c.slug }}
+                  className="group relative glass holo-hover hover:glow-cyan flex gap-4 p-5">
+                  <span className="absolute top-1.5 left-1.5 w-3 h-3 border-l border-t border-cyan/70" />
+                  <span className="absolute top-1.5 right-1.5 w-3 h-3 border-r border-t border-cyan/70" />
+                  <span className="absolute bottom-1.5 left-1.5 w-3 h-3 border-l border-b border-cyan/70" />
+                  <span className="absolute bottom-1.5 right-1.5 w-3 h-3 border-r border-b border-cyan/70" />
+                  {c.copertina_url
+                    ? <img src={c.copertina_url} alt={c.titolo} className="w-16 h-20 object-cover flex-shrink-0 ring-1 ring-cyan/30" />
+                    : <div className="w-16 h-20 flex-shrink-0 bg-void/60 border border-cyan/20 flex items-center justify-center font-display text-2xl text-bone/20">◊</div>
+                  }
+                  <div className="flex-1 min-w-0">
+                    <div className="font-mono text-[9px] tracking-widest text-magenta/70 uppercase">◆ collana</div>
+                    <h3 className="mt-1 font-display text-lg text-bone tracking-tight leading-tight group-hover:text-cyan transition-colors">{c.titolo}</h3>
+                    {c.descrizione && <p className="mt-1 font-serif italic text-sm text-bone/50 line-clamp-2">{c.descrizione}</p>}
+                    <p className="mt-2 font-mono text-[9px] tracking-widest text-bone/30 uppercase">{c.count} {c.count === 1 ? "opera" : "opere"}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )
+        ) : results.length === 0 ? (
           <div className="text-center py-24 glass p-12 hud-frame">
             <div className="font-display text-7xl text-magenta">∅</div>
             <p className="mt-4 font-serif italic text-xl text-bone/70">
@@ -211,7 +271,7 @@ function CatalogoPage() {
             {results.map((b) => <BookCard key={b.slug} book={b} />)}
           </div>
         )}
-      </section>
+        </section>
 
       <SiteFooter />
     </div>

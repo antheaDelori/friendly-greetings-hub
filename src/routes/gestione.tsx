@@ -36,6 +36,15 @@ type Edizione = {
   created_at: string;
 };
 
+type Collana = {
+  id: string;
+  slug: string;
+  titolo: string;
+  descrizione: string | null;
+  copertina_url: string | null;
+  created_at: string;
+};
+
 type Book = {
   id: string;
   titolo: string;
@@ -59,6 +68,7 @@ type Book = {
   letture: number;
   downloads: number;
   created_at: string;
+  collana_id: string | null;
 };
 
 const GENERI = ["libro", "racconto", "saggio", "articolo", "buonanotte", "poesia"] as const;
@@ -128,6 +138,22 @@ function GestionePage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [authorName, setAuthorName] = useState("");
+  const [activeTab, setActiveTab] = useState<"opere" | "collane">("opere");
+
+  // Collane
+  const [collane, setCollane] = useState<Collana[]>([]);
+  const [selectedCollana, setSelectedCollana] = useState<Collana | null>(null);
+  const [showCollanaForm, setShowCollanaForm] = useState(false);
+  const [savingCollana, setSavingCollana] = useState(false);
+  const [collanaError, setCollanaError] = useState<string | null>(null);
+  const [collanaEditingId, setCollanaEditingId] = useState<string | null>(null);
+  const [confirmDeleteCollana, setConfirmDeleteCollana] = useState(false);
+  const [collanaTitolo, setCollanaTitolo] = useState("");
+  const [collanaDescrizione, setCollanaDescrizione] = useState("");
+  const [collanaCopertina, setCollanaCopertina] = useState<File | null>(null);
+  const [existingCollanaCopertina, setExistingCollanaCopertina] = useState<string | null>(null);
+  const collanaCopertinaRef = useRef<HTMLInputElement>(null);
+  const [collanaId, setCollanaId] = useState("");
 
   // Edizioni aggiuntive
   const [edizioni, setEdizioni] = useState<Edizione[]>([]);
@@ -212,6 +238,7 @@ function GestionePage() {
         .eq("author_id", user.id);
 
       await loadBooks(user.id);
+      await loadCollane(user.id);
       setLoading(false);
     };
     init();
@@ -226,6 +253,11 @@ function GestionePage() {
     setBooks(data ?? []);
   };
 
+  const loadCollane = async (uid: string) => {
+    const { data } = await supabase.from("collane").select("*").eq("author_id", uid).order("created_at");
+    setCollane(data ?? []);
+  };
+
   const resetForm = () => {
     setTitolo(""); setSottotitolo(""); setGenere("libro"); setEdizione("");
     setAnno(String(new Date().getFullYear())); setLingua("it"); setAccesso("gratuito");
@@ -234,6 +266,62 @@ function GestionePage() {
     setCopertina(null); setLastra(null); setFilePdf(null); setSaveError(null);
     setEditingId(null); setConfirmDelete(false);
     setExistingCopertinaUrl(null); setExistingLastraUrl(null); setExistingFileUrl(null);
+    setCollanaId("");
+  };
+
+  const resetCollanaForm = () => {
+    setCollanaTitolo(""); setCollanaDescrizione(""); setCollanaCopertina(null);
+    setExistingCollanaCopertina(null); setCollanaEditingId(null); setCollanaError(null);
+    if (collanaCopertinaRef.current) collanaCopertinaRef.current.value = "";
+  };
+
+  const handleSaveCollana = async () => {
+    if (!userId || !collanaTitolo.trim()) return;
+    setSavingCollana(true); setCollanaError(null);
+    try {
+      let copertina_url: string | null = existingCollanaCopertina;
+      if (collanaCopertina) {
+        const ext = collanaCopertina.name.split(".").pop();
+        const path = `${userId}/collana-${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("copertine").upload(path, collanaCopertina, { upsert: true });
+        if (!upErr) {
+          const { data: urlData } = supabase.storage.from("copertine").getPublicUrl(path);
+          copertina_url = urlData.publicUrl;
+        }
+      }
+      if (collanaEditingId) {
+        const { error } = await supabase.from("collane").update({
+          titolo: collanaTitolo.trim(), descrizione: collanaDescrizione.trim() || null, copertina_url,
+        }).eq("id", collanaEditingId);
+        if (error) { setCollanaError(error.message); return; }
+        if (selectedCollana) setSelectedCollana({ ...selectedCollana, titolo: collanaTitolo.trim(), descrizione: collanaDescrizione.trim() || null, copertina_url });
+      } else {
+        const slug = generateSlug(collanaTitolo) + "-" + Date.now().toString(36);
+        const { error } = await supabase.from("collane").insert({
+          author_id: userId, slug, titolo: collanaTitolo.trim(),
+          descrizione: collanaDescrizione.trim() || null, copertina_url,
+        });
+        if (error) { setCollanaError(error.message); return; }
+      }
+      await loadCollane(userId);
+      resetCollanaForm(); setShowCollanaForm(false);
+    } finally { setSavingCollana(false); }
+  };
+
+  const handleEditCollana = () => {
+    if (!selectedCollana) return;
+    setCollanaTitolo(selectedCollana.titolo);
+    setCollanaDescrizione(selectedCollana.descrizione ?? "");
+    setExistingCollanaCopertina(selectedCollana.copertina_url);
+    setCollanaCopertina(null); setCollanaEditingId(selectedCollana.id); setCollanaError(null);
+    setShowCollanaForm(true);
+  };
+
+  const handleDeleteCollana = async () => {
+    if (!selectedCollana || !userId) return;
+    await supabase.from("collane").delete().eq("id", selectedCollana.id);
+    setSelectedCollana(null); setConfirmDeleteCollana(false);
+    await loadCollane(userId);
   };
 
   const handleNewBook = () => {
@@ -308,6 +396,7 @@ function GestionePage() {
     setExistingCopertinaUrl(b.copertina_url);
     setExistingLastraUrl(b.lastra_url);
     setExistingFileUrl(b.file_url);
+    setCollanaId(b.collana_id ?? "");
     setEditingId(b.id);
     setSaveError(null);
     setConfirmDelete(false);
@@ -366,6 +455,7 @@ function GestionePage() {
           lastra_url,
           file_url,
           author_name: authorName || null,
+          collana_id: collanaId || null,
         }).eq("id", editingId);
 
         if (error) { setSaveError(error.message); return; }
@@ -404,6 +494,7 @@ function GestionePage() {
           lastra_url,
           file_url,
           author_name: authorName || null,
+          collana_id: collanaId || null,
         });
 
         if (error) { setSaveError(error.message); return; }
@@ -619,8 +710,39 @@ function GestionePage() {
       <PageShell code="// MODULE/WORK_MGMT" title="Gestione opere" subtitle="Scrivi, modifica, pubblica. Tutto da qui.">
         <div className="grid lg:grid-cols-[280px_1fr] gap-6">
 
-          {/* Lista opere */}
-          <HudPanel label="le tue opere" code={`${activeBooks.length}`} tone="cyan">
+          {/* Lista opere / collane */}
+          <HudPanel label={activeTab === "opere" ? "le tue opere" : "le tue collane"} code={activeTab === "opere" ? `${activeBooks.length}` : `${collane.length}`} tone="cyan">
+            {/* Tab OPERE / COLLANE */}
+            <div className="flex gap-1.5 mb-4">
+              {(["opere", "collane"] as const).map(tab => (
+                <button key={tab} onClick={() => { setActiveTab(tab); setSelected(null); setSelectedCollana(null); setShowForm(false); setShowCollanaForm(false); }}
+                  className={`flex-1 font-mono text-[9px] uppercase tracking-widest border py-1.5 transition-all ${activeTab === tab ? "border-cyan bg-cyan/20 text-cyan" : "border-cyan/20 text-bone/50 hover:border-cyan/50"}`}>
+                  {tab}
+                </button>
+              ))}
+            </div>
+
+            {activeTab === "collane" ? (
+              <>
+                {collane.length === 0 && <p className="font-mono text-[10px] text-bone/40 uppercase tracking-widest mb-4">Nessuna collana ancora.</p>}
+                <ul className="space-y-2">
+                  {collane.map(c => (
+                    <li key={c.id}>
+                      <button onClick={() => { setSelectedCollana(c); setShowCollanaForm(false); }}
+                        className={`w-full text-left p-3 border transition-all ${selectedCollana?.id === c.id && !showCollanaForm ? "border-cyan bg-cyan/15 text-cyan" : "border-cyan/15 text-bone/70 hover:border-cyan/50 hover:text-bone"}`}>
+                        <div className="font-display text-sm tracking-tight truncate">{c.titolo}</div>
+                        <div className="font-mono text-[9px] tracking-widest opacity-60 uppercase mt-1">collana</div>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                <button onClick={() => { resetCollanaForm(); setSelectedCollana(null); setShowCollanaForm(true); }}
+                  className="mt-4 w-full font-mono text-[10px] tracking-widest text-magenta uppercase border border-magenta/40 py-2 hover:bg-magenta/10 transition-colors">
+                  ◆ + nuova collana
+                </button>
+              </>
+            ) : (
+            <>
             {/* Filtro per tipologia */}
             <div className="mb-4 grid grid-cols-2 gap-1.5">
               {GENERI.map(g => {
@@ -704,6 +826,8 @@ function GestionePage() {
                   ))}
                 </ul>
               </>
+            )}
+            </>
             )}
           </HudPanel>
 
@@ -843,6 +967,16 @@ function GestionePage() {
                   <span className={labelClass}>↳ Tag (separati da virgola)</span>
                   <input value={tagStr} onChange={e => setTagStr(e.target.value)} placeholder="fantascienza, distopia, futuro" className={inputClass} />
                 </div>
+
+                {collane.length > 0 && (
+                  <div>
+                    <span className={labelClass}>↳ Collana (opzionale)</span>
+                    <select value={collanaId} onChange={e => setCollanaId(e.target.value)} className={inputClass + " cursor-pointer"}>
+                      <option value="">— Nessuna collana —</option>
+                      {collane.map(c => <option key={c.id} value={c.id}>{c.titolo}</option>)}
+                    </select>
+                  </div>
+                )}
 
                 <div className="grid sm:grid-cols-3 gap-5">
                   <div>
@@ -1254,11 +1388,107 @@ function GestionePage() {
             </HudPanel>
           )}
 
-          {!showForm && !selected && (
+          {!showForm && !selected && !showCollanaForm && !selectedCollana && (
             <HudPanel label="area di lavoro" tone="magenta">
               <p className="font-serif italic text-bone/70">
                 Seleziona un'opera dalla lista oppure creane una nuova.
               </p>
+            </HudPanel>
+          )}
+
+          {/* Form nuova / modifica collana */}
+          {showCollanaForm && (
+            <HudPanel label={collanaEditingId ? "modifica collana" : "nuova collana"} code={collanaEditingId ? "EDIT" : "NEW"}>
+              <div className="space-y-5">
+                <div>
+                  <span className={labelClass}>↳ Titolo collana ★</span>
+                  <input value={collanaTitolo} onChange={e => setCollanaTitolo(e.target.value)} placeholder="Es. Novelle della buonanotte" className={inputClass} />
+                </div>
+                <div>
+                  <span className={labelClass}>↳ Descrizione</span>
+                  <textarea value={collanaDescrizione} onChange={e => setCollanaDescrizione(e.target.value)}
+                    placeholder="Di cosa parla questa collana..."
+                    className="mt-2 w-full min-h-24 bg-void/40 border border-cyan/30 px-4 py-3 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-cyan transition-all" />
+                </div>
+                <div>
+                  <span className={labelClass}>↳ Copertina collana</span>
+                  <input ref={collanaCopertinaRef} type="file" accept="image/*"
+                    onChange={e => setCollanaCopertina(e.target.files?.[0] ?? null)} className="hidden" />
+                  <button type="button" onClick={() => collanaCopertinaRef.current?.click()}
+                    className="mt-2 w-full border border-cyan/30 px-4 py-3 font-mono text-[10px] text-left uppercase tracking-widest hover:border-cyan hover:text-cyan transition-all text-bone/60">
+                    {collanaCopertina ? `✓ ${collanaCopertina.name}` : existingCollanaCopertina ? "✓ esistente (cambia)" : "▸ Scegli immagine"}
+                  </button>
+                </div>
+                {collanaError && (
+                  <p className="font-mono text-[11px] text-magenta border border-magenta/30 bg-magenta/5 px-4 py-3">⚠ {collanaError}</p>
+                )}
+                <div className="flex gap-3">
+                  <HudButton variant="primary" onClick={handleSaveCollana} disabled={savingCollana || !collanaTitolo.trim()}>
+                    {savingCollana ? "▸ Salvataggio..." : collanaEditingId ? "▸ Aggiorna collana" : "▸ Salva collana"}
+                  </HudButton>
+                  <HudButton variant="ghost" onClick={() => { setShowCollanaForm(false); resetCollanaForm(); }}>annulla</HudButton>
+                </div>
+              </div>
+            </HudPanel>
+          )}
+
+          {/* Dettaglio collana */}
+          {selectedCollana && !showCollanaForm && (
+            <HudPanel label="dettaglio collana" code={`ID:${selectedCollana.id.slice(0, 6).toUpperCase()}`}>
+              <div className="flex items-start gap-5">
+                {selectedCollana.copertina_url ? (
+                  <img src={selectedCollana.copertina_url} alt="" className="w-24 h-32 object-cover ring-1 ring-cyan/30 flex-shrink-0" />
+                ) : (
+                  <div className="w-24 h-32 bg-void/60 border border-cyan/20 flex items-center justify-center font-display text-4xl text-bone/20 flex-shrink-0">◊</div>
+                )}
+                <div className="flex-1">
+                  <div className="font-mono text-[10px] tracking-widest text-cyan/70 uppercase">// collana</div>
+                  <h3 className="mt-1 font-display text-2xl text-bone tracking-tight">{selectedCollana.titolo}</h3>
+                  {selectedCollana.descrizione && <p className="mt-2 font-serif italic text-bone/60 text-sm">{selectedCollana.descrizione}</p>}
+                </div>
+              </div>
+
+              <div className="hud-divider my-5" />
+              <div className="font-mono text-[10px] tracking-widest text-cyan/70 uppercase mb-3">// opere in questa collana</div>
+              {(() => {
+                const collanaBooks = books.filter(b => b.collana_id === selectedCollana.id);
+                return collanaBooks.length === 0
+                  ? <p className="font-serif italic text-bone/40 text-sm">Nessuna opera assegnata ancora.</p>
+                  : <ul className="space-y-2">
+                      {collanaBooks.map(b => (
+                        <li key={b.id} className="flex items-center gap-3 border border-cyan/10 p-3">
+                          {b.copertina_url && <img src={b.copertina_url} alt="" className="w-8 h-10 object-cover flex-shrink-0" />}
+                          <div className="flex-1 min-w-0">
+                            <div className="font-mono text-[10px] uppercase tracking-widest text-bone/70 truncate">{b.titolo}</div>
+                            {b.sottotitolo && <div className="font-mono text-[9px] text-bone/40 truncate">{b.sottotitolo}</div>}
+                          </div>
+                          <button onClick={() => { handleSelectBook(b); setActiveTab("opere"); }}
+                            className="font-mono text-[9px] text-cyan/50 hover:text-cyan border border-transparent hover:border-cyan/40 px-2 py-1 transition-colors flex-shrink-0">
+                            ✎
+                          </button>
+                        </li>
+                      ))}
+                    </ul>;
+              })()}
+
+              <div className="hud-divider my-5" />
+              <div className="font-mono text-[10px] tracking-widest text-cyan/60 uppercase mb-2">
+                ▸ <a href={`/collane/${selectedCollana.slug}`} target="_blank" rel="noreferrer" className="hover:text-cyan transition-colors">
+                  /collane/{selectedCollana.slug}
+                </a>
+              </div>
+              <div className="flex gap-3 mt-3">
+                <HudButton variant="ghost" onClick={handleEditCollana}>◆ Modifica</HudButton>
+                {confirmDeleteCollana ? (
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-[10px] text-magenta uppercase tracking-widest">Eliminare?</span>
+                    <HudButton variant="magenta" onClick={handleDeleteCollana}>Sì</HudButton>
+                    <HudButton variant="ghost" onClick={() => setConfirmDeleteCollana(false)}>No</HudButton>
+                  </div>
+                ) : (
+                  <HudButton variant="ghost" onClick={() => setConfirmDeleteCollana(true)}>⊗ Elimina</HudButton>
+                )}
+              </div>
             </HudPanel>
           )}
 
