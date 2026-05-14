@@ -195,10 +195,15 @@ function CatalogoPage() {
           <div className="text-center py-24 glass p-12 hud-frame">
             <div className="font-display text-7xl text-magenta">∅</div>
             <p className="mt-4 font-serif italic text-xl text-bone/70">
-              Nessuna opera nell'indice corrisponde alla query.
-            </p>
-            <p className="mt-2 font-mono text-[10px] tracking-widest text-cyan/60 uppercase">
-              ERR_404 / NO_MATCH_FOUND
+              {q.trim()
+                ? "Nessuna opera corrisponde alla ricerca."
+                : genre === "libro" ? "Nessun libro ancora presente in archivio."
+                : genre === "racconto" ? "Nessun racconto ancora presente in archivio."
+                : genre === "saggio" ? "Nessun saggio ancora presente in archivio."
+                : genre === "articolo" ? "Nessun articolo ancora presente in archivio."
+                : genre === "buonanotte" ? "Nessun racconto della sera ancora presente in archivio."
+                : genre === "poesia" ? "Nessuna poesia ancora presente in archivio."
+                : "Nessuna opera ancora presente in archivio."}
             </p>
           </div>
         ) : (
