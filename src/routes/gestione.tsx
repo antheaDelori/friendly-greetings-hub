@@ -334,7 +334,7 @@ function GestionePage() {
   const handleNewBookInCollana = (cId: string) => {
     resetForm();
     setCollanaId(cId);
-    if (filterGenere) setGenere(filterGenere);
+    setGenere("buonanotte");
     setSelected(null);
     setSelectedCollana(null);
     setShowCollanaForm(false);
@@ -873,7 +873,7 @@ function GestionePage() {
 
           {/* Form nuova / modifica opera */}
           {showForm && (
-            <HudPanel label={editingId ? "modifica opera" : "nuova opera"} code={editingId ? "EDIT" : "NEW"}>
+            <HudPanel label={editingId ? "modifica opera" : collanaId ? "nuova novella" : "nuova opera"} code={editingId ? "EDIT" : "NEW"}>
               <div className="space-y-5">
 
                 <div className="grid sm:grid-cols-2 gap-5">
