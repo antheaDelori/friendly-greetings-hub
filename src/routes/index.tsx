@@ -78,10 +78,8 @@ function Index() {
           chapters: [],
         };
       });
-      const featuredBooks = pickFeatured(dbBooks);
-      const featuredSlugs = new Set(featuredBooks.map(b => b.slug));
-      setFeatured(featuredBooks);
-      setFresh(dbBooks.filter(b => !featuredSlugs.has(b.slug)).slice(0, 4));
+      setFeatured(pickFeatured(dbBooks));
+      setFresh(dbBooks.slice(0, 4));
     };
     fetchFeatured();
   }, []);
