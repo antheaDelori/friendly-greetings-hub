@@ -726,7 +726,7 @@ function GestionePage() {
           <HudPanel label="le tue opere" code={`${activeBooks.length}`} tone="cyan">
             {/* Filtro per tipologia */}
             <div className="mb-4 grid grid-cols-2 gap-1.5">
-              <div className="col-span-2 font-mono text-[9px] tracking-[0.25em] text-bone/35 uppercase mb-0.5">// collane</div>
+              <div className="col-span-2 font-mono text-[11px] tracking-[0.25em] text-cyan uppercase mb-0.5">// Collane</div>
               <button
                 onClick={() => { setSelected(null); setShowForm(false); setSelectedCollana(null); setShowCollanaList(false); resetCollanaForm(); setShowCollanaForm(true); }}
                 className={`font-mono text-[9px] uppercase tracking-widest border py-2 transition-all ${
@@ -748,6 +748,7 @@ function GestionePage() {
                 ◆ Modifica
               </button>
               <div className="col-span-2 border-t border-cyan/[0.08]" />
+              <div className="col-span-2 font-mono text-[11px] tracking-[0.25em] text-cyan uppercase mb-0.5">// Opere</div>
               {GENERI.map(g => {
                 const count = activeBooks.filter(b => b.genere === g).length;
                 const isActive = filterGenere === g;
