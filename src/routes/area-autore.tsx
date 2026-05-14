@@ -158,13 +158,24 @@ function AreaAutorePage() {
                 <>
                   {/* Suddivisione per genere */}
                   <div className="grid grid-cols-2 gap-2">
-                    {(["libro", "racconto", "saggio", "articolo"] as const).map(g => {
-                      const labels: Record<string, string> = { libro: "Libri", racconto: "Racconti", saggio: "Saggi", articolo: "Articoli" };
+                    {([
+                      { g: "libro", label: "Libri" },
+                      { g: "racconto", label: "Racconti" },
+                      { g: "saggio", label: "Saggi" },
+                      { g: "articolo", label: "Articoli" },
+                      { g: "buonanotte", label: "Buonanotte", tooltip: "Racconti della sera" },
+                      { g: "poesia", label: "Poesie" },
+                    ]).map(({ g, label, tooltip }) => {
                       const n = bookStats.perGenere[g] ?? 0;
                       return (
-                        <div key={g} className={`text-center border py-2 ${n > 0 ? "border-cyan/25" : "border-cyan/8 opacity-40"}`}>
+                        <div key={g} className={`relative group text-center border py-2 ${n > 0 ? "border-cyan/25" : "border-cyan/8 opacity-40"}`}>
                           <div className={`font-display text-xl ${n > 0 ? "text-cyan" : "text-bone/40"}`}>{n}</div>
-                          <div className="font-mono text-[9px] tracking-widest text-bone/40 uppercase mt-0.5">{labels[g]}</div>
+                          <div className="font-mono text-[9px] tracking-widest text-bone/40 uppercase mt-0.5">{label}</div>
+                          {tooltip && (
+                            <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 whitespace-nowrap border border-cyan/40 bg-void px-2 py-1 font-mono text-[8px] tracking-widest text-cyan opacity-0 transition-opacity group-hover:opacity-100 z-10">
+                              {tooltip}
+                            </span>
+                          )}
                         </div>
                       );
                     })}

@@ -61,7 +61,14 @@ type Book = {
   created_at: string;
 };
 
-const GENERI = ["libro", "racconto", "saggio", "articolo"] as const;
+const GENERI = ["libro", "racconto", "saggio", "articolo", "buonanotte", "poesia"] as const;
+const GENERE_LABELS: Record<string, string> = {
+  libro: "Libro", racconto: "Racconto", saggio: "Saggio", articolo: "Articolo",
+  buonanotte: "Buonanotte", poesia: "Poesia",
+};
+const GENERE_TOOLTIP: Record<string, string> = {
+  buonanotte: "Racconti della sera",
+};
 const ACCESSI = ["gratuito", "premium", "riservato"] as const;
 const TARGET = ["tutti", "bambini (0–8)", "ragazzi (9–12)", "adolescenti (13–17)", "adulti (18+)"] as const;
 const TIPI = [
@@ -616,22 +623,27 @@ function GestionePage() {
           <HudPanel label="le tue opere" code={`${activeBooks.length}`} tone="cyan">
             {/* Filtro per tipologia */}
             <div className="mb-4 grid grid-cols-2 gap-1.5">
-              {(["libro", "racconto", "saggio", "articolo"] as const).map(g => {
+              {GENERI.map(g => {
                 const count = activeBooks.filter(b => b.genere === g).length;
-                const labels: Record<string, string> = { libro: "Libri", racconto: "Racconti", saggio: "Saggi", articolo: "Articoli" };
                 const isActive = filterGenere === g;
+                const tooltip = GENERE_TOOLTIP[g];
                 return (
                   <button
                     key={g}
                     onClick={() => { setFilterGenere(isActive ? null : g); setSelected(null); setShowForm(false); }}
-                    className={`font-mono text-[9px] uppercase tracking-widest border py-2 transition-all ${
+                    className={`relative group font-mono text-[9px] uppercase tracking-widest border py-2 transition-all ${
                       isActive
                         ? "border-cyan bg-cyan/20 text-cyan"
                         : "border-cyan/20 text-bone/50 hover:border-cyan/50 hover:text-bone/80"
                     }`}
                   >
-                    {labels[g]}
+                    {GENERE_LABELS[g]}
                     {count > 0 && <span className={`ml-1 ${isActive ? "text-cyan/70" : "text-bone/30"}`}>{count}</span>}
+                    {tooltip && (
+                      <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 whitespace-nowrap border border-cyan/40 bg-void px-2 py-1 font-mono text-[8px] tracking-widest text-cyan opacity-0 transition-opacity group-hover:opacity-100 z-10">
+                        {tooltip}
+                      </span>
+                    )}
                   </button>
                 );
               })}
@@ -717,10 +729,15 @@ function GestionePage() {
                     <div className="mt-2 flex flex-wrap gap-2">
                       {GENERI.map(g => (
                         <button key={g} type="button" onClick={() => setGenere(g)}
-                          className={`border px-4 py-2 font-mono text-[10px] uppercase tracking-widest transition-all ${
+                          className={`relative group border px-4 py-2 font-mono text-[10px] uppercase tracking-widest transition-all ${
                             genere === g ? "border-cyan bg-cyan/15 text-cyan" : "border-cyan/30 text-bone/70 hover:border-cyan"
                           }`}>
-                          ◆ {g}
+                          ◆ {GENERE_LABELS[g]}
+                          {GENERE_TOOLTIP[g] && (
+                            <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 whitespace-nowrap border border-cyan/40 bg-void px-2 py-1 font-mono text-[8px] tracking-widest text-cyan opacity-0 transition-opacity group-hover:opacity-100 z-10">
+                              {GENERE_TOOLTIP[g]}
+                            </span>
+                          )}
                         </button>
                       ))}
                     </div>
