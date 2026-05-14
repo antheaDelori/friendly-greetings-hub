@@ -138,7 +138,6 @@ function GestionePage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [authorName, setAuthorName] = useState("");
-  const [activeTab, setActiveTab] = useState<"opere" | "collane">("opere");
 
   // Collane
   const [collane, setCollane] = useState<Collana[]>([]);
@@ -710,39 +709,8 @@ function GestionePage() {
       <PageShell code="// MODULE/WORK_MGMT" title="Gestione opere" subtitle="Scrivi, modifica, pubblica. Tutto da qui.">
         <div className="grid lg:grid-cols-[280px_1fr] gap-6">
 
-          {/* Lista opere / collane */}
-          <HudPanel label={activeTab === "opere" ? "le tue opere" : "le tue collane"} code={activeTab === "opere" ? `${activeBooks.length}` : `${collane.length}`} tone="cyan">
-            {/* Tab OPERE / COLLANE */}
-            <div className="flex gap-1.5 mb-4">
-              {(["opere", "collane"] as const).map(tab => (
-                <button key={tab} onClick={() => { setActiveTab(tab); setSelected(null); setSelectedCollana(null); setShowForm(false); setShowCollanaForm(false); }}
-                  className={`flex-1 font-mono text-[9px] uppercase tracking-widest border py-1.5 transition-all ${activeTab === tab ? "border-cyan bg-cyan/20 text-cyan" : "border-cyan/20 text-bone/50 hover:border-cyan/50"}`}>
-                  {tab}
-                </button>
-              ))}
-            </div>
-
-            {activeTab === "collane" ? (
-              <>
-                {collane.length === 0 && <p className="font-mono text-[10px] text-bone/40 uppercase tracking-widest mb-4">Nessuna collana ancora.</p>}
-                <ul className="space-y-2">
-                  {collane.map(c => (
-                    <li key={c.id}>
-                      <button onClick={() => { setSelectedCollana(c); setShowCollanaForm(false); }}
-                        className={`w-full text-left p-3 border transition-all ${selectedCollana?.id === c.id && !showCollanaForm ? "border-cyan bg-cyan/15 text-cyan" : "border-cyan/15 text-bone/70 hover:border-cyan/50 hover:text-bone"}`}>
-                        <div className="font-display text-sm tracking-tight truncate">{c.titolo}</div>
-                        <div className="font-mono text-[9px] tracking-widest opacity-60 uppercase mt-1">collana</div>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-                <button onClick={() => { resetCollanaForm(); setSelectedCollana(null); setShowCollanaForm(true); }}
-                  className="mt-4 w-full font-mono text-[10px] tracking-widest text-magenta uppercase border border-magenta/40 py-2 hover:bg-magenta/10 transition-colors">
-                  ◆ + nuova collana
-                </button>
-              </>
-            ) : (
-            <>
+          {/* Lista opere */}
+          <HudPanel label="le tue opere" code={`${activeBooks.length}`} tone="cyan">
             {/* Filtro per tipologia */}
             <div className="mb-4 grid grid-cols-2 gap-1.5">
               {GENERI.map(g => {
@@ -801,6 +769,12 @@ function GestionePage() {
             >
               ◆ + nuova opera
             </button>
+            <button
+              onClick={() => { setSelected(null); setShowForm(false); setSelectedCollana(null); resetCollanaForm(); setShowCollanaForm(true); }}
+              className="mt-2 w-full font-mono text-[10px] tracking-widest text-cyan/50 uppercase border border-cyan/20 py-2 hover:bg-cyan/5 hover:text-cyan hover:border-cyan/50 transition-colors"
+            >
+              ▸ gestisci collane
+            </button>
 
             {archivedBooks.length > 0 && (
               <>
@@ -826,8 +800,6 @@ function GestionePage() {
                   ))}
                 </ul>
               </>
-            )}
-            </>
             )}
           </HudPanel>
 
@@ -1462,7 +1434,7 @@ function GestionePage() {
                             <div className="font-mono text-[10px] uppercase tracking-widest text-bone/70 truncate">{b.titolo}</div>
                             {b.sottotitolo && <div className="font-mono text-[9px] text-bone/40 truncate">{b.sottotitolo}</div>}
                           </div>
-                          <button onClick={() => { handleSelectBook(b); setActiveTab("opere"); }}
+                          <button onClick={() => { handleSelectBook(b); setShowCollanaForm(false); setSelectedCollana(null); }}
                             className="font-mono text-[9px] text-cyan/50 hover:text-cyan border border-transparent hover:border-cyan/40 px-2 py-1 transition-colors flex-shrink-0">
                             ✎
                           </button>
