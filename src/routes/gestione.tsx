@@ -713,6 +713,17 @@ function GestionePage() {
           <HudPanel label="le tue opere" code={`${activeBooks.length}`} tone="cyan">
             {/* Filtro per tipologia */}
             <div className="mb-4 grid grid-cols-2 gap-1.5">
+              <button
+                onClick={() => { setSelected(null); setShowForm(false); setSelectedCollana(null); resetCollanaForm(); setShowCollanaForm(true); }}
+                className={`col-span-2 font-mono text-[9px] uppercase tracking-widest border py-2 transition-all ${
+                  showCollanaForm || selectedCollana
+                    ? "border-magenta bg-magenta/15 text-magenta"
+                    : "border-cyan/20 text-bone/40 hover:border-cyan/50 hover:text-bone/70"
+                }`}
+              >
+                ◆ Crea / Gestisci collane
+              </button>
+              <div className="col-span-2 border-t border-cyan/[0.08]" />
               {GENERI.map(g => {
                 const count = activeBooks.filter(b => b.genere === g).length;
                 const isActive = filterGenere === g;
@@ -769,13 +780,6 @@ function GestionePage() {
             >
               ◆ + nuova opera
             </button>
-            <button
-              onClick={() => { setSelected(null); setShowForm(false); setSelectedCollana(null); resetCollanaForm(); setShowCollanaForm(true); }}
-              className="mt-2 w-full font-mono text-[10px] tracking-widest text-cyan/50 uppercase border border-cyan/20 py-2 hover:bg-cyan/5 hover:text-cyan hover:border-cyan/50 transition-colors"
-            >
-              ▸ gestisci collane
-            </button>
-
             {archivedBooks.length > 0 && (
               <>
                 <div className="hud-divider my-4" />
