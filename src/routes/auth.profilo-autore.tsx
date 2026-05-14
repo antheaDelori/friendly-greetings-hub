@@ -13,7 +13,14 @@ export const Route = createFileRoute("/auth/profilo-autore")({
   component: ProfiloAutorePage,
 });
 
-const GENERI = ["libro", "racconto", "saggio", "articolo"] as const;
+const GENERI: { value: string; label: string; tooltip?: string }[] = [
+  { value: "libro", label: "Libro" },
+  { value: "racconto", label: "Racconto" },
+  { value: "saggio", label: "Saggio" },
+  { value: "articolo", label: "Articolo" },
+  { value: "buonanotte", label: "Buonanotte", tooltip: "Racconti della sera" },
+  { value: "poesia", label: "Poesia" },
+];
 
 function ProfiloAutorePage() {
   const navigate = useNavigate();
@@ -108,19 +115,24 @@ function ProfiloAutorePage() {
           {/* Generi */}
           <HudPanel label="generi di pubblicazione" tone="magenta">
             <p className="font-serif italic text-bone/70">Seleziona almeno un genere. Potrai cambiarli quando vuoi.</p>
-            <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {GENERI.map((g) => (
+            <div className="mt-5 grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {GENERI.map(({ value, label, tooltip }) => (
                 <button
-                  key={g}
+                  key={value}
                   type="button"
-                  onClick={() => toggleGenere(g)}
-                  className={`border px-4 py-3 font-mono text-[10px] uppercase tracking-widest text-center transition-all ${
-                    generi.includes(g)
+                  onClick={() => toggleGenere(value)}
+                  className={`relative group border px-4 py-3 font-mono text-[10px] uppercase tracking-widest text-center transition-all ${
+                    generi.includes(value)
                       ? "border-magenta bg-magenta/15 text-magenta"
                       : "border-cyan/30 text-bone/70 hover:border-cyan"
                   }`}
                 >
-                  ◆ {g}
+                  ◆ {label}
+                  {tooltip && (
+                    <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 whitespace-nowrap border border-cyan/40 bg-void px-2 py-1 font-mono text-[8px] tracking-widest text-cyan opacity-0 transition-opacity group-hover:opacity-100 z-10">
+                      {tooltip}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
