@@ -686,10 +686,14 @@ function GestionePage() {
   };
 
   const [filterGenere, setFilterGenere] = useState<string | null>(null);
+  const [booksPage, setBooksPage] = useState(0);
 
+  const BOOKS_PER_PAGE = 4;
   const activeBooks = books.filter(b => b.disponibile);
   const archivedBooks = books.filter(b => !b.disponibile);
   const filteredBooks = filterGenere ? activeBooks.filter(b => b.genere === filterGenere) : activeBooks;
+  const booksTotalPages = Math.ceil(filteredBooks.length / BOOKS_PER_PAGE);
+  const pagedBooks = filteredBooks.slice(booksPage * BOOKS_PER_PAGE, (booksPage + 1) * BOOKS_PER_PAGE);
 
   if (loading) {
     return (
@@ -731,7 +735,7 @@ function GestionePage() {
                 return (
                   <button
                     key={g}
-                    onClick={() => { setFilterGenere(isActive ? null : g); setSelected(null); setShowForm(false); }}
+                    onClick={() => { setFilterGenere(isActive ? null : g); setSelected(null); setShowForm(false); setBooksPage(0); }}
                     className={`relative group font-mono text-[9px] uppercase tracking-widest border py-2 transition-all ${
                       isActive
                         ? "border-cyan bg-cyan/20 text-cyan"
@@ -750,13 +754,20 @@ function GestionePage() {
               })}
             </div>
 
+            <button
+              onClick={handleNewBook}
+              className="mb-4 w-full font-mono text-[10px] tracking-widest text-magenta uppercase border border-magenta/40 py-2 hover:bg-magenta/10 transition-colors"
+            >
+              ◆ + nuova opera
+            </button>
+
             {filteredBooks.length === 0 && (
               <p className="font-mono text-[10px] text-bone/40 uppercase tracking-widest mb-4">
                 {activeBooks.length === 0 ? "Nessuna opera ancora." : "Nessuna opera in questa categoria."}
               </p>
             )}
             <ul className="space-y-2">
-              {filteredBooks.map((b) => (
+              {pagedBooks.map((b) => (
                 <li key={b.id}>
                   <button
                     onClick={() => handleSelectBook(b)}
@@ -774,12 +785,33 @@ function GestionePage() {
                 </li>
               ))}
             </ul>
-            <button
-              onClick={handleNewBook}
-              className="mt-4 w-full font-mono text-[10px] tracking-widest text-magenta uppercase border border-magenta/40 py-2 hover:bg-magenta/10 transition-colors"
-            >
-              ◆ + nuova opera
-            </button>
+
+            {booksTotalPages > 1 && (
+              <div className="mt-3 flex items-center justify-center gap-1">
+                <button
+                  onClick={() => setBooksPage(p => Math.max(0, p - 1))}
+                  disabled={booksPage === 0}
+                  className="font-mono text-[10px] text-bone/40 hover:text-cyan disabled:opacity-20 px-2 py-1 transition-colors"
+                >←</button>
+                {Array.from({ length: booksTotalPages }, (_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setBooksPage(i)}
+                    className={`font-mono text-[10px] w-6 h-6 border transition-all ${
+                      booksPage === i
+                        ? "border-cyan text-cyan bg-cyan/10"
+                        : "border-cyan/20 text-bone/40 hover:border-cyan/50 hover:text-bone/70"
+                    }`}
+                  >{i + 1}</button>
+                ))}
+                <button
+                  onClick={() => setBooksPage(p => Math.min(booksTotalPages - 1, p + 1))}
+                  disabled={booksPage === booksTotalPages - 1}
+                  className="font-mono text-[10px] text-bone/40 hover:text-cyan disabled:opacity-20 px-2 py-1 transition-colors"
+                >→</button>
+              </div>
+            )}
+
             {archivedBooks.length > 0 && (
               <>
                 <div className="hud-divider my-4" />
