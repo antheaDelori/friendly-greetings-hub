@@ -376,9 +376,7 @@ function GestionePage() {
     setConfirmDelete(false);
   };
 
-  const handleModifica = () => {
-    if (!selected) return;
-    const b = selected;
+  const openEditForm = (b: Book) => {
     setTitolo(b.titolo);
     setSottotitolo(b.sottotitolo ?? "");
     setGenere(b.genere);
@@ -412,6 +410,11 @@ function GestionePage() {
     setSaveError(null);
     setConfirmDelete(false);
     setShowForm(true);
+  };
+
+  const handleModifica = () => {
+    if (!selected) return;
+    openEditForm(selected);
   };
 
   const uploadFile = async (file: File, bucket: string, path: string): Promise<string | null> => {
@@ -1534,6 +1537,12 @@ function GestionePage() {
                                 <div className="font-mono text-[10px] uppercase tracking-widest text-bone/70 truncate">{b.titolo}</div>
                                 {b.sottotitolo && <div className="font-mono text-[9px] text-bone/40 truncate">{b.sottotitolo}</div>}
                               </div>
+                              <button
+                                onClick={() => { setSelected(b); setSelectedCollana(null); setShowCollanaList(false); openEditForm(b); }}
+                                title="Modifica novella"
+                                className="font-mono text-[9px] text-cyan/50 hover:text-cyan border border-transparent hover:border-cyan/40 px-2 py-1 transition-colors flex-shrink-0">
+                                ✎
+                              </button>
                               <button onClick={() => handleRemoveFromCollana(b.id)}
                                 title="Rimuovi dalla collana"
                                 className="font-mono text-[9px] text-magenta/50 hover:text-magenta border border-transparent hover:border-magenta/40 px-2 py-1 transition-colors flex-shrink-0">
