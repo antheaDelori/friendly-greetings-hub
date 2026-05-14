@@ -331,6 +331,17 @@ function GestionePage() {
     setShowForm(true);
   };
 
+  const handleNewBookInCollana = (cId: string) => {
+    resetForm();
+    setCollanaId(cId);
+    if (filterGenere) setGenere(filterGenere);
+    setSelected(null);
+    setSelectedCollana(null);
+    setShowCollanaForm(false);
+    setShowCollanaList(false);
+    setShowForm(true);
+  };
+
   useEffect(() => {
     if (!selected) {
       setEdizioni([]); setShowEditionForm(false);
@@ -1504,14 +1515,9 @@ function GestionePage() {
               </div>
 
               <div className="hud-divider my-5" />
-              <div className="font-mono text-[10px] tracking-widest text-cyan/70 uppercase mb-3">// opere in questa collana</div>
+              <div className="font-mono text-[10px] tracking-widest text-cyan/70 uppercase mb-3">// novelle in questa collana</div>
               {(() => {
                 const collanaBooks = books.filter(b => b.collana_id === selectedCollana.id);
-                const freeBooks = books.filter(b => b.collana_id !== selectedCollana.id && b.disponibile);
-                const handleAddToCollana = async (bookId: string) => {
-                  await supabase.from("books").update({ collana_id: selectedCollana.id }).eq("id", bookId);
-                  if (userId) await loadBooks(userId);
-                };
                 const handleRemoveFromCollana = async (bookId: string) => {
                   await supabase.from("books").update({ collana_id: null }).eq("id", bookId);
                   if (userId) await loadBooks(userId);
@@ -1537,26 +1543,12 @@ function GestionePage() {
                           ))}
                         </ul>
                     }
-                    {freeBooks.length > 0 && (
-                      <>
-                        <div className="font-mono text-[9px] tracking-widest text-bone/30 uppercase mb-2">+ aggiungi opera</div>
-                        <ul className="space-y-1">
-                          {freeBooks.map(b => (
-                            <li key={b.id}>
-                              <button onClick={() => handleAddToCollana(b.id)}
-                                className="w-full text-left flex items-center gap-3 border border-cyan/[0.12] p-2.5 hover:border-cyan/40 hover:bg-cyan/5 transition-all group">
-                                {b.copertina_url && <img src={b.copertina_url} alt="" className="w-6 h-8 object-cover flex-shrink-0 opacity-60 group-hover:opacity-100" />}
-                                <div className="flex-1 min-w-0">
-                                  <div className="font-mono text-[9px] uppercase tracking-widest text-bone/50 group-hover:text-bone/80 truncate">{b.titolo}</div>
-                                  <div className="font-mono text-[8px] text-bone/25 uppercase tracking-widest">{b.genere}</div>
-                                </div>
-                                <span className="font-mono text-[9px] text-cyan/30 group-hover:text-cyan flex-shrink-0">+</span>
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      </>
-                    )}
+                    <button
+                      onClick={() => handleNewBookInCollana(selectedCollana.id)}
+                      className="w-full font-mono text-[10px] tracking-widest text-magenta uppercase border border-magenta/40 py-2 hover:bg-magenta/10 transition-colors"
+                    >
+                      ◆ + nuova novella
+                    </button>
                   </>
                 );
               })()}
