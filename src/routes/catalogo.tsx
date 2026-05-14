@@ -5,12 +5,14 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { BookCard } from "@/components/BookCard";
 import { books as staticBooks, genres, type Genre, type Book } from "@/data/books";
+
+const ALL_GENRES: Genre[] = ["libro", "racconto", "saggio", "articolo", "buonanotte", "poesia"];
 import { supabase } from "@/lib/supabase";
 import logo from "@/assets/logo-liberiamo.jpg";
 
 const searchSchema = z.object({
   q: z.string().default(""),
-  genre: z.enum(["tutti", "libro", "racconto", "saggio", "articolo"]).default("tutti"),
+  genre: z.enum(["", "libro", "racconto", "saggio", "articolo", "buonanotte", "poesia"]).default(""),
   sort: z.enum(["letti", "recenti", "anno", "rating"]).default("recenti"),
 });
 
@@ -36,7 +38,7 @@ function dbToBook(b: DbBook): Book {
     title: b.titolo,
     author,
     authorSlug: author.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-"),
-    genre: (["libro", "racconto", "saggio", "articolo"].includes(b.genere) ? b.genere : "libro") as Genre,
+    genre: (ALL_GENRES.includes(b.genere as Genre) ? b.genere : "libro") as Genre,
     year: b.anno ?? new Date().getFullYear(),
     reads: b.letture,
     rating: 0,
@@ -69,7 +71,7 @@ function CatalogoPage() {
   type Search = z.infer<typeof searchSchema>;
   const setQ = (val: string) =>
     navigate({ search: (prev: Search) => ({ ...prev, q: val }), replace: true });
-  const setGenre = (val: Genre | "tutti") =>
+  const setGenre = (val: Genre | "") =>
     navigate({ search: (prev: Search) => ({ ...prev, genre: val }), replace: true });
   const setSort = (val: "letti" | "recenti" | "anno" | "rating") =>
     navigate({ search: (prev: Search) => ({ ...prev, sort: val }), replace: true });
@@ -93,7 +95,7 @@ function CatalogoPage() {
 
   const results = useMemo(() => {
     const filtered = allBooks.filter((b) => {
-      const matchesGenre = genre === "tutti" || b.genre === genre;
+      const matchesGenre = genre === "" || b.genre === genre;
       const text = q.trim().toLowerCase();
       const matchesQ =
         !text ||
@@ -150,14 +152,19 @@ function CatalogoPage() {
             {genres.map((g) => (
               <button
                 key={g.value}
-                onClick={() => setGenre(g.value)}
-                className={`font-mono tracking-[0.22em] text-[10px] uppercase px-4 py-2 border transition-all ${
+                onClick={() => setGenre(genre === g.value ? "" : g.value)}
+                className={`relative group font-mono tracking-[0.22em] text-[10px] uppercase px-4 py-2 border transition-all ${
                   genre === g.value
                     ? "border-cyan bg-cyan/15 text-cyan glow-cyan"
                     : "border-cyan/20 text-bone/60 hover:border-cyan/60 hover:text-cyan"
                 }`}
               >
                 ◆ {g.label}
+                {g.tooltip && (
+                  <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 whitespace-nowrap border border-cyan/40 bg-void px-2 py-1 font-mono text-[8px] tracking-widest text-cyan opacity-0 transition-opacity group-hover:opacity-100 z-10">
+                    {g.tooltip}
+                  </span>
+                )}
               </button>
             ))}
           </div>

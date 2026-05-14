@@ -1,6 +1,6 @@
 import logo from "@/assets/logo-liberiamo.jpg";
 
-export type Genre = "libro" | "racconto" | "saggio" | "articolo";
+export type Genre = "libro" | "racconto" | "saggio" | "articolo" | "buonanotte" | "poesia";
 
 export type Chapter = {
   id: string;
@@ -192,10 +192,11 @@ export const books: Book[] = [
 export const getBookBySlug = (slug: string) =>
   books.find((b) => b.slug === slug);
 
-export const genres: { value: Genre | "tutti"; label: string }[] = [
-  { value: "tutti", label: "Tutti" },
+export const genres: { value: Genre; label: string; tooltip?: string }[] = [
   { value: "libro", label: "Libri" },
   { value: "racconto", label: "Racconti" },
   { value: "saggio", label: "Saggi" },
   { value: "articolo", label: "Articoli" },
+  { value: "buonanotte", label: "Buonanotte", tooltip: "Racconti della sera" },
+  { value: "poesia", label: "Poesie" },
 ];
