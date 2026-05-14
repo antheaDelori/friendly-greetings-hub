@@ -1589,11 +1589,23 @@ function GestionePage() {
               })()}
 
               <div className="hud-divider my-5" />
-              <div className="font-mono text-[10px] tracking-widest text-cyan/60 uppercase mb-2">
-                ▸ <a href={`/collane/${selectedCollana.slug}`} target="_blank" rel="noreferrer" className="hover:text-cyan transition-colors">
-                  /collane/{selectedCollana.slug}
-                </a>
-              </div>
+              <div className="font-mono text-[9px] tracking-widest text-bone/30 uppercase mb-2">// pagina pubblica della collana</div>
+              <a
+                href={`/collane/${selectedCollana.slug}`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center justify-between gap-3 border border-cyan/20 px-4 py-3 hover:border-cyan hover:bg-cyan/5 transition-all group"
+              >
+                <div>
+                  <div className="font-display text-base text-bone group-hover:text-cyan transition-colors">
+                    {selectedCollana.titolo}
+                  </div>
+                  <div className="font-mono text-[9px] text-bone/30 tracking-widest mt-0.5">
+                    Leggi le novelle della collana →
+                  </div>
+                </div>
+                <span className="font-mono text-lg text-cyan/30 group-hover:text-cyan transition-colors">▸</span>
+              </a>
               <div className="flex gap-3 mt-3">
                 <HudButton variant="ghost" onClick={handleEditCollana}>◆ Modifica</HudButton>
                 {confirmDeleteCollana ? (
