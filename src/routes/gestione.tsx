@@ -342,6 +342,7 @@ function GestionePage() {
     setShowCollanaForm(false);
     setShowCollanaList(false);
     setShowForm(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   useEffect(() => {
