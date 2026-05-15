@@ -126,9 +126,9 @@ function CatalogoPage() {
         b.tagline.toLowerCase().includes(text);
       return matchesGenre && matchesQ;
     });
+    if (sort === "recenti") return filtered;
     return [...filtered].sort((a, b) => {
       if (sort === "letti") return b.reads - a.reads;
-      if (sort === "recenti") return b.year - a.year;
       if (sort === "anno") return a.year - b.year;
       return b.rating - a.rating;
     });
