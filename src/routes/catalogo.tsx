@@ -170,34 +170,38 @@ function CatalogoPage() {
       {/* Filtri */}
       <section className="border-y border-cyan/15 bg-deep/40 backdrop-blur sticky top-[5.75rem] z-30">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10 py-4 flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => { setShowCollane(v => !v); setGenre(""); }}
-              className={`font-mono tracking-[0.22em] text-[10px] uppercase px-4 py-2 border transition-all ${
-                showCollane ? "border-magenta bg-magenta/15 text-magenta" : "border-magenta/30 text-bone/60 hover:border-magenta/60 hover:text-magenta"
-              }`}
-            >
-              ◆ Collane{collane.length > 0 && <span className={`ml-1 ${showCollane ? "text-magenta/70" : "text-bone/30"}`}>{collane.length}</span>}
-            </button>
-            <div className="w-px bg-cyan/20 self-stretch mx-1" />
-            {genres.map((g) => (
+          <div className="flex flex-col gap-2">
+            <div className="flex flex-wrap gap-2">
+              {genres.map((g) => (
+                <button
+                  key={g.value}
+                  onClick={() => { setShowCollane(false); setGenre(genre === g.value ? "" : g.value); }}
+                  className={`relative group font-mono tracking-[0.22em] text-[10px] uppercase px-4 py-2 border transition-all ${
+                    genre === g.value
+                      ? "border-cyan bg-cyan/15 text-cyan glow-cyan"
+                      : "border-cyan/20 text-bone/60 hover:border-cyan/60 hover:text-cyan"
+                  }`}
+                >
+                  ◆ {g.label}
+                  {g.tooltip && (
+                    <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 whitespace-nowrap border border-cyan/40 bg-void px-2 py-1 font-mono text-[8px] tracking-widest text-cyan opacity-0 transition-opacity group-hover:opacity-100 z-10">
+                      {g.tooltip}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+            <div className="border-t border-cyan/[0.08]" />
+            <div>
               <button
-                key={g.value}
-                onClick={() => { setShowCollane(false); setGenre(genre === g.value ? "" : g.value); }}
-                className={`relative group font-mono tracking-[0.22em] text-[10px] uppercase px-4 py-2 border transition-all ${
-                  genre === g.value
-                    ? "border-cyan bg-cyan/15 text-cyan glow-cyan"
-                    : "border-cyan/20 text-bone/60 hover:border-cyan/60 hover:text-cyan"
+                onClick={() => { setShowCollane(v => !v); setGenre(""); }}
+                className={`font-mono tracking-[0.22em] text-[10px] uppercase px-4 py-2 border transition-all ${
+                  showCollane ? "border-magenta bg-magenta/15 text-magenta" : "border-magenta/30 text-bone/60 hover:border-magenta/60 hover:text-magenta"
                 }`}
               >
-                ◆ {g.label}
-                {g.tooltip && (
-                  <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 whitespace-nowrap border border-cyan/40 bg-void px-2 py-1 font-mono text-[8px] tracking-widest text-cyan opacity-0 transition-opacity group-hover:opacity-100 z-10">
-                    {g.tooltip}
-                  </span>
-                )}
+                ◆ Collane{collane.length > 0 && <span className={`ml-1 ${showCollane ? "text-magenta/70" : "text-bone/30"}`}>{collane.length}</span>}
               </button>
-            ))}
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <span className="font-mono tracking-[0.22em] text-[10px] uppercase text-bone/50">sort:</span>

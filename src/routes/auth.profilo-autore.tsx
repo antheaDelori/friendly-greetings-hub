@@ -18,7 +18,7 @@ const GENERI: { value: string; label: string; tooltip?: string }[] = [
   { value: "racconto", label: "Racconto" },
   { value: "saggio", label: "Saggio" },
   { value: "articolo", label: "Articolo" },
-  { value: "buonanotte", label: "Buonanotte", tooltip: "Racconti della sera" },
+  { value: "buonanotte", label: "Novelle" },
   { value: "poesia", label: "Poesia" },
 ];
 

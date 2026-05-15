@@ -178,6 +178,6 @@ export const genres: { value: Genre; label: string; tooltip?: string }[] = [
   { value: "racconto", label: "Racconti" },
   { value: "saggio", label: "Saggi" },
   { value: "articolo", label: "Articoli" },
-  { value: "buonanotte", label: "Buonanotte", tooltip: "Racconti della sera" },
+  { value: "buonanotte", label: "Novelle" },
   { value: "poesia", label: "Poesie" },
 ];

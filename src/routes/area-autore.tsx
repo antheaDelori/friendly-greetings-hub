@@ -163,9 +163,9 @@ function AreaAutorePage() {
                       { g: "racconto", label: "Racconti" },
                       { g: "saggio", label: "Saggi" },
                       { g: "articolo", label: "Articoli" },
-                      { g: "buonanotte", label: "Buonanotte", tooltip: "Racconti della sera" },
+                      { g: "buonanotte", label: "Novelle" },
                       { g: "poesia", label: "Poesie" },
-                    ]).map(({ g, label, tooltip }) => {
+                    ] as { g: string; label: string; tooltip?: string }[]).map(({ g, label, tooltip }) => {
                       const n = bookStats.perGenere[g] ?? 0;
                       return (
                         <div key={g} className={`relative group text-center border py-2 ${n > 0 ? "border-cyan/25" : "border-cyan/12"}`}>
