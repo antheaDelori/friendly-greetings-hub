@@ -128,7 +128,7 @@ function CollanePage() {
           <div className="space-y-0">
             {novelle.map((n, i) => {
               const titolo = n.sottotitolo || n.titolo;
-              const preview = n.estratto || n.descrizione;
+              const preview = n.descrizione;
               return (
                 <div key={n.slug}>
                   {i > 0 && <div className="border-t border-cyan/[0.08]" />}
