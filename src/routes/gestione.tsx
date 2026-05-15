@@ -203,6 +203,7 @@ function GestionePage() {
   const [isbn, setIsbn] = useState("");
   const [descrizione, setDescrizione] = useState("");
   const [estratto, setEstratto] = useState("");
+  const [testoCompleto, setTestoCompleto] = useState("");
   const [tagStr, setTagStr] = useState("");
   const [copertina, setCopertina] = useState<File | null>(null);
   const [lastra, setLastra] = useState<File | null>(null);
@@ -263,7 +264,7 @@ function GestionePage() {
     setTitolo(""); setSottotitolo(""); setGenere("libro"); setEdizione("");
     setAnno(String(new Date().getFullYear())); setLingua("it"); setAccesso("gratuito");
     setTipo(""); setTipoAltro(""); setTarget("tutti"); setIsbn("");
-    setDescrizione(""); setEstratto(""); setTagStr("");
+    setDescrizione(""); setEstratto(""); setTestoCompleto(""); setTagStr("");
     setCopertina(null); setLastra(null); setFilePdf(null); setSaveError(null);
     setEditingId(null); setConfirmDelete(false);
     setExistingCopertinaUrl(null); setExistingLastraUrl(null); setExistingFileUrl(null);
@@ -400,6 +401,12 @@ function GestionePage() {
     setDescrizione(b.descrizione ?? "");
     setEstratto(b.estratto ?? "");
     setTagStr(b.tag.join(", "));
+    if (b.collana_id) {
+      supabase.from("capitoli").select("testo").eq("book_id", b.id).eq("ordine", 1).maybeSingle()
+        .then(({ data }) => setTestoCompleto(data?.testo ?? ""));
+    } else {
+      setTestoCompleto("");
+    }
     setCopertina(null);
     setLastra(null);
     setFilePdf(null);
@@ -437,6 +444,7 @@ function GestionePage() {
       let copertina_url: string | null = existingCopertinaUrl;
       let lastra_url: string | null = existingLastraUrl;
       let file_url: string | null = existingFileUrl;
+      let newBookId: string | null = null;
 
       if (editingId) {
         if (copertina) {
@@ -489,7 +497,7 @@ function GestionePage() {
           file_url = await uploadFile(filePdf, "libri", `${userId}/${slug}.${ext}`);
         }
 
-        const { error } = await supabase.from("books").insert({
+        const { data: insertData, error } = await supabase.from("books").insert({
           author_id: userId,
           slug,
           titolo: titolo.trim(),
@@ -510,9 +518,23 @@ function GestionePage() {
           file_url,
           author_name: authorName || null,
           collana_id: collanaId || null,
-        });
+        }).select("id").single();
 
         if (error) { setSaveError(error.message); return; }
+        newBookId = insertData?.id ?? null;
+      }
+
+      // Salva testo completo come capitolo 1 se siamo in una collana
+      const savedBookId = editingId ?? newBookId;
+      if (collanaId && testoCompleto.trim() && savedBookId) {
+        const { data: existing } = await supabase.from("capitoli").select("id").eq("book_id", savedBookId).eq("ordine", 1).maybeSingle();
+        if (existing) {
+          await supabase.from("capitoli").update({ testo: testoCompleto.trim() }).eq("id", existing.id);
+        } else {
+          await supabase.from("capitoli").insert({ book_id: savedBookId, titolo: "Racconto", testo: testoCompleto.trim(), ordine: 1 });
+        }
+      } else if (collanaId && !testoCompleto.trim() && savedBookId) {
+        await supabase.from("capitoli").delete().eq("book_id", savedBookId).eq("ordine", 1);
       }
 
       setShowForm(false);
@@ -1006,6 +1028,13 @@ function GestionePage() {
                     placeholder="Le prime righe o un brano rappresentativo..."
                     className="mt-2 w-full min-h-24 bg-void/40 border border-cyan/30 px-4 py-3 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-cyan transition-all" />
                 </div>
+
+                {collanaId && (
+                  <div>
+                    <span className={labelClass}>↳ Testo completo</span>
+                    <RichTextEditor value={testoCompleto} onChange={setTestoCompleto} />
+                  </div>
+                )}
 
                 <div>
                   <span className={labelClass}>↳ Tag (separati da virgola)</span>
