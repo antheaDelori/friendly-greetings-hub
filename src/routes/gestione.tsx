@@ -913,7 +913,7 @@ function GestionePage() {
                   </div>
                 </div>
 
-                {editingId ? (
+                {(editingId || !filterGenere) ? (
                   <div>
                     <span className={labelClass}>↳ Genere ★</span>
                     <div className="mt-2 flex flex-wrap gap-2">
