@@ -31,6 +31,7 @@ export function SiteFooter() {
             <li><Link to="/community" className="text-bone/70 hover:text-cyan transition-colors">▸ Community</Link></li>
             <li><Link to="/regolamento" className="text-bone/70 hover:text-cyan transition-colors">▸ Regolamento</Link></li>
             <li><Link to="/donazioni" className="text-bone/70 hover:text-cyan transition-colors">▸ Sostieni</Link></li>
+            <li><Link to="/cestino" className="text-magenta/60 hover:text-magenta transition-colors">⊗ Cestino degli Scritti Perduti</Link></li>
           </ul>
         </div>
         <div>

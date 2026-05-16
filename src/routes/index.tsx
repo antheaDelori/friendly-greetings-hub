@@ -292,6 +292,47 @@ function Index() {
         </div>
       </section>
 
+      {/* CESTINO DEGLI SCRITTI PERDUTI */}
+      <section className="relative py-20 overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[300px] rounded-full bg-magenta/8 blur-[120px] pointer-events-none" />
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10 relative">
+          <div className="glass hud-frame border-magenta/20 p-10 md:p-14 grid lg:grid-cols-[1fr_auto] gap-10 items-center">
+            <div>
+              <div className="font-mono tracking-[0.3em] text-[10px] text-magenta uppercase">// archivio/perduti</div>
+              <h2 className="mt-3 font-display text-4xl md:text-6xl text-bone leading-[0.95] tracking-tight">
+                Cestino degli<br /><span className="text-magenta text-glow-magenta">Scritti Perduti.</span>
+              </h2>
+              <p className="mt-6 font-serif italic text-lg text-bone/70 max-w-2xl leading-relaxed">
+                Storie rifiutate, dimenticate, abbandonate. Riposano nell'oscurità in attesa di un giudizio.
+                Cinque lettori bastano per riportarle in vita nel catalogo, con il badge permanente
+                <span className="text-magenta not-italic font-mono text-sm tracking-widest"> "Recuperato dai lettori"</span>.
+                Tu potresti essere uno di loro.
+              </p>
+              <div className="mt-8 flex flex-wrap items-center gap-6">
+                <Link
+                  to="/cestino"
+                  className="inline-flex items-center gap-3 border border-magenta bg-magenta/10 text-magenta px-7 py-4 font-mono tracking-[0.22em] text-[11px] uppercase hover:bg-magenta hover:text-void hover:glow-magenta transition-all"
+                >
+                  ⊗ Entra nel cestino
+                </Link>
+                <div className="flex items-center gap-2.5">
+                  <div className="flex gap-1">
+                    {Array.from({ length: 5 }, (_, i) => (
+                      <span key={i} className="w-2.5 h-2.5 rounded-full border border-magenta/40" />
+                    ))}
+                  </div>
+                  <span className="font-mono text-[10px] tracking-widest text-bone/40 uppercase">5 voti per salvare</span>
+                </div>
+              </div>
+            </div>
+            <div className="hidden lg:flex flex-col items-center justify-center opacity-20 select-none">
+              <div className="font-display text-[9rem] leading-none text-magenta">⊗</div>
+              <div className="font-mono text-[10px] tracking-[0.5em] text-magenta uppercase mt-2">perduti</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* CTA AUTORI / LETTORI */}
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10 pb-24">
         <div className="grid lg:grid-cols-2 gap-6">
