@@ -12,15 +12,15 @@ export const Route = createFileRoute("/leggi/$slug")({
     const staticBook = getBookBySlug(params.slug);
     if (staticBook) {
       const { data: { session } } = await supabase.auth.getSession();
-      return { book: staticBook, fileUrl: null as string | null, isLoggedIn: !!session, isAnonymous: session?.user?.is_anonymous ?? false, userId: session?.user?.id ?? null };
+      return { book: staticBook, fileUrl: null as string | null, isLoggedIn: !!session, isAnonymous: session?.user?.is_anonymous ?? false, userId: session?.user?.id ?? null, allegati: [] as { id: string; titolo: string; descrizione: string | null; file_url: string; tipo: string; ordine: number }[], isCestinato: false, votiCestino: 0, recuperato: false, bookId: "" };
     }
 
     // Poi cerca su Supabase
     const { data } = await supabase
       .from("books")
-      .select("id, slug, titolo, descrizione, estratto, genere, anno, letture, copertina_url, file_url, author_name")
+      .select("id, slug, titolo, descrizione, estratto, genere, anno, letture, copertina_url, file_url, author_name, cestinato, voti_cestino, recuperato")
       .eq("slug", params.slug)
-      .eq("disponibile", true)
+      .or("disponibile.eq.true,cestinato.eq.true")
       .maybeSingle();
 
     if (!data) throw notFound();
@@ -76,6 +76,10 @@ export const Route = createFileRoute("/leggi/$slug")({
       isAnonymous: session?.user?.is_anonymous ?? false,
       userId: session?.user?.id ?? null,
       allegati: (allegatiData ?? []) as { id: string; titolo: string; descrizione: string | null; file_url: string; tipo: string; ordine: number }[],
+      isCestinato: (data.cestinato ?? false) as boolean,
+      votiCestino: (data.voti_cestino ?? 0) as number,
+      recuperato: (data.recuperato ?? false) as boolean,
+      bookId: data.id as string,
     };
   },
   head: ({ loaderData }) => ({
@@ -145,14 +149,60 @@ function chapterReadingTime(chapter: import("@/data/books").Chapter): string {
   return `~ ${minutes} min`;
 }
 
+function getOrCreateVisitorId(): string {
+  const key = "visitor_id";
+  let id = localStorage.getItem(key);
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem(key, id);
+  }
+  return id;
+}
+
 function ReadPage() {
-  const { book, fileUrl, isLoggedIn, isAnonymous, userId, allegati } = Route.useLoaderData();
+  const { book, fileUrl, isLoggedIn, isAnonymous, userId, allegati, isCestinato, votiCestino: initialVoti, recuperato, bookId } = Route.useLoaderData();
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const router = useRouter();
   const [currentIdx, setCurrentIdx] = useState(0);
   const [fontScale, setFontScale] = useState(1);
   const [resumeBanner, setResumeBanner] = useState(false);
   const savedIdxRef = useRef<number>(0);
+
+  const [voti, setVoti] = useState(initialVoti ?? 0);
+  const [hasVoted, setHasVoted] = useState(false);
+  const [voteLoading, setVoteLoading] = useState(false);
+  const [voteError, setVoteError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isCestinato || !bookId) return;
+    const visitorId = getOrCreateVisitorId();
+    supabase.from("voti_cestino")
+      .select("id")
+      .eq("book_id", bookId)
+      .eq("visitor_id", visitorId)
+      .maybeSingle()
+      .then(({ data }) => { if (data) setHasVoted(true); });
+  }, []);
+
+  const handleVota = async () => {
+    if (hasVoted || voteLoading || !bookId) return;
+    setVoteLoading(true);
+    setVoteError(null);
+    const visitorId = getOrCreateVisitorId();
+    const { error } = await supabase.from("voti_cestino").insert({ book_id: bookId, visitor_id: visitorId });
+    if (error) {
+      if (error.code === "23505") {
+        setHasVoted(true);
+      } else {
+        setVoteError("Errore nel voto. Riprova.");
+      }
+    } else {
+      setHasVoted(true);
+      const { data: updated } = await supabase.from("books").select("voti_cestino").eq("id", bookId).single();
+      if (updated) setVoti(updated.voti_cestino ?? 0);
+    }
+    setVoteLoading(false);
+  };
 
   // Torna sempre in cima quando si apre il libro
   useEffect(() => { window.scrollTo({ top: 0, behavior: "instant" }); }, []);
@@ -418,7 +468,59 @@ function ReadPage() {
             </div>
           )}
 
-          {!isLoggedIn ? (
+          {isCestinato && (
+            <div className="mb-8 border border-magenta/50 bg-magenta/5 p-5 space-y-4">
+              <div>
+                <div className="font-mono text-[9px] tracking-widest text-magenta uppercase mb-1">
+                  ⊗ Cestino degli Scritti Perduti
+                </div>
+                <p className="font-serif italic text-ink/70 text-sm">
+                  Questo testo è nel cestino. Leggilo, e se ti piace vota per recuperarlo.
+                  Al quinto voto tornerà disponibile in catalogo con il badge "Recuperato dai lettori".
+                </p>
+              </div>
+              <div className="flex items-center gap-5 flex-wrap">
+                <div className="flex items-center gap-1.5">
+                  {Array.from({ length: 5 }, (_, idx) => (
+                    <span
+                      key={idx}
+                      className={`w-3 h-3 rounded-full border transition-colors ${
+                        idx < voti ? "bg-magenta border-magenta" : "border-magenta/30"
+                      }`}
+                    />
+                  ))}
+                  <span className="font-display text-sm text-ink/50 ml-1">{voti}/5</span>
+                </div>
+                {voti >= 5 ? (
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-blood border border-blood/30 px-3 py-1.5">
+                    ✓ Recuperato!
+                  </span>
+                ) : hasVoted ? (
+                  <span className="font-mono text-[10px] uppercase tracking-widest border border-magenta/40 text-magenta/70 px-3 py-1.5">
+                    ✓ Voto registrato
+                  </span>
+                ) : (
+                  <button
+                    onClick={handleVota}
+                    disabled={voteLoading}
+                    className="font-mono text-[10px] uppercase tracking-widest border border-magenta bg-magenta/10 text-magenta hover:bg-magenta hover:text-void px-4 py-2 transition-all disabled:opacity-50"
+                  >
+                    {voteLoading ? "..." : "♥ Vota per il recupero"}
+                  </button>
+                )}
+                {voteError && <span className="font-mono text-[10px] text-magenta">{voteError}</span>}
+              </div>
+            </div>
+          )}
+
+          {recuperato && !isCestinato && (
+            <div className="mb-6 flex items-center gap-3 border border-blood/30 bg-blood/5 px-4 py-3">
+              <span className="font-mono text-[10px] uppercase tracking-widest text-blood">★ Recuperato dai lettori</span>
+              <span className="font-serif italic text-sm text-ink/60">Quest'opera è stata salvata dal cestino grazie ai voti della community.</span>
+            </div>
+          )}
+
+          {!isLoggedIn && !isCestinato ? (
             <div className="py-20 text-center border-2 border-ink/10 flex flex-col items-center">
               <div className="font-display text-6xl text-ink/15">◈</div>
               <h2 className="mt-4 font-serif text-2xl text-ink">Contenuto riservato</h2>

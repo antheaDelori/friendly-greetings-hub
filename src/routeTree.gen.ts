@@ -13,6 +13,7 @@ import { Route as RegolamentoRouteImport } from './routes/regolamento'
 import { Route as GestioneRouteImport } from './routes/gestione'
 import { Route as DonazioniRouteImport } from './routes/donazioni'
 import { Route as CommunityRouteImport } from './routes/community'
+import { Route as CestinoRouteImport } from './routes/cestino'
 import { Route as CatalogoRouteImport } from './routes/catalogo'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AreaAutoreRouteImport } from './routes/area-autore'
@@ -43,6 +44,11 @@ const DonazioniRoute = DonazioniRouteImport.update({
 const CommunityRoute = CommunityRouteImport.update({
   id: '/community',
   path: '/community',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CestinoRoute = CestinoRouteImport.update({
+  id: '/cestino',
+  path: '/cestino',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CatalogoRoute = CatalogoRouteImport.update({
@@ -106,6 +112,7 @@ export interface FileRoutesByFullPath {
   '/area-autore': typeof AreaAutoreRoute
   '/auth': typeof AuthRouteWithChildren
   '/catalogo': typeof CatalogoRoute
+  '/cestino': typeof CestinoRoute
   '/community': typeof CommunityRouteWithChildren
   '/donazioni': typeof DonazioniRoute
   '/gestione': typeof GestioneRoute
@@ -122,6 +129,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/area-autore': typeof AreaAutoreRoute
   '/catalogo': typeof CatalogoRoute
+  '/cestino': typeof CestinoRoute
   '/community': typeof CommunityRouteWithChildren
   '/donazioni': typeof DonazioniRoute
   '/gestione': typeof GestioneRoute
@@ -140,6 +148,7 @@ export interface FileRoutesById {
   '/area-autore': typeof AreaAutoreRoute
   '/auth': typeof AuthRouteWithChildren
   '/catalogo': typeof CatalogoRoute
+  '/cestino': typeof CestinoRoute
   '/community': typeof CommunityRouteWithChildren
   '/donazioni': typeof DonazioniRoute
   '/gestione': typeof GestioneRoute
@@ -159,6 +168,7 @@ export interface FileRouteTypes {
     | '/area-autore'
     | '/auth'
     | '/catalogo'
+    | '/cestino'
     | '/community'
     | '/donazioni'
     | '/gestione'
@@ -175,6 +185,7 @@ export interface FileRouteTypes {
     | '/'
     | '/area-autore'
     | '/catalogo'
+    | '/cestino'
     | '/community'
     | '/donazioni'
     | '/gestione'
@@ -192,6 +203,7 @@ export interface FileRouteTypes {
     | '/area-autore'
     | '/auth'
     | '/catalogo'
+    | '/cestino'
     | '/community'
     | '/donazioni'
     | '/gestione'
@@ -210,6 +222,7 @@ export interface RootRouteChildren {
   AreaAutoreRoute: typeof AreaAutoreRoute
   AuthRoute: typeof AuthRouteWithChildren
   CatalogoRoute: typeof CatalogoRoute
+  CestinoRoute: typeof CestinoRoute
   CommunityRoute: typeof CommunityRouteWithChildren
   DonazioniRoute: typeof DonazioniRoute
   GestioneRoute: typeof GestioneRoute
@@ -247,6 +260,13 @@ declare module '@tanstack/react-router' {
       path: '/community'
       fullPath: '/community'
       preLoaderRoute: typeof CommunityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cestino': {
+      id: '/cestino'
+      path: '/cestino'
+      fullPath: '/cestino'
+      preLoaderRoute: typeof CestinoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/catalogo': {
@@ -360,6 +380,7 @@ const rootRouteChildren: RootRouteChildren = {
   AreaAutoreRoute: AreaAutoreRoute,
   AuthRoute: AuthRouteWithChildren,
   CatalogoRoute: CatalogoRoute,
+  CestinoRoute: CestinoRoute,
   CommunityRoute: CommunityRouteWithChildren,
   DonazioniRoute: DonazioniRoute,
   GestioneRoute: GestioneRoute,

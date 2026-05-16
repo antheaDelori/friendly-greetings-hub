@@ -64,6 +64,9 @@ type Book = {
   lastra_url: string | null;
   file_url: string | null;
   disponibile: boolean;
+  cestinato: boolean;
+  recuperato: boolean;
+  voti_cestino: number;
   slug: string;
   letture: number;
   downloads: number;
@@ -559,6 +562,21 @@ function GestionePage() {
     }
   };
 
+  const handleGettaNelCestino = async () => {
+    if (!selected || !userId) return;
+    await supabase.from("books").update({ cestinato: true, disponibile: false }).eq("id", selected.id);
+    setSelected(null);
+    setConfirmDelete(false);
+    await loadBooks(userId);
+  };
+
+  const handleRipristinaDalCestino = async (book: Book) => {
+    if (!userId) return;
+    await supabase.from("books").update({ cestinato: false, disponibile: false }).eq("id", book.id);
+    if (selected?.id === book.id) setSelected(null);
+    await loadBooks(userId);
+  };
+
   const handleEliminaDefinitivamente = async () => {
     if (!selected || !userId) return;
     await supabase.from("books").delete().eq("id", selected.id);
@@ -736,8 +754,9 @@ function GestionePage() {
   const [booksPage, setBooksPage] = useState(0);
 
   const BOOKS_PER_PAGE = 4;
-  const activeBooks = books.filter(b => b.disponibile && !b.collana_id);
-  const archivedBooks = books.filter(b => !b.disponibile && !b.collana_id);
+  const activeBooks = books.filter(b => b.disponibile && !b.collana_id && !b.cestinato);
+  const archivedBooks = books.filter(b => !b.disponibile && !b.collana_id && !b.cestinato);
+  const cestinatoBooks = books.filter(b => b.cestinato && !b.collana_id);
   const filteredBooks = filterGenere ? activeBooks.filter(b => b.genere === filterGenere) : activeBooks;
   const booksTotalPages = Math.ceil(filteredBooks.length / BOOKS_PER_PAGE);
   const pagedBooks = filteredBooks.slice(booksPage * BOOKS_PER_PAGE, (booksPage + 1) * BOOKS_PER_PAGE);
@@ -889,6 +908,32 @@ function GestionePage() {
                         <div className="font-display text-sm tracking-tight truncate">{b.titolo}</div>
                         <div className="font-mono text-[9px] tracking-widest opacity-60 uppercase mt-1">
                           archiviata · {b.anno ?? "—"}
+                        </div>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+
+            {cestinatoBooks.length > 0 && (
+              <>
+                <div className="hud-divider my-4" />
+                <div className="font-mono text-[9px] tracking-[0.3em] text-magenta/40 uppercase mb-2">// cestino</div>
+                <ul className="space-y-2">
+                  {cestinatoBooks.map((b) => (
+                    <li key={b.id}>
+                      <button
+                        onClick={() => handleSelectBook(b)}
+                        className={`w-full text-left p-3 border transition-all opacity-60 hover:opacity-90 ${
+                          selected?.id === b.id && !showForm
+                            ? "border-magenta/60 bg-magenta/10 text-magenta"
+                            : "border-magenta/20 text-bone/50 hover:border-magenta/40"
+                        }`}
+                      >
+                        <div className="font-display text-sm tracking-tight truncate">{b.titolo}</div>
+                        <div className="font-mono text-[9px] tracking-widest opacity-60 uppercase mt-1">
+                          cestino · {b.voti_cestino}/5 voti
                         </div>
                       </button>
                     </li>
@@ -1428,36 +1473,54 @@ function GestionePage() {
               )}
 
               <div className="mt-5 space-y-4">
-                <div className="flex flex-wrap gap-3">
-                  {selected.disponibile ? (
-                    <>
-                      <HudButton variant="ghost" onClick={handleModifica} disabled={confirmDelete}>◆ Modifica</HudButton>
-                      <HudButton
-                        variant="ghost"
-                        onClick={() => setConfirmDelete(true)}
-                        disabled={confirmDelete}
-                      >
-                        ⊗ Archivia
-                      </HudButton>
-                    </>
-                  ) : (
-                    <>
-                      <HudButton variant="ghost" onClick={handleModifica}>◆ Modifica</HudButton>
-                      <HudButton variant="primary" onClick={() => handleRipristina(selected)}>▸ Ripristina</HudButton>
-                    </>
-                  )}
-                </div>
-                {confirmDelete && (
-                  <div className="border border-magenta/50 bg-magenta/5 p-4 space-y-3">
-                    <p className="font-mono text-[10px] tracking-widest text-magenta uppercase">
-                      ⚠ Archivia per nasconderla (recuperabile) oppure elimina per rimuoverla dal database.
-                    </p>
-                    <div className="flex flex-wrap gap-3">
-                      <HudButton variant="magenta" onClick={handleElimina}>Archivia</HudButton>
-                      <HudButton variant="magenta" onClick={handleEliminaDefinitivamente}>Elimina definitivamente</HudButton>
-                      <HudButton variant="ghost" onClick={() => setConfirmDelete(false)}>Annulla</HudButton>
+                {selected.cestinato ? (
+                  <div className="border border-magenta/40 bg-magenta/5 p-4 space-y-3">
+                    <div className="font-mono text-[10px] tracking-widest text-magenta uppercase">
+                      ⊗ Nel cestino degli scritti perduti
                     </div>
+                    <p className="font-serif italic text-bone/60 text-sm">
+                      I lettori possono leggere e votare per il recupero. Voti ricevuti: {selected.voti_cestino}/5.
+                    </p>
+                    {selected.recuperato && (
+                      <div className="font-mono text-[10px] tracking-widest text-cyan uppercase">
+                        ✓ Recuperata dai lettori
+                      </div>
+                    )}
+                    <HudButton variant="primary" onClick={() => handleRipristinaDalCestino(selected)}>
+                      ▸ Ripristina dal cestino
+                    </HudButton>
                   </div>
+                ) : (
+                  <>
+                    <div className="flex flex-wrap gap-3">
+                      {selected.disponibile ? (
+                        <>
+                          <HudButton variant="ghost" onClick={handleModifica} disabled={confirmDelete}>◆ Modifica</HudButton>
+                          <HudButton variant="ghost" onClick={() => setConfirmDelete(true)} disabled={confirmDelete}>⊗ Archivia</HudButton>
+                          <HudButton variant="ghost" onClick={() => setConfirmDelete(true)} disabled={confirmDelete}>⊗ Cestino</HudButton>
+                        </>
+                      ) : (
+                        <>
+                          <HudButton variant="ghost" onClick={handleModifica}>◆ Modifica</HudButton>
+                          <HudButton variant="primary" onClick={() => handleRipristina(selected)}>▸ Ripristina</HudButton>
+                          <HudButton variant="ghost" onClick={() => setConfirmDelete(true)} disabled={confirmDelete}>⊗ Cestino</HudButton>
+                        </>
+                      )}
+                    </div>
+                    {confirmDelete && (
+                      <div className="border border-magenta/50 bg-magenta/5 p-4 space-y-3">
+                        <p className="font-mono text-[10px] tracking-widest text-magenta uppercase">
+                          ⚠ Archivia per nasconderla, gettala nel cestino pubblico, oppure eliminala definitivamente.
+                        </p>
+                        <div className="flex flex-wrap gap-3">
+                          <HudButton variant="magenta" onClick={handleElimina}>Archivia</HudButton>
+                          <HudButton variant="magenta" onClick={handleGettaNelCestino}>⊗ Cestino</HudButton>
+                          <HudButton variant="magenta" onClick={handleEliminaDefinitivamente}>Elimina definitivamente</HudButton>
+                          <HudButton variant="ghost" onClick={() => setConfirmDelete(false)}>Annulla</HudButton>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </HudPanel>

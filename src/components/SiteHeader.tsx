@@ -81,6 +81,7 @@ export function SiteHeader() {
         <nav className="hidden md:flex items-center gap-7">
           <Link to="/" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }} activeOptions={{ exact: true }}>Home</Link>
           <Link to="/catalogo" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }}>Catalogo</Link>
+          <Link to="/cestino" className={linkBase} activeProps={{ className: "text-magenta" }}>Cestino</Link>
           <Link to="/community" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }}>Community</Link>
           <Link to="/regolamento" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }}>Regole</Link>
           <Link to="/donazioni" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }}>Sostieni</Link>
