@@ -86,45 +86,53 @@ export function SiteHeader() {
           <Link to="/donazioni" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }}>Sostieni</Link>
         </nav>
 
-        <div className="flex items-center gap-2">
-          {displayName ? (
-            <>
-              {isAnonymous ? (
-                <span className="hidden sm:inline-flex font-mono tracking-widest text-[10px] uppercase text-bone/40 px-3 py-2">
-                  [ospite]
-                </span>
-              ) : (
-                <Link
-                  to="/area-autore"
-                  className="hidden sm:inline-flex font-mono tracking-widest text-[10px] uppercase text-cyan hover:text-magenta transition-colors px-3 py-2"
-                  title="Area riservata autore"
+        <div className="flex flex-col items-end gap-0.5">
+          <div className="flex items-center gap-2">
+            {displayName ? (
+              <>
+                {isAnonymous ? (
+                  <span className="hidden sm:inline-flex font-mono tracking-widest text-[10px] uppercase text-bone/40 px-3 py-2">
+                    [ospite]
+                  </span>
+                ) : (
+                  <Link
+                    to="/area-autore"
+                    className="hidden sm:inline-flex font-mono tracking-widest text-[10px] uppercase text-cyan hover:text-magenta transition-colors px-3 py-2"
+                    title="Area riservata autore"
+                  >
+                    [{displayName}]
+                  </Link>
+                )}
+                <button
+                  onClick={handleLogout}
+                  className="relative inline-flex items-center gap-2 border border-magenta/60 bg-magenta/10 px-4 py-2 font-mono text-[10px] uppercase tracking-widest text-magenta hover:bg-magenta hover:text-void transition-all"
                 >
-                  [{displayName}]
+                  ✕ Esci
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/auth"
+                  className="hidden sm:inline-flex font-mono tracking-widest text-[10px] uppercase text-bone/70 hover:text-cyan transition-colors px-3 py-2"
+                >
+                  [accedi]
                 </Link>
-              )}
-              <button
-                onClick={handleLogout}
-                className="relative inline-flex items-center gap-2 border border-magenta/60 bg-magenta/10 px-4 py-2 font-mono text-[10px] uppercase tracking-widest text-magenta hover:bg-magenta hover:text-void transition-all"
-              >
-                ✕ Esci
-              </button>
-            </>
-          ) : (
-            <>
-              <Link
-                to="/auth"
-                className="hidden sm:inline-flex font-mono tracking-widest text-[10px] uppercase text-bone/70 hover:text-cyan transition-colors px-3 py-2"
-              >
-                [accedi]
-              </Link>
-              <Link
-                to="/auth/registrazione"
-                className="relative inline-flex items-center gap-2 border border-cyan/60 bg-cyan/10 px-4 py-2 font-mono text-[10px] uppercase tracking-widest text-cyan hover:bg-cyan hover:text-void transition-all hud-frame-x"
-              >
-                ▸ Registrati
-              </Link>
-            </>
-          )}
+                <Link
+                  to="/auth/registrazione"
+                  className="relative inline-flex items-center gap-2 border border-cyan/60 bg-cyan/10 px-4 py-2 font-mono text-[10px] uppercase tracking-widest text-cyan hover:bg-cyan hover:text-void transition-all hud-frame-x"
+                >
+                  ▸ Registrati
+                </Link>
+              </>
+            )}
+          </div>
+          <Link
+            to="/cestino"
+            className="hidden sm:block font-mono text-[8px] tracking-[0.2em] text-magenta/50 hover:text-magenta transition-colors uppercase italic"
+          >
+            ⊗ Cestino degli Scritti Perduti
+          </Link>
         </div>
       </div>
     </header>
