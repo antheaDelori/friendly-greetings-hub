@@ -34,7 +34,7 @@ export function SiteHeader() {
   const linkBase = "text-[11px] font-mono tracking-[0.18em] uppercase text-bone/70 hover:text-cyan transition-colors";
 
   return (
-    <header className="sticky top-0 z-40 border-b border-cyan/15 bg-void/70 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 bg-void/70 backdrop-blur-xl">
       {/* status bar */}
       <div className="border-b border-cyan/10 bg-deep/40">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10 h-7 flex items-center justify-between font-mono text-[10px] tracking-widest text-cyan/60">
@@ -58,7 +58,7 @@ export function SiteHeader() {
       </div>
 
       {/* main bar */}
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-6 px-4 sm:px-6 lg:px-10">
+      <div className="border-b border-cyan/15 mx-auto flex h-16 max-w-7xl items-center justify-between gap-6 px-4 sm:px-6 lg:px-10">
         <Link to="/" className="flex items-center gap-3 group">
           <div className="relative h-10 w-10 hud-frame bg-deep/60 overflow-hidden">
             <img
@@ -86,54 +86,56 @@ export function SiteHeader() {
           <Link to="/donazioni" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }}>Sostieni</Link>
         </nav>
 
-        <div className="flex flex-col items-end gap-0.5">
-          <div className="flex items-center gap-2">
-            {displayName ? (
-              <>
-                {isAnonymous ? (
-                  <span className="hidden sm:inline-flex font-mono tracking-widest text-[10px] uppercase text-bone/40 px-3 py-2">
-                    [ospite]
-                  </span>
-                ) : (
-                  <Link
-                    to="/area-autore"
-                    className="hidden sm:inline-flex font-mono tracking-widest text-[10px] uppercase text-cyan hover:text-magenta transition-colors px-3 py-2"
-                    title="Area riservata autore"
-                  >
-                    [{displayName}]
-                  </Link>
-                )}
-                <button
-                  onClick={handleLogout}
-                  className="relative inline-flex items-center gap-2 border border-magenta/60 bg-magenta/10 px-4 py-2 font-mono text-[10px] uppercase tracking-widest text-magenta hover:bg-magenta hover:text-void transition-all"
-                >
-                  ✕ Esci
-                </button>
-              </>
-            ) : (
-              <>
+        <div className="flex items-center gap-2">
+          {displayName ? (
+            <>
+              {isAnonymous ? (
+                <span className="hidden sm:inline-flex font-mono tracking-widest text-[10px] uppercase text-bone/40 px-3 py-2">
+                  [ospite]
+                </span>
+              ) : (
                 <Link
-                  to="/auth"
-                  className="hidden sm:inline-flex font-mono tracking-widest text-[10px] uppercase text-bone/70 hover:text-cyan transition-colors px-3 py-2"
+                  to="/area-autore"
+                  className="hidden sm:inline-flex font-mono tracking-widest text-[10px] uppercase text-cyan hover:text-magenta transition-colors px-3 py-2"
+                  title="Area riservata autore"
                 >
-                  [accedi]
+                  [{displayName}]
                 </Link>
-                <Link
-                  to="/auth/registrazione"
-                  className="relative inline-flex items-center gap-2 border border-cyan/60 bg-cyan/10 px-4 py-2 font-mono text-[10px] uppercase tracking-widest text-cyan hover:bg-cyan hover:text-void transition-all hud-frame-x"
-                >
-                  ▸ Registrati
-                </Link>
-              </>
-            )}
-          </div>
-          <Link
-            to="/cestino"
-            className="hidden sm:block font-mono text-[8px] tracking-[0.2em] text-magenta/50 hover:text-magenta transition-colors uppercase italic"
-          >
-            ⊗ Cestino degli Scritti Perduti
-          </Link>
+              )}
+              <button
+                onClick={handleLogout}
+                className="relative inline-flex items-center gap-2 border border-magenta/60 bg-magenta/10 px-4 py-2 font-mono text-[10px] uppercase tracking-widest text-magenta hover:bg-magenta hover:text-void transition-all"
+              >
+                ✕ Esci
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                to="/auth"
+                className="hidden sm:inline-flex font-mono tracking-widest text-[10px] uppercase text-bone/70 hover:text-cyan transition-colors px-3 py-2"
+              >
+                [accedi]
+              </Link>
+              <Link
+                to="/auth/registrazione"
+                className="relative inline-flex items-center gap-2 border border-cyan/60 bg-cyan/10 px-4 py-2 font-mono text-[10px] uppercase tracking-widest text-cyan hover:bg-cyan hover:text-void transition-all hud-frame-x"
+              >
+                ▸ Registrati
+              </Link>
+            </>
+          )}
         </div>
+      </div>
+
+      {/* cestino strip — sotto la linea del menu, allineato a destra */}
+      <div className="hidden sm:flex justify-end px-4 sm:px-6 lg:px-10 py-1">
+        <Link
+          to="/cestino"
+          className="font-mono text-[9px] tracking-[0.22em] text-magenta text-glow-magenta hover:opacity-70 transition-opacity uppercase"
+        >
+          ⊗ Cestino degli Scritti Perduti
+        </Link>
       </div>
     </header>
   );
