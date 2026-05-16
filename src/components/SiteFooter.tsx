@@ -28,6 +28,7 @@ export function SiteFooter() {
           <ul className="space-y-2 font-mono text-xs uppercase tracking-wider">
             <li><Link to="/" className="text-bone/70 hover:text-cyan transition-colors">▸ Home</Link></li>
             <li><Link to="/catalogo" className="text-bone/70 hover:text-cyan transition-colors">▸ Catalogo</Link></li>
+            <li><Link to="/autori" className="text-bone/70 hover:text-cyan transition-colors">▸ Autori</Link></li>
             <li><Link to="/community" className="text-bone/70 hover:text-cyan transition-colors">▸ Community</Link></li>
             <li><Link to="/regolamento" className="text-bone/70 hover:text-cyan transition-colors">▸ Regolamento</Link></li>
             <li><Link to="/donazioni" className="text-bone/70 hover:text-cyan transition-colors">▸ Sostieni</Link></li>

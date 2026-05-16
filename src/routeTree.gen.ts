@@ -15,6 +15,7 @@ import { Route as DonazioniRouteImport } from './routes/donazioni'
 import { Route as CommunityRouteImport } from './routes/community'
 import { Route as CestinoRouteImport } from './routes/cestino'
 import { Route as CatalogoRouteImport } from './routes/catalogo'
+import { Route as AutoriRouteImport } from './routes/autori'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AreaAutoreRouteImport } from './routes/area-autore'
 import { Route as IndexRouteImport } from './routes/index'
@@ -54,6 +55,11 @@ const CestinoRoute = CestinoRouteImport.update({
 const CatalogoRoute = CatalogoRouteImport.update({
   id: '/catalogo',
   path: '/catalogo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AutoriRoute = AutoriRouteImport.update({
+  id: '/autori',
+  path: '/autori',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -111,6 +117,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/area-autore': typeof AreaAutoreRoute
   '/auth': typeof AuthRouteWithChildren
+  '/autori': typeof AutoriRoute
   '/catalogo': typeof CatalogoRoute
   '/cestino': typeof CestinoRoute
   '/community': typeof CommunityRouteWithChildren
@@ -128,6 +135,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/area-autore': typeof AreaAutoreRoute
+  '/autori': typeof AutoriRoute
   '/catalogo': typeof CatalogoRoute
   '/cestino': typeof CestinoRoute
   '/community': typeof CommunityRouteWithChildren
@@ -147,6 +155,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/area-autore': typeof AreaAutoreRoute
   '/auth': typeof AuthRouteWithChildren
+  '/autori': typeof AutoriRoute
   '/catalogo': typeof CatalogoRoute
   '/cestino': typeof CestinoRoute
   '/community': typeof CommunityRouteWithChildren
@@ -167,6 +176,7 @@ export interface FileRouteTypes {
     | '/'
     | '/area-autore'
     | '/auth'
+    | '/autori'
     | '/catalogo'
     | '/cestino'
     | '/community'
@@ -184,6 +194,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/area-autore'
+    | '/autori'
     | '/catalogo'
     | '/cestino'
     | '/community'
@@ -202,6 +213,7 @@ export interface FileRouteTypes {
     | '/'
     | '/area-autore'
     | '/auth'
+    | '/autori'
     | '/catalogo'
     | '/cestino'
     | '/community'
@@ -221,6 +233,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AreaAutoreRoute: typeof AreaAutoreRoute
   AuthRoute: typeof AuthRouteWithChildren
+  AutoriRoute: typeof AutoriRoute
   CatalogoRoute: typeof CatalogoRoute
   CestinoRoute: typeof CestinoRoute
   CommunityRoute: typeof CommunityRouteWithChildren
@@ -274,6 +287,13 @@ declare module '@tanstack/react-router' {
       path: '/catalogo'
       fullPath: '/catalogo'
       preLoaderRoute: typeof CatalogoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/autori': {
+      id: '/autori'
+      path: '/autori'
+      fullPath: '/autori'
+      preLoaderRoute: typeof AutoriRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -379,6 +399,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AreaAutoreRoute: AreaAutoreRoute,
   AuthRoute: AuthRouteWithChildren,
+  AutoriRoute: AutoriRoute,
   CatalogoRoute: CatalogoRoute,
   CestinoRoute: CestinoRoute,
   CommunityRoute: CommunityRouteWithChildren,
