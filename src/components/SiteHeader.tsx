@@ -129,13 +129,15 @@ export function SiteHeader() {
       </div>
 
       {/* cestino strip — sotto la linea del menu, allineato a destra */}
-      <div className="hidden sm:flex justify-end px-4 sm:px-6 lg:px-10 py-1">
-        <Link
-          to="/cestino"
-          className="font-mono text-[9px] tracking-[0.22em] text-magenta text-glow-magenta hover:opacity-70 transition-opacity uppercase"
-        >
-          ⊗ Cestino degli Scritti Perduti
-        </Link>
+      <div className="hidden sm:block py-1">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10 flex justify-end">
+          <Link
+            to="/cestino"
+            className="font-mono text-[9px] tracking-[0.22em] text-magenta text-glow-magenta hover:opacity-70 transition-opacity uppercase"
+          >
+            ⊗ Cestino degli Scritti Perduti
+          </Link>
+        </div>
       </div>
     </header>
   );
