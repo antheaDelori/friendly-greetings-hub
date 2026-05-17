@@ -1,15 +1,55 @@
-import { Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState, useRef } from "react";
 import logo from "@/assets/liberiamo-hero.png";
 import { supabase } from "@/lib/supabase";
 import { getCestinoTranslation } from "@/lib/cestinoI18n";
+
+type AuthorEntry = { name: string; count: number };
 
 export function SiteHeader() {
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [cestinoTooltip, setCestinoTooltip] = useState<string | null>(null);
+  const [autoriOpen, setAutoriOpen] = useState(false);
+  const [autoriList, setAutoriList] = useState<AuthorEntry[]>([]);
+  const [autoriLoaded, setAutoriLoaded] = useState(false);
+  const autoriRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   useEffect(() => { setCestinoTooltip(getCestinoTranslation()); }, []);
+
+  // chiude il dropdown cliccando fuori
+  useEffect(() => {
+    if (!autoriOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (autoriRef.current && !autoriRef.current.contains(e.target as Node)) {
+        setAutoriOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [autoriOpen]);
+
+  const handleAutoriToggle = async () => {
+    setAutoriOpen(v => !v);
+    if (autoriLoaded) return;
+    const { data } = await supabase
+      .from("books")
+      .select("author_name")
+      .eq("disponibile", true)
+      .eq("cestinato", false);
+    if (!data) return;
+    const map = new Map<string, number>();
+    for (const b of data) {
+      const n = b.author_name ?? "Autore";
+      map.set(n, (map.get(n) ?? 0) + 1);
+    }
+    const list = [...map.entries()]
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => a.name.localeCompare(b.name, "it"));
+    setAutoriList(list);
+    setAutoriLoaded(true);
+  };
 
   useEffect(() => {
     const loadUser = async () => {
@@ -85,7 +125,57 @@ export function SiteHeader() {
         <nav className="hidden md:flex items-center gap-7">
           <Link to="/" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }} activeOptions={{ exact: true }}>Home</Link>
           <Link to="/catalogo" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }}>Catalogo</Link>
-          <Link to="/autori" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }}>Autori</Link>
+
+          {/* dropdown autori */}
+          <div ref={autoriRef} className="relative">
+            <button
+              onClick={handleAutoriToggle}
+              className={`${linkBase} flex items-center gap-1 ${autoriOpen ? "text-cyan text-glow-cyan" : ""}`}
+            >
+              Autori
+              <span className={`text-[8px] transition-transform duration-200 ${autoriOpen ? "rotate-180" : ""}`}>▾</span>
+            </button>
+            {autoriOpen && (
+              <div className="absolute top-full left-0 mt-3 w-56 glass border border-cyan/30 z-50 shadow-[0_0_30px_oklch(0.82_0.16_200/0.15)]">
+                <span className="absolute -top-px left-0 right-0 h-px bg-cyan/60" />
+                <Link
+                  to="/autori"
+                  onClick={() => setAutoriOpen(false)}
+                  className="flex items-center gap-2 px-4 py-3 font-mono text-[10px] tracking-widest uppercase text-cyan hover:bg-cyan/10 transition-colors border-b border-cyan/15"
+                >
+                  ▸ Ricerca autori
+                </Link>
+                <div className="max-h-52 overflow-y-auto">
+                  {!autoriLoaded ? (
+                    <p className="px-4 py-3 font-mono text-[10px] text-bone/40 animate-pulse">caricamento...</p>
+                  ) : autoriList.length === 0 ? (
+                    <p className="px-4 py-3 font-mono text-[10px] text-bone/40">Nessun autore</p>
+                  ) : (
+                    autoriList.map(a => (
+                      <button
+                        key={a.name}
+                        onClick={() => { navigate({ to: "/catalogo", search: { q: a.name, genre: "", sort: "recenti" } }); setAutoriOpen(false); }}
+                        className="w-full text-left px-4 py-2.5 flex items-center justify-between group hover:bg-cyan/5 transition-colors"
+                      >
+                        <span className="font-serif text-sm text-bone/80 group-hover:text-cyan transition-colors truncate">{a.name}</span>
+                        <span className="font-mono text-[9px] text-bone/25 ml-2 flex-shrink-0">{a.count}</span>
+                      </button>
+                    ))
+                  )}
+                </div>
+                {autoriLoaded && autoriList.length > 0 && (
+                  <Link
+                    to="/autori"
+                    onClick={() => setAutoriOpen(false)}
+                    className="flex items-center gap-2 px-4 py-3 font-mono text-[10px] tracking-widest uppercase text-bone/40 hover:text-cyan hover:bg-cyan/5 transition-colors border-t border-cyan/15"
+                  >
+                    ▸ Vedi tutti ({autoriList.length})
+                  </Link>
+                )}
+              </div>
+            )}
+          </div>
+
           <Link to="/community" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }}>Community</Link>
           <Link to="/regolamento" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }}>Regole</Link>
           <Link to="/donazioni" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }}>Sostieni</Link>
