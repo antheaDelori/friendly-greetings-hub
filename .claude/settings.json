@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -v 'community\\\\|leggi\\\\.$slug')",
+      "Bash(grep -v 'community\\\\|leggi\\\\.$slug\\\\|collane\\\\.$slug')",
+      "Bash(npx vite *)",
+      "Bash(grep -n \"estratto\\\\|preview\\\\|descrizione\" \"/Users/danielegirtanner/Library/CloudStorage/OneDrive-Personale/02 - PERSONALI_FAMIGLIA/06 - TUTTI DOCUMENTI/WEBAPP LIBRI/friendly-greetings-hub/src/routes/collane.\\\\$slug.tsx\")",
+      "Read(//Users/danielegirtanner/Library/CloudStorage/OneDrive-Personale/02 - PERSONALI_FAMIGLIA/06 - TUTTI DOCUMENTI/WEBAPP LIBRI/friendly-greetings-hub/src/routes/**)"
+    ]
+  }
+}

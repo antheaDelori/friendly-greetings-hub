@@ -5,7 +5,7 @@ import { getCestinoTranslation } from "@/lib/cestinoI18n";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { BookCard } from "@/components/BookCard";
-import { books, type Book, type Genre } from "@/data/books";
+import { type Book, type Genre } from "@/data/books";
 import { supabase } from "@/lib/supabase";
 import logo from "@/assets/liberiamo-hero.png";
 import logoFallback from "@/assets/logo-liberiamo.jpg";
@@ -46,52 +46,55 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const { t } = useTranslation();
-  const [featured, setFeatured] = useState<Book[]>(books.slice(0, 4));
-  const [fresh, setFresh] = useState<Book[]>(books.slice(0, 8));
+  const [featured, setFeatured] = useState<Book[]>([]);
+  const [fresh, setFresh] = useState<Book[]>([]);
   const [cestinoTooltip, setCestinoTooltip] = useState<string | null>(null);
   useEffect(() => { setCestinoTooltip(getCestinoTranslation()); }, []);
   const [freshPage, setFreshPage] = useState(0);
   const FRESH_PER_PAGE = 8;
   const freshTotalPages = Math.max(1, Math.ceil(fresh.length / FRESH_PER_PAGE));
   const freshVisible = fresh.slice(freshPage * FRESH_PER_PAGE, (freshPage + 1) * FRESH_PER_PAGE);
-  const totals = {
-    opere: books.length * 14,
-    autori: 132,
-    letture: books.reduce((s, b) => s + b.reads, 0),
-  };
+  const [totals, setTotals] = useState({ opere: 0, autori: 0, letture: 0 });
 
   useEffect(() => {
-    const fetchFeatured = async () => {
+    const fetchAll = async () => {
+      const ALL_GENRES: Genre[] = ["libro", "racconto", "saggio", "articolo", "buonanotte", "poesia"];
+
       const { data } = await supabase
         .from("books")
         .select("slug, titolo, descrizione, genere, anno, letture, copertina_url, lastra_url, author_name")
         .eq("disponibile", true)
         .order("created_at", { ascending: false });
-      if (!data || data.length === 0) return;
-      const ALL_GENRES: Genre[] = ["libro", "racconto", "saggio", "articolo", "buonanotte", "poesia"];
-      const dbBooks: Book[] = data.map(b => {
-        const author = b.author_name || "Autore";
-        return {
-          slug: b.slug,
-          title: b.titolo,
-          author,
-          authorSlug: author.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-"),
-          genre: (ALL_GENRES.includes(b.genere as Genre) ? b.genere : "libro") as Genre,
-          year: b.anno ?? new Date().getFullYear(),
-          reads: b.letture,
-          rating: 0,
-          cover: b.copertina_url ?? logoFallback,
-          lastra: b.lastra_url ?? undefined,
-          tagline: b.descrizione?.slice(0, 140) ?? "",
-          description: b.descrizione ?? "",
-          chapters: [],
-        };
-      });
-      setFeatured(pickFeatured(dbBooks));
-      setFresh(dbBooks);
-      setFreshPage(0);
+
+      if (data && data.length > 0) {
+        const dbBooks: Book[] = data.map(b => {
+          const author = b.author_name || "Autore";
+          return {
+            slug: b.slug,
+            title: b.titolo,
+            author,
+            authorSlug: author.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-"),
+            genre: (ALL_GENRES.includes(b.genere as Genre) ? b.genere : "libro") as Genre,
+            year: b.anno ?? new Date().getFullYear(),
+            reads: b.letture,
+            rating: 0,
+            cover: b.copertina_url ?? logoFallback,
+            lastra: b.lastra_url ?? undefined,
+            tagline: b.descrizione?.slice(0, 140) ?? "",
+            description: b.descrizione ?? "",
+            chapters: [],
+          };
+        });
+        setFeatured(pickFeatured(dbBooks));
+        setFresh(dbBooks);
+        setFreshPage(0);
+
+        const totalLetture = data.reduce((s: number, b: { letture: number }) => s + (b.letture ?? 0), 0);
+        const uniqueAuthors = new Set(data.map((b: { author_name: string | null }) => b.author_name).filter(Boolean)).size;
+        setTotals({ opere: data.length, autori: uniqueAuthors, letture: totalLetture });
+      }
     };
-    fetchFeatured();
+    fetchAll();
   }, []);
 
   return (

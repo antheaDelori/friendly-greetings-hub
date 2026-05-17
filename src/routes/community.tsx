@@ -3,7 +3,6 @@ import { useState, useEffect, useRef } from "react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { HudPanel, PageShell, HudButton } from "@/components/HudPanel";
-import { books } from "@/data/books";
 import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/community")({
@@ -15,13 +14,6 @@ export const Route = createFileRoute("/community")({
   }),
   component: CommunityPage,
 });
-
-const FALLBACK_REVIEWS = [
-  { user: "@anthea_dl", book: "Read or Perish", text: "Un saggio che ti tira fuori dal letto alle 4 e mezza. Tagliente come un cristallo.", time: "2h fa", rate: 5 },
-  { user: "@marco_r", book: "Il silenzio delle pagine", text: "La bibliotecaria clandestina è il personaggio dell'anno. Capitolo III mi ha fermato.", time: "8h fa", rate: 5 },
-  { user: "@iris_c", book: "Geografie private", text: "Le mappe come metafora funzionano. La struttura forse poteva osare di più.", time: "1g fa", rate: 4 },
-  { user: "@tommaso_b", book: "Lessico della rivolta", text: "Cento parole, cento bisturi. Da tenere sul comodino.", time: "2g fa", rate: 5 },
-];
 
 type ReviewRow = {
   user_display: string | null;
@@ -159,6 +151,7 @@ function CommunityPage() {
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [reviewsList, setReviewsList] = useState<ReviewRow[] | null>(null);
+  const [activeAuthors, setActiveAuthors] = useState<{ name: string; genre: string }[]>([]);
 
   // undefined = still checking, null = not logged in
   const [userId, setUserId] = useState<string | null | undefined>(undefined);
@@ -176,6 +169,22 @@ function CommunityPage() {
 
   useEffect(() => {
     loadReviews();
+    supabase
+      .from("books")
+      .select("author_name, genere")
+      .eq("disponibile", true)
+      .not("author_name", "is", null)
+      .order("letture", { ascending: false })
+      .limit(10)
+      .then(({ data }) => {
+        if (!data) return;
+        const seen = new Set<string>();
+        const unique = data
+          .filter((b: { author_name: string }) => { if (seen.has(b.author_name)) return false; seen.add(b.author_name); return true; })
+          .slice(0, 5)
+          .map((b: { author_name: string; genere: string }) => ({ name: b.author_name, genre: b.genere }));
+        setActiveAuthors(unique);
+      });
     supabase.auth.getSession().then(({ data }) => {
       const user = data.session?.user;
       if (!user) { setUserId(null); setIsRegistered(false); return; }
@@ -253,18 +262,7 @@ function CommunityPage() {
                     </div>
                   ))
                 ) : (
-                  FALLBACK_REVIEWS.map((r, i) => (
-                    <div key={i} className="border-l-2 border-cyan/40 pl-4 hover:border-magenta transition-colors">
-                      <div className="flex items-baseline justify-between gap-3 flex-wrap">
-                        <div>
-                          <span className="font-mono text-cyan text-sm">{r.user}</span>
-                          <span className="font-mono text-[10px] tracking-widest text-bone/40 uppercase ml-3">▸ {r.book}</span>
-                        </div>
-                        <div className="font-mono text-[10px] tracking-widest text-bone/40">{r.time} · {"★".repeat(r.rate)}</div>
-                      </div>
-                      <p className="mt-2 font-serif italic text-bone/85 leading-relaxed">"{r.text}"</p>
-                    </div>
-                  ))
+                  <p className="font-serif italic text-bone/40">Nessuna recensione ancora. Sii il primo.</p>
                 )}
               </div>
             </HudPanel>
@@ -351,32 +349,26 @@ function CommunityPage() {
           {/* Sidebar */}
           <div className="space-y-4">
             <HudPanel label="autori_attivi" code="LIVE" tone="amber">
-              <ul className="space-y-3">
-                {books.slice(0, 5).map((b) => (
-                  <li key={b.slug} className="flex items-center gap-3 group">
-                    <div className="w-10 h-10 bg-gradient-to-br from-cyan/40 to-magenta/30 ring-1 ring-cyan/40 flex items-center justify-center font-display text-bone">
-                      {b.author[0]}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-display text-sm text-bone truncate">{b.author}</div>
-                      <div className="font-mono text-[9px] tracking-widest text-bone/50 uppercase">▸ {b.genre}</div>
-                    </div>
-                    <button className="font-mono text-[10px] tracking-widest text-cyan border border-cyan/40 px-2 py-1 hover:bg-cyan hover:text-void transition-all uppercase">
-                      +seg
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </HudPanel>
-
-            <HudPanel label="trending" tone="cyan">
-              <ul className="space-y-2 font-mono text-xs text-bone/70">
-                <li>#01 ▸ <span className="text-cyan">read or perish</span></li>
-                <li>#02 ▸ silenzio delle pagine</li>
-                <li>#03 ▸ <span className="text-magenta">manuale del disertore</span></li>
-                <li>#04 ▸ controcanto</li>
-                <li>#05 ▸ lessico della rivolta</li>
-              </ul>
+              {activeAuthors.length === 0 ? (
+                <p className="font-mono text-[10px] text-bone/40 tracking-widest uppercase">nessun autore ancora</p>
+              ) : (
+                <ul className="space-y-3">
+                  {activeAuthors.map((a) => (
+                    <li key={a.name} className="flex items-center gap-3 group">
+                      <div className="w-10 h-10 bg-gradient-to-br from-cyan/40 to-magenta/30 ring-1 ring-cyan/40 flex items-center justify-center font-display text-bone">
+                        {a.name[0]}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-display text-sm text-bone truncate">{a.name}</div>
+                        <div className="font-mono text-[9px] tracking-widest text-bone/50 uppercase">▸ {a.genre}</div>
+                      </div>
+                      <button className="font-mono text-[10px] tracking-widest text-cyan border border-cyan/40 px-2 py-1 hover:bg-cyan hover:text-void transition-all uppercase">
+                        +seg
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </HudPanel>
           </div>
         </div>

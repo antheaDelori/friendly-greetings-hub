@@ -5,7 +5,7 @@ import { z } from "zod";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { BookCard } from "@/components/BookCard";
-import { books as staticBooks, genres, type Genre, type Book } from "@/data/books";
+import { genres, type Genre, type Book } from "@/data/books";
 
 const ALL_GENRES: Genre[] = ["libro", "racconto", "saggio", "articolo", "buonanotte", "poesia"];
 import { supabase } from "@/lib/supabase";
@@ -16,9 +16,6 @@ const searchSchema = z.object({
   genre: z.enum(["", "libro", "racconto", "saggio", "articolo", "buonanotte", "poesia"]).default(""),
   sort: z.enum(["letti", "recenti", "anno", "rating"]).default("recenti"),
 });
-
-// Un solo placeholder fittizio (il terzo libro, inserito domani)
-const PLACEHOLDER: Book[] = [staticBooks[2]];
 
 type DbBook = {
   slug: string;
@@ -112,10 +109,7 @@ function CatalogoPage() {
     fetchCollane();
   }, []);
 
-  const allBooks = useMemo(() => {
-    const realSlugs = new Set(dbBooks.map(b => b.slug));
-    return [...dbBooks, ...PLACEHOLDER.filter(b => !realSlugs.has(b.slug))];
-  }, [dbBooks]);
+  const allBooks = dbBooks;
 
   const results = useMemo(() => {
     const filtered = allBooks.filter((b) => {

@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { HudPanel, PageShell, HudButton } from "@/components/HudPanel";
-import { books } from "@/data/books";
+import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/donazioni")({
   head: () => ({
@@ -18,7 +18,22 @@ export const Route = createFileRoute("/donazioni")({
 function DonazioniPage() {
   const [amount, setAmount] = useState<number | "free">(10);
   const [free, setFree] = useState("");
-  const [author, setAuthor] = useState(books[0].author);
+  const [authors, setAuthors] = useState<string[]>([]);
+  const [author, setAuthor] = useState("");
+
+  useEffect(() => {
+    supabase
+      .from("books")
+      .select("author_name")
+      .eq("disponibile", true)
+      .not("author_name", "is", null)
+      .then(({ data }) => {
+        if (!data) return;
+        const unique = [...new Set(data.map((b: { author_name: string }) => b.author_name))];
+        setAuthors(unique);
+        if (unique.length > 0) setAuthor(unique[0]);
+      });
+  }, []);
 
   const presets = [5, 10, 15];
 
@@ -28,23 +43,25 @@ function DonazioniPage() {
       <PageShell code="// MODULE/DONATIONS" title="Sostieni un autore" subtitle="Niente piattaforma intermedia che si prende metà. Il 95% va direttamente a chi scrive.">
         <div className="grid lg:grid-cols-[1fr_320px] gap-6">
           <HudPanel label="trasferimento" tone="magenta">
-            {/* selezione autore */}
             <div>
-              <span className="font-mono text-[10px] tracking-[0.25em] text-cyan/70 uppercase">↳ ricerca autore</span>
-              <select
-                value={author}
-                onChange={(e) => setAuthor(e.target.value)}
-                className="mt-2 w-full bg-void/40 border border-cyan/30 px-4 py-3 font-mono text-bone focus:outline-none focus:border-cyan"
-              >
-                {Array.from(new Set(books.map(b => b.author))).map((a) => (
-                  <option key={a} value={a} className="bg-void">{a}</option>
-                ))}
-              </select>
+              <span className="font-mono text-[10px] tracking-[0.25em] text-cyan/70 uppercase">↳ scegli autore</span>
+              {authors.length === 0 ? (
+                <p className="mt-3 font-mono text-[10px] text-bone/40 tracking-widest uppercase animate-pulse">▸ caricamento...</p>
+              ) : (
+                <select
+                  value={author}
+                  onChange={(e) => setAuthor(e.target.value)}
+                  className="mt-2 w-full bg-void/40 border border-cyan/30 px-4 py-3 font-mono text-bone focus:outline-none focus:border-cyan"
+                >
+                  {authors.map((a) => (
+                    <option key={a} value={a} className="bg-void">{a}</option>
+                  ))}
+                </select>
+              )}
             </div>
 
             <div className="hud-divider my-6" />
 
-            {/* tagli */}
             <span className="font-mono text-[10px] tracking-[0.25em] text-cyan/70 uppercase">↳ importo</span>
             <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
               {presets.map((v) => (
@@ -97,21 +114,25 @@ function DonazioniPage() {
                   € {amount === "free" ? (free || "0") : amount}
                 </div>
               </div>
-              <HudButton variant="magenta" className="text-base">♥ Conferma donazione</HudButton>
+              <HudButton variant="magenta" className="text-base" disabled={!author}>♥ Conferma donazione</HudButton>
             </div>
           </HudPanel>
 
           <div className="space-y-4">
             <HudPanel label="destinatario" tone="cyan">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-cyan/40 to-magenta/30 ring-1 ring-cyan/40 flex items-center justify-center font-display text-bone">
-                  {author[0]}
+              {author ? (
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-cyan/40 to-magenta/30 ring-1 ring-cyan/40 flex items-center justify-center font-display text-bone">
+                    {author[0]}
+                  </div>
+                  <div>
+                    <div className="font-display text-bone">{author}</div>
+                    <div className="font-mono text-[9px] tracking-widest text-cyan/70 uppercase">▸ autore connesso</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="font-display text-bone">{author}</div>
-                  <div className="font-mono text-[9px] tracking-widest text-cyan/70 uppercase">▸ autore connesso</div>
-                </div>
-              </div>
+              ) : (
+                <p className="font-mono text-[10px] text-bone/40 tracking-widest uppercase">seleziona un autore</p>
+              )}
             </HudPanel>
 
             <HudPanel label="info" tone="amber">

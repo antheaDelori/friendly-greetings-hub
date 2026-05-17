@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { HudPanel, PageShell, HudButton } from "@/components/HudPanel";
 import { supabase } from "@/lib/supabase";
-import { books } from "@/data/books";
 
 export const Route = createFileRoute("/auth/")({
   validateSearch: z.object({
