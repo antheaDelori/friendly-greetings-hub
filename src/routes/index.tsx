@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
+import { getCestinoTranslation } from "@/lib/cestinoI18n";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { BookCard } from "@/components/BookCard";
@@ -45,6 +46,8 @@ export const Route = createFileRoute("/")({
 function Index() {
   const [featured, setFeatured] = useState<Book[]>(books.slice(0, 4));
   const [fresh, setFresh] = useState<Book[]>(books.slice(0, 8));
+  const [cestinoTooltip, setCestinoTooltip] = useState<string | null>(null);
+  useEffect(() => { setCestinoTooltip(getCestinoTranslation()); }, []);
   const [freshPage, setFreshPage] = useState(0);
   const FRESH_PER_PAGE = 8;
   const freshTotalPages = Math.max(1, Math.ceil(fresh.length / FRESH_PER_PAGE));
@@ -299,9 +302,16 @@ function Index() {
           <div className="glass hud-frame border-magenta/20 p-10 md:p-14 grid lg:grid-cols-[1fr_auto] gap-10 items-center">
             <div>
               <div className="font-mono tracking-[0.3em] text-[10px] text-magenta uppercase">// archivio/perduti</div>
-              <h2 className="mt-3 font-display text-4xl md:text-6xl text-bone leading-[0.95] tracking-tight">
-                Cestino degli<br /><span className="text-magenta text-glow-magenta">Scritti Perduti.</span>
-              </h2>
+              <div className="group relative inline-block">
+                <h2 className="mt-3 font-display text-4xl md:text-6xl text-bone leading-[0.95] tracking-tight">
+                  Cestino degli<br /><span className="text-magenta text-glow-magenta">Scritti Perduti.</span>
+                </h2>
+                {cestinoTooltip && (
+                  <p className="pointer-events-none mt-1 font-serif italic text-magenta/50 text-base opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                    {cestinoTooltip}
+                  </p>
+                )}
+              </div>
               <p className="mt-6 font-serif italic text-lg text-bone/70 max-w-2xl leading-relaxed">
                 Storie rifiutate, dimenticate, abbandonate. Riposano nell'oscurità in attesa di un giudizio.
                 Cinque lettori bastano per riportarle in vita nel catalogo, con il badge permanente

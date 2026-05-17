@@ -2,10 +2,14 @@ import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import logo from "@/assets/liberiamo-hero.png";
 import { supabase } from "@/lib/supabase";
+import { getCestinoTranslation } from "@/lib/cestinoI18n";
 
 export function SiteHeader() {
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [cestinoTooltip, setCestinoTooltip] = useState<string | null>(null);
+
+  useEffect(() => { setCestinoTooltip(getCestinoTranslation()); }, []);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -132,12 +136,19 @@ export function SiteHeader() {
       {/* cestino strip — sotto la linea del menu, allineato a destra */}
       <div className="hidden sm:block py-1">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10 flex justify-end">
-          <Link
-            to="/cestino"
-            className="font-mono text-[9px] tracking-[0.22em] text-magenta text-glow-magenta hover:opacity-70 transition-opacity uppercase"
-          >
-            ⊗ Cestino degli Scritti Perduti
-          </Link>
+          <div className="group relative">
+            <Link
+              to="/cestino"
+              className="font-mono text-[9px] tracking-[0.22em] text-magenta text-glow-magenta hover:opacity-70 transition-opacity uppercase"
+            >
+              ⊗ Cestino degli Scritti Perduti
+            </Link>
+            {cestinoTooltip && (
+              <span className="pointer-events-none absolute top-full right-0 mt-1 font-serif italic text-[10px] text-magenta/50 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                {cestinoTooltip}
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </header>

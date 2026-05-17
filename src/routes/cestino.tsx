@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect, useMemo } from "react";
+import { getCestinoTranslation } from "@/lib/cestinoI18n";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { supabase } from "@/lib/supabase";
@@ -33,6 +34,8 @@ function CestinoPage() {
   const [books, setBooks] = useState<CestinatoBook[]>([]);
   const [loading, setLoading] = useState(true);
   const [autoreFiltro, setAutoreFiltro] = useState<string>("all");
+  const [cestinoTooltip, setCestinoTooltip] = useState<string | null>(null);
+  useEffect(() => { setCestinoTooltip(getCestinoTranslation()); }, []);
 
   useEffect(() => {
     const load = async () => {
@@ -65,9 +68,16 @@ function CestinoPage() {
         <div className="absolute -top-20 right-1/3 w-[500px] h-[500px] rounded-full bg-magenta/10 blur-[120px] pointer-events-none" />
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10 py-16 relative">
           <div className="font-mono tracking-[0.3em] text-[10px] text-magenta uppercase">// ARCHIVIO/PERDUTI</div>
-          <h1 className="mt-3 font-display text-5xl md:text-7xl leading-[0.95] text-bone tracking-tight">
-            Cestino degli<br /><span className="text-magenta text-glow-magenta">Scritti Perduti.</span>
-          </h1>
+          <div className="group relative inline-block">
+            <h1 className="mt-3 font-display text-5xl md:text-7xl leading-[0.95] text-bone tracking-tight">
+              Cestino degli<br /><span className="text-magenta text-glow-magenta">Scritti Perduti.</span>
+            </h1>
+            {cestinoTooltip && (
+              <p className="pointer-events-none mt-2 font-serif italic text-magenta/50 text-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                {cestinoTooltip}
+              </p>
+            )}
+          </div>
           <p className="mt-6 font-serif italic text-xl text-bone/70 max-w-2xl">
             Opere dimenticate. Storie che aspettano cinque voti per essere recuperate dalla memoria.
             Leggi. Decidi. Salva.
