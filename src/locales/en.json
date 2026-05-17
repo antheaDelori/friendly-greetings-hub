@@ -25,5 +25,37 @@
     "copyright": "© 2076 liberiamo.holo // all rights to the authors",
     "tagline": "the creative world",
     "descrizione": "An independent platform for those who write and those who truly read. No screaming algorithms. Just books, stories, essays, articles — suspended in glass, kept alive by those who choose them."
+  },
+  "home": {
+    "heroDesc": "A library suspended in glass. Books, stories, essays and articles published directly by the authors, with no screaming algorithms. Only <keyword>parole_vive</keyword>.",
+    "esploraBtn": "Explore the catalogue",
+    "divAutoreBtn": "Become an author",
+    "opereLabel": "indexed works",
+    "autoriLabel": "connected authors",
+    "lettureLabel": "total reads",
+    "evidenzaTitolo": "Works that bite",
+    "evidenzaDesc": "A novel, a story, an essay, a poem. Digital pixels and ink, but with teeth.",
+    "vediCatalogo": "view the full catalogue",
+    "manifestoTitolo": "Three rules.",
+    "manifestoSub": "Nothing more.",
+    "r01t": "Rights belong to the authors.",
+    "r01d": "The writer decides what to publish, what to make downloadable, what to keep protected. Always.",
+    "r02t": "Readers matter.",
+    "r02d": "Reviews, chapter-by-chapter comments, the ability to follow who moves you. The community is the backbone.",
+    "r03t": "No screaming algorithms.",
+    "r03d": "Transparent filters: most read, most recent, by genre. You choose what to read — not an AI doing it for you.",
+    "ultimeTitle": "Latest releases",
+    "uplink": "live uplink",
+    "cestinoDesc": "Rejected, forgotten, abandoned stories. They rest in the dark, waiting for a verdict. Five readers are enough to bring them back into the catalogue, with the permanent badge \"Rescued by readers\". You could be one of them.",
+    "cestinoBtn": "Enter the Cestino",
+    "cestinoVoti": "5 votes to save",
+    "autoreTitolo": "Have something to say?",
+
+    "autoreDesc": "Publish directly: books, stories, essays or articles. Keep your rights, choose what's downloadable, receive donations from readers who follow you.",
+    "autoreBtn": "Create author profile",
+    "lettoreTitoloA": "Just want to",
+    "lettoreTitoloB": "read?",
+    "lettoreDesc": "Free access to all public content. Comment, follow authors, download within the set limits, support those you love with a free donation.",
+    "lettoreBtn": "Start reading"
   }
 }

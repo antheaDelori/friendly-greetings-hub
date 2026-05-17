@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
+import { useTranslation, Trans } from "react-i18next";
 import { getCestinoTranslation } from "@/lib/cestinoI18n";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -44,6 +45,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
+  const { t } = useTranslation();
   const [featured, setFeatured] = useState<Book[]>(books.slice(0, 4));
   const [fresh, setFresh] = useState<Book[]>(books.slice(0, 8));
   const [cestinoTooltip, setCestinoTooltip] = useState<string | null>(null);
@@ -116,30 +118,31 @@ function Index() {
               biblioteca digitale · rete olografica · anno 2076
             </p>
             <p className="mt-6 font-serif text-xl md:text-2xl text-bone/75 max-w-xl leading-relaxed italic">
-              Una biblioteca sospesa nel vetro. Libri, racconti, saggi e articoli
-              pubblicati direttamente dagli autori, senza algoritmi che urlano.
-              Solo <span className="text-cyan not-italic font-mono text-base tracking-widest">parole_vive</span>.
+              <Trans
+                i18nKey="home.heroDesc"
+                components={{ keyword: <span className="text-cyan not-italic font-mono text-base tracking-widest" /> }}
+              />
             </p>
             <div className="mt-10 flex flex-wrap gap-4">
               <Link
                 to="/catalogo"
                 className="group relative inline-flex items-center gap-3 border border-cyan/70 bg-cyan/15 px-7 py-4 font-mono tracking-[0.22em] text-xs uppercase text-cyan hover:bg-cyan hover:text-void hover:glow-cyan transition-all hud-frame"
               >
-                ▸ Esplora il catalogo
+                ▸ {t("home.esploraBtn")}
               </Link>
               <Link
                 to="/auth/registrazione"
                 className="inline-flex items-center gap-3 border border-magenta/60 bg-magenta/10 px-7 py-4 font-mono tracking-[0.22em] text-xs uppercase text-magenta hover:bg-magenta hover:text-void hover:glow-magenta transition-all"
               >
-                ◆ Diventa autore
+                ◆ {t("home.divAutoreBtn")}
               </Link>
             </div>
 
             <dl className="mt-16 grid grid-cols-3 gap-4 max-w-2xl">
               {[
-                { k: "opere", v: totals.opere, label: "opere indicizzate", c: "text-cyan" },
-                { k: "autori", v: totals.autori, label: "autori connessi", c: "text-magenta" },
-                { k: "letture", v: totals.letture, label: "letture totali", c: "text-amber" },
+                { k: "opere", v: totals.opere, label: t("home.opereLabel"), c: "text-cyan" },
+                { k: "autori", v: totals.autori, label: t("home.autoriLabel"), c: "text-magenta" },
+                { k: "letture", v: totals.letture, label: t("home.lettureLabel"), c: "text-amber" },
               ].map((s) => (
                 <div key={s.k} className="glass p-4 hud-frame">
                   <dt className={`font-display text-3xl md:text-4xl ${s.c}`}>
@@ -209,16 +212,16 @@ function Index() {
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-12">
           <div>
             <div className="font-mono tracking-[0.3em] text-[10px] text-cyan uppercase">// in_evidenza</div>
-            <h2 className="mt-3 font-display text-4xl md:text-5xl text-bone tracking-tight">Le opere che mordono</h2>
+            <h2 className="mt-3 font-display text-4xl md:text-5xl text-bone tracking-tight">{t("home.evidenzaTitolo")}</h2>
             <p className="mt-3 font-serif italic text-lg text-bone/65 max-w-xl">
-              Un libro, un racconto, un saggio, una poesia. Pixel e inchiostro digitali, ma con denti.
+              {t("home.evidenzaDesc")}
             </p>
           </div>
           <Link
             to="/catalogo"
             className="font-mono tracking-[0.22em] text-[10px] uppercase text-cyan border-b border-cyan/60 pb-1 hover:text-magenta hover:border-magenta transition-colors self-start md:self-auto"
           >
-            ▸ vedi tutto il catalogo
+            ▸ {t("home.vediCatalogo")}
           </Link>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -236,19 +239,19 @@ function Index() {
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-10 relative">
           <div className="font-mono tracking-[0.3em] text-[10px] text-magenta uppercase">// manifesto.txt</div>
           <h2 className="mt-3 font-display text-5xl md:text-7xl leading-none text-bone tracking-tight">
-            Tre regole.<br /><span className="text-magenta text-glow-magenta">Niente di più.</span>
+            {t("home.manifestoTitolo")}<br /><span className="text-magenta text-glow-magenta">{t("home.manifestoSub")}</span>
           </h2>
           <ol className="mt-12 space-y-6">
             {[
-              { n: "01", t: "I diritti restano agli autori.", d: "Chi scrive decide cosa pubblicare, cosa rendere scaricabile, cosa lasciare protetto. Sempre." },
-              { n: "02", t: "I lettori contano.", d: "Recensioni, commenti capitolo per capitolo, possibilità di seguire chi ti emoziona. La community è la spina dorsale." },
-              { n: "03", t: "Niente algoritmi che urlano.", d: "Filtri trasparenti: più letti, più recenti, per genere. Tu scegli cosa leggere — non un'IA per te." },
+              { n: "01", titolo: t("home.r01t"), desc: t("home.r01d") },
+              { n: "02", titolo: t("home.r02t"), desc: t("home.r02d") },
+              { n: "03", titolo: t("home.r03t"), desc: t("home.r03d") },
             ].map((r) => (
               <li key={r.n} className="glass p-6 md:p-8 grid grid-cols-[auto_1fr] gap-6 md:gap-10 items-baseline">
                 <div className="font-display text-5xl md:text-6xl text-cyan text-glow-cyan">{r.n}</div>
                 <div>
-                  <h3 className="font-display text-2xl md:text-3xl text-bone tracking-tight">{r.t}</h3>
-                  <p className="mt-3 font-serif italic text-bone/70 text-base md:text-lg max-w-2xl leading-relaxed">{r.d}</p>
+                  <h3 className="font-display text-2xl md:text-3xl text-bone tracking-tight">{r.titolo}</h3>
+                  <p className="mt-3 font-serif italic text-bone/70 text-base md:text-lg max-w-2xl leading-relaxed">{r.desc}</p>
                 </div>
               </li>
             ))}
@@ -261,7 +264,7 @@ function Index() {
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-12">
           <div>
             <div className="font-mono tracking-[0.3em] text-[10px] text-magenta uppercase">// ultime_pubblicazioni</div>
-            <h2 className="mt-3 font-display text-4xl md:text-5xl text-bone tracking-tight">Ultime uscite</h2>
+            <h2 className="mt-3 font-display text-4xl md:text-5xl text-bone tracking-tight">{t("home.ultimeTitle")}</h2>
           </div>
           <div className="flex items-center gap-4">
             {freshTotalPages > 1 && (
@@ -286,7 +289,7 @@ function Index() {
               </div>
             )}
             <div className="font-mono text-[10px] tracking-widest text-cyan/60 uppercase blink">
-              uplink in tempo reale
+              {t("home.uplink")}
             </div>
           </div>
         </div>
@@ -313,17 +316,14 @@ function Index() {
                 )}
               </div>
               <p className="mt-6 font-serif italic text-lg text-bone/70 max-w-2xl leading-relaxed">
-                Storie rifiutate, dimenticate, abbandonate. Riposano nell'oscurità in attesa di un giudizio.
-                Cinque lettori bastano per riportarle in vita nel catalogo, con il badge permanente
-                <span className="text-magenta not-italic font-mono text-sm tracking-widest"> "Recuperato dai lettori"</span>.
-                Tu potresti essere uno di loro.
+                {t("home.cestinoDesc")}
               </p>
               <div className="mt-8 flex flex-wrap items-center gap-6">
                 <Link
                   to="/cestino"
                   className="inline-flex items-center gap-3 border border-magenta bg-magenta/10 text-magenta px-7 py-4 font-mono tracking-[0.22em] text-[11px] uppercase hover:bg-magenta hover:text-void hover:glow-magenta transition-all"
                 >
-                  ⊗ Entra nel cestino
+                  ⊗ {t("home.cestinoBtn")}
                 </Link>
                 <div className="flex items-center gap-2.5">
                   <div className="flex gap-1">
@@ -331,7 +331,7 @@ function Index() {
                       <span key={i} className="w-2.5 h-2.5 rounded-full border border-magenta/40" />
                     ))}
                   </div>
-                  <span className="font-mono text-[10px] tracking-widest text-bone/40 uppercase">5 voti per salvare</span>
+                  <span className="font-mono text-[10px] tracking-widest text-bone/40 uppercase">{t("home.cestinoVoti")}</span>
                 </div>
               </div>
             </div>
@@ -349,25 +349,25 @@ function Index() {
           <div className="glass p-10 md:p-14 hud-frame">
             <div className="font-mono tracking-[0.3em] text-[10px] text-cyan uppercase">// per_gli_autori</div>
             <h2 className="mt-3 font-display text-4xl md:text-5xl text-bone leading-none tracking-tight">
-              Hai qualcosa<br />da dire?
+              <Trans i18nKey="home.autoreTitolo" components={{ br: <br /> }} />
             </h2>
             <p className="mt-6 font-serif italic text-lg text-bone/70 max-w-md">
-              Pubblica direttamente: libri, racconti, saggi o articoli. Mantieni i diritti, scegli cosa rendere scaricabile, ricevi donazioni dai lettori che ti seguono.
+              {t("home.autoreDesc")}
             </p>
             <Link to="/auth/profilo-autore" className="mt-8 inline-flex items-center gap-3 border border-cyan bg-cyan/10 text-cyan px-7 py-4 font-mono tracking-[0.22em] text-[11px] uppercase hover:bg-cyan hover:text-void hover:glow-cyan transition-all">
-              ▸ Crea profilo autore
+              ▸ {t("home.autoreBtn")}
             </Link>
           </div>
           <div className="glass p-10 md:p-14 hud-frame-x relative">
             <div className="font-mono tracking-[0.3em] text-[10px] text-magenta uppercase">// per_i_lettori</div>
             <h2 className="mt-3 font-display text-4xl md:text-5xl text-bone leading-none tracking-tight">
-              Vuoi solo<br /><span className="text-magenta text-glow-magenta">leggere?</span>
+              {t("home.lettoreTitoloA")}<br /><span className="text-magenta text-glow-magenta">{t("home.lettoreTitoloB")}</span>
             </h2>
             <p className="mt-6 font-serif italic text-lg text-bone/70 max-w-md">
-              Accesso gratuito a tutti i contenuti pubblici. Commenta, segui gli autori, scarica nei limiti previsti, sostieni chi ami con una donazione libera.
+              {t("home.lettoreDesc")}
             </p>
             <Link to="/catalogo" className="mt-8 inline-flex items-center gap-3 border border-magenta bg-magenta/10 text-magenta px-7 py-4 font-mono tracking-[0.22em] text-[11px] uppercase hover:bg-magenta hover:text-void hover:glow-magenta transition-all">
-              ◆ Inizia a leggere
+              ◆ {t("home.lettoreBtn")}
             </Link>
           </div>
         </div>
