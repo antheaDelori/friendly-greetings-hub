@@ -363,7 +363,11 @@ function ReadPage() {
 
           {hasChapters && (
             <button
-              onClick={() => articleRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+              onClick={() => {
+                if (!articleRef.current) return;
+                const top = articleRef.current.getBoundingClientRect().top + window.scrollY - 100;
+                window.scrollTo({ top, behavior: "smooth" });
+              }}
               className="mt-5 w-full border border-blood bg-blood/5 text-blood px-4 py-2.5 font-display tracking-widest text-[11px] uppercase hover:bg-blood hover:text-paper transition-colors"
             >
               ▸ Leggi
