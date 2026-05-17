@@ -40,7 +40,7 @@ export function SiteFooter() {
               <div className="group relative inline-block">
                 <Link to="/cestino" className="text-magenta/60 hover:text-magenta transition-colors">⊗ Cestino degli Scritti Perduti</Link>
                 {cestinoTooltip && (
-                  <span className="pointer-events-none absolute bottom-full left-0 mb-1 font-mono text-[11px] tracking-widest uppercase text-cyan text-glow-cyan whitespace-nowrap opacity-0 scale-0 blur-sm origin-bottom-left group-hover:opacity-100 group-hover:scale-100 group-hover:blur-0 transition-all duration-400">
+                  <span className="pointer-events-none absolute bottom-full left-0 mb-1 font-mono text-[11px] tracking-widest uppercase text-cyan text-glow-cyan whitespace-nowrap opacity-0 scale-0 origin-bottom-left group-hover:opacity-100 group-hover:scale-100 transition-all duration-300">
                     {cestinoTooltip}
                   </span>
                 )}

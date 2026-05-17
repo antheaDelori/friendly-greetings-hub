@@ -307,7 +307,7 @@ function Index() {
                   Cestino degli<br /><span className="text-magenta text-glow-magenta">Scritti Perduti.</span>
                 </h2>
                 {cestinoTooltip && (
-                  <p className="pointer-events-none mt-3 font-display text-3xl md:text-5xl text-cyan text-glow-cyan tracking-tight leading-tight opacity-0 scale-0 blur-sm origin-top group-hover:opacity-100 group-hover:scale-100 group-hover:blur-0 transition-all duration-400">
+                  <p className="pointer-events-none mt-3 font-display text-3xl md:text-5xl text-cyan text-glow-cyan tracking-tight leading-tight opacity-0 scale-0 origin-top group-hover:opacity-100 group-hover:scale-100 transition-all duration-300">
                     {cestinoTooltip}
                   </p>
                 )}
