@@ -221,6 +221,7 @@ function ReadPage() {
   const bookmarkKey = `reading_pos_${book.slug}`;
   const bookmarkParaKey = `bookmark_para_${book.slug}`;
   const proseRef = useRef<HTMLDivElement>(null);
+  const articleRef = useRef<HTMLElement>(null);
   const [paraBookmark, setParaBookmark] = useState<{ chapterIdx: number; paragraphIdx: number } | null>(null);
 
   const [downloading, setDownloading] = useState(false);
@@ -361,6 +362,15 @@ function ReadPage() {
           </div>
 
           {hasChapters && (
+            <button
+              onClick={() => articleRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+              className="mt-5 w-full border border-blood bg-blood/5 text-blood px-4 py-2.5 font-display tracking-widest text-[11px] uppercase hover:bg-blood hover:text-paper transition-colors"
+            >
+              ▸ Leggi
+            </button>
+          )}
+
+          {hasChapters && (
             <div className="mt-6 border-t border-ink/10 pt-5">
               <div className="font-display tracking-[0.2em] text-xs text-ink/50 mb-3">— capitoli</div>
               <ol className="space-y-1">
@@ -460,7 +470,7 @@ function ReadPage() {
         </aside>
 
         {/* Testo capitolo */}
-        <article className="lg:col-start-2 lg:row-start-1">
+        <article ref={articleRef} className="lg:col-start-2 lg:row-start-1">
           {resumeBanner && (
             <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border border-blood/30 bg-blood/5 px-4 py-3">
               <p className="font-serif italic text-sm text-ink/70">
