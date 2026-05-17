@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState, useEffect, useRef } from "react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { HudPanel, PageShell, HudButton } from "@/components/HudPanel";
 import { books } from "@/data/books";
+import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/community")({
   head: () => ({
@@ -21,7 +23,138 @@ const reviews = [
   { user: "@tommaso_b", book: "Lessico della rivolta", text: "Cento parole, cento bisturi. Da tenere sul comodino.", time: "2g fa", rate: 5 },
 ];
 
+type BookResult = { slug: string; titolo: string; author_name: string };
+
+function BookSearchField({
+  selected,
+  onSelect,
+  onClear,
+}: {
+  selected: BookResult | null;
+  onSelect: (b: BookResult) => void;
+  onClear: () => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<BookResult[]>([]);
+  const [open, setOpen] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  useEffect(() => {
+    if (query.length < 2) {
+      setResults([]);
+      setOpen(false);
+      return;
+    }
+    setSearching(true);
+    const timer = setTimeout(async () => {
+      const { data } = await supabase
+        .from("books")
+        .select("slug, titolo, author_name")
+        .or(`titolo.ilike.%${query}%,author_name.ilike.%${query}%`)
+        .limit(6);
+      setResults(data ?? []);
+      setOpen(true);
+      setSearching(false);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  const labelClass = "font-mono text-[10px] tracking-[0.25em] text-cyan/70 uppercase";
+  const inputClass = "mt-2 w-full bg-void/40 border border-cyan/30 px-4 py-3 font-mono text-bone placeholder:text-bone/30 focus:outline-none focus:border-cyan focus:bg-void/60 transition-all";
+
+  if (selected) {
+    return (
+      <div>
+        <span className={labelClass}>↳ opera selezionata</span>
+        <div className="mt-2 flex items-center gap-3 border border-cyan/40 bg-cyan/5 px-4 py-3">
+          <span className="font-mono text-[9px] text-cyan tracking-widest">▸</span>
+          <div className="flex-1 min-w-0">
+            <span className="font-serif text-bone">{selected.titolo}</span>
+            {selected.author_name && (
+              <span className="font-serif italic text-bone/50 text-sm ml-2">— {selected.author_name}</span>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={onClear}
+            className="font-mono text-bone/30 hover:text-magenta transition-colors text-sm shrink-0"
+            title="Cambia opera"
+          >✕</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div ref={wrapRef} className="relative">
+      <span className={labelClass}>↳ a quale opera si riferisce?</span>
+      <div className="relative">
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onFocus={() => results.length > 0 && setOpen(true)}
+          placeholder="Cerca per titolo o autore..."
+          className={inputClass}
+          autoComplete="off"
+        />
+        {searching && (
+          <span className="absolute right-4 top-1/2 -translate-y-1/2 font-mono text-[9px] text-cyan/50 animate-pulse">
+            ◆
+          </span>
+        )}
+      </div>
+
+      {open && results.length > 0 && (
+        <div className="absolute z-20 left-0 right-0 top-full border border-cyan/30 bg-void shadow-lg">
+          {results.map((b) => (
+            <button
+              key={b.slug}
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                onSelect(b);
+                setQuery("");
+                setOpen(false);
+              }}
+              className="w-full text-left px-4 py-3 flex items-baseline gap-3 hover:bg-cyan/10 transition-colors border-b border-cyan/10 last:border-0"
+            >
+              <span className="font-mono text-[9px] text-cyan/60 tracking-widest shrink-0">▸</span>
+              <span className="font-serif text-bone text-sm">{b.titolo}</span>
+              {b.author_name && (
+                <span className="font-serif italic text-bone/45 text-xs ml-auto shrink-0">— {b.author_name}</span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {open && !searching && query.length >= 2 && results.length === 0 && (
+        <div className="absolute z-20 left-0 right-0 top-full border border-cyan/30 bg-void px-4 py-3">
+          <span className="font-mono text-[10px] text-bone/40 tracking-widest uppercase">nessuna opera trovata</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CommunityPage() {
+  const [selectedBook, setSelectedBook] = useState<BookResult | null>(null);
+  const [reviewText, setReviewText] = useState("");
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+
   return (
     <div className="min-h-screen flex flex-col">
       <SiteHeader />
@@ -48,17 +181,44 @@ function CommunityPage() {
 
             <HudPanel label="aggiungi_recensione" tone="magenta">
               <h3 className="font-display text-xl text-bone tracking-tight">Lascia la tua</h3>
-              <textarea
-                placeholder="Cosa ne pensi del libro o del capitolo?"
-                className="mt-4 w-full min-h-28 bg-void/40 border border-cyan/30 px-4 py-3 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-magenta transition-all"
-              />
+              <div className="mt-4 space-y-4">
+                <BookSearchField
+                  selected={selectedBook}
+                  onSelect={setSelectedBook}
+                  onClear={() => setSelectedBook(null)}
+                />
+                <div>
+                  <span className="font-mono text-[10px] tracking-[0.25em] text-cyan/70 uppercase">↳ testo</span>
+                  <textarea
+                    value={reviewText}
+                    onChange={(e) => setReviewText(e.target.value)}
+                    placeholder="Cosa ne pensi del libro o del capitolo?"
+                    className="mt-2 w-full min-h-28 bg-void/40 border border-cyan/30 px-4 py-3 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-magenta transition-all"
+                  />
+                </div>
+              </div>
               <div className="mt-4 flex flex-wrap gap-3 items-center justify-between">
-                <div className="flex gap-2">
+                <div className="flex gap-1 items-center">
+                  <span className="font-mono text-[10px] tracking-[0.25em] text-cyan/70 uppercase mr-2">↳ voto</span>
                   {[1, 2, 3, 4, 5].map((s) => (
-                    <button key={s} className="font-display text-2xl text-amber/40 hover:text-amber transition-colors">★</button>
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => setRating(s)}
+                      onMouseEnter={() => setHoverRating(s)}
+                      onMouseLeave={() => setHoverRating(0)}
+                      className={`font-display text-2xl transition-colors ${
+                        s <= (hoverRating || rating) ? "text-amber" : "text-amber/25"
+                      }`}
+                    >★</button>
                   ))}
                 </div>
-                <HudButton variant="magenta">◆ Pubblica</HudButton>
+                <HudButton
+                  variant="magenta"
+                  disabled={!selectedBook || !reviewText.trim() || rating === 0}
+                >
+                  ◆ Pubblica
+                </HudButton>
               </div>
             </HudPanel>
           </div>
