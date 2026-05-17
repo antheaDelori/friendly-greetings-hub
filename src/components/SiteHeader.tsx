@@ -144,7 +144,7 @@ export function SiteHeader() {
               ⊗ Cestino degli Scritti Perduti
             </Link>
             {cestinoTooltip && (
-              <span className="pointer-events-none absolute top-full right-0 mt-1 font-serif italic text-[10px] text-magenta/50 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+              <span className="pointer-events-none absolute top-full right-0 mt-1 font-mono text-[11px] tracking-widest uppercase text-cyan text-glow-cyan whitespace-nowrap opacity-0 scale-0 blur-sm origin-top-right group-hover:opacity-100 group-hover:scale-100 group-hover:blur-0 transition-all duration-400">
                 {cestinoTooltip}
               </span>
             )}
