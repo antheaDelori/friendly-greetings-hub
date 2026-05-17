@@ -1,0 +1,29 @@
+{
+  "nav": {
+    "home": "Home",
+    "catalogo": "Catalogo",
+    "autori": "Autori",
+    "community": "Community",
+    "regole": "Regole",
+    "sostieni": "Sostieni"
+  },
+  "autoriDropdown": {
+    "ricerca": "Ricerca autori",
+    "vediTutti": "Vedi tutti",
+    "caricamento": "caricamento...",
+    "nessun": "Nessun autore"
+  },
+  "auth": {
+    "accedi": "accedi",
+    "registrati": "Registrati",
+    "ospite": "ospite",
+    "esci": "Esci"
+  },
+  "footer": {
+    "esplora": "esplora",
+    "contatti": "contatti",
+    "copyright": "© 2076 liberiamo.holo // tutti i diritti agli autori",
+    "tagline": "il mondo dei creativi",
+    "descrizione": "Una piattaforma indipendente per chi scrive e per chi legge davvero. Niente algoritmi che urlano. Solo libri, racconti, saggi, articoli — sospesi nel vetro, tenuti in vita da chi li sceglie."
+  }
+}

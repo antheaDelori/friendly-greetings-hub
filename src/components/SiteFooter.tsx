@@ -1,9 +1,11 @@
 import { Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import logo from "@/assets/logo-liberiamo.jpg";
 import { getCestinoTranslation } from "@/lib/cestinoI18n";
 
 export function SiteFooter() {
+  const { t } = useTranslation();
   const [cestinoTooltip, setCestinoTooltip] = useState<string | null>(null);
   useEffect(() => { setCestinoTooltip(getCestinoTranslation()); }, []);
   return (
@@ -22,20 +24,18 @@ export function SiteFooter() {
             </div>
           </div>
           <p className="mt-6 max-w-md font-serif text-bone/70 text-lg leading-relaxed">
-            Una piattaforma indipendente per chi scrive e per chi legge davvero.
-            Niente algoritmi che urlano. Solo libri, racconti, saggi, articoli — sospesi nel vetro,
-            tenuti in vita da chi li sceglie.
+            {t("footer.descrizione")}
           </p>
         </div>
         <div>
-          <div className="font-mono tracking-[0.2em] text-[10px] text-cyan/70 mb-4 uppercase">// esplora</div>
+          <div className="font-mono tracking-[0.2em] text-[10px] text-cyan/70 mb-4 uppercase">// {t("footer.esplora")}</div>
           <ul className="space-y-2 font-mono text-xs uppercase tracking-wider">
-            <li><Link to="/" className="text-bone/70 hover:text-cyan transition-colors">▸ Home</Link></li>
-            <li><Link to="/catalogo" className="text-bone/70 hover:text-cyan transition-colors">▸ Catalogo</Link></li>
-            <li><Link to="/autori" className="text-bone/70 hover:text-cyan transition-colors">▸ Autori</Link></li>
-            <li><Link to="/community" className="text-bone/70 hover:text-cyan transition-colors">▸ Community</Link></li>
-            <li><Link to="/regolamento" className="text-bone/70 hover:text-cyan transition-colors">▸ Regolamento</Link></li>
-            <li><Link to="/donazioni" className="text-bone/70 hover:text-cyan transition-colors">▸ Sostieni</Link></li>
+            <li><Link to="/" className="text-bone/70 hover:text-cyan transition-colors">▸ {t("nav.home")}</Link></li>
+            <li><Link to="/catalogo" className="text-bone/70 hover:text-cyan transition-colors">▸ {t("nav.catalogo")}</Link></li>
+            <li><Link to="/autori" className="text-bone/70 hover:text-cyan transition-colors">▸ {t("nav.autori")}</Link></li>
+            <li><Link to="/community" className="text-bone/70 hover:text-cyan transition-colors">▸ {t("nav.community")}</Link></li>
+            <li><Link to="/regolamento" className="text-bone/70 hover:text-cyan transition-colors">▸ {t("nav.regole")}</Link></li>
+            <li><Link to="/donazioni" className="text-bone/70 hover:text-cyan transition-colors">▸ {t("nav.sostieni")}</Link></li>
             <li>
               <div className="group relative inline-block">
                 <Link to="/cestino" className="text-magenta/60 hover:text-magenta transition-colors">⊗ Cestino degli Scritti Perduti</Link>
@@ -49,7 +49,7 @@ export function SiteFooter() {
           </ul>
         </div>
         <div>
-          <div className="font-mono tracking-[0.2em] text-[10px] text-cyan/70 mb-4 uppercase">// contatti</div>
+          <div className="font-mono tracking-[0.2em] text-[10px] text-cyan/70 mb-4 uppercase">// {t("footer.contatti")}</div>
           <ul className="space-y-2 font-mono text-xs text-bone/70">
             <li>OP. Daniele Girtanner</li>
             <li>uplink — <span className="text-cyan">@liberiamo</span></li>
@@ -64,8 +64,8 @@ export function SiteFooter() {
       </div>
       <div className="border-t border-cyan/10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10 py-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-[10px] text-bone/40 font-mono tracking-widest uppercase">
-          <span>© 2076 liberiamo.holo // tutti i diritti agli autori</span>
-          <span className="text-cyan/60">il mondo dei creativi</span>
+          <span>{t("footer.copyright")}</span>
+          <span className="text-cyan/60">{t("footer.tagline")}</span>
         </div>
       </div>
     </footer>

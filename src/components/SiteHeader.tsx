@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import logo from "@/assets/liberiamo-hero.png";
 import { supabase } from "@/lib/supabase";
 import { getCestinoTranslation } from "@/lib/cestinoI18n";
@@ -10,6 +11,7 @@ export function SiteHeader() {
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [cestinoTooltip, setCestinoTooltip] = useState<string | null>(null);
+  const { t } = useTranslation();
   const [autoriOpen, setAutoriOpen] = useState(false);
   const [autoriList, setAutoriList] = useState<AuthorEntry[]>([]);
   const [autoriLoaded, setAutoriLoaded] = useState(false);
@@ -123,8 +125,8 @@ export function SiteHeader() {
         </Link>
 
         <nav className="hidden md:flex items-center gap-7">
-          <Link to="/" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }} activeOptions={{ exact: true }}>Home</Link>
-          <Link to="/catalogo" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }}>Catalogo</Link>
+          <Link to="/" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }} activeOptions={{ exact: true }}>{t("nav.home")}</Link>
+          <Link to="/catalogo" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }}>{t("nav.catalogo")}</Link>
 
           {/* dropdown autori */}
           <div ref={autoriRef} className="relative">
@@ -132,7 +134,7 @@ export function SiteHeader() {
               onClick={handleAutoriToggle}
               className={`${linkBase} flex items-center gap-1 ${autoriOpen ? "text-cyan text-glow-cyan" : ""}`}
             >
-              Autori
+              {t("nav.autori")}
               <span className={`text-[8px] transition-transform duration-200 ${autoriOpen ? "rotate-180" : ""}`}>▾</span>
             </button>
             {autoriOpen && (
@@ -143,13 +145,13 @@ export function SiteHeader() {
                   onClick={() => setAutoriOpen(false)}
                   className="flex items-center gap-2 px-4 py-3 font-mono text-[10px] tracking-widest uppercase text-cyan hover:bg-cyan/10 transition-colors border-b border-cyan/15"
                 >
-                  ▸ Ricerca autori
+                  ▸ {t("autoriDropdown.ricerca")}
                 </Link>
                 <div className="max-h-52 overflow-y-auto">
                   {!autoriLoaded ? (
-                    <p className="px-4 py-3 font-mono text-[10px] text-bone/40 animate-pulse">caricamento...</p>
+                    <p className="px-4 py-3 font-mono text-[10px] text-bone/40 animate-pulse">{t("autoriDropdown.caricamento")}</p>
                   ) : autoriList.length === 0 ? (
-                    <p className="px-4 py-3 font-mono text-[10px] text-bone/40">Nessun autore</p>
+                    <p className="px-4 py-3 font-mono text-[10px] text-bone/40">{t("autoriDropdown.nessun")}</p>
                   ) : (
                     autoriList.map(a => (
                       <button
@@ -169,16 +171,16 @@ export function SiteHeader() {
                     onClick={() => setAutoriOpen(false)}
                     className="flex items-center gap-2 px-4 py-3 font-mono text-[10px] tracking-widest uppercase text-bone/40 hover:text-cyan hover:bg-cyan/5 transition-colors border-t border-cyan/15"
                   >
-                    ▸ Vedi tutti ({autoriList.length})
+                    ▸ {t("autoriDropdown.vediTutti")} ({autoriList.length})
                   </Link>
                 )}
               </div>
             )}
           </div>
 
-          <Link to="/community" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }}>Community</Link>
-          <Link to="/regolamento" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }}>Regole</Link>
-          <Link to="/donazioni" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }}>Sostieni</Link>
+          <Link to="/community" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }}>{t("nav.community")}</Link>
+          <Link to="/regolamento" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }}>{t("nav.regole")}</Link>
+          <Link to="/donazioni" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }}>{t("nav.sostieni")}</Link>
         </nav>
 
         <div className="flex items-center gap-2">
@@ -186,7 +188,7 @@ export function SiteHeader() {
             <>
               {isAnonymous ? (
                 <span className="hidden sm:inline-flex font-mono tracking-widest text-[10px] uppercase text-bone/40 px-3 py-2">
-                  [ospite]
+                  [{t("auth.ospite")}]
                 </span>
               ) : (
                 <Link
@@ -201,7 +203,7 @@ export function SiteHeader() {
                 onClick={handleLogout}
                 className="relative inline-flex items-center gap-2 border border-magenta/60 bg-magenta/10 px-4 py-2 font-mono text-[10px] uppercase tracking-widest text-magenta hover:bg-magenta hover:text-void transition-all"
               >
-                ✕ Esci
+                ✕ {t("auth.esci")}
               </button>
             </>
           ) : (
@@ -210,13 +212,13 @@ export function SiteHeader() {
                 to="/auth"
                 className="hidden sm:inline-flex font-mono tracking-widest text-[10px] uppercase text-bone/70 hover:text-cyan transition-colors px-3 py-2"
               >
-                [accedi]
+                [{t("auth.accedi")}]
               </Link>
               <Link
                 to="/auth/registrazione"
                 className="relative inline-flex items-center gap-2 border border-cyan/60 bg-cyan/10 px-4 py-2 font-mono text-[10px] uppercase tracking-widest text-cyan hover:bg-cyan hover:text-void transition-all hud-frame-x"
               >
-                ▸ Registrati
+                ▸ {t("auth.registrati")}
               </Link>
             </>
           )}
