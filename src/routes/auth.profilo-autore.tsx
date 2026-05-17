@@ -26,6 +26,7 @@ function ProfiloAutorePage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [bio, setBio] = useState("");
   const [generi, setGeneri] = useState<string[]>([]);
+  const [donationUrl, setDonationUrl] = useState("");
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -36,13 +37,14 @@ function ProfiloAutorePage() {
       setUserId(data.user.id);
       supabase
         .from("author_profiles")
-        .select("bio, generi")
+        .select("bio, generi, donation_url")
         .eq("id", data.user.id)
         .maybeSingle()
         .then(({ data: profile }) => {
           if (profile) {
             setBio(profile.bio ?? "");
             setGeneri(profile.generi ?? []);
+            setDonationUrl(profile.donation_url ?? "");
           }
           setLoading(false);
         });
@@ -60,7 +62,7 @@ function ProfiloAutorePage() {
 
     const { error } = await supabase
       .from("author_profiles")
-      .upsert({ id: userId, bio, generi }, { onConflict: "id" });
+      .upsert({ id: userId, bio, generi, donation_url: donationUrl || null }, { onConflict: "id" });
 
     setSaving(false);
     if (error) {
@@ -125,6 +127,24 @@ function ProfiloAutorePage() {
                   ◆ {t(`generiTag.${value}`, value)}
                 </button>
               ))}
+            </div>
+          </HudPanel>
+
+          {/* Link donazione */}
+          <HudPanel label="sostieni — link donazione" tone="cyan">
+            <p className="font-serif italic text-bone/70">
+              Incolla il link del tuo PayPal, Stripe, Ko-fi o qualsiasi altro metodo di pagamento.
+              Apparirà come pulsante ♥ nella pagina di lettura dei tuoi libri.
+            </p>
+            <div className="mt-4">
+              <span className="font-mono text-[10px] tracking-[0.25em] text-cyan/70 uppercase">↳ link (opzionale)</span>
+              <input
+                type="url"
+                value={donationUrl}
+                onChange={(e) => setDonationUrl(e.target.value)}
+                placeholder="https://paypal.me/tuonome"
+                className="mt-2 w-full bg-void/40 border border-cyan/30 px-4 py-3 font-mono text-bone placeholder:text-bone/30 focus:outline-none focus:border-cyan focus:bg-void/60 transition-all"
+              />
             </div>
           </HudPanel>
 

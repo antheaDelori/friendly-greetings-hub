@@ -18,7 +18,7 @@ export const Route = createFileRoute("/leggi/$slug")({
     // Poi cerca su Supabase
     const { data } = await supabase
       .from("books")
-      .select("id, slug, titolo, descrizione, estratto, genere, anno, letture, copertina_url, file_url, author_name, cestinato, voti_cestino, recuperato")
+      .select("id, slug, titolo, descrizione, estratto, genere, anno, letture, copertina_url, file_url, author_name, user_id, cestinato, voti_cestino, recuperato")
       .eq("slug", params.slug)
       .or("disponibile.eq.true,cestinato.eq.true")
       .maybeSingle();
@@ -68,10 +68,21 @@ export const Route = createFileRoute("/leggi/$slug")({
       .eq("book_id", data.id)
       .order("ordine");
 
+    let donationUrl: string | null = null;
+    if (data.user_id) {
+      const { data: profile } = await supabase
+        .from("author_profiles")
+        .select("donation_url")
+        .eq("id", data.user_id)
+        .maybeSingle();
+      donationUrl = profile?.donation_url ?? null;
+    }
+
     const { data: { session } } = await supabase.auth.getSession();
     return {
       book,
       fileUrl: data.file_url as string | null,
+      donationUrl,
       isLoggedIn: !!session,
       isAnonymous: session?.user?.is_anonymous ?? false,
       userId: session?.user?.id ?? null,
@@ -160,7 +171,7 @@ function getOrCreateVisitorId(): string {
 }
 
 function ReadPage() {
-  const { book, fileUrl, isLoggedIn, isAnonymous, userId, allegati, isCestinato, votiCestino: initialVoti, recuperato, bookId } = Route.useLoaderData();
+  const { book, fileUrl, donationUrl, isLoggedIn, isAnonymous, userId, allegati, isCestinato, votiCestino: initialVoti, recuperato, bookId } = Route.useLoaderData();
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const router = useRouter();
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -414,10 +425,17 @@ function ReadPage() {
             <span className="text-sm leading-none">★</span>
             <span>Recensisci</span>
           </button>
-          <button className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-blood text-blood px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-blood hover:text-paper transition-colors">
-            <span className="text-sm leading-none">♥</span>
-            <span>Sostieni</span>
-          </button>
+          {donationUrl && (
+            <a
+              href={donationUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-blood text-blood px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-blood hover:text-paper transition-colors"
+            >
+              <span className="text-sm leading-none">♥</span>
+              <span>Sostieni</span>
+            </a>
+          )}
 
           <div className="w-full lg:mt-4 lg:border-t lg:border-ink/10 lg:pt-4">
             <div className="hidden lg:block font-display tracking-[0.15em] text-[9px] text-ink/50 mb-2 uppercase">— testo</div>

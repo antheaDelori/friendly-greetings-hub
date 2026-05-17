@@ -180,7 +180,6 @@ export function SiteHeader() {
 
           <Link to="/community" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }}>{t("nav.community")}</Link>
           <Link to="/regolamento" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }}>{t("nav.regole")}</Link>
-          <Link to="/donazioni" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }}>{t("nav.sostieni")}</Link>
         </nav>
 
         <div className="flex items-center gap-2">
