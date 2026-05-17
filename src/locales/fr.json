@@ -105,5 +105,26 @@
   "ui": {
     "operaSing": "œuvre",
     "operePlur": "œuvres"
+  },
+  "cestino": {
+    "desc": "Œuvres oubliées. Histoires qui attendent cinq votes pour être rescapées de l'oubli. Lisez. Décidez. Sauvez.",
+    "autoreLabel": "auteur :",
+    "tutti": "Tous",
+    "caricamento": "chargement...",
+    "vuoto": "Aucun écrit perdu. Le Cestino est vide.",
+    "nessunoAutore": "Aucun texte dans cette archive pour cet auteur.",
+    "vaiCatalogo": "Aller au catalogue",
+    "leggiVota": "Lire et voter",
+    "votiLabel": "votes"
+  },
+  "collana": {
+    "caricamento": "chargement...",
+    "nonTrovata": "Collection introuvable.",
+    "tornaCatalogo": "Retour au catalogue",
+    "catalogo": "Catalogue",
+    "novellaSing": "nouvelle",
+    "novellePlur": "nouvelles",
+    "nessuna": "Aucune nouvelle encore dans cette collection.",
+    "leggi": "Lire"
   }
 }

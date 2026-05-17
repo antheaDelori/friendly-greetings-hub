@@ -105,5 +105,26 @@
   "ui": {
     "operaSing": "work",
     "operePlur": "works"
+  },
+  "cestino": {
+    "desc": "Forgotten works. Stories waiting for five votes to be rescued from obscurity. Read. Decide. Save.",
+    "autoreLabel": "author:",
+    "tutti": "All",
+    "caricamento": "loading...",
+    "vuoto": "No lost writings. The Cestino is empty.",
+    "nessunoAutore": "No texts in this archive for this author.",
+    "vaiCatalogo": "Go to catalogue",
+    "leggiVota": "Read and vote",
+    "votiLabel": "votes"
+  },
+  "collana": {
+    "caricamento": "loading...",
+    "nonTrovata": "Collection not found.",
+    "tornaCatalogo": "Back to catalogue",
+    "catalogo": "Catalogue",
+    "novellaSing": "short story",
+    "novellePlur": "short stories",
+    "nessuna": "No stories yet in this collection.",
+    "leggi": "Read"
   }
 }

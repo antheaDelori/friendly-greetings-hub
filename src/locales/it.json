@@ -105,5 +105,26 @@
   "ui": {
     "operaSing": "opera",
     "operePlur": "opere"
+  },
+  "cestino": {
+    "desc": "Opere dimenticate. Storie che aspettano cinque voti per essere recuperate dalla memoria. Leggi. Decidi. Salva.",
+    "autoreLabel": "autore:",
+    "tutti": "Tutti",
+    "caricamento": "caricamento...",
+    "vuoto": "Nessuno scritto perduto. Il cestino è vuoto.",
+    "nessunoAutore": "Nessun testo in questo archivio per questo autore.",
+    "vaiCatalogo": "Vai al catalogo",
+    "leggiVota": "Leggi e vota",
+    "votiLabel": "voti"
+  },
+  "collana": {
+    "caricamento": "caricamento...",
+    "nonTrovata": "Collana non trovata.",
+    "tornaCatalogo": "Torna al catalogo",
+    "catalogo": "Catalogo",
+    "novellaSing": "novella",
+    "novellePlur": "novelle",
+    "nessuna": "Nessuna novella ancora in questa collana.",
+    "leggi": "Leggi"
   }
 }

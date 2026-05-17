@@ -105,5 +105,26 @@
   "ui": {
     "operaSing": "obra",
     "operePlur": "obras"
+  },
+  "cestino": {
+    "desc": "Obras olvidadas. Historias que esperan cinco votos para ser rescatadas del olvido. Lee. Decide. Salva.",
+    "autoreLabel": "autor:",
+    "tutti": "Todos",
+    "caricamento": "cargando...",
+    "vuoto": "Ningún escrito perdido. El Cestino está vacío.",
+    "nessunoAutore": "Ningún texto en este archivo para este autor.",
+    "vaiCatalogo": "Ir al catálogo",
+    "leggiVota": "Leer y votar",
+    "votiLabel": "votos"
+  },
+  "collana": {
+    "caricamento": "cargando...",
+    "nonTrovata": "Colección no encontrada.",
+    "tornaCatalogo": "Volver al catálogo",
+    "catalogo": "Catálogo",
+    "novellaSing": "novela corta",
+    "novellePlur": "novelas cortas",
+    "nessuna": "Ninguna novela corta todavía en esta colección.",
+    "leggi": "Leer"
   }
 }

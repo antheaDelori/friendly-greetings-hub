@@ -105,5 +105,26 @@
   "ui": {
     "operaSing": "Werk",
     "operePlur": "Werke"
+  },
+  "cestino": {
+    "desc": "Vergessene Werke. Geschichten, die auf fünf Stimmen warten, um gerettet zu werden. Lesen. Entscheiden. Retten.",
+    "autoreLabel": "Autor:",
+    "tutti": "Alle",
+    "caricamento": "lädt...",
+    "vuoto": "Keine verlorenen Schriften. Das Cestino ist leer.",
+    "nessunoAutore": "Keine Texte in diesem Archiv für diesen Autor.",
+    "vaiCatalogo": "Zum Katalog",
+    "leggiVota": "Lesen und abstimmen",
+    "votiLabel": "Stimmen"
+  },
+  "collana": {
+    "caricamento": "lädt...",
+    "nonTrovata": "Sammlung nicht gefunden.",
+    "tornaCatalogo": "Zurück zum Katalog",
+    "catalogo": "Katalog",
+    "novellaSing": "Novelle",
+    "novellePlur": "Novellen",
+    "nessuna": "Noch keine Novellen in dieser Sammlung.",
+    "leggi": "Lesen"
   }
 }

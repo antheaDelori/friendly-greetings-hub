@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { getCestinoTranslation } from "@/lib/cestinoI18n";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -31,6 +32,7 @@ export const Route = createFileRoute("/cestino")({
 });
 
 function CestinoPage() {
+  const { t } = useTranslation();
   const [books, setBooks] = useState<CestinatoBook[]>([]);
   const [loading, setLoading] = useState(true);
   const [autoreFiltro, setAutoreFiltro] = useState<string>("all");
@@ -79,8 +81,7 @@ function CestinoPage() {
             )}
           </div>
           <p className="mt-6 font-serif italic text-xl text-bone/70 max-w-2xl">
-            Opere dimenticate. Storie che aspettano cinque voti per essere recuperate dalla memoria.
-            Leggi. Decidi. Salva.
+            {t("cestino.desc")}
           </p>
         </div>
       </section>
@@ -88,7 +89,7 @@ function CestinoPage() {
       {autori.length > 1 && (
         <section className="border-y border-magenta/15 bg-deep/40 backdrop-blur sticky top-[5.75rem] z-30">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10 py-3 flex flex-wrap gap-2 items-center">
-            <span className="font-mono tracking-[0.22em] text-[10px] uppercase text-bone/50">autore:</span>
+            <span className="font-mono tracking-[0.22em] text-[10px] uppercase text-bone/50">{t("cestino.autoreLabel")}</span>
             <button
               onClick={() => setAutoreFiltro("all")}
               className={`font-mono text-[10px] uppercase tracking-widest px-3 py-1.5 border transition-all ${
@@ -97,7 +98,7 @@ function CestinoPage() {
                   : "border-magenta/20 text-bone/50 hover:border-magenta/50 hover:text-bone/80"
               }`}
             >
-              Tutti
+              {t("cestino.tutti")}
             </button>
             {autori.map(a => (
               <button
@@ -118,17 +119,15 @@ function CestinoPage() {
 
       <section className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-10 py-12 flex-1 w-full">
         {loading ? (
-          <p className="font-mono text-cyan text-sm animate-pulse">▸ caricamento...</p>
+          <p className="font-mono text-cyan text-sm animate-pulse">▸ {t("cestino.caricamento")}</p>
         ) : filtered.length === 0 ? (
           <div className="text-center py-24 glass p-12 hud-frame">
             <div className="font-display text-7xl text-magenta">∅</div>
             <p className="mt-4 font-serif italic text-xl text-bone/70">
-              {books.length === 0
-                ? "Nessuno scritto perduto. Il cestino è vuoto."
-                : "Nessun testo in questo archivio per questo autore."}
+              {books.length === 0 ? t("cestino.vuoto") : t("cestino.nessunoAutore")}
             </p>
             <Link to="/catalogo" className="mt-6 inline-block font-mono text-[10px] uppercase tracking-widest text-cyan border-b border-cyan/60 pb-1">
-              ▸ Vai al catalogo
+              ▸ {t("cestino.vaiCatalogo")}
             </Link>
           </div>
         ) : (
@@ -164,7 +163,7 @@ function CestinoPage() {
                         params={{ slug: b.slug }}
                         className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-magenta/70 hover:text-magenta border-b border-magenta/20 hover:border-magenta pb-0.5 transition-all"
                       >
-                        ▸ Leggi e vota
+                        ▸ {t("cestino.leggiVota")}
                       </Link>
                       <div className="flex items-center gap-1.5">
                         {Array.from({ length: 5 }, (_, idx) => (
@@ -176,7 +175,7 @@ function CestinoPage() {
                           />
                         ))}
                         <span className="font-mono text-[9px] tracking-widest text-bone/40 uppercase ml-1">
-                          {b.voti_cestino}/5 voti
+                          {b.voti_cestino}/5 {t("cestino.votiLabel")}
                         </span>
                       </div>
                     </div>

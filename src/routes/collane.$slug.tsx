@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { supabase } from "@/lib/supabase";
@@ -21,6 +22,7 @@ type Novella = {
 };
 
 function CollanePage() {
+  const { t } = useTranslation();
   const { slug } = Route.useParams();
   const [collana, setCollana] = useState<{ id: string; titolo: string; descrizione: string | null; copertina_url: string | null } | null>(null);
   const [novelle, setNovelle] = useState<Novella[]>([]);
@@ -56,7 +58,7 @@ function CollanePage() {
       <div className="min-h-screen flex flex-col">
         <SiteHeader />
         <div className="flex-1 flex items-center justify-center">
-          <p className="font-mono text-cyan text-sm animate-pulse">▸ caricamento...</p>
+          <p className="font-mono text-cyan text-sm animate-pulse">▸ {t("collana.caricamento")}</p>
         </div>
         <SiteFooter />
       </div>
@@ -70,9 +72,9 @@ function CollanePage() {
         <div className="flex-1 flex items-center justify-center text-center px-4">
           <div>
             <div className="font-display text-7xl text-magenta">∅</div>
-            <p className="mt-4 font-serif italic text-xl text-bone/70">Collana non trovata.</p>
+            <p className="mt-4 font-serif italic text-xl text-bone/70">{t("collana.nonTrovata")}</p>
             <Link to="/catalogo" className="mt-6 inline-block font-mono text-[10px] uppercase tracking-widest text-cyan border-b border-cyan/60 pb-1">
-              ▸ Torna al catalogo
+              ▸ {t("collana.tornaCatalogo")}
             </Link>
           </div>
         </div>
@@ -90,7 +92,7 @@ function CollanePage() {
         <div className="absolute -top-20 -left-20 w-[400px] h-[400px] rounded-full bg-cyan/10 blur-[100px] pointer-events-none" />
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-10 py-16 relative">
           <Link to="/catalogo" className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-bone/40 hover:text-cyan transition-colors mb-8">
-            ← Catalogo
+            ← {t("collana.catalogo")}
           </Link>
           <div className="flex flex-col md:flex-row gap-10 items-start">
             {collana.copertina_url ? (
@@ -110,7 +112,7 @@ function CollanePage() {
                 </p>
               )}
               <p className="mt-4 font-mono text-[10px] tracking-widest text-bone/30 uppercase">
-                {novelle.length} {novelle.length === 1 ? "novella" : "novelle"}
+                {novelle.length} {novelle.length === 1 ? t("collana.novellaSing") : t("collana.novellePlur")}
               </p>
             </div>
           </div>
@@ -122,7 +124,7 @@ function CollanePage() {
         {novelle.length === 0 ? (
           <div className="text-center py-16 glass hud-frame p-12">
             <div className="font-display text-7xl text-magenta">∅</div>
-            <p className="mt-4 font-serif italic text-xl text-bone/70">Nessuna novella ancora in questa collana.</p>
+            <p className="mt-4 font-serif italic text-xl text-bone/70">{t("collana.nessuna")}</p>
           </div>
         ) : (
           <div className="space-y-0">
@@ -162,7 +164,7 @@ function CollanePage() {
                         params={{ slug: n.slug }}
                         className="mt-4 inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-cyan/60 hover:text-cyan border-b border-cyan/20 hover:border-cyan pb-0.5 transition-all"
                       >
-                        ▸ Leggi
+                        ▸ {t("collana.leggi")}
                       </Link>
                     </div>
 
