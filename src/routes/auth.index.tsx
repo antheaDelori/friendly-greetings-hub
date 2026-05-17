@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { HudPanel, PageShell, HudButton } from "@/components/HudPanel";
 import { supabase } from "@/lib/supabase";
@@ -16,6 +17,7 @@ const inputClass = "mt-2 w-full bg-void/40 border border-cyan/30 px-4 py-3 font-
 const labelClass = "font-mono text-[10px] tracking-[0.25em] text-cyan/70 uppercase";
 
 function AuthLanding() {
+  const { t } = useTranslation();
   const { returnTo } = Route.useSearch();
   const returnToRef = useRef(returnTo);
 
@@ -39,7 +41,7 @@ function AuthLanding() {
     localStorage.removeItem(`bookmark_para_${slug}`);
     const updated = resumeBooks.filter(b => b.slug !== slug);
     setResumeBooks(updated);
-    setResumeTotal(t => t - 1);
+    setResumeTotal(prev => prev - 1);
     setConfirmDelete(null);
     if (updated.length === 0) window.location.replace("/");
   };
@@ -72,7 +74,7 @@ function AuthLanding() {
             });
             await supabase.auth.signOut();
             loginAttempted.current = false;
-            setError(`Accesso bloccato: ${profile.block_reason ?? "contatta l'amministratore"}`);
+            setError(`${t("authLogin.errBloccatoPrefix")} ${profile.block_reason ?? t("authLogin.errBloccatoDefault")}`);
             setLoading(false);
             return;
           }
@@ -151,13 +153,13 @@ function AuthLanding() {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         loginAttempted.current = false;
-        setError("Credenziali non valide. Riprova.");
+        setError(t("authLogin.errCredenziali"));
         setLoading(false);
       }
       // successo: onAuthStateChange gestisce il blocco, il log e la navigazione
     } catch {
       loginAttempted.current = false;
-      setError("Errore di connessione. Riprova.");
+      setError(t("authLogin.errConnessione"));
       setLoading(false);
     }
   };
@@ -167,7 +169,7 @@ function AuthLanding() {
     setLoading(true);
     const { error } = await supabase.auth.signInAnonymously();
     if (error) {
-      setError("Errore durante l'accesso come ospite. Riprova.");
+      setError(t("authLogin.errOspite"));
       setLoading(false);
       return;
     }
@@ -180,12 +182,12 @@ function AuthLanding() {
         <div className="glass hud-frame mx-4 max-w-lg w-full p-8 md:p-10 fade-up">
           <div className="font-mono text-[10px] tracking-[0.3em] text-cyan/70 uppercase">// segnalibro_attivo</div>
           <h2 className="mt-4 font-display text-3xl md:text-4xl text-bone tracking-tight leading-tight">
-            Riprendi da dove<br /><span className="text-cyan text-glow-cyan">hai lasciato?</span>
+            {t("authLogin.riprendiTitoloA")}<br /><span className="text-cyan text-glow-cyan">{t("authLogin.riprendiTitoloB")}</span>
           </h2>
 
           {resumeBooks.length === 1 ? (
             <p className="mt-4 font-serif italic text-lg text-bone/70">
-              Stavi leggendo <span className="text-bone not-italic font-semibold">{resumeBooks[0].title}</span>
+              {t("authLogin.riprendiDesc")} <span className="text-bone not-italic font-semibold">{resumeBooks[0].title}</span>
               <span className="text-bone/50"> — {resumeBooks[0].author}</span>
             </p>
           ) : (
@@ -195,16 +197,16 @@ function AuthLanding() {
                   <li key={b.slug} className="border border-cyan/20 hover:border-cyan/40 transition-colors">
                     {confirmDelete === b.slug ? (
                       <div className="flex items-center justify-between px-4 py-3 bg-magenta/5">
-                        <span className="font-serif italic text-sm text-bone/70">Rimuovere dalla lista?</span>
+                        <span className="font-serif italic text-sm text-bone/70">{t("authLogin.rimuoviConferma")}</span>
                         <div className="flex gap-3 ml-4 shrink-0">
                           <button
                             onClick={() => handleRemoveBook(b.slug)}
                             className="font-mono text-[10px] uppercase tracking-widest text-magenta hover:text-bone transition-colors"
-                          >Sì</button>
+                          >{t("authLogin.rimuoviSi")}</button>
                           <button
                             onClick={() => setConfirmDelete(null)}
                             className="font-mono text-[10px] uppercase tracking-widest text-bone/50 hover:text-bone transition-colors"
-                          >No</button>
+                          >{t("authLogin.rimuoviNo")}</button>
                         </div>
                       </div>
                     ) : (
@@ -220,7 +222,7 @@ function AuthLanding() {
                         <button
                           onClick={() => setConfirmDelete(b.slug)}
                           className="px-3 py-3 font-mono text-bone/25 hover:text-magenta transition-colors text-sm shrink-0"
-                          title="Rimuovi dalla lista"
+                          title={t("authLogin.rimuoviTitle")}
                         >✕</button>
                       </div>
                     )}
@@ -229,8 +231,10 @@ function AuthLanding() {
               </ul>
               {resumeTotal > 4 && (
                 <p className="mt-3 font-mono text-[10px] tracking-widest text-bone/35 uppercase">
-                  e altri {resumeTotal - 4} nel{" "}
-                  <Link to="/catalogo" className="text-cyan/60 hover:text-cyan underline underline-offset-2 transition-colors">catalogo</Link>
+                  {t("authLogin.altriLibriPre", { n: resumeTotal - 4 })}{" "}
+                  <Link to="/catalogo" className="text-cyan/60 hover:text-cyan underline underline-offset-2 transition-colors">
+                    {t("nav.catalogo")}
+                  </Link>
                 </p>
               )}
             </>
@@ -242,14 +246,14 @@ function AuthLanding() {
                 onClick={() => window.location.replace(`/leggi/${resumeBooks[0].slug}`)}
                 className="flex-1 border border-cyan bg-cyan/10 text-cyan px-6 py-3 font-mono tracking-[0.2em] text-[11px] uppercase hover:bg-cyan hover:text-void transition-all hud-frame"
               >
-                ▸ Sì, riprendi
+                ▸ {t("authLogin.riprSi")}
               </button>
             )}
             <button
               onClick={() => window.location.replace("/")}
               className="flex-1 border border-bone/20 text-bone/50 px-6 py-3 font-mono tracking-[0.2em] text-[11px] uppercase hover:border-bone/40 hover:text-bone/80 transition-all"
             >
-              No, alla home
+              {t("authLogin.riprNo")}
             </button>
           </div>
         </div>
@@ -258,22 +262,22 @@ function AuthLanding() {
   }
 
   return (
-    <PageShell code="// MODULE/AUTH.gateway" title="Accesso terminale" subtitle="Tre porte. Una libreria. Scegli con cosa entrare.">
+    <PageShell code="// MODULE/AUTH.gateway" title={t("authLogin.pageTitle")} subtitle={t("authLogin.pageSubtitle")}>
       <div className="grid md:grid-cols-3 gap-6">
 
         {/* Registrazione */}
-        <HudPanel label="opzione 01 — registrazione" tone="cyan">
-          <h3 className="font-display text-2xl text-bone tracking-tight">Registrati</h3>
-          <p className="mt-3 font-serif italic text-bone/70">Per leggere e per pubblicare le tue opere.</p>
+        <HudPanel label={t("authLogin.opt01Label")} tone="cyan">
+          <h3 className="font-display text-2xl text-bone tracking-tight">{t("authLogin.opt01Title")}</h3>
+          <p className="mt-3 font-serif italic text-bone/70">{t("authLogin.opt01Desc")}</p>
           <Link to="/auth/registrazione" className="mt-6 inline-block">
-            <HudButton variant="primary">▸ Crea account</HudButton>
+            <HudButton variant="primary">▸ {t("authLogin.opt01Btn")}</HudButton>
           </Link>
         </HudPanel>
 
         {/* Login */}
-        <HudPanel label="opzione 02 — login" tone="magenta">
-          <h3 className="font-display text-2xl text-bone tracking-tight">Accedi</h3>
-          <p className="mt-3 font-serif italic text-bone/70">Hai già un account? Identificati.</p>
+        <HudPanel label={t("authLogin.opt02Label")} tone="magenta">
+          <h3 className="font-display text-2xl text-bone tracking-tight">{t("authLogin.opt02Title")}</h3>
+          <p className="mt-3 font-serif italic text-bone/70">{t("authLogin.opt02Desc")}</p>
           <form onSubmit={handleLogin} className="mt-6 space-y-4">
             <div>
               <span className={labelClass}>↳ email</span>
@@ -303,18 +307,18 @@ function AuthLanding() {
               </p>
             )}
             <HudButton variant="magenta" type="submit" disabled={loading} className="w-full">
-              {loading ? "◆ Accesso..." : "◆ Login"}
+              {loading ? `◆ ${t("authLogin.opt02BtnLoading")}` : `◆ ${t("authLogin.opt02Btn")}`}
             </HudButton>
           </form>
         </HudPanel>
 
         {/* Solo lettore */}
-        <HudPanel label="opzione 03 — solo lettore" tone="amber">
-          <h3 className="font-display text-2xl text-bone tracking-tight">Solo lettore</h3>
-          <p className="mt-3 font-serif italic text-bone/70">Accesso gratuito a tutti i contenuti pubblici. Nessuna registrazione.</p>
+        <HudPanel label={t("authLogin.opt03Label")} tone="amber">
+          <h3 className="font-display text-2xl text-bone tracking-tight">{t("authLogin.opt03Title")}</h3>
+          <p className="mt-3 font-serif italic text-bone/70">{t("authLogin.opt03Desc")}</p>
           <button onClick={handleGuestLogin} disabled={loading} className="mt-6 inline-block">
             <HudButton variant="ghost" disabled={loading}>
-              {loading ? "▸ Accesso..." : "▸ Entra come ospite"}
+              {loading ? `▸ ${t("authLogin.opt02BtnLoading")}` : `▸ ${t("authLogin.opt03Btn")}`}
             </HudButton>
           </button>
         </HudPanel>
