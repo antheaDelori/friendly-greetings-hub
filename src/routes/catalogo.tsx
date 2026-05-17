@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useMemo, useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -66,6 +67,7 @@ export const Route = createFileRoute("/catalogo")({
 type CollanaCard = { id: string; slug: string; titolo: string; descrizione: string | null; copertina_url: string | null; count: number };
 
 function CatalogoPage() {
+  const { t } = useTranslation();
   const { q, genre, sort } = Route.useSearch();
   const navigate = useNavigate({ from: "/catalogo" });
   const [dbBooks, setDbBooks] = useState<Book[]>([]);
@@ -143,10 +145,10 @@ function CatalogoPage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10 py-16 relative">
           <div className="font-mono tracking-[0.3em] text-[10px] text-cyan uppercase">// MODULE/CATALOG</div>
           <h1 className="mt-3 font-display text-5xl md:text-7xl leading-[0.95] text-bone tracking-tight">
-            Tutte le opere.<br /><span className="text-magenta text-glow-magenta">Una sola libreria.</span>
+            {t("catalogo.titolo")}<br /><span className="text-magenta text-glow-magenta">{t("catalogo.sottotitolo")}</span>
           </h1>
           <p className="mt-6 font-serif italic text-xl text-bone/70 max-w-2xl">
-            Indice olografico in tempo reale. Cerca, filtra, scegli. Niente algoritmi che decidono per te.
+            {t("catalogo.desc")}
           </p>
 
           {/* search */}
@@ -156,7 +158,7 @@ function CatalogoPage() {
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="query: titolo, autore, tema..."
+                placeholder={t("catalogo.searchPlaceholder")}
                 className="w-full bg-transparent border-b border-cyan/30 focus:border-cyan outline-none py-3 pl-6 pr-32 font-mono text-lg text-bone placeholder:text-bone/30 transition-colors"
               />
               <span className="absolute right-0 top-1/2 -translate-y-1/2 font-mono text-[10px] tracking-widest text-cyan/70 uppercase">
@@ -182,7 +184,7 @@ function CatalogoPage() {
                       : "border-cyan/20 text-bone/60 hover:border-cyan/60 hover:text-cyan"
                   }`}
                 >
-                  ◆ {g.label}
+                  ◆ {t(`generi.${g.value}`)}
                   {g.tooltip && (
                     <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 whitespace-nowrap border border-cyan/40 bg-void px-2 py-1 font-mono text-[8px] tracking-widest text-cyan opacity-0 transition-opacity group-hover:opacity-100 z-10">
                       {g.tooltip}
@@ -199,17 +201,17 @@ function CatalogoPage() {
                   showCollane ? "border-magenta bg-magenta/15 text-magenta" : "border-magenta/30 text-bone/60 hover:border-magenta/60 hover:text-magenta"
                 }`}
               >
-                ◆ Collane{collane.length > 0 && <span className={`ml-1 ${showCollane ? "text-magenta/70" : "text-bone/30"}`}>{collane.length}</span>}
+                ◆ {t("catalogo.collaneBtn")}{collane.length > 0 && <span className={`ml-1 ${showCollane ? "text-magenta/70" : "text-bone/30"}`}>{collane.length}</span>}
               </button>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <span className="font-mono tracking-[0.22em] text-[10px] uppercase text-bone/50">sort:</span>
             {([
-              ["recenti", "Più recenti"],
-              ["letti", "Più letti"],
-              ["rating", "Top rated"],
-              ["anno", "Anno ↑"],
+              ["recenti", t("catalogo.sortRecenti")],
+              ["letti", t("catalogo.sortLetti")],
+              ["rating", t("catalogo.sortRating")],
+              ["anno", t("catalogo.sortAnno")],
             ] as ["letti" | "recenti" | "anno" | "rating", string][]).map(([key, label]) => (
               <button
                 key={key}
@@ -230,7 +232,7 @@ function CatalogoPage() {
           collane.length === 0 ? (
             <div className="text-center py-24 glass p-12 hud-frame">
               <div className="font-display text-7xl text-magenta">∅</div>
-              <p className="mt-4 font-serif italic text-xl text-bone/70">Nessuna collana ancora presente in archivio.</p>
+              <p className="mt-4 font-serif italic text-xl text-bone/70">{t("catalogo.nessunCollana")}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
@@ -246,10 +248,10 @@ function CatalogoPage() {
                     : <div className="w-16 h-20 flex-shrink-0 bg-void/60 border border-cyan/20 flex items-center justify-center font-display text-2xl text-bone/20">◊</div>
                   }
                   <div className="flex-1 min-w-0">
-                    <div className="font-mono text-[9px] tracking-widest text-magenta/70 uppercase">◆ collana</div>
+                    <div className="font-mono text-[9px] tracking-widest text-magenta/70 uppercase">◆ {t("catalogo.collanaLabel")}</div>
                     <h3 className="mt-1 font-display text-lg text-bone tracking-tight leading-tight group-hover:text-cyan transition-colors">{c.titolo}</h3>
                     {c.descrizione && <p className="mt-1 font-serif italic text-sm text-bone/50 line-clamp-2">{c.descrizione}</p>}
-                    <p className="mt-2 font-mono text-[9px] tracking-widest text-bone/30 uppercase">{c.count} {c.count === 1 ? "opera" : "opere"}</p>
+                    <p className="mt-2 font-mono text-[9px] tracking-widest text-bone/30 uppercase">{c.count} {c.count === 1 ? t("ui.operaSing") : t("ui.operePlur")}</p>
                   </div>
                 </Link>
               ))}
@@ -259,15 +261,14 @@ function CatalogoPage() {
           <div className="text-center py-24 glass p-12 hud-frame">
             <div className="font-display text-7xl text-magenta">∅</div>
             <p className="mt-4 font-serif italic text-xl text-bone/70">
-              {q.trim()
-                ? "Nessuna opera corrisponde alla ricerca."
-                : genre === "libro" ? "Nessun libro ancora presente in archivio."
-                : genre === "racconto" ? "Nessun racconto ancora presente in archivio."
-                : genre === "saggio" ? "Nessun saggio ancora presente in archivio."
-                : genre === "articolo" ? "Nessun articolo ancora presente in archivio."
-                : genre === "buonanotte" ? "Nessun racconto della sera ancora presente in archivio."
-                : genre === "poesia" ? "Nessuna poesia ancora presente in archivio."
-                : "Nessuna opera ancora presente in archivio."}
+              {t(q.trim() ? "catalogo.nessunRisultato" : (({
+                libro: "catalogo.nessunLibro",
+                racconto: "catalogo.nessunRacconto",
+                saggio: "catalogo.nessunSaggio",
+                articolo: "catalogo.nessunArticolo",
+                buonanotte: "catalogo.nessunBuonanotte",
+                poesia: "catalogo.nessunPoesia",
+              } as Record<string, string>)[genre] ?? "catalogo.nessunGenere"))}
             </p>
           </div>
         ) : (

@@ -56,5 +56,54 @@
     "lettoreTitoloB": "lesen?",
     "lettoreDesc": "Kostenloser Zugang zu allen öffentlichen Inhalten. Kommentieren, Autoren folgen, im Rahmen des Erlaubten herunterladen, diejenigen unterstützen, die Sie lieben.",
     "lettoreBtn": "Lesen beginnen"
+  },
+  "catalogo": {
+    "titolo": "Alle Werke.",
+    "sottotitolo": "Eine einzige Bibliothek.",
+    "desc": "Holografischer Echtzeitindex. Suchen, filtern, auswählen. Keine Algorithmen, die für Sie entscheiden.",
+    "searchPlaceholder": "Abfrage: Titel, Autor, Thema...",
+    "collaneBtn": "Sammlungen",
+    "sortRecenti": "Neueste",
+    "sortLetti": "Meistgelesen",
+    "sortRating": "Top rated",
+    "sortAnno": "Jahr ↑",
+    "nessunRisultato": "Keine Werke entsprechen der Suche.",
+    "nessunLibro": "Noch keine Bücher im Archiv.",
+    "nessunRacconto": "Noch keine Erzählungen im Archiv.",
+    "nessunSaggio": "Noch keine Essays im Archiv.",
+    "nessunArticolo": "Noch keine Artikel im Archiv.",
+    "nessunBuonanotte": "Noch keine Gutenachtgeschichten im Archiv.",
+    "nessunPoesia": "Noch keine Gedichte im Archiv.",
+    "nessunGenere": "Noch keine Werke im Archiv.",
+    "nessunCollana": "Noch keine Sammlungen im Archiv.",
+    "collanaLabel": "Sammlung"
+  },
+  "autoriPage": {
+    "titolo": "Die Autoren.",
+    "sottotitolo": "Alle. In Ordnung.",
+    "desc": "Alphabetische Liste aller, die Worte in dieser Bibliothek hinterlegt haben. Klicken Sie auf einen Namen, um ihre Werke zu sehen.",
+    "searchPlaceholder": "Autor suchen...",
+    "caricamento": "lädt...",
+    "nessunAutore": "Keine Autoren gefunden."
+  },
+  "generi": {
+    "libro": "Romane",
+    "racconto": "Erzählungen",
+    "saggio": "Essays",
+    "articolo": "Artikel",
+    "buonanotte": "Gutenachtgeschichten",
+    "poesia": "Gedichte"
+  },
+  "generiTag": {
+    "libro": "Roman",
+    "racconto": "Erzählung",
+    "saggio": "Essay",
+    "articolo": "Artikel",
+    "buonanotte": "Gutenachtgeschichte",
+    "poesia": "Gedicht"
+  },
+  "ui": {
+    "operaSing": "Werk",
+    "operePlur": "Werke"
   }
 }

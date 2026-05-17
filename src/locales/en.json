@@ -50,12 +50,60 @@
     "cestinoBtn": "Enter the Cestino",
     "cestinoVoti": "5 votes to save",
     "autoreTitolo": "Have something to say?",
-
     "autoreDesc": "Publish directly: books, stories, essays or articles. Keep your rights, choose what's downloadable, receive donations from readers who follow you.",
     "autoreBtn": "Create author profile",
     "lettoreTitoloA": "Just want to",
     "lettoreTitoloB": "read?",
     "lettoreDesc": "Free access to all public content. Comment, follow authors, download within the set limits, support those you love with a free donation.",
     "lettoreBtn": "Start reading"
+  },
+  "catalogo": {
+    "titolo": "All works.",
+    "sottotitolo": "One single library.",
+    "desc": "Real-time holographic index. Search, filter, choose. No algorithms deciding for you.",
+    "searchPlaceholder": "query: title, author, theme...",
+    "collaneBtn": "Collections",
+    "sortRecenti": "Most recent",
+    "sortLetti": "Most read",
+    "sortRating": "Top rated",
+    "sortAnno": "Year ↑",
+    "nessunRisultato": "No works match the search.",
+    "nessunLibro": "No books yet in the archive.",
+    "nessunRacconto": "No stories yet in the archive.",
+    "nessunSaggio": "No essays yet in the archive.",
+    "nessunArticolo": "No articles yet in the archive.",
+    "nessunBuonanotte": "No bedtime stories yet in the archive.",
+    "nessunPoesia": "No poems yet in the archive.",
+    "nessunGenere": "No works yet in the archive.",
+    "nessunCollana": "No collections yet in the archive.",
+    "collanaLabel": "collection"
+  },
+  "autoriPage": {
+    "titolo": "The authors.",
+    "sottotitolo": "All of them. In order.",
+    "desc": "Alphabetical list of those who have deposited words in this library. Click a name to see their works.",
+    "searchPlaceholder": "search author...",
+    "caricamento": "loading...",
+    "nessunAutore": "No authors found."
+  },
+  "generi": {
+    "libro": "Novels",
+    "racconto": "Short stories",
+    "saggio": "Essays",
+    "articolo": "Articles",
+    "buonanotte": "Bedtime stories",
+    "poesia": "Poetry"
+  },
+  "generiTag": {
+    "libro": "Novel",
+    "racconto": "Short story",
+    "saggio": "Essay",
+    "articolo": "Article",
+    "buonanotte": "Bedtime story",
+    "poesia": "Poetry"
+  },
+  "ui": {
+    "operaSing": "work",
+    "operePlur": "works"
   }
 }

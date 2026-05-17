@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { supabase } from "@/lib/supabase";
@@ -10,14 +11,6 @@ type AuthorEntry = {
   generi: string[];
 };
 
-const GENERE_LABEL: Record<string, string> = {
-  libro: "Libro",
-  racconto: "Racconto",
-  saggio: "Saggio",
-  articolo: "Articolo",
-  buonanotte: "Novelle",
-  poesia: "Poesia",
-};
 
 export const Route = createFileRoute("/autori")({
   head: () => ({
@@ -31,6 +24,7 @@ export const Route = createFileRoute("/autori")({
 });
 
 function AutoriPage() {
+  const { t } = useTranslation();
   const [authors, setAuthors] = useState<AuthorEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -101,10 +95,10 @@ function AutoriPage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10 py-16 relative">
           <div className="font-mono tracking-[0.3em] text-[10px] text-cyan uppercase">// MODULE/AUTHORS</div>
           <h1 className="mt-3 font-display text-5xl md:text-7xl leading-[0.95] text-bone tracking-tight">
-            Gli autori.<br /><span className="text-cyan text-glow-cyan">Tutti. In ordine.</span>
+            {t("autoriPage.titolo")}<br /><span className="text-cyan text-glow-cyan">{t("autoriPage.sottotitolo")}</span>
           </h1>
           <p className="mt-6 font-serif italic text-xl text-bone/70 max-w-2xl">
-            Elenco alfabetico di chi ha depositato parole in questa biblioteca. Clicca un nome per vedere le sue opere.
+            {t("autoriPage.desc")}
           </p>
 
           {/* ricerca rapida */}
@@ -114,7 +108,7 @@ function AutoriPage() {
               <input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                placeholder="cerca autore..."
+                placeholder={t("autoriPage.searchPlaceholder")}
                 className="w-full bg-transparent border-b border-cyan/30 focus:border-cyan outline-none py-3 pl-6 pr-24 font-mono text-lg text-bone placeholder:text-bone/30 transition-colors"
               />
               <span className="absolute right-0 top-1/2 -translate-y-1/2 font-mono text-[10px] tracking-widest text-cyan/70 uppercase">
@@ -144,11 +138,11 @@ function AutoriPage() {
 
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10 py-12 flex-1">
         {loading ? (
-          <p className="font-mono text-cyan text-sm animate-pulse">▸ caricamento...</p>
+          <p className="font-mono text-cyan text-sm animate-pulse">▸ {t("autoriPage.caricamento")}</p>
         ) : byLetter.length === 0 ? (
           <div className="text-center py-24 glass p-12 hud-frame">
             <div className="font-display text-7xl text-magenta">∅</div>
-            <p className="mt-4 font-serif italic text-xl text-bone/70">Nessun autore trovato.</p>
+            <p className="mt-4 font-serif italic text-xl text-bone/70">{t("autoriPage.nessunAutore")}</p>
           </div>
         ) : (
           <div className="space-y-12">
@@ -173,13 +167,13 @@ function AutoriPage() {
                           {a.name}
                         </h2>
                         <div className="font-mono text-[9px] tracking-widest text-bone/30 uppercase mt-1">
-                          {a.count} {a.count === 1 ? "opera" : "opere"}
+                          {a.count} {a.count === 1 ? t("ui.operaSing") : t("ui.operePlur")}
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-1.5">
                         {a.generi.map(g => (
                           <span key={g} className="font-mono text-[8px] tracking-widest uppercase border border-cyan/20 text-cyan/50 px-1.5 py-0.5">
-                            {GENERE_LABEL[g] ?? g}
+                            {t(`generiTag.${g}`, g)}
                           </span>
                         ))}
                       </div>

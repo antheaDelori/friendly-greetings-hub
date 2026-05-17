@@ -56,5 +56,54 @@
     "lettoreTitoloB": "leer?",
     "lettoreDesc": "Acceso gratuito a todos los contenidos públicos. Comenta, sigue a los autores, descarga dentro de los límites establecidos, apoya a quien amas con una donación libre.",
     "lettoreBtn": "Empezar a leer"
+  },
+  "catalogo": {
+    "titolo": "Todas las obras.",
+    "sottotitolo": "Una sola biblioteca.",
+    "desc": "Índice holográfico en tiempo real. Busca, filtra, elige. Sin algoritmos que decidan por ti.",
+    "searchPlaceholder": "consulta: título, autor, tema...",
+    "collaneBtn": "Colecciones",
+    "sortRecenti": "Más recientes",
+    "sortLetti": "Más leídos",
+    "sortRating": "Top rated",
+    "sortAnno": "Año ↑",
+    "nessunRisultato": "Ninguna obra coincide con la búsqueda.",
+    "nessunLibro": "Ningún libro todavía en el archivo.",
+    "nessunRacconto": "Ningún cuento todavía en el archivo.",
+    "nessunSaggio": "Ningún ensayo todavía en el archivo.",
+    "nessunArticolo": "Ningún artículo todavía en el archivo.",
+    "nessunBuonanotte": "Ningún cuento de buenas noches todavía en el archivo.",
+    "nessunPoesia": "Ningún poema todavía en el archivo.",
+    "nessunGenere": "Ninguna obra todavía en el archivo.",
+    "nessunCollana": "Ninguna colección todavía en el archivo.",
+    "collanaLabel": "colección"
+  },
+  "autoriPage": {
+    "titolo": "Los autores.",
+    "sottotitolo": "Todos. En orden.",
+    "desc": "Lista alfabética de quienes han depositado palabras en esta biblioteca. Haz clic en un nombre para ver sus obras.",
+    "searchPlaceholder": "buscar autor...",
+    "caricamento": "cargando...",
+    "nessunAutore": "Ningún autor encontrado."
+  },
+  "generi": {
+    "libro": "Novelas",
+    "racconto": "Cuentos",
+    "saggio": "Ensayos",
+    "articolo": "Artículos",
+    "buonanotte": "Cuentos de buenas noches",
+    "poesia": "Poesías"
+  },
+  "generiTag": {
+    "libro": "Novela",
+    "racconto": "Cuento",
+    "saggio": "Ensayo",
+    "articolo": "Artículo",
+    "buonanotte": "Cuento de buenas noches",
+    "poesia": "Poesía"
+  },
+  "ui": {
+    "operaSing": "obra",
+    "operePlur": "obras"
   }
 }

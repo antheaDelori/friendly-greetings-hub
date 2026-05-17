@@ -56,5 +56,54 @@
     "lettoreTitoloB": "leggere?",
     "lettoreDesc": "Accesso gratuito a tutti i contenuti pubblici. Commenta, segui gli autori, scarica nei limiti previsti, sostieni chi ami con una donazione libera.",
     "lettoreBtn": "Inizia a leggere"
+  },
+  "catalogo": {
+    "titolo": "Tutte le opere.",
+    "sottotitolo": "Una sola libreria.",
+    "desc": "Indice olografico in tempo reale. Cerca, filtra, scegli. Niente algoritmi che decidono per te.",
+    "searchPlaceholder": "query: titolo, autore, tema...",
+    "collaneBtn": "Collane",
+    "sortRecenti": "Più recenti",
+    "sortLetti": "Più letti",
+    "sortRating": "Top rated",
+    "sortAnno": "Anno ↑",
+    "nessunRisultato": "Nessuna opera corrisponde alla ricerca.",
+    "nessunLibro": "Nessun libro ancora presente in archivio.",
+    "nessunRacconto": "Nessun racconto ancora presente in archivio.",
+    "nessunSaggio": "Nessun saggio ancora presente in archivio.",
+    "nessunArticolo": "Nessun articolo ancora presente in archivio.",
+    "nessunBuonanotte": "Nessun racconto della sera ancora presente in archivio.",
+    "nessunPoesia": "Nessuna poesia ancora presente in archivio.",
+    "nessunGenere": "Nessuna opera ancora presente in archivio.",
+    "nessunCollana": "Nessuna collana ancora presente in archivio.",
+    "collanaLabel": "collana"
+  },
+  "autoriPage": {
+    "titolo": "Gli autori.",
+    "sottotitolo": "Tutti. In ordine.",
+    "desc": "Elenco alfabetico di chi ha depositato parole in questa biblioteca. Clicca un nome per vedere le sue opere.",
+    "searchPlaceholder": "cerca autore...",
+    "caricamento": "caricamento...",
+    "nessunAutore": "Nessun autore trovato."
+  },
+  "generi": {
+    "libro": "Libri",
+    "racconto": "Racconti",
+    "saggio": "Saggi",
+    "articolo": "Articoli",
+    "buonanotte": "Novelle",
+    "poesia": "Poesie"
+  },
+  "generiTag": {
+    "libro": "Libro",
+    "racconto": "Racconto",
+    "saggio": "Saggio",
+    "articolo": "Articolo",
+    "buonanotte": "Novella",
+    "poesia": "Poesia"
+  },
+  "ui": {
+    "operaSing": "opera",
+    "operePlur": "opere"
   }
 }

@@ -56,5 +56,54 @@
     "lettoreTitoloB": "lire ?",
     "lettoreDesc": "Accès gratuit à tous les contenus publics. Commentez, suivez les auteurs, téléchargez dans les limites prévues, soutenez ceux que vous aimez avec un don libre.",
     "lettoreBtn": "Commencer à lire"
+  },
+  "catalogo": {
+    "titolo": "Toutes les œuvres.",
+    "sottotitolo": "Une seule bibliothèque.",
+    "desc": "Index holographique en temps réel. Cherchez, filtrez, choisissez. Pas d'algorithmes qui décident à votre place.",
+    "searchPlaceholder": "requête : titre, auteur, thème...",
+    "collaneBtn": "Collections",
+    "sortRecenti": "Plus récents",
+    "sortLetti": "Plus lus",
+    "sortRating": "Top rated",
+    "sortAnno": "Année ↑",
+    "nessunRisultato": "Aucune œuvre ne correspond à la recherche.",
+    "nessunLibro": "Aucun roman encore présent dans les archives.",
+    "nessunRacconto": "Aucun récit encore présent dans les archives.",
+    "nessunSaggio": "Aucun essai encore présent dans les archives.",
+    "nessunArticolo": "Aucun article encore présent dans les archives.",
+    "nessunBuonanotte": "Aucun conte du soir encore présent dans les archives.",
+    "nessunPoesia": "Aucune poésie encore présente dans les archives.",
+    "nessunGenere": "Aucune œuvre encore présente dans les archives.",
+    "nessunCollana": "Aucune collection encore présente dans les archives.",
+    "collanaLabel": "collection"
+  },
+  "autoriPage": {
+    "titolo": "Les auteurs.",
+    "sottotitolo": "Tous. En ordre.",
+    "desc": "Liste alphabétique de ceux qui ont déposé des mots dans cette bibliothèque. Cliquez sur un nom pour voir leurs œuvres.",
+    "searchPlaceholder": "chercher un auteur...",
+    "caricamento": "chargement...",
+    "nessunAutore": "Aucun auteur trouvé."
+  },
+  "generi": {
+    "libro": "Romans",
+    "racconto": "Récits",
+    "saggio": "Essais",
+    "articolo": "Articles",
+    "buonanotte": "Contes du soir",
+    "poesia": "Poésies"
+  },
+  "generiTag": {
+    "libro": "Roman",
+    "racconto": "Récit",
+    "saggio": "Essai",
+    "articolo": "Article",
+    "buonanotte": "Conte du soir",
+    "poesia": "Poésie"
+  },
+  "ui": {
+    "operaSing": "œuvre",
+    "operePlur": "œuvres"
   }
 }
