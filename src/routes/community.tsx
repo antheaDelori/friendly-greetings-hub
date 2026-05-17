@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect, useRef } from "react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -16,7 +16,7 @@ export const Route = createFileRoute("/community")({
   component: CommunityPage,
 });
 
-const reviews = [
+const FALLBACK_REVIEWS = [
   { user: "@anthea_dl", book: "Read or Perish", text: "Un saggio che ti tira fuori dal letto alle 4 e mezza. Tagliente come un cristallo.", time: "2h fa", rate: 5 },
   { user: "@marco_r", book: "Il silenzio delle pagine", text: "La bibliotecaria clandestina è il personaggio dell'anno. Capitolo III mi ha fermato.", time: "8h fa", rate: 5 },
   { user: "@iris_c", book: "Geografie private", text: "Le mappe come metafora funzionano. La struttura forse poteva osare di più.", time: "1g fa", rate: 4 },
@@ -51,11 +51,7 @@ function BookSearchField({
   }, []);
 
   useEffect(() => {
-    if (query.length < 2) {
-      setResults([]);
-      setOpen(false);
-      return;
-    }
+    if (query.length < 2) { setResults([]); setOpen(false); return; }
     setSearching(true);
     const timer = setTimeout(async () => {
       const { data } = await supabase
@@ -85,12 +81,7 @@ function BookSearchField({
               <span className="font-serif italic text-bone/50 text-sm ml-2">— {selected.author_name}</span>
             )}
           </div>
-          <button
-            type="button"
-            onClick={onClear}
-            className="font-mono text-bone/30 hover:text-magenta transition-colors text-sm shrink-0"
-            title="Cambia opera"
-          >✕</button>
+          <button type="button" onClick={onClear} className="font-mono text-bone/30 hover:text-magenta transition-colors text-sm shrink-0" title="Cambia opera">✕</button>
         </div>
       </div>
     );
@@ -110,12 +101,9 @@ function BookSearchField({
           autoComplete="off"
         />
         {searching && (
-          <span className="absolute right-4 top-1/2 -translate-y-1/2 font-mono text-[9px] text-cyan/50 animate-pulse">
-            ◆
-          </span>
+          <span className="absolute right-4 top-1/2 -translate-y-1/2 font-mono text-[9px] text-cyan/50 animate-pulse">◆</span>
         )}
       </div>
-
       {open && results.length > 0 && (
         <div className="absolute z-20 left-0 right-0 top-full border border-cyan/30 bg-void shadow-lg">
           {results.map((b) => (
@@ -123,11 +111,7 @@ function BookSearchField({
               key={b.slug}
               type="button"
               onMouseDown={(e) => e.preventDefault()}
-              onClick={() => {
-                onSelect(b);
-                setQuery("");
-                setOpen(false);
-              }}
+              onClick={() => { onSelect(b); setQuery(""); setOpen(false); }}
               className="w-full text-left px-4 py-3 flex items-baseline gap-3 hover:bg-cyan/10 transition-colors border-b border-cyan/10 last:border-0"
             >
               <span className="font-mono text-[9px] text-cyan/60 tracking-widest shrink-0">▸</span>
@@ -139,7 +123,6 @@ function BookSearchField({
           ))}
         </div>
       )}
-
       {open && !searching && query.length >= 2 && results.length === 0 && (
         <div className="absolute z-20 left-0 right-0 top-full border border-cyan/30 bg-void px-4 py-3">
           <span className="font-mono text-[10px] text-bone/40 tracking-widest uppercase">nessuna opera trovata</span>
@@ -154,6 +137,56 @@ function CommunityPage() {
   const [reviewText, setReviewText] = useState("");
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // undefined = still checking, null = not logged in, object = logged in
+  const [userId, setUserId] = useState<string | null | undefined>(undefined);
+  const [isRegistered, setIsRegistered] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      const user = data.session?.user;
+      if (!user) { setUserId(null); setIsRegistered(false); return; }
+      setUserId(user.id);
+      setIsRegistered(!user.is_anonymous);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      const user = session?.user;
+      if (!user) { setUserId(null); setIsRegistered(false); return; }
+      setUserId(user.id);
+      setIsRegistered(!user.is_anonymous);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handlePublish = async () => {
+    if (!selectedBook || !reviewText.trim() || rating === 0 || !userId) return;
+    setSubmitting(true);
+    setSubmitError(null);
+
+    const { error } = await supabase.from("reviews").insert({
+      user_id: userId,
+      book_slug: selectedBook.slug,
+      book_title: selectedBook.titolo,
+      book_author: selectedBook.author_name,
+      text: reviewText.trim(),
+      rating,
+    });
+
+    setSubmitting(false);
+    if (error) {
+      setSubmitError(error.message);
+    } else {
+      setSubmitSuccess(true);
+      setSelectedBook(null);
+      setReviewText("");
+      setRating(0);
+    }
+  };
+
+  const canPublish = isRegistered && !!selectedBook && reviewText.trim().length > 0 && rating > 0;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -164,7 +197,7 @@ function CommunityPage() {
           <div className="space-y-4">
             <HudPanel label="ultime_recensioni" tone="cyan">
               <div className="space-y-5">
-                {reviews.map((r, i) => (
+                {FALLBACK_REVIEWS.map((r, i) => (
                   <div key={i} className="border-l-2 border-cyan/40 pl-4 hover:border-magenta transition-colors">
                     <div className="flex items-baseline justify-between gap-3 flex-wrap">
                       <div>
@@ -181,49 +214,84 @@ function CommunityPage() {
 
             <HudPanel label="aggiungi_recensione" tone="magenta">
               <h3 className="font-display text-xl text-bone tracking-tight">Lascia la tua</h3>
-              <div className="mt-4 space-y-4">
-                <BookSearchField
-                  selected={selectedBook}
-                  onSelect={setSelectedBook}
-                  onClear={() => setSelectedBook(null)}
-                />
-                <div>
-                  <span className="font-mono text-[10px] tracking-[0.25em] text-cyan/70 uppercase">↳ testo</span>
-                  <textarea
-                    value={reviewText}
-                    onChange={(e) => setReviewText(e.target.value)}
-                    placeholder="Cosa ne pensi del libro o del capitolo?"
-                    className="mt-2 w-full min-h-28 bg-void/40 border border-cyan/30 px-4 py-3 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-magenta transition-all"
+
+              {/* Successo */}
+              {submitSuccess && (
+                <div className="mt-4 border border-cyan/40 bg-cyan/5 px-4 py-4">
+                  <p className="font-mono text-[11px] text-cyan tracking-widest uppercase">✓ Recensione pubblicata</p>
+                  <button
+                    onClick={() => setSubmitSuccess(false)}
+                    className="mt-2 font-mono text-[10px] text-bone/50 hover:text-cyan transition-colors tracking-widest uppercase"
+                  >▸ scrivi un'altra</button>
+                </div>
+              )}
+
+              {/* Non registrato */}
+              {!submitSuccess && userId !== undefined && !isRegistered && (
+                <div className="mt-4 border border-cyan/20 bg-cyan/5 px-4 py-5 space-y-3">
+                  <p className="font-serif italic text-bone/70">
+                    Per lasciare una recensione devi avere un account registrato.
+                  </p>
+                  <p className="font-mono text-[10px] tracking-widest text-bone/40 uppercase">
+                    Gli ospiti possono leggere ma non scrivere.
+                  </p>
+                  <Link to="/auth">
+                    <HudButton variant="primary" className="mt-1">▸ Registrati o accedi</HudButton>
+                  </Link>
+                </div>
+              )}
+
+              {/* Form per utenti registrati */}
+              {!submitSuccess && isRegistered && (
+                <div className="mt-4 space-y-4">
+                  <BookSearchField
+                    selected={selectedBook}
+                    onSelect={setSelectedBook}
+                    onClear={() => setSelectedBook(null)}
                   />
+                  <div>
+                    <span className="font-mono text-[10px] tracking-[0.25em] text-cyan/70 uppercase">↳ testo</span>
+                    <textarea
+                      value={reviewText}
+                      onChange={(e) => setReviewText(e.target.value)}
+                      placeholder="Cosa ne pensi del libro o del capitolo?"
+                      className="mt-2 w-full min-h-28 bg-void/40 border border-cyan/30 px-4 py-3 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-magenta transition-all"
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-3 items-center justify-between">
+                    <div className="flex gap-1 items-center">
+                      <span className="font-mono text-[10px] tracking-[0.25em] text-cyan/70 uppercase mr-2">↳ voto</span>
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() => setRating(s)}
+                          onMouseEnter={() => setHoverRating(s)}
+                          onMouseLeave={() => setHoverRating(0)}
+                          className={`font-display text-2xl transition-colors ${s <= (hoverRating || rating) ? "text-amber" : "text-amber/25"}`}
+                        >★</button>
+                      ))}
+                    </div>
+                    <HudButton variant="magenta" disabled={!canPublish || submitting} onClick={handlePublish}>
+                      {submitting ? "◆ Pubblicazione..." : "◆ Pubblica"}
+                    </HudButton>
+                  </div>
+                  {submitError && (
+                    <p className="font-mono text-[11px] text-magenta border border-magenta/30 bg-magenta/5 px-3 py-2">
+                      ⚠ {submitError}
+                    </p>
+                  )}
                 </div>
-              </div>
-              <div className="mt-4 flex flex-wrap gap-3 items-center justify-between">
-                <div className="flex gap-1 items-center">
-                  <span className="font-mono text-[10px] tracking-[0.25em] text-cyan/70 uppercase mr-2">↳ voto</span>
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      onClick={() => setRating(s)}
-                      onMouseEnter={() => setHoverRating(s)}
-                      onMouseLeave={() => setHoverRating(0)}
-                      className={`font-display text-2xl transition-colors ${
-                        s <= (hoverRating || rating) ? "text-amber" : "text-amber/25"
-                      }`}
-                    >★</button>
-                  ))}
-                </div>
-                <HudButton
-                  variant="magenta"
-                  disabled={!selectedBook || !reviewText.trim() || rating === 0}
-                >
-                  ◆ Pubblica
-                </HudButton>
-              </div>
+              )}
+
+              {/* Caricamento stato auth */}
+              {!submitSuccess && userId === undefined && (
+                <p className="mt-4 font-mono text-[10px] text-cyan/50 animate-pulse tracking-widest uppercase">▸ verifica accesso...</p>
+              )}
             </HudPanel>
           </div>
 
-          {/* Autori da seguire */}
+          {/* Sidebar */}
           <div className="space-y-4">
             <HudPanel label="autori_attivi" code="LIVE" tone="amber">
               <ul className="space-y-3">
