@@ -23,6 +23,24 @@ const FALLBACK_REVIEWS = [
   { user: "@tommaso_b", book: "Lessico della rivolta", text: "Cento parole, cento bisturi. Da tenere sul comodino.", time: "2g fa", rate: 5 },
 ];
 
+type ReviewRow = {
+  user_display: string | null;
+  book_title: string | null;
+  text: string;
+  rating: number;
+  created_at: string;
+};
+
+function relativeTime(ts: string): string {
+  const diff = Date.now() - new Date(ts).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "ora";
+  if (mins < 60) return `${mins}m fa`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h fa`;
+  return `${Math.floor(hours / 24)}g fa`;
+}
+
 type BookResult = { slug: string; titolo: string; author_name: string };
 
 function BookSearchField({
@@ -140,23 +158,37 @@ function CommunityPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [reviewsList, setReviewsList] = useState<ReviewRow[] | null>(null);
 
-  // undefined = still checking, null = not logged in, object = logged in
+  // undefined = still checking, null = not logged in
   const [userId, setUserId] = useState<string | null | undefined>(undefined);
   const [isRegistered, setIsRegistered] = useState(false);
+  const [userMeta, setUserMeta] = useState<Record<string, string>>({});
+
+  const loadReviews = async () => {
+    const { data } = await supabase
+      .from("reviews")
+      .select("user_display, book_title, text, rating, created_at")
+      .order("created_at", { ascending: false })
+      .limit(10);
+    if (data) setReviewsList(data);
+  };
 
   useEffect(() => {
+    loadReviews();
     supabase.auth.getSession().then(({ data }) => {
       const user = data.session?.user;
       if (!user) { setUserId(null); setIsRegistered(false); return; }
       setUserId(user.id);
       setIsRegistered(!user.is_anonymous);
+      setUserMeta((user.user_metadata ?? {}) as Record<string, string>);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
       const user = session?.user;
       if (!user) { setUserId(null); setIsRegistered(false); return; }
       setUserId(user.id);
       setIsRegistered(!user.is_anonymous);
+      setUserMeta((user.user_metadata ?? {}) as Record<string, string>);
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -166,6 +198,10 @@ function CommunityPage() {
     setSubmitting(true);
     setSubmitError(null);
 
+    const displayName = userMeta.pseudonimo
+      || `${userMeta.nome ?? ""} ${userMeta.cognome ?? ""}`.trim()
+      || "Lettore";
+
     const { error } = await supabase.from("reviews").insert({
       user_id: userId,
       book_slug: selectedBook.slug,
@@ -173,6 +209,7 @@ function CommunityPage() {
       book_author: selectedBook.author_name,
       text: reviewText.trim(),
       rating,
+      user_display: displayName,
     });
 
     setSubmitting(false);
@@ -183,6 +220,7 @@ function CommunityPage() {
       setSelectedBook(null);
       setReviewText("");
       setRating(0);
+      loadReviews();
     }
   };
 
@@ -197,18 +235,37 @@ function CommunityPage() {
           <div className="space-y-4">
             <HudPanel label="ultime_recensioni" tone="cyan">
               <div className="space-y-5">
-                {FALLBACK_REVIEWS.map((r, i) => (
-                  <div key={i} className="border-l-2 border-cyan/40 pl-4 hover:border-magenta transition-colors">
-                    <div className="flex items-baseline justify-between gap-3 flex-wrap">
-                      <div>
-                        <span className="font-mono text-cyan text-sm">{r.user}</span>
-                        <span className="font-mono text-[10px] tracking-widest text-bone/40 uppercase ml-3">▸ {r.book}</span>
+                {reviewsList === null ? (
+                  <p className="font-mono text-[10px] text-cyan/50 animate-pulse tracking-widest uppercase">▸ caricamento...</p>
+                ) : reviewsList.length > 0 ? (
+                  reviewsList.map((r, i) => (
+                    <div key={i} className="border-l-2 border-cyan/40 pl-4 hover:border-magenta transition-colors">
+                      <div className="flex items-baseline justify-between gap-3 flex-wrap">
+                        <div>
+                          <span className="font-mono text-cyan text-sm">@{r.user_display ?? "lettore"}</span>
+                          <span className="font-mono text-[10px] tracking-widest text-bone/40 uppercase ml-3">▸ {r.book_title ?? "—"}</span>
+                        </div>
+                        <div className="font-mono text-[10px] tracking-widest text-bone/40">
+                          {relativeTime(r.created_at)} · {"★".repeat(r.rating)}
+                        </div>
                       </div>
-                      <div className="font-mono text-[10px] tracking-widest text-bone/40">{r.time} · {"★".repeat(r.rate)}</div>
+                      <p className="mt-2 font-serif italic text-bone/85 leading-relaxed">"{r.text}"</p>
                     </div>
-                    <p className="mt-2 font-serif italic text-bone/85 leading-relaxed">"{r.text}"</p>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  FALLBACK_REVIEWS.map((r, i) => (
+                    <div key={i} className="border-l-2 border-cyan/40 pl-4 hover:border-magenta transition-colors">
+                      <div className="flex items-baseline justify-between gap-3 flex-wrap">
+                        <div>
+                          <span className="font-mono text-cyan text-sm">{r.user}</span>
+                          <span className="font-mono text-[10px] tracking-widest text-bone/40 uppercase ml-3">▸ {r.book}</span>
+                        </div>
+                        <div className="font-mono text-[10px] tracking-widest text-bone/40">{r.time} · {"★".repeat(r.rate)}</div>
+                      </div>
+                      <p className="mt-2 font-serif italic text-bone/85 leading-relaxed">"{r.text}"</p>
+                    </div>
+                  ))
+                )}
               </div>
             </HudPanel>
 
