@@ -18,7 +18,7 @@ export const Route = createFileRoute("/leggi/$slug")({
     // Poi cerca su Supabase
     const { data } = await supabase
       .from("books")
-      .select("id, slug, titolo, descrizione, estratto, genere, anno, letture, copertina_url, file_url, author_name, user_id, cestinato, voti_cestino, recuperato")
+      .select("id, slug, titolo, descrizione, estratto, genere, anno, letture, copertina_url, file_url, author_name, author_id, cestinato, voti_cestino, recuperato")
       .eq("slug", params.slug)
       .or("disponibile.eq.true,cestinato.eq.true")
       .maybeSingle();
@@ -69,11 +69,11 @@ export const Route = createFileRoute("/leggi/$slug")({
       .order("ordine");
 
     let donationUrl: string | null = null;
-    if (data.user_id) {
+    if (data.author_id) {
       const { data: profile } = await supabase
         .from("author_profiles")
         .select("donation_url")
-        .eq("id", data.user_id)
+        .eq("id", data.author_id)
         .maybeSingle();
       donationUrl = profile?.donation_url ?? null;
     }
