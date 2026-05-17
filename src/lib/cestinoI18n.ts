@@ -13,7 +13,8 @@ const TRANSLATIONS: Record<string, string> = {
 
 export function getCestinoTranslation(): string | null {
   if (typeof navigator === "undefined") return null;
-  const lang = navigator.language.split("-")[0].toLowerCase();
+  const urlLang = new URLSearchParams(window.location.search).get("lang");
+  const lang = (urlLang ?? navigator.language).split("-")[0].toLowerCase();
   if (lang === "it") return null;
   return TRANSLATIONS[lang] ?? TRANSLATIONS["en"];
 }
