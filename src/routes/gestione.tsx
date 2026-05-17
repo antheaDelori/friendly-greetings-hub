@@ -139,7 +139,7 @@ function GestionePage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmMode, setConfirmMode] = useState<"archivia" | "cestino" | null>(null);
   const [authorName, setAuthorName] = useState("");
 
   // Collane
@@ -269,7 +269,7 @@ function GestionePage() {
     setTipo(""); setTipoAltro(""); setTarget("tutti"); setIsbn("");
     setDescrizione(""); setEstratto(""); setTestoCompleto(""); setTagStr("");
     setCopertina(null); setLastra(null); setFilePdf(null); setSaveError(null);
-    setEditingId(null); setConfirmDelete(false);
+    setEditingId(null); setConfirmMode(null);
     setExistingCopertinaUrl(null); setExistingLastraUrl(null); setExistingFileUrl(null);
     setCollanaId("");
   };
@@ -379,7 +379,7 @@ function GestionePage() {
     setSelected(b);
     setShowForm(false);
     setEditingId(null);
-    setConfirmDelete(false);
+    setConfirmMode(null);
   };
 
   const openEditForm = (b: Book) => {
@@ -420,7 +420,7 @@ function GestionePage() {
     setCollanaId(b.collana_id ?? "");
     setEditingId(b.id);
     setSaveError(null);
-    setConfirmDelete(false);
+    setConfirmMode(null);
     setShowForm(true);
   };
 
@@ -557,7 +557,7 @@ function GestionePage() {
     const { error } = await supabase.from("books").update({ disponibile: false }).eq("id", selected.id);
     if (!error) {
       setSelected(null);
-      setConfirmDelete(false);
+      setConfirmMode(null);
       await loadBooks(userId);
     }
   };
@@ -566,7 +566,7 @@ function GestionePage() {
     if (!selected || !userId) return;
     await supabase.from("books").update({ cestinato: true, disponibile: false }).eq("id", selected.id);
     setSelected(null);
-    setConfirmDelete(false);
+    setConfirmMode(null);
     await loadBooks(userId);
   };
 
@@ -581,7 +581,7 @@ function GestionePage() {
     if (!selected || !userId) return;
     await supabase.from("books").delete().eq("id", selected.id);
     setSelected(null);
-    setConfirmDelete(false);
+    setConfirmMode(null);
     await loadBooks(userId);
   };
 
@@ -1495,28 +1495,38 @@ function GestionePage() {
                     <div className="flex flex-wrap gap-3">
                       {selected.disponibile ? (
                         <>
-                          <HudButton variant="ghost" onClick={handleModifica} disabled={confirmDelete}>◆ Modifica</HudButton>
-                          <HudButton variant="ghost" onClick={() => setConfirmDelete(true)} disabled={confirmDelete}>⊗ Archivia</HudButton>
-                          <HudButton variant="ghost" onClick={() => setConfirmDelete(true)} disabled={confirmDelete}>⊗ Cestino</HudButton>
+                          <HudButton variant="ghost" onClick={handleModifica} disabled={!!confirmMode}>◆ Modifica</HudButton>
+                          <HudButton variant="ghost" onClick={() => setConfirmMode("archivia")} disabled={!!confirmMode}>⊗ Archivia</HudButton>
+                          <HudButton variant="ghost" onClick={() => setConfirmMode("cestino")} disabled={!!confirmMode}>⊗ Cestino</HudButton>
                         </>
                       ) : (
                         <>
                           <HudButton variant="ghost" onClick={handleModifica}>◆ Modifica</HudButton>
                           <HudButton variant="primary" onClick={() => handleRipristina(selected)}>▸ Ripristina</HudButton>
-                          <HudButton variant="ghost" onClick={() => setConfirmDelete(true)} disabled={confirmDelete}>⊗ Cestino</HudButton>
+                          <HudButton variant="ghost" onClick={() => setConfirmMode("cestino")} disabled={!!confirmMode}>⊗ Cestino</HudButton>
                         </>
                       )}
                     </div>
-                    {confirmDelete && (
+                    {confirmMode === "archivia" && (
                       <div className="border border-magenta/50 bg-magenta/5 p-4 space-y-3">
                         <p className="font-mono text-[10px] tracking-widest text-magenta uppercase">
-                          ⚠ Archivia per nasconderla, gettala nel cestino pubblico, oppure eliminala definitivamente.
+                          ⚠ L'opera verrà nascosta dal catalogo. Potrai ripristinarla in qualsiasi momento.
                         </p>
                         <div className="flex flex-wrap gap-3">
-                          <HudButton variant="magenta" onClick={handleElimina}>Archivia</HudButton>
-                          <HudButton variant="magenta" onClick={handleGettaNelCestino}>⊗ Cestino</HudButton>
+                          <HudButton variant="magenta" onClick={handleElimina}>⊗ Archivia</HudButton>
                           <HudButton variant="magenta" onClick={handleEliminaDefinitivamente}>Elimina definitivamente</HudButton>
-                          <HudButton variant="ghost" onClick={() => setConfirmDelete(false)}>Annulla</HudButton>
+                          <HudButton variant="ghost" onClick={() => setConfirmMode(null)}>Annulla</HudButton>
+                        </div>
+                      </div>
+                    )}
+                    {confirmMode === "cestino" && (
+                      <div className="border border-magenta/50 bg-magenta/5 p-4 space-y-3">
+                        <p className="font-mono text-[10px] tracking-widest text-magenta uppercase">
+                          ⚠ L'opera sarà spostata nel Cestino degli Scritti Perduti, visibile al pubblico.
+                        </p>
+                        <div className="flex flex-wrap gap-3">
+                          <HudButton variant="magenta" onClick={handleGettaNelCestino}>⊗ Sposta nel cestino</HudButton>
+                          <HudButton variant="ghost" onClick={() => setConfirmMode(null)}>Annulla</HudButton>
                         </div>
                       </div>
                     )}
