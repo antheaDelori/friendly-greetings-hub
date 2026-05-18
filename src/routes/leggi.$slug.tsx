@@ -517,12 +517,9 @@ function ReadPage() {
                     ✓ Recuperato!
                   </span>
                 ) : hasVoted ? (
-                  <span
-                    title="Hai già espresso il tuo voto"
-                    className="relative group font-mono text-[10px] uppercase tracking-widest border border-magenta/40 text-magenta/70 px-3 py-1.5 cursor-default"
-                  >
+                  <span className="relative group font-mono text-[10px] uppercase tracking-widest border border-magenta/40 text-magenta/70 px-3 py-1.5 cursor-default">
                     ✓ Voto registrato
-                    <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap bg-void border border-magenta/40 text-magenta/80 font-mono text-[9px] tracking-widest px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="pointer-events-none absolute top-full left-1/2 -translate-x-1/2 mt-2 whitespace-nowrap bg-void border border-magenta/40 text-magenta/80 font-mono text-[9px] tracking-widest px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                       Hai già espresso il tuo voto
                     </span>
                   </span>
