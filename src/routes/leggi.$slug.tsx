@@ -161,7 +161,8 @@ function chapterReadingTime(chapter: import("@/data/books").Chapter): string {
   return `~ ${minutes} min`;
 }
 
-function getOrCreateVisitorId(): string {
+function getOrCreateVisitorId(userId?: string | null): string {
+  if (userId) return userId;
   const key = "visitor_id";
   let id = localStorage.getItem(key);
   if (!id) {
@@ -188,7 +189,7 @@ function ReadPage() {
 
   useEffect(() => {
     if (!isCestinato || !bookId) return;
-    const visitorId = getOrCreateVisitorId();
+    const visitorId = getOrCreateVisitorId(isAnonymous ? null : userId);
     supabase.from("voti_cestino")
       .select("id")
       .eq("book_id", bookId)
@@ -201,7 +202,7 @@ function ReadPage() {
     if (hasVoted || voteLoading || !bookId) return;
     setVoteLoading(true);
     setVoteError(null);
-    const visitorId = getOrCreateVisitorId();
+    const visitorId = getOrCreateVisitorId(isAnonymous ? null : userId);
     const { error } = await supabase.from("voti_cestino").insert({ book_id: bookId, visitor_id: visitorId });
     if (error) {
       if (error.code === "23505") {
