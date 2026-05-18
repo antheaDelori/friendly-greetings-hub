@@ -12,7 +12,7 @@ export const Route = createFileRoute("/leggi/$slug")({
     const staticBook = getBookBySlug(params.slug);
     if (staticBook) {
       const { data: { session } } = await supabase.auth.getSession();
-      return { book: staticBook, fileUrl: null as string | null, isLoggedIn: !!session, isAnonymous: session?.user?.is_anonymous ?? false, userId: session?.user?.id ?? null, allegati: [] as { id: string; titolo: string; descrizione: string | null; file_url: string; tipo: string; ordine: number }[], isCestinato: false, votiCestino: 0, recuperato: false, bookId: "" };
+      return { book: staticBook, fileUrl: null as string | null, donationUrl: null as string | null, isLoggedIn: !!session, isAnonymous: session?.user?.is_anonymous ?? false, userId: session?.user?.id ?? null, allegati: [] as { id: string; titolo: string; descrizione: string | null; file_url: string; tipo: string; ordine: number }[], isCestinato: false, votiCestino: 0, recuperato: false, bookId: "", authorId: null as string | null };
     }
 
     // Poi cerca su Supabase
@@ -91,6 +91,7 @@ export const Route = createFileRoute("/leggi/$slug")({
       votiCestino: (data.voti_cestino ?? 0) as number,
       recuperato: (data.recuperato ?? false) as boolean,
       bookId: data.id as string,
+      authorId: (data.author_id ?? null) as string | null,
     };
   },
   head: ({ loaderData }) => ({
@@ -171,7 +172,8 @@ function getOrCreateVisitorId(): string {
 }
 
 function ReadPage() {
-  const { book, fileUrl, donationUrl, isLoggedIn, isAnonymous, userId, allegati, isCestinato, votiCestino: initialVoti, recuperato, bookId } = Route.useLoaderData();
+  const { book, fileUrl, donationUrl, isLoggedIn, isAnonymous, userId, allegati, isCestinato, votiCestino: initialVoti, recuperato, bookId, authorId } = Route.useLoaderData();
+  const isAuthor = !!userId && !!authorId && userId === authorId;
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const router = useRouter();
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -538,6 +540,26 @@ function ReadPage() {
                 )}
                 {voteError && <span className="font-mono text-[10px] text-magenta">{voteError}</span>}
               </div>
+              {isAuthor && (
+                <div className="border-t border-magenta/20 pt-4 flex flex-wrap gap-3 items-center">
+                  <span className="font-mono text-[9px] tracking-widest text-magenta/60 uppercase">// area autore</span>
+                  <button
+                    onClick={async () => {
+                      await supabase.from("books").update({ cestinato: false, disponibile: false }).eq("id", bookId);
+                      window.location.replace("/gestione");
+                    }}
+                    className="font-mono text-[10px] uppercase tracking-widest border border-cyan/50 bg-cyan/5 text-cyan hover:bg-cyan hover:text-void px-4 py-2 transition-all"
+                  >
+                    ▸ Ripristina bozza
+                  </button>
+                  <a
+                    href="/gestione"
+                    className="font-mono text-[10px] uppercase tracking-widest border border-bone/20 text-bone/50 hover:border-bone/50 hover:text-bone px-4 py-2 transition-all"
+                  >
+                    ◆ Vai a Gestione
+                  </a>
+                </div>
+              )}
             </div>
           )}
 
