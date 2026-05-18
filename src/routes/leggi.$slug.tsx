@@ -577,7 +577,7 @@ function ReadPage() {
 
           {isCestinato && book.description && (
             <div className="mb-8 border-l-2 border-magenta pl-6 py-2">
-              <div className="font-mono text-[11px] tracking-widest text-magenta uppercase mb-3">— estratto</div>
+              <div className="font-mono text-base tracking-widest text-magenta uppercase mb-3">— estratto</div>
               <p className="font-serif italic text-xl text-ink leading-relaxed">{book.description}</p>
             </div>
           )}
