@@ -626,7 +626,8 @@ function GestionePage() {
   };
 
   const reloadCapitoli = async (bookId: string) => {
-    const { data } = await supabase.from("capitoli").select("*").eq("book_id", bookId).order("ordine");
+    const { data, error } = await supabase.from("capitoli").select("*").eq("book_id", bookId).order("ordine");
+    if (error) { setCapError(`Ricarica capitoli: ${error.message}`); return; }
     setCapitoli(data ?? []);
   };
 
@@ -643,13 +644,14 @@ function GestionePage() {
         }).eq("id", editingCapitoloId);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("capitoli").insert({
+        const { error, data: inserted } = await supabase.from("capitoli").insert({
           book_id: selected.id,
           titolo: capTitolo.trim(),
           testo: capTesto || "",
           ordine: capOrdine,
-        });
+        }).select();
         if (error) throw error;
+        if (!inserted || inserted.length === 0) throw new Error("Insert non ha restituito dati — possibile blocco RLS.");
       }
       await reloadCapitoli(selected.id);
       setShowCapitoloForm(false);
