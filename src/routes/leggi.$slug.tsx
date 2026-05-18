@@ -211,8 +211,7 @@ function ReadPage() {
       }
     } else {
       setHasVoted(true);
-      const { data: updated } = await supabase.from("books").select("voti_cestino").eq("id", bookId).single();
-      if (updated) setVoti(updated.voti_cestino ?? 0);
+      setVoti(prev => prev + 1);
     }
     setVoteLoading(false);
   };
