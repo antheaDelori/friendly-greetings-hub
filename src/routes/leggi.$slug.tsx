@@ -362,16 +362,12 @@ function ReadPage() {
           </div>
 
           {hasChapters && (
-            <button
-              onClick={() => {
-                if (!articleRef.current) return;
-                const top = articleRef.current.getBoundingClientRect().top + window.scrollY - 100;
-                window.scrollTo({ top, behavior: "smooth" });
-              }}
-              className="mt-5 w-full border border-blood bg-blood/5 text-blood px-4 py-2.5 font-display tracking-widest text-[11px] uppercase hover:bg-blood hover:text-paper transition-colors"
+            <a
+              href="#lettura"
+              className="mt-5 w-full block text-center border border-blood bg-blood/5 text-blood px-4 py-2.5 font-display tracking-widest text-[11px] uppercase hover:bg-blood hover:text-paper transition-colors"
             >
               ▸ Leggi
-            </button>
+            </a>
           )}
 
           {hasChapters && (
@@ -474,7 +470,7 @@ function ReadPage() {
         </aside>
 
         {/* Testo capitolo */}
-        <article ref={articleRef} className="lg:col-start-2 lg:row-start-1">
+        <article ref={articleRef} id="lettura" style={{ scrollMarginTop: "7rem" }} className="lg:col-start-2 lg:row-start-1">
           {resumeBanner && (
             <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border border-blood/30 bg-blood/5 px-4 py-3">
               <p className="font-serif italic text-sm text-ink/70">
