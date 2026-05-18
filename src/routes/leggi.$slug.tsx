@@ -517,6 +517,13 @@ function ReadPage() {
                   <span className="font-mono text-[10px] uppercase tracking-widest text-blood border border-blood/30 px-3 py-1.5">
                     ✓ Recuperato!
                   </span>
+                ) : !isLoggedIn || isAnonymous ? (
+                  <Link
+                    to="/auth/registrazione"
+                    className="font-mono text-[10px] uppercase tracking-widest border border-magenta/40 text-magenta/60 hover:border-magenta hover:text-magenta px-4 py-2 transition-all"
+                  >
+                    ▸ Registrati per votare
+                  </Link>
                 ) : hasVoted ? (
                   <span className="relative group font-mono text-[10px] uppercase tracking-widest border border-magenta/40 text-magenta/70 px-3 py-1.5 cursor-default">
                     ✓ Voto registrato
