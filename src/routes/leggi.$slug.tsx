@@ -227,6 +227,7 @@ function ReadPage() {
   const [paraBookmark, setParaBookmark] = useState<{ chapterIdx: number; paragraphIdx: number } | null>(null);
 
   const [downloading, setDownloading] = useState(false);
+  const [confirmDeleteBook, setConfirmDeleteBook] = useState(false);
 
   const handleDownload = async () => {
     if (!fileUrl || downloading) return;
@@ -541,23 +542,43 @@ function ReadPage() {
                 {voteError && <span className="font-mono text-[10px] text-magenta">{voteError}</span>}
               </div>
               {isAuthor && (
-                <div className="border-t border-magenta/20 pt-4 flex flex-wrap gap-3 items-center">
+                <div className="border-t border-magenta/20 pt-4 space-y-3">
                   <span className="font-mono text-[9px] tracking-widest text-magenta/60 uppercase">// area autore</span>
-                  <button
-                    onClick={async () => {
-                      await supabase.from("books").update({ cestinato: false, disponibile: false }).eq("id", bookId);
-                      window.location.replace("/gestione");
-                    }}
-                    className="font-mono text-[10px] uppercase tracking-widest border border-cyan/50 bg-cyan/5 text-cyan hover:bg-cyan hover:text-void px-4 py-2 transition-all"
-                  >
-                    ▸ Ripristina bozza
-                  </button>
-                  <a
-                    href="/gestione"
-                    className="font-mono text-[10px] uppercase tracking-widest border border-bone/20 text-bone/50 hover:border-bone/50 hover:text-bone px-4 py-2 transition-all"
-                  >
-                    ◆ Vai a Gestione
-                  </a>
+                  {!confirmDeleteBook ? (
+                    <div className="flex flex-wrap gap-3">
+                      <a
+                        href="/gestione"
+                        className="font-mono text-[10px] uppercase tracking-widest border border-cyan/50 bg-cyan/5 text-cyan hover:bg-cyan hover:text-void px-4 py-2 transition-all"
+                      >
+                        ◆ Modifica
+                      </a>
+                      <button
+                        onClick={() => setConfirmDeleteBook(true)}
+                        className="font-mono text-[10px] uppercase tracking-widest border border-magenta/50 text-magenta/70 hover:bg-magenta hover:text-void px-4 py-2 transition-all"
+                      >
+                        ✕ Cancella
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-3 items-center">
+                      <span className="font-mono text-[10px] text-magenta">Eliminare definitivamente?</span>
+                      <button
+                        onClick={async () => {
+                          await supabase.from("books").delete().eq("id", bookId);
+                          window.location.replace("/gestione");
+                        }}
+                        className="font-mono text-[10px] uppercase tracking-widest border border-magenta bg-magenta/10 text-magenta hover:bg-magenta hover:text-void px-4 py-2 transition-all"
+                      >
+                        ✕ Sì, elimina
+                      </button>
+                      <button
+                        onClick={() => setConfirmDeleteBook(false)}
+                        className="font-mono text-[10px] uppercase tracking-widest border border-bone/20 text-bone/40 hover:text-bone px-4 py-2 transition-all"
+                      >
+                        Annulla
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
