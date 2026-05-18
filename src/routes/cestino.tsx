@@ -35,7 +35,7 @@ function CestinoPage() {
   const { t } = useTranslation();
   const [books, setBooks] = useState<CestinatoBook[]>([]);
   const [loading, setLoading] = useState(true);
-  const [autoreFiltro, setAutoreFiltro] = useState<string>("all");
+  const [votiFiltro, setVotiFiltro] = useState<number | "all">("all");
   const [cestinoTooltip, setCestinoTooltip] = useState<string | null>(null);
   useEffect(() => { setCestinoTooltip(getCestinoTranslation()); }, []);
 
@@ -52,15 +52,10 @@ function CestinoPage() {
     load();
   }, []);
 
-  const autori = useMemo(() => {
-    const set = new Set(books.map(b => b.author_name ?? "Autore"));
-    return [...set].sort();
-  }, [books]);
-
   const filtered = useMemo(() => {
-    if (autoreFiltro === "all") return books;
-    return books.filter(b => (b.author_name ?? "Autore") === autoreFiltro);
-  }, [books, autoreFiltro]);
+    if (votiFiltro === "all") return books;
+    return books.filter(b => b.voti_cestino === votiFiltro);
+  }, [books, votiFiltro]);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -86,31 +81,21 @@ function CestinoPage() {
         </div>
       </section>
 
-      {autori.length > 1 && (
+      {books.length > 0 && (
         <section className="border-y border-magenta/15 bg-deep/40 backdrop-blur sticky top-[5.75rem] z-30">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10 py-3 flex flex-wrap gap-2 items-center">
-            <span className="font-mono tracking-[0.22em] text-[10px] uppercase text-bone/50">{t("cestino.autoreLabel")}</span>
-            <button
-              onClick={() => setAutoreFiltro("all")}
-              className={`font-mono text-[10px] uppercase tracking-widest px-3 py-1.5 border transition-all ${
-                autoreFiltro === "all"
-                  ? "border-magenta bg-magenta/15 text-magenta"
-                  : "border-magenta/20 text-bone/50 hover:border-magenta/50 hover:text-bone/80"
-              }`}
-            >
-              {t("cestino.tutti")}
-            </button>
-            {autori.map(a => (
+            <span className="font-mono tracking-[0.22em] text-[10px] uppercase text-bone/50">// voti</span>
+            {(["all", 0, 1, 2, 3, 4] as const).map(v => (
               <button
-                key={a}
-                onClick={() => setAutoreFiltro(a)}
+                key={v}
+                onClick={() => setVotiFiltro(v)}
                 className={`font-mono text-[10px] uppercase tracking-widest px-3 py-1.5 border transition-all ${
-                  autoreFiltro === a
+                  votiFiltro === v
                     ? "border-magenta bg-magenta/15 text-magenta"
                     : "border-magenta/20 text-bone/50 hover:border-magenta/50 hover:text-bone/80"
                 }`}
               >
-                {a}
+                {v === "all" ? t("cestino.tutti") : `${v} vot${v === 1 ? "o" : "i"}`}
               </button>
             ))}
           </div>
@@ -124,7 +109,7 @@ function CestinoPage() {
           <div className="text-center py-24 glass p-12 hud-frame">
             <div className="font-display text-7xl text-magenta">∅</div>
             <p className="mt-4 font-serif italic text-xl text-bone/70">
-              {books.length === 0 ? t("cestino.vuoto") : t("cestino.nessunoAutore")}
+              {books.length === 0 ? t("cestino.vuoto") : t("cestino.nessunVoto")}
             </p>
             <Link to="/catalogo" className="mt-6 inline-block font-mono text-[10px] uppercase tracking-widest text-cyan border-b border-cyan/60 pb-1">
               ▸ {t("cestino.vaiCatalogo")}

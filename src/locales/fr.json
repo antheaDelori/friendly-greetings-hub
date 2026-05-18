@@ -113,6 +113,7 @@
     "caricamento": "chargement...",
     "vuoto": "Aucun écrit perdu. Le Cestino est vide.",
     "nessunoAutore": "Aucun texte dans cette archive pour cet auteur.",
+    "nessunVoto": "Aucun texte avec ce nombre de votes.",
     "vaiCatalogo": "Aller au catalogue",
     "leggiVota": "Lire et voter",
     "votiLabel": "votes"

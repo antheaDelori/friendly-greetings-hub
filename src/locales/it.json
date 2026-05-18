@@ -113,6 +113,7 @@
     "caricamento": "caricamento...",
     "vuoto": "Nessuno scritto perduto. Il cestino è vuoto.",
     "nessunoAutore": "Nessun testo in questo archivio per questo autore.",
+    "nessunVoto": "Nessun testo con questo numero di voti.",
     "vaiCatalogo": "Vai al catalogo",
     "leggiVota": "Leggi e vota",
     "votiLabel": "voti"

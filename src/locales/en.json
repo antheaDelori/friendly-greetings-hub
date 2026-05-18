@@ -113,6 +113,7 @@
     "caricamento": "loading...",
     "vuoto": "No lost writings. The Cestino is empty.",
     "nessunoAutore": "No texts in this archive for this author.",
+    "nessunVoto": "No texts with this number of votes.",
     "vaiCatalogo": "Go to catalogue",
     "leggiVota": "Read and vote",
     "votiLabel": "votes"

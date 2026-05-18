@@ -113,6 +113,7 @@
     "caricamento": "lädt...",
     "vuoto": "Keine verlorenen Schriften. Das Cestino ist leer.",
     "nessunoAutore": "Keine Texte in diesem Archiv für diesen Autor.",
+    "nessunVoto": "Keine Texte mit dieser Anzahl an Stimmen.",
     "vaiCatalogo": "Zum Katalog",
     "leggiVota": "Lesen und abstimmen",
     "votiLabel": "Stimmen"
