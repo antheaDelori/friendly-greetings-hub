@@ -563,6 +563,13 @@ function ReadPage() {
             </div>
           )}
 
+          {isCestinato && book.description && (
+            <div className="mb-8 border-l-2 border-magenta/40 pl-6 py-2">
+              <div className="font-mono text-[9px] tracking-widest text-magenta/50 uppercase mb-3">— premessa</div>
+              <p className="font-serif italic text-ink/80 leading-relaxed">{book.description}</p>
+            </div>
+          )}
+
           {recuperato && !isCestinato && (
             <div className="mb-6 flex items-center gap-3 border border-blood/30 bg-blood/5 px-4 py-3">
               <span className="font-mono text-[10px] uppercase tracking-widest text-blood">★ Recuperato dai lettori</span>

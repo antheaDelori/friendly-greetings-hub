@@ -218,6 +218,8 @@ function GestionePage() {
   const copertRef = useRef<HTMLInputElement>(null);
   const lastraRef = useRef<HTMLInputElement>(null);
   const pdfRef = useRef<HTMLInputElement>(null);
+  const cestinoSectionRef = useRef<HTMLDivElement>(null);
+  const cestinoScrolled = useRef(false);
 
   useEffect(() => {
     const init = async () => {
@@ -347,6 +349,17 @@ function GestionePage() {
     setShowForm(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
+  useEffect(() => {
+    if (loading || cestinoScrolled.current) return;
+    const hasCestinato = books.some(b => b.cestinato && !b.collana_id);
+    if (hasCestinato) {
+      cestinoScrolled.current = true;
+      setTimeout(() => {
+        cestinoSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 400);
+    }
+  }, [loading, books]);
 
   useEffect(() => {
     if (!selected) {
@@ -919,29 +932,34 @@ function GestionePage() {
             )}
 
             {cestinatoBooks.length > 0 && (
-              <>
+              <div ref={cestinoSectionRef}>
                 <div className="hud-divider my-4" />
-                <div className="font-mono text-[9px] tracking-[0.3em] text-magenta/40 uppercase mb-2">// cestino</div>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="font-mono text-[9px] tracking-[0.3em] text-magenta uppercase">// cestino</span>
+                  <span className="font-mono text-[9px] text-magenta bg-magenta/15 border border-magenta/40 px-2 py-0.5">
+                    {cestinatoBooks.length}
+                  </span>
+                </div>
                 <ul className="space-y-2">
                   {cestinatoBooks.map((b) => (
                     <li key={b.id}>
                       <button
                         onClick={() => handleSelectBook(b)}
-                        className={`w-full text-left p-3 border transition-all opacity-60 hover:opacity-90 ${
+                        className={`w-full text-left p-3 border transition-all ${
                           selected?.id === b.id && !showForm
-                            ? "border-magenta/60 bg-magenta/10 text-magenta"
-                            : "border-magenta/20 text-bone/50 hover:border-magenta/40"
+                            ? "border-magenta bg-magenta/15 text-magenta"
+                            : "border-magenta/40 text-bone/80 hover:border-magenta hover:bg-magenta/5"
                         }`}
                       >
                         <div className="font-display text-sm tracking-tight truncate">{b.titolo}</div>
-                        <div className="font-mono text-[9px] tracking-widest opacity-60 uppercase mt-1">
-                          cestino · {b.voti_cestino}/5 voti
+                        <div className="font-mono text-[9px] tracking-widest text-magenta/60 uppercase mt-1">
+                          ⊗ cestino · {b.voti_cestino}/5 voti
                         </div>
                       </button>
                     </li>
                   ))}
                 </ul>
-              </>
+              </div>
             )}
           </HudPanel>
 
