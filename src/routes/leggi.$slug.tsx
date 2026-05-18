@@ -613,8 +613,8 @@ function ReadPage() {
           ) : chapter ? (
             <>
               <div className="flex items-center justify-between">
-                <div className="font-display tracking-[0.25em] text-xs text-blood">capitolo {currentIdx + 1} di {book.chapters.length}</div>
-                <div className="font-display tracking-[0.2em] text-xs text-ink/30">{chapterReadingTime(chapter)}</div>
+                <div className="font-display tracking-[0.25em] text-xs text-magenta">capitolo {currentIdx + 1} di {book.chapters.length}</div>
+                <div className="font-display tracking-[0.2em] text-xs text-magenta/60">{chapterReadingTime(chapter)}</div>
               </div>
               <h2 className="mt-2 font-serif text-3xl md:text-4xl text-ink">{chapter.title}</h2>
 
