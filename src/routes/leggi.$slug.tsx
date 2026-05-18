@@ -364,16 +364,7 @@ function ReadPage() {
             <p className="mt-3 font-serif text-sm text-ink/70 leading-relaxed line-clamp-4">{book.description}</p>
           </div>
 
-          {hasChapters && isCestinato && (
-            <a
-              href="#lettura"
-              className="mt-5 w-full block text-center border border-blood bg-blood/5 text-blood px-4 py-2.5 font-display tracking-widest text-[11px] uppercase hover:bg-blood hover:text-paper transition-colors"
-            >
-              ▸ Leggi
-            </a>
-          )}
-
-          {hasChapters && (
+{hasChapters && (
             <div className="mt-6 border-t border-ink/10 pt-5">
               <div className="font-display tracking-[0.2em] text-xs text-ink/50 mb-3">— capitoli</div>
               <ol className="space-y-1">
