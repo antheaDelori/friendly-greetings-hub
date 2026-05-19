@@ -262,19 +262,49 @@ function AuthLanding() {
 
   return (
     <PageShell code="// MODULE/AUTH.gateway" title={t("authLogin.pageTitle")} subtitle={t("authLogin.pageSubtitle")}>
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
 
-        {/* Registrazione */}
-        <HudPanel label={t("authLogin.opt01Label")} tone="cyan">
-          <h3 className="font-display text-2xl text-bone tracking-tight">{t("authLogin.opt01Title")}</h3>
-          <p className="mt-3 font-serif italic text-bone/70">{t("authLogin.opt01Desc")}</p>
+        {/* Lettore */}
+        <HudPanel label="opzione 01 — lettore" tone="cyan">
+          <h3 className="font-display text-2xl text-bone tracking-tight">Diventa lettore</h3>
+          <ul className="mt-4 space-y-2">
+            {[
+              "Segnalibro automatico — riprendi da dove hai smesso",
+              "Vota per recuperare i libri nel Cestino",
+              "Lascia recensioni nella community",
+            ].map(v => (
+              <li key={v} className="flex items-start gap-2 font-serif text-sm text-bone/70">
+                <span className="text-cyan mt-0.5 shrink-0">◆</span>{v}
+              </li>
+            ))}
+          </ul>
+          <Link to="/auth/registrazione" className="mt-6 inline-block">
+            <HudButton variant="primary">▸ {t("authLogin.opt01Btn")}</HudButton>
+          </Link>
+        </HudPanel>
+
+        {/* Autore */}
+        <HudPanel label="opzione 02 — autore" tone="cyan">
+          <h3 className="font-display text-2xl text-bone tracking-tight">Diventa autore</h3>
+          <ul className="mt-4 space-y-2">
+            {[
+              "Tutti i vantaggi del lettore",
+              "Pubblica libri, racconti, saggi e poesie",
+              "Gestisci le tue opere con un'area dedicata",
+              "Ricevi donazioni dirette dai lettori",
+            ].map(v => (
+              <li key={v} className="flex items-start gap-2 font-serif text-sm text-bone/70">
+                <span className="text-cyan mt-0.5 shrink-0">◆</span>{v}
+              </li>
+            ))}
+          </ul>
           <Link to="/auth/registrazione" className="mt-6 inline-block">
             <HudButton variant="primary">▸ {t("authLogin.opt01Btn")}</HudButton>
           </Link>
         </HudPanel>
 
         {/* Login */}
-        <HudPanel label={t("authLogin.opt02Label")} tone="magenta">
+        <HudPanel label="opzione 03 — accedi" tone="magenta">
           <h3 className="font-display text-2xl text-bone tracking-tight">{t("authLogin.opt02Title")}</h3>
           <p className="mt-3 font-serif italic text-bone/70">{t("authLogin.opt02Desc")}</p>
           <form onSubmit={handleLogin} className="mt-6 space-y-4">
@@ -312,7 +342,7 @@ function AuthLanding() {
         </HudPanel>
 
         {/* Solo lettore */}
-        <HudPanel label={t("authLogin.opt03Label")} tone="amber">
+        <HudPanel label="opzione 04 — ospite" tone="amber">
           <h3 className="font-display text-2xl text-bone tracking-tight">{t("authLogin.opt03Title")}</h3>
           <p className="mt-3 font-serif italic text-bone/70">{t("authLogin.opt03Desc")}</p>
           <button onClick={handleGuestLogin} disabled={loading} className="mt-6 inline-block">
