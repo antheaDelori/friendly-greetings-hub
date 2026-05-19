@@ -14,13 +14,15 @@ export function HudPanel({
   tone?: "cyan" | "magenta" | "amber";
 }) {
   const toneColor = tone === "magenta" ? "text-magenta" : tone === "amber" ? "text-amber" : "text-cyan";
+  const cornerColor = tone === "magenta" ? "border-magenta/70" : tone === "amber" ? "border-amber/70" : "border-cyan/70";
+  const lineColor = tone === "magenta" ? "via-magenta/60" : tone === "amber" ? "via-amber/60" : "via-cyan/60";
   return (
     <section className={`relative glass p-6 md:p-8 ${className}`}>
-      <span className="absolute -top-px left-6 right-6 h-px bg-gradient-to-r from-transparent via-cyan/60 to-transparent" />
-      <span className="absolute top-2 left-2 w-3 h-3 border-l border-t border-cyan/70" />
-      <span className="absolute top-2 right-2 w-3 h-3 border-r border-t border-cyan/70" />
-      <span className="absolute bottom-2 left-2 w-3 h-3 border-l border-b border-cyan/70" />
-      <span className="absolute bottom-2 right-2 w-3 h-3 border-r border-b border-cyan/70" />
+      <span className={`absolute -top-px left-6 right-6 h-px bg-gradient-to-r from-transparent ${lineColor} to-transparent`} />
+      <span className={`absolute top-2 left-2 w-3 h-3 border-l border-t ${cornerColor}`} />
+      <span className={`absolute top-2 right-2 w-3 h-3 border-r border-t ${cornerColor}`} />
+      <span className={`absolute bottom-2 left-2 w-3 h-3 border-l border-b ${cornerColor}`} />
+      <span className={`absolute bottom-2 right-2 w-3 h-3 border-r border-b ${cornerColor}`} />
       {(label || code) && (
         <div className="flex items-center justify-between mb-5 font-mono text-[10px] tracking-[0.25em] uppercase">
           <span className={toneColor}>{label && `// ${label}`}</span>
