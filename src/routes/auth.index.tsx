@@ -303,8 +303,19 @@ function AuthLanding() {
           </Link>
         </HudPanel>
 
+        {/* Esploratore */}
+        <HudPanel label="opzione 03 — esploratore" tone="amber">
+          <h3 className="font-display text-2xl text-bone tracking-tight">Esploratore</h3>
+          <p className="mt-3 font-serif italic text-bone/70">Leggi tutto il catalogo pubblico. Nessun segnalibro, nessun voto, nessun profilo.</p>
+          <button onClick={handleGuestLogin} disabled={loading} className="mt-6 inline-block">
+            <HudButton variant="ghost" disabled={loading}>
+              {loading ? `▸ ${t("authLogin.opt02BtnLoading")}` : `▸ ${t("authLogin.opt03Btn")}`}
+            </HudButton>
+          </button>
+        </HudPanel>
+
         {/* Login */}
-        <HudPanel label="opzione 03 — accedi" tone="magenta">
+        <HudPanel label="opzione 04 — accedi" tone="magenta">
           <h3 className="font-display text-2xl text-bone tracking-tight">{t("authLogin.opt02Title")}</h3>
           <p className="mt-3 font-serif italic text-bone/70">{t("authLogin.opt02Desc")}</p>
           <form onSubmit={handleLogin} className="mt-6 space-y-4">
@@ -339,17 +350,6 @@ function AuthLanding() {
               {loading ? `◆ ${t("authLogin.opt02BtnLoading")}` : `◆ ${t("authLogin.opt02Btn")}`}
             </HudButton>
           </form>
-        </HudPanel>
-
-        {/* Solo lettore */}
-        <HudPanel label="opzione 04 — ospite" tone="amber">
-          <h3 className="font-display text-2xl text-bone tracking-tight">{t("authLogin.opt03Title")}</h3>
-          <p className="mt-3 font-serif italic text-bone/70">{t("authLogin.opt03Desc")}</p>
-          <button onClick={handleGuestLogin} disabled={loading} className="mt-6 inline-block">
-            <HudButton variant="ghost" disabled={loading}>
-              {loading ? `▸ ${t("authLogin.opt02BtnLoading")}` : `▸ ${t("authLogin.opt03Btn")}`}
-            </HudButton>
-          </button>
         </HudPanel>
 
       </div>
