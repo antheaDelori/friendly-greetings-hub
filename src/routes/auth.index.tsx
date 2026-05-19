@@ -304,7 +304,7 @@ function AuthLanding() {
         </HudPanel>
 
         {/* Esploratore */}
-        <HudPanel label="opzione 03 — esploratore" tone="amber">
+        <HudPanel label="opzione 03 — esplora" tone="amber">
           <h3 className="font-display text-2xl text-bone tracking-tight">Esploratore</h3>
           <p className="mt-3 font-serif italic text-bone/70">Leggi tutto il catalogo pubblico. Nessun segnalibro, nessun voto, nessun profilo.</p>
           <button onClick={handleGuestLogin} disabled={loading} className="mt-6 inline-block">
@@ -315,7 +315,7 @@ function AuthLanding() {
         </HudPanel>
 
         {/* Login */}
-        <HudPanel label="opzione 04 — accedi" tone="magenta">
+        <HudPanel label="opzione 04 — accedi" tone="magenta" className="border border-magenta/40">
           <h3 className="font-display text-2xl text-bone tracking-tight">{t("authLogin.opt02Title")}</h3>
           <p className="mt-3 font-serif italic text-bone/70">{t("authLogin.opt02Desc")}</p>
           <form onSubmit={handleLogin} className="mt-6 space-y-4">
