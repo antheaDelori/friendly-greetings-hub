@@ -306,7 +306,7 @@ function AuthLanding() {
         {/* Esploratore */}
         <HudPanel label="opzione 03 — esplora" tone="amber">
           <h3 className="font-display text-2xl text-bone tracking-tight">Esploratore</h3>
-          <p className="mt-3 font-serif italic text-bone/70">Leggi tutto il catalogo pubblico. Nessun segnalibro, nessun voto, nessun profilo.</p>
+          <p className="mt-3 font-serif italic text-bone/70">Entra subito, senza moduli e senza password. Tutto il catalogo è aperto. L'unico biglietto d'ingresso è la voglia di leggere.</p>
           <button onClick={handleGuestLogin} disabled={loading} className="mt-6 inline-block">
             <HudButton variant="ghost" disabled={loading}>
               {loading ? `▸ ${t("authLogin.opt02BtnLoading")}` : `▸ ${t("authLogin.opt03Btn")}`}
