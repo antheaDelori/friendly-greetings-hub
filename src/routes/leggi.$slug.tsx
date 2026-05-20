@@ -377,7 +377,7 @@ function ReadPage() {
           {/* Pulsante fisso — sempre visibile anche quando il contenuto scrolla */}
           <Link
             to="/catalogo"
-            className="inline-flex items-center gap-1.5 font-display tracking-widest text-[10px] uppercase text-blood/70 hover:text-blood border border-blood/25 hover:border-blood/60 px-3 py-2 transition-colors mb-3 shrink-0"
+            className="inline-flex items-center gap-1.5 font-display tracking-widest text-[10px] uppercase text-blood/70 hover:text-blood border border-blood/25 hover:border-blood/60 px-3 py-2 transition-colors mb-3 shrink-0 cursor-pointer"
           >
             ← Torna al catalogo
           </Link>
@@ -492,9 +492,9 @@ function ReadPage() {
           <div className="w-full lg:mt-4 lg:border-t lg:border-ink/10 lg:pt-4">
             <div className="hidden lg:block font-display tracking-[0.15em] text-[9px] text-ink/50 mb-2 uppercase">— testo</div>
             <div className="flex w-full">
-              <button onClick={() => setFontScale((s) => Math.max(0.85, s - 0.1))} className="flex-1 font-serif text-sm border border-ink/20 py-2 hover:border-ink text-center">A−</button>
-              <button onClick={() => setFontScale(1)} className="flex-1 font-serif text-sm border-t border-b border-ink/20 py-2 hover:border-ink text-center">A</button>
-              <button onClick={() => setFontScale((s) => Math.min(1.4, s + 0.1))} className="flex-1 font-serif text-lg border border-ink/20 py-2 hover:border-ink text-center">A+</button>
+              <button onClick={() => setFontScale((s) => Math.max(0.85, s - 0.1))} className="flex-1 font-serif text-sm border border-ink/20 py-2 hover:border-ink text-center cursor-pointer">A−</button>
+              <button onClick={() => setFontScale(1)} className="flex-1 font-serif text-sm border-t border-b border-ink/20 py-2 hover:border-ink text-center cursor-pointer">A</button>
+              <button onClick={() => setFontScale((s) => Math.min(1.4, s + 0.1))} className="flex-1 font-serif text-lg border border-ink/20 py-2 hover:border-ink text-center cursor-pointer">A+</button>
             </div>
           </div>
 
