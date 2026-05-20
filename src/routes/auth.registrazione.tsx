@@ -52,7 +52,7 @@ function HudField({ label, error, children }: { label: string; error?: string; c
 const inputClass = "mt-2 w-full bg-void/40 border border-cyan/30 px-4 py-3 font-mono text-bone placeholder:text-bone/30 focus:outline-none focus:border-cyan focus:bg-void/60 transition-all";
 
 function RegistrazionePage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [serverError, setServerError] = useState<string | null>(null);
   const [showAuthorModal, setShowAuthorModal] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -80,6 +80,7 @@ function RegistrazionePage() {
             indirizzo: data.indirizzo ?? null,
             data_nascita: data.data_nascita ?? null,
             avatar_url: data.avatar_url || null,
+            lingua: i18n.language ?? "it",
           },
         },
       }), timeout]);
