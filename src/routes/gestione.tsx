@@ -1160,7 +1160,7 @@ function GestionePage() {
                       {filePdf ? `✓ ${filePdf.name}` : existingFileUrl ? "✓ esistente (cambia)" : "▸ Scegli PDF"}
                     </button>
                   </div>
-                  <div>
+                  <div className="sm:col-start-3">
                     <span className={labelClass}>↳ File ePub (opzionale)</span>
                     <input ref={epubRef} type="file" accept=".epub"
                       onChange={e => setFileEpub(e.target.files?.[0] ?? null)} className="hidden" />
