@@ -541,7 +541,7 @@ function ReadPage() {
           {isCestinato && (
             <div className="mb-8 border border-magenta/50 bg-magenta/5 p-5 space-y-4">
               <div>
-                <div className="font-mono text-[9px] tracking-widest text-magenta uppercase mb-1">
+                <div className="font-mono text-[9px] tracking-widest text-magenta text-glow-magenta uppercase mb-1">
                   ⊗ Cestino degli Scritti Perduti
                 </div>
                 <p className="font-serif italic text-ink/70 text-sm">
