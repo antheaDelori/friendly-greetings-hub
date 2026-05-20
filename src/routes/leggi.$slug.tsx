@@ -401,7 +401,7 @@ function ReadPage() {
                   <li key={c.id}>
                     <button
                       onClick={() => setCurrentIdx(i)}
-                      className={`w-full text-left px-3 py-2 font-serif text-sm transition-colors border-l-2 ${
+                      className={`w-full text-left px-3 py-2 font-serif text-sm transition-colors border-l-2 cursor-pointer ${
                         i === currentIdx
                           ? "border-blood bg-card text-ink"
                           : "border-transparent text-ink/60 hover:text-ink hover:border-ink/30"
