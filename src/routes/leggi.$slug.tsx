@@ -424,7 +424,7 @@ function ReadPage() {
             <button
               onClick={handleDownload}
               disabled={downloading}
-              className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors disabled:opacity-50 disabled:cursor-wait"
+              className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait"
             >
               <span className="text-sm leading-none">↓</span>
               <span>{downloading ? "Apertura…" : "PDF"}</span>
@@ -458,7 +458,7 @@ function ReadPage() {
             <button
               onClick={handleDownloadEpub}
               disabled={downloadingEpub}
-              className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors disabled:opacity-50 disabled:cursor-wait"
+              className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait"
             >
               <span className="text-sm leading-none">↓</span>
               <span>{downloadingEpub ? "Apertura…" : "E-Book"}</span>
@@ -473,7 +473,7 @@ function ReadPage() {
               <span>E-Book</span>
             </Link>
           ) : null}
-          <button className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors">
+          <button className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors cursor-pointer">
             <span className="text-sm leading-none">★</span>
             <span>Recensisci</span>
           </button>
@@ -482,7 +482,7 @@ function ReadPage() {
               href={donationUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-blood text-blood px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-blood hover:text-paper transition-colors"
+              className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-blood text-blood px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-blood hover:text-paper transition-colors cursor-pointer"
             >
               <span className="text-sm leading-none">♥</span>
               <span>Sostieni</span>
