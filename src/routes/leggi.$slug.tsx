@@ -427,7 +427,7 @@ function ReadPage() {
               className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors disabled:opacity-50 disabled:cursor-wait"
             >
               <span className="text-sm leading-none">↓</span>
-              <span>{downloading ? "Apertura…" : "Scarica"}</span>
+              <span>{downloading ? "Apertura…" : "PDF"}</span>
             </button>
           ) : fileUrl && isLoggedIn && isAnonymous ? (
             <Link
@@ -446,7 +446,7 @@ function ReadPage() {
               className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors"
             >
               <span className="text-sm leading-none">↓</span>
-              <span>Scarica</span>
+              <span>PDF</span>
             </Link>
           ) : (
             <span className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink/20 text-ink/30 px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase cursor-not-allowed">
@@ -461,7 +461,7 @@ function ReadPage() {
               className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors disabled:opacity-50 disabled:cursor-wait"
             >
               <span className="text-sm leading-none">↓</span>
-              <span>{downloadingEpub ? "Apertura…" : "ePub"}</span>
+              <span>{downloadingEpub ? "Apertura…" : "E-Book"}</span>
             </button>
           ) : epubUrl && (isAnonymous || !isLoggedIn) ? (
             <Link
@@ -470,7 +470,7 @@ function ReadPage() {
               className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors"
             >
               <span className="text-sm leading-none">↓</span>
-              <span>ePub</span>
+              <span>E-Book</span>
             </Link>
           ) : null}
           <button className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors">
