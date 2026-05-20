@@ -248,7 +248,7 @@ function ReadPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = path.split("/").pop() ?? "libro";
+      a.download = book.title.replace(/[^a-z0-9àèéìòù ]/gi, "").trim().replace(/\s+/g, "-").toLowerCase() + ".pdf";
       a.target = "_blank";
       a.rel = "noopener";
       document.body.appendChild(a);
@@ -275,7 +275,7 @@ function ReadPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = path.split("/").pop() ?? "libro.epub";
+      a.download = book.title.replace(/[^a-z0-9àèéìòù ]/gi, "").trim().replace(/\s+/g, "-").toLowerCase() + ".epub";
       a.target = "_blank";
       a.rel = "noopener";
       document.body.appendChild(a);
