@@ -6,13 +6,22 @@ import { getBookBySlug, type Book, type Genre } from "@/data/books";
 import { supabase } from "@/lib/supabase";
 import logo from "@/assets/logo-liberiamo.jpg";
 
+type RecensioneItem = {
+  id: string;
+  user_id: string;
+  nome_display: string | null;
+  stelle: number;
+  testo: string | null;
+  created_at: string;
+};
+
 export const Route = createFileRoute("/leggi/$slug")({
   loader: async ({ params }) => {
     // Prima cerca nei libri statici
     const staticBook = getBookBySlug(params.slug);
     if (staticBook) {
       const { data: { session } } = await supabase.auth.getSession();
-      return { book: staticBook, fileUrl: null as string | null, epubUrl: null as string | null, donationUrl: null as string | null, isLoggedIn: !!session, isAnonymous: session?.user?.is_anonymous ?? false, userId: session?.user?.id ?? null, allegati: [] as { id: string; titolo: string; descrizione: string | null; file_url: string; tipo: string; ordine: number }[], isCestinato: false, votiCestino: 0, recuperato: false, bookId: "", authorId: null as string | null };
+      return { book: staticBook, fileUrl: null as string | null, epubUrl: null as string | null, donationUrl: null as string | null, isLoggedIn: !!session, isAnonymous: session?.user?.is_anonymous ?? false, userId: session?.user?.id ?? null, allegati: [] as { id: string; titolo: string; descrizione: string | null; file_url: string; tipo: string; ordine: number }[], isCestinato: false, votiCestino: 0, recuperato: false, bookId: "", authorId: null as string | null, recensioni: [] as RecensioneItem[] };
     }
 
     // Poi cerca su Supabase
@@ -78,6 +87,12 @@ export const Route = createFileRoute("/leggi/$slug")({
       donationUrl = profile?.donation_url ?? null;
     }
 
+    const { data: recensioniData } = await supabase
+      .from("recensioni")
+      .select("id, user_id, nome_display, stelle, testo, created_at")
+      .eq("book_id", data.id)
+      .order("created_at", { ascending: false });
+
     const { data: { session } } = await supabase.auth.getSession();
     return {
       book,
@@ -93,6 +108,7 @@ export const Route = createFileRoute("/leggi/$slug")({
       recuperato: (data.recuperato ?? false) as boolean,
       bookId: data.id as string,
       authorId: (data.author_id ?? null) as string | null,
+      recensioni: (recensioniData ?? []) as RecensioneItem[],
     };
   },
   head: ({ loaderData }) => ({
@@ -174,7 +190,7 @@ function getOrCreateVisitorId(userId?: string | null): string {
 }
 
 function ReadPage() {
-  const { book, fileUrl, epubUrl, donationUrl, isLoggedIn, isAnonymous, userId, allegati, isCestinato, votiCestino: initialVoti, recuperato, bookId, authorId } = Route.useLoaderData();
+  const { book, fileUrl, epubUrl, donationUrl, isLoggedIn, isAnonymous, userId, allegati, isCestinato, votiCestino: initialVoti, recuperato, bookId, authorId, recensioni: inizialiRecensioni } = Route.useLoaderData();
   const isAuthor = !!userId && !!authorId && userId === authorId;
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const router = useRouter();
@@ -229,7 +245,42 @@ function ReadPage() {
 
   const [downloading, setDownloading] = useState(false);
   const [downloadingEpub, setDownloadingEpub] = useState(false);
+
+  const [recensioni, setRecensioni] = useState<RecensioneItem[]>(inizialiRecensioni);
+  const [recStelle, setRecStelle] = useState(0);
+  const [recHover, setRecHover] = useState(0);
+  const [recTesto, setRecTesto] = useState("");
+  const [recSaving, setRecSaving] = useState(false);
+  const [recError, setRecError] = useState<string | null>(null);
+  const recensioniRef = useRef<HTMLDivElement>(null);
+
+  const miaRecensione = recensioni.find(r => r.user_id === userId) ?? null;
   const [confirmDeleteBook, setConfirmDeleteBook] = useState(false);
+
+  const handleSalvaRecensione = async () => {
+    if (!userId || recStelle === 0 || recSaving || !bookId) return;
+    setRecSaving(true);
+    setRecError(null);
+    try {
+      const { data: profile } = await supabase.from("profiles").select("nome, cognome, pseudonimo").eq("id", userId).maybeSingle();
+      const nome_display = profile?.pseudonimo || [profile?.nome, profile?.cognome].filter(Boolean).join(" ") || "Lettore";
+      const { data: inserted, error } = await supabase.from("recensioni")
+        .insert({ book_id: bookId, user_id: userId, nome_display, stelle: recStelle, testo: recTesto.trim() || null })
+        .select("id, user_id, nome_display, stelle, testo, created_at")
+        .single();
+      if (error) { setRecError(error.code === "23505" ? "Hai già recensito questa opera." : error.message); return; }
+      setRecensioni((prev: RecensioneItem[]) => [inserted as RecensioneItem, ...prev]);
+      setRecStelle(0);
+      setRecTesto("");
+    } finally {
+      setRecSaving(false);
+    }
+  };
+
+  const handleEliminaRecensione = async (id: string) => {
+    await supabase.from("recensioni").delete().eq("id", id);
+    setRecensioni(prev => prev.filter(r => r.id !== id));
+  };
 
   const handleDownload = async () => {
     if (!fileUrl || downloading) return;
@@ -473,7 +524,10 @@ function ReadPage() {
               <span>E-Book</span>
             </Link>
           ) : null}
-          <button className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors cursor-pointer">
+          <button
+            onClick={() => recensioniRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors cursor-pointer"
+          >
             <span className="text-sm leading-none">★</span>
             <span>Recensisci</span>
           </button>
@@ -779,20 +833,109 @@ function ReadPage() {
             </div>
           )}
 
-          {/* Community placeholder */}
-          <div className="mt-16 border-2 border-ink p-6 md:p-8 bg-card">
-            <div className="font-display tracking-[0.25em] text-xs text-blood">— community</div>
-            <h3 className="mt-2 font-serif text-2xl text-ink">Cosa ne pensi?</h3>
-            <p className="mt-2 font-serif text-ink/70">Lascia un commento, una recensione o segui l'autore. (Disponibile dopo il login.)</p>
-            <textarea
-              placeholder="Scrivi un commento..."
-              className="mt-4 w-full min-h-24 bg-paper border border-ink/20 p-3 font-serif focus:outline-none focus:border-blood transition-colors"
-              disabled
-            />
-            <div className="mt-3 flex flex-wrap gap-3">
-              <button disabled className="bg-ink text-paper px-5 py-2 font-display tracking-widest text-xs uppercase opacity-50 cursor-not-allowed">Pubblica commento</button>
-              <button disabled className="border border-ink text-ink px-5 py-2 font-display tracking-widest text-xs uppercase opacity-50 cursor-not-allowed">Segui {book.author}</button>
+          {/* Recensioni */}
+          <div ref={recensioniRef} className="mt-16 border-2 border-ink/10 p-6 md:p-8 bg-card" style={{ scrollMarginTop: "7rem" }}>
+            <div className="font-display tracking-[0.25em] text-xs text-blood">— recensioni</div>
+            <div className="flex items-baseline gap-3 mt-2">
+              <h3 className="font-serif text-2xl text-ink">Cosa ne pensi?</h3>
+              {recensioni.length > 0 && (
+                <span className="font-mono text-[10px] tracking-widest text-ink/40 uppercase">{recensioni.length} {recensioni.length === 1 ? "recensione" : "recensioni"}</span>
+              )}
             </div>
+
+            {/* Form recensione */}
+            {isLoggedIn && !isAnonymous ? (
+              miaRecensione ? (
+                <div className="mt-6 border border-blood/30 bg-blood/5 p-4">
+                  <div className="font-display tracking-widest text-[10px] uppercase text-blood mb-2">— la tua recensione</div>
+                  <div className="flex gap-0.5 mb-2">
+                    {Array.from({ length: 5 }, (_, i) => (
+                      <span key={i} className={`text-lg ${i < miaRecensione.stelle ? "text-blood" : "text-ink/20"}`}>★</span>
+                    ))}
+                  </div>
+                  {miaRecensione.testo && <p className="font-serif italic text-ink/70 text-sm leading-relaxed">{miaRecensione.testo}</p>}
+                  <button
+                    onClick={() => handleEliminaRecensione(miaRecensione.id)}
+                    className="mt-3 font-mono text-[10px] tracking-widest uppercase text-ink/40 hover:text-blood transition-colors cursor-pointer"
+                  >
+                    ✕ Elimina
+                  </button>
+                </div>
+              ) : (
+                <div className="mt-6 space-y-4">
+                  <div>
+                    <div className="font-mono text-[10px] tracking-widest text-ink/50 uppercase mb-2">Valutazione ★</div>
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map(s => (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() => setRecStelle(s)}
+                          onMouseEnter={() => setRecHover(s)}
+                          onMouseLeave={() => setRecHover(0)}
+                          className={`text-2xl transition-colors cursor-pointer ${s <= (recHover || recStelle) ? "text-blood" : "text-ink/20"}`}
+                        >★</button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="font-mono text-[10px] tracking-widest text-ink/50 uppercase mb-2">Commento (opzionale)</div>
+                    <textarea
+                      value={recTesto}
+                      onChange={e => setRecTesto(e.target.value)}
+                      placeholder="Scrivi cosa ti ha colpito di questa opera..."
+                      className="w-full min-h-24 bg-paper border border-ink/20 p-3 font-serif text-ink focus:outline-none focus:border-blood transition-colors"
+                    />
+                  </div>
+                  {recError && <p className="font-mono text-[11px] text-blood">{recError}</p>}
+                  <button
+                    onClick={handleSalvaRecensione}
+                    disabled={recStelle === 0 || recSaving}
+                    className="bg-ink text-paper px-6 py-2.5 font-display tracking-widest text-xs uppercase hover:bg-blood transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    {recSaving ? "Salvataggio…" : "Pubblica recensione"}
+                  </button>
+                </div>
+              )
+            ) : (
+              <div className="mt-6 border border-ink/15 bg-paper p-4 text-center">
+                <p className="font-serif italic text-ink/60 text-sm">Registrati per lasciare una recensione.</p>
+                <Link
+                  to="/auth/"
+                  search={{ returnTo: `/leggi/${book.slug}` }}
+                  className="mt-3 inline-block bg-ink text-paper px-6 py-2 font-display tracking-widest text-xs uppercase hover:bg-blood transition-colors"
+                >
+                  Accedi o registrati
+                </Link>
+              </div>
+            )}
+
+            {/* Lista recensioni */}
+            {recensioni.length > 0 && (
+              <div className="mt-8 space-y-5 border-t border-ink/10 pt-6">
+                {recensioni.map(r => (
+                  <div key={r.id} className="space-y-1">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex gap-0.5">
+                          {Array.from({ length: 5 }, (_, i) => (
+                            <span key={i} className={`text-sm ${i < r.stelle ? "text-blood" : "text-ink/20"}`}>★</span>
+                          ))}
+                        </div>
+                        <span className="font-display tracking-widest text-[10px] uppercase text-ink/60">
+                          {r.nome_display ?? "Lettore"}
+                        </span>
+                      </div>
+                      <span className="font-mono text-[9px] text-ink/30 shrink-0">
+                        {new Date(r.created_at).toLocaleDateString("it-IT", { day: "2-digit", month: "short", year: "numeric" })}
+                      </span>
+                    </div>
+                    {r.testo && <p className="font-serif italic text-sm text-ink/70 leading-relaxed">{r.testo}</p>}
+                    <div className="border-b border-ink/8 pt-3" />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </article>
       </section>
