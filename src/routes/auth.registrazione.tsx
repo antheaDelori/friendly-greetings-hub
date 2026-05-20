@@ -54,7 +54,7 @@ const inputClass = "mt-2 w-full bg-void/40 border border-cyan/30 px-4 py-3 font-
 function RegistrazionePage() {
   const { t, i18n } = useTranslation();
   const [serverError, setServerError] = useState<string | null>(null);
-  const [showAuthorModal, setShowAuthorModal] = useState(false);
+  const [emailInviata, setEmailInviata] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
@@ -88,7 +88,7 @@ function RegistrazionePage() {
         setServerError(result.error.message);
         return;
       }
-      setShowAuthorModal(true);
+      setEmailInviata(data.email);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Errore di connessione. Riprova.";
       setServerError(msg);
@@ -97,45 +97,37 @@ function RegistrazionePage() {
     }
   };
 
-  return (
-    <>
-    {/* Modal autore */}
-    {showAuthorModal && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-        <div className="absolute inset-0 bg-void/80 backdrop-blur-sm" />
-
-        <div className="relative glass hud-frame max-w-lg w-full p-10 text-center">
+  if (emailInviata) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-void/90 backdrop-blur-sm scanlines px-4">
+        <div className="glass hud-frame max-w-lg w-full p-10 text-center fade-up">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-px w-32 h-px bg-gradient-to-r from-transparent via-cyan/80 to-transparent" />
-
           <div className="font-mono text-[10px] tracking-[0.35em] text-cyan uppercase mb-6">
-            // trasmissione_in_arrivo · 2076
+            // trasmissione_inviata · 2076
           </div>
-
           <div className="font-display text-4xl md:text-5xl text-bone leading-tight tracking-tight">
-            {t("registrazione.modalTitoloA")}<br />
-            <span className="text-magenta text-glow-magenta">{t("registrazione.modalTitoloB")}</span>
+            Controlla<br />
+            <span className="text-cyan text-glow-cyan">la tua email.</span>
           </div>
-
-          <p className="mt-6 font-serif italic text-xl text-bone/75 leading-relaxed">
-            {t("registrazione.modalDesc")}<br />
-            <span className="text-cyan not-italic font-mono text-sm tracking-widest">{t("registrazione.modalSub")}</span>
+          <p className="mt-6 font-serif italic text-lg text-bone/70 leading-relaxed">
+            Abbiamo inviato un link di conferma a<br />
+            <span className="text-bone not-italic font-mono text-sm tracking-widest">{emailInviata}</span>
           </p>
-
-          <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/auth/profilo-autore">
-              <HudButton variant="magenta" className="w-full sm:w-auto text-base px-8 py-4">
-                ◆ {t("registrazione.modalSi")}
-              </HudButton>
-            </Link>
-            <Link to="/">
-              <HudButton variant="ghost" className="w-full sm:w-auto px-8 py-4">
-                ▸ {t("registrazione.modalNo")}
-              </HudButton>
-            </Link>
+          <p className="mt-4 font-serif italic text-base text-bone/50 leading-relaxed">
+            Clicca il link per attivare il tuo account e iniziare a leggere. Il link è valido per 24 ore.
+          </p>
+          <div className="mt-8 border-t border-cyan/10 pt-6">
+            <p className="font-mono text-[10px] tracking-widest text-bone/30 uppercase">
+              Non hai ricevuto nulla? Controlla la cartella spam.
+            </p>
           </div>
         </div>
       </div>
-    )}
+    );
+  }
+
+  return (
+    <>
 
     <PageShell code="// AUTH/REGISTER.form" title={t("registrazione.pageTitle")} subtitle={t("registrazione.pageSubtitle")}>
       <div className="grid lg:grid-cols-[1fr_360px] gap-6">
