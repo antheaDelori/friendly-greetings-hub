@@ -116,9 +116,12 @@ function RegistrazionePage() {
           <p className="mt-4 font-serif italic text-base text-bone/50 leading-relaxed">
             Clicca il link per attivare il tuo account e iniziare a leggere. Il link è valido per 24 ore.
           </p>
-          <div className="mt-8 border-t border-cyan/10 pt-6">
-            <p className="font-mono text-[10px] tracking-widest text-bone/30 uppercase">
-              Non hai ricevuto nulla? Controlla la cartella spam.
+          <div className="mt-8 border-t border-cyan/10 pt-6 space-y-2">
+            <p className="font-mono text-[10px] tracking-widest text-bone/40 uppercase">
+              Non trovi l'email? Cerca nello spam:
+            </p>
+            <p className="font-mono text-[11px] text-cyan/70 border border-cyan/20 bg-cyan/5 px-4 py-2 inline-block">
+              liberiamo2076.com — Attiva il tuo account
             </p>
           </div>
         </div>
