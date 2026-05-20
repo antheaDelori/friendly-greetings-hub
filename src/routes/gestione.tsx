@@ -63,6 +63,7 @@ type Book = {
   copertina_url: string | null;
   lastra_url: string | null;
   file_url: string | null;
+  epub_url: string | null;
   disponibile: boolean;
   cestinato: boolean;
   recuperato: boolean;
@@ -214,10 +215,13 @@ function GestionePage() {
   const [existingCopertinaUrl, setExistingCopertinaUrl] = useState<string | null>(null);
   const [existingLastraUrl, setExistingLastraUrl] = useState<string | null>(null);
   const [existingFileUrl, setExistingFileUrl] = useState<string | null>(null);
+  const [fileEpub, setFileEpub] = useState<File | null>(null);
+  const [existingEpubUrl, setExistingEpubUrl] = useState<string | null>(null);
 
   const copertRef = useRef<HTMLInputElement>(null);
   const lastraRef = useRef<HTMLInputElement>(null);
   const pdfRef = useRef<HTMLInputElement>(null);
+  const epubRef = useRef<HTMLInputElement>(null);
   const cestinoSectionRef = useRef<HTMLDivElement>(null);
   const cestinoScrolled = useRef(false);
 
@@ -427,9 +431,11 @@ function GestionePage() {
     setCopertina(null);
     setLastra(null);
     setFilePdf(null);
+    setFileEpub(null);
     setExistingCopertinaUrl(b.copertina_url);
     setExistingLastraUrl(b.lastra_url);
     setExistingFileUrl(b.file_url);
+    setExistingEpubUrl(b.epub_url);
     setCollanaId(b.collana_id ?? "");
     setEditingId(b.id);
     setSaveError(null);
@@ -461,6 +467,7 @@ function GestionePage() {
       let copertina_url: string | null = existingCopertinaUrl;
       let lastra_url: string | null = existingLastraUrl;
       let file_url: string | null = existingFileUrl;
+      let epub_url: string | null = existingEpubUrl;
       let newBookId: string | null = null;
 
       if (editingId) {
@@ -475,6 +482,9 @@ function GestionePage() {
         if (filePdf) {
           const ext = filePdf.name.split(".").pop();
           file_url = await uploadFile(filePdf, "libri", `${userId}/${editingId}-file.${ext}`);
+        }
+        if (fileEpub) {
+          epub_url = await uploadFile(fileEpub, "libri", `${userId}/${editingId}-epub.epub`);
         }
 
         const { error } = await supabase.from("books").update({
@@ -494,6 +504,7 @@ function GestionePage() {
           copertina_url,
           lastra_url,
           file_url,
+          epub_url,
           author_name: authorName || null,
           collana_id: collanaId || null,
         }).eq("id", editingId);
@@ -512,6 +523,9 @@ function GestionePage() {
         if (filePdf) {
           const ext = filePdf.name.split(".").pop();
           file_url = await uploadFile(filePdf, "libri", `${userId}/${slug}.${ext}`);
+        }
+        if (fileEpub) {
+          epub_url = await uploadFile(fileEpub, "libri", `${userId}/${slug}-epub.epub`);
         }
 
         const { data: insertData, error } = await supabase.from("books").insert({
@@ -533,6 +547,7 @@ function GestionePage() {
           copertina_url,
           lastra_url,
           file_url,
+          epub_url,
           author_name: authorName || null,
           collana_id: collanaId || null,
         }).select("id").single();
@@ -1137,12 +1152,21 @@ function GestionePage() {
                     </button>
                   </div>
                   <div>
-                    <span className={labelClass}>↳ File PDF / epub</span>
-                    <input ref={pdfRef} type="file" accept=".pdf,.epub"
+                    <span className={labelClass}>↳ File PDF</span>
+                    <input ref={pdfRef} type="file" accept=".pdf"
                       onChange={e => setFilePdf(e.target.files?.[0] ?? null)} className="hidden" />
                     <button type="button" onClick={() => pdfRef.current?.click()}
                       className="mt-2 w-full border border-cyan/30 px-4 py-3 font-mono text-[10px] text-left uppercase tracking-widest hover:border-cyan hover:text-cyan transition-all text-bone/60">
-                      {filePdf ? `✓ ${filePdf.name}` : existingFileUrl ? "✓ esistente (cambia)" : "▸ Scegli file"}
+                      {filePdf ? `✓ ${filePdf.name}` : existingFileUrl ? "✓ esistente (cambia)" : "▸ Scegli PDF"}
+                    </button>
+                  </div>
+                  <div>
+                    <span className={labelClass}>↳ File ePub (opzionale)</span>
+                    <input ref={epubRef} type="file" accept=".epub"
+                      onChange={e => setFileEpub(e.target.files?.[0] ?? null)} className="hidden" />
+                    <button type="button" onClick={() => epubRef.current?.click()}
+                      className="mt-2 w-full border border-cyan/30 px-4 py-3 font-mono text-[10px] text-left uppercase tracking-widest hover:border-cyan hover:text-cyan transition-all text-bone/60">
+                      {fileEpub ? `✓ ${fileEpub.name}` : existingEpubUrl ? "✓ esistente (cambia)" : "▸ Scegli ePub"}
                     </button>
                   </div>
                 </div>

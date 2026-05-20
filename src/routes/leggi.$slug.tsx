@@ -12,13 +12,13 @@ export const Route = createFileRoute("/leggi/$slug")({
     const staticBook = getBookBySlug(params.slug);
     if (staticBook) {
       const { data: { session } } = await supabase.auth.getSession();
-      return { book: staticBook, fileUrl: null as string | null, donationUrl: null as string | null, isLoggedIn: !!session, isAnonymous: session?.user?.is_anonymous ?? false, userId: session?.user?.id ?? null, allegati: [] as { id: string; titolo: string; descrizione: string | null; file_url: string; tipo: string; ordine: number }[], isCestinato: false, votiCestino: 0, recuperato: false, bookId: "", authorId: null as string | null };
+      return { book: staticBook, fileUrl: null as string | null, epubUrl: null as string | null, donationUrl: null as string | null, isLoggedIn: !!session, isAnonymous: session?.user?.is_anonymous ?? false, userId: session?.user?.id ?? null, allegati: [] as { id: string; titolo: string; descrizione: string | null; file_url: string; tipo: string; ordine: number }[], isCestinato: false, votiCestino: 0, recuperato: false, bookId: "", authorId: null as string | null };
     }
 
     // Poi cerca su Supabase
     const { data } = await supabase
       .from("books")
-      .select("id, slug, titolo, descrizione, estratto, genere, anno, letture, copertina_url, file_url, author_name, author_id, cestinato, voti_cestino, recuperato")
+      .select("id, slug, titolo, descrizione, estratto, genere, anno, letture, copertina_url, file_url, epub_url, author_name, author_id, cestinato, voti_cestino, recuperato")
       .eq("slug", params.slug)
       .or("disponibile.eq.true,cestinato.eq.true")
       .maybeSingle();
@@ -82,6 +82,7 @@ export const Route = createFileRoute("/leggi/$slug")({
     return {
       book,
       fileUrl: data.file_url as string | null,
+      epubUrl: data.epub_url as string | null,
       donationUrl,
       isLoggedIn: !!session,
       isAnonymous: session?.user?.is_anonymous ?? false,
@@ -173,7 +174,7 @@ function getOrCreateVisitorId(userId?: string | null): string {
 }
 
 function ReadPage() {
-  const { book, fileUrl, donationUrl, isLoggedIn, isAnonymous, userId, allegati, isCestinato, votiCestino: initialVoti, recuperato, bookId, authorId } = Route.useLoaderData();
+  const { book, fileUrl, epubUrl, donationUrl, isLoggedIn, isAnonymous, userId, allegati, isCestinato, votiCestino: initialVoti, recuperato, bookId, authorId } = Route.useLoaderData();
   const isAuthor = !!userId && !!authorId && userId === authorId;
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const router = useRouter();
@@ -227,6 +228,7 @@ function ReadPage() {
   const [paraBookmark, setParaBookmark] = useState<{ chapterIdx: number; paragraphIdx: number } | null>(null);
 
   const [downloading, setDownloading] = useState(false);
+  const [downloadingEpub, setDownloadingEpub] = useState(false);
   const [confirmDeleteBook, setConfirmDeleteBook] = useState(false);
 
   const handleDownload = async () => {
@@ -258,6 +260,33 @@ function ReadPage() {
       alert("Errore nel download. Riprova.");
     } finally {
       setDownloading(false);
+    }
+  };
+
+  const handleDownloadEpub = async () => {
+    if (!epubUrl || downloadingEpub) return;
+    setDownloadingEpub(true);
+    try {
+      const match = epubUrl.match(/\/storage\/v1\/object\/(?:public|authenticated)\/libri\/(.+?)(?:\?.*)?$/);
+      const path = match ? decodeURIComponent(match[1]) : epubUrl.startsWith("http") ? null : epubUrl;
+      if (!path) { window.open(epubUrl, "_blank"); return; }
+      const { data: blob, error } = await supabase.storage.from("libri").download(path);
+      if (error || !blob) { alert(`Errore nel download: ${error?.message ?? "file non trovato"}`); return; }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = path.split("/").pop() ?? "libro.epub";
+      a.target = "_blank";
+      a.rel = "noopener";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (e) {
+      console.error("Download epub error:", e);
+      alert("Errore nel download. Riprova.");
+    } finally {
+      setDownloadingEpub(false);
     }
   };
 
@@ -425,6 +454,25 @@ function ReadPage() {
               <span>N/D</span>
             </span>
           )}
+          {epubUrl && isLoggedIn && !isAnonymous ? (
+            <button
+              onClick={handleDownloadEpub}
+              disabled={downloadingEpub}
+              className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors disabled:opacity-50 disabled:cursor-wait"
+            >
+              <span className="text-sm leading-none">↓</span>
+              <span>{downloadingEpub ? "Apertura…" : "ePub"}</span>
+            </button>
+          ) : epubUrl && (isAnonymous || !isLoggedIn) ? (
+            <Link
+              to="/auth/"
+              search={{ returnTo: `/leggi/${book.slug}` }}
+              className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors"
+            >
+              <span className="text-sm leading-none">↓</span>
+              <span>ePub</span>
+            </Link>
+          ) : null}
           <button className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors">
             <span className="text-sm leading-none">★</span>
             <span>Recensisci</span>
