@@ -10,6 +10,7 @@ type AuthorEntry = { name: string; count: number };
 export function SiteHeader() {
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [isAuthor, setIsAuthor] = useState(false);
   const [cestinoTooltip, setCestinoTooltip] = useState<string | null>(null);
   const { t } = useTranslation();
   const [autoriOpen, setAutoriOpen] = useState(false);
@@ -61,6 +62,8 @@ export function SiteHeader() {
       if (user.is_anonymous) { setDisplayName("ospite"); return; }
       const meta = user.user_metadata;
       setDisplayName(meta?.pseudonimo || meta?.nome || user.email?.split("@")[0] || "utente");
+      supabase.from("author_profiles").select("id").eq("id", user.id).maybeSingle()
+        .then(({ data }) => setIsAuthor(!!data));
     };
 
     loadUser();
@@ -194,9 +197,9 @@ export function SiteHeader() {
                 </span>
               ) : (
                 <Link
-                  to="/area-autore"
+                  to={isAuthor ? "/area-autore" : "/libreria"}
                   className="hidden sm:inline-flex font-mono tracking-widest text-[10px] uppercase text-cyan hover:text-magenta transition-colors px-3 py-2"
-                  title="Area riservata autore"
+                  title={isAuthor ? "Area riservata autore" : "La mia libreria"}
                 >
                   [{displayName}]
                 </Link>

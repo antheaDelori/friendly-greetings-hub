@@ -55,6 +55,15 @@ function Index() {
   const freshTotalPages = Math.max(1, Math.ceil(fresh.length / FRESH_PER_PAGE));
   const freshVisible = fresh.slice(freshPage * FRESH_PER_PAGE, (freshPage + 1) * FRESH_PER_PAGE);
   const [totals, setTotals] = useState({ opere: 0, autori: 0, letture: 0 });
+  const [isAuthor, setIsAuthor] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user || user.is_anonymous) return;
+      supabase.from("author_profiles").select("id").eq("id", user.id).maybeSingle()
+        .then(({ data }) => setIsAuthor(!!data));
+    });
+  }, []);
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -357,9 +366,15 @@ function Index() {
             <p className="mt-6 font-serif italic text-lg text-bone/70 max-w-md">
               {t("home.autoreDesc")}
             </p>
-            <Link to="/auth/registrazione" className="mt-8 inline-flex items-center gap-3 border border-cyan bg-cyan/10 text-cyan px-7 py-4 font-mono tracking-[0.22em] text-[11px] uppercase hover:bg-cyan hover:text-void hover:glow-cyan transition-all">
-              ▸ {t("home.autoreBtn")}
-            </Link>
+            {isAuthor ? (
+              <span className="mt-8 inline-flex items-center gap-3 border border-cyan/20 text-cyan/30 px-7 py-4 font-mono tracking-[0.22em] text-[11px] uppercase cursor-not-allowed select-none">
+                ✓ {t("home.autoreBtnGiaAutore", "Sei già un autore")}
+              </span>
+            ) : (
+              <Link to="/auth/registrazione" className="mt-8 inline-flex items-center gap-3 border border-cyan bg-cyan/10 text-cyan px-7 py-4 font-mono tracking-[0.22em] text-[11px] uppercase hover:bg-cyan hover:text-void hover:glow-cyan transition-all">
+                ▸ {t("home.autoreBtn")}
+              </Link>
+            )}
           </div>
           <div className="glass p-10 md:p-14 hud-frame-x relative">
             <div className="font-mono tracking-[0.3em] text-[10px] text-magenta uppercase">// per_i_lettori</div>
