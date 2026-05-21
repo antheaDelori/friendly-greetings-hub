@@ -147,12 +147,18 @@ function Index() {
               >
                 ▸ {t("home.esploraBtn")}
               </Link>
-              <Link
-                to="/auth/registrazione"
-                className="inline-flex items-center gap-3 border border-magenta/60 bg-magenta/10 px-7 py-4 font-mono tracking-[0.22em] text-xs uppercase text-magenta hover:bg-magenta hover:text-void hover:glow-magenta transition-all"
-              >
-                ◆ {t("home.divAutoreBtn")}
-              </Link>
+              {isAuthor ? (
+                <span className="inline-flex items-center gap-3 border border-magenta/20 px-7 py-4 font-mono tracking-[0.22em] text-xs uppercase text-magenta/30 cursor-not-allowed select-none">
+                  ✓ {t("home.autoreBtnGiaAutore", "Sei già un autore")}
+                </span>
+              ) : (
+                <Link
+                  to="/auth/registrazione"
+                  className="inline-flex items-center gap-3 border border-magenta/60 bg-magenta/10 px-7 py-4 font-mono tracking-[0.22em] text-xs uppercase text-magenta hover:bg-magenta hover:text-void hover:glow-magenta transition-all"
+                >
+                  ◆ {t("home.divAutoreBtn")}
+                </Link>
+              )}
             </div>
 
             <dl className="mt-16 grid grid-cols-3 gap-4 max-w-2xl">
