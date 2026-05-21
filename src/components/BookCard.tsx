@@ -1,5 +1,20 @@
 import { Link } from "@tanstack/react-router";
+import { useState, useRef, useEffect } from "react";
 import type { Book } from "@/data/books";
+
+type LibreriaStato = "da_leggere" | "in_lettura" | "letto";
+
+const STATO_LABEL: Record<LibreriaStato, string> = {
+  da_leggere: "Da leggere",
+  in_lettura: "In lettura",
+  letto: "Letto ✓",
+};
+
+const STATO_COLOR: Record<LibreriaStato, string> = {
+  da_leggere: "text-cyan",
+  in_lettura: "text-amber",
+  letto: "text-magenta",
+};
 
 const genreColor: Record<string, string> = {
   libro: "text-cyan border-cyan/60",
@@ -8,7 +23,24 @@ const genreColor: Record<string, string> = {
   articolo: "text-bone border-bone/40",
 };
 
-export function BookCard({ book, compact = false }: { book: Book; compact?: boolean }) {
+export function BookCard({ book, compact = false, libreriaStato = null, onLibreriaChange, isLoggedIn = false }: {
+  book: Book;
+  compact?: boolean;
+  libreriaStato?: LibreriaStato | null;
+  onLibreriaChange?: (stato: LibreriaStato | null) => void;
+  isLoggedIn?: boolean;
+}) {
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setShowMenu(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showMenu]);
   const hasLastra = Boolean(book.lastra);
 
   return (
@@ -97,6 +129,40 @@ export function BookCard({ book, compact = false }: { book: Book; compact?: bool
               <span className="text-amber">{book.rating > 0 ? `★ ${book.rating.toFixed(1)}` : "✦ new"}</span>
               <span className="text-cyan/60">{book.year}</span>
             </div>
+            {isLoggedIn && onLibreriaChange && (
+              <div ref={menuRef} className="relative mt-2 pt-2 border-t border-cyan/10">
+                <button
+                  onClick={e => { e.preventDefault(); e.stopPropagation(); setShowMenu(m => !m); }}
+                  className={`w-full font-mono text-[9px] tracking-widest uppercase py-1.5 text-center transition-colors cursor-pointer ${libreriaStato ? STATO_COLOR[libreriaStato] : "text-bone/35 hover:text-cyan"}`}
+                >
+                  {libreriaStato ? `◈ ${STATO_LABEL[libreriaStato]}` : "◈ Aggiungi alla libreria"}
+                </button>
+                {showMenu && (
+                  <div
+                    className="absolute bottom-full left-0 right-0 z-50 glass border border-cyan/30 py-1 mb-1"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    {(["da_leggere", "in_lettura", "letto"] as LibreriaStato[]).map(s => (
+                      <button
+                        key={s}
+                        onClick={e => { e.preventDefault(); e.stopPropagation(); onLibreriaChange(s); setShowMenu(false); }}
+                        className={`w-full text-left px-3 py-2 font-mono text-[9px] tracking-widest uppercase hover:bg-cyan/10 transition-colors cursor-pointer ${libreriaStato === s ? STATO_COLOR[s] : "text-bone/60"}`}
+                      >
+                        {STATO_LABEL[s]}
+                      </button>
+                    ))}
+                    {libreriaStato && (
+                      <button
+                        onClick={e => { e.preventDefault(); e.stopPropagation(); onLibreriaChange(null); setShowMenu(false); }}
+                        className="w-full text-left px-3 py-2 font-mono text-[9px] tracking-widest uppercase text-magenta/50 hover:text-magenta hover:bg-magenta/5 transition-colors cursor-pointer border-t border-cyan/10"
+                      >
+                        ✕ Rimuovi
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </>
         )}
       </div>

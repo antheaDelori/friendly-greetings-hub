@@ -178,6 +178,9 @@ export function SiteHeader() {
             )}
           </div>
 
+          {!isAnonymous && displayName && (
+            <Link to="/libreria" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }}>Libreria</Link>
+          )}
           <Link to="/community" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }}>{t("nav.community")}</Link>
           <Link to="/regolamento" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }}>{t("nav.regole")}</Link>
         </nav>

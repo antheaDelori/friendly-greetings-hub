@@ -18,6 +18,7 @@ const searchSchema = z.object({
 });
 
 type DbBook = {
+  id: string;
   slug: string;
   titolo: string;
   descrizione: string | null;
@@ -68,8 +69,12 @@ function CatalogoPage() {
   const { q, genre, sort } = Route.useSearch();
   const navigate = useNavigate({ from: "/catalogo" });
   const [dbBooks, setDbBooks] = useState<Book[]>([]);
+  const [dbBooksRaw, setDbBooksRaw] = useState<DbBook[]>([]);
   const [collane, setCollane] = useState<CollanaCard[]>([]);
   const [showCollane, setShowCollane] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [libreriaMap, setLibreriaMap] = useState<Record<string, string>>({});
 
   type Search = z.infer<typeof searchSchema>;
   const setQ = (val: string) =>
@@ -83,10 +88,28 @@ function CatalogoPage() {
     const fetchBooks = async () => {
       const { data } = await supabase
         .from("books")
-        .select("slug, titolo, descrizione, genere, anno, letture, copertina_url, lastra_url, author_name")
+        .select("id, slug, titolo, descrizione, genere, anno, letture, copertina_url, lastra_url, author_name")
         .eq("disponibile", true)
         .order("created_at", { ascending: false });
-      setDbBooks((data ?? []).map(dbToBook));
+      const raw = (data ?? []) as DbBook[];
+      setDbBooksRaw(raw);
+      setDbBooks(raw.map(dbToBook));
+    };
+    const fetchAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || user.is_anonymous) return;
+      setUserId(user.id);
+      setIsLoggedIn(true);
+      const { data: libData } = await supabase
+        .from("libreria")
+        .select("stato, books(slug)")
+        .eq("user_id", user.id);
+      const map: Record<string, string> = {};
+      for (const entry of libData ?? []) {
+        const slug = (entry.books as unknown as { slug: string } | null)?.slug;
+        if (slug) map[slug] = entry.stato;
+      }
+      setLibreriaMap(map);
     };
     const fetchCollane = async () => {
       const { data: collaneData } = await supabase
@@ -107,7 +130,24 @@ function CatalogoPage() {
     };
     fetchBooks();
     fetchCollane();
+    fetchAuth();
   }, []);
+
+  const handleLibreriaChange = async (bookSlug: string, stato: string | null) => {
+    if (!userId) return;
+    const bookRaw = dbBooksRaw.find(b => b.slug === bookSlug);
+    if (!bookRaw) return;
+    if (stato === null) {
+      await supabase.from("libreria").delete().eq("user_id", userId).eq("book_id", bookRaw.id);
+      setLibreriaMap(prev => { const next = { ...prev }; delete next[bookSlug]; return next; });
+    } else if (libreriaMap[bookSlug]) {
+      await supabase.from("libreria").update({ stato }).eq("user_id", userId).eq("book_id", bookRaw.id);
+      setLibreriaMap(prev => ({ ...prev, [bookSlug]: stato }));
+    } else {
+      await supabase.from("libreria").insert({ user_id: userId, book_id: bookRaw.id, stato });
+      setLibreriaMap(prev => ({ ...prev, [bookSlug]: stato }));
+    }
+  };
 
   const allBooks = dbBooks;
 
@@ -267,7 +307,15 @@ function CatalogoPage() {
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {results.map((b) => <BookCard key={b.slug} book={b} />)}
+            {results.map((b) => (
+                <BookCard
+                  key={b.slug}
+                  book={b}
+                  isLoggedIn={isLoggedIn}
+                  libreriaStato={(libreriaMap[b.slug] as "da_leggere" | "in_lettura" | "letto") ?? null}
+                  onLibreriaChange={(stato) => handleLibreriaChange(b.slug, stato)}
+                />
+              ))}
           </div>
         )}
         </section>
