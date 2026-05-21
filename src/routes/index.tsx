@@ -58,11 +58,16 @@ function Index() {
   const [isAuthor, setIsAuthor] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user || user.is_anonymous) return;
-      supabase.from("author_profiles").select("id").eq("id", user.id).maybeSingle()
-        .then(({ data }) => setIsAuthor(!!data));
+    const checkAuthor = async (userId: string) => {
+      const { data } = await supabase.from("author_profiles").select("id").eq("id", userId).maybeSingle();
+      setIsAuthor(!!data);
+    };
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const user = session?.user;
+      if (user && !user.is_anonymous) checkAuthor(user.id);
+      else setIsAuthor(false);
     });
+    return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
