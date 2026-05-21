@@ -131,81 +131,84 @@ function RegistrazionePage() {
 
   return (
     <PageShell code="// AUTH/REGISTER.form" title={t("registrazione.pageTitle")} subtitle={t("registrazione.pageSubtitle")}>
-      <div className="max-w-2xl">
-        <HudPanel label="dati_principali" code="REQ ★">
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <div className="grid lg:grid-cols-[1fr_360px] gap-6">
 
-            <div className="grid sm:grid-cols-2 gap-5">
-              <HudField label={t("registrazione.fNome")} error={errors.nome?.message}>
-                <input {...register("nome")} placeholder={t("registrazione.phNome")} className={inputClass} />
-              </HudField>
-              <HudField label={t("registrazione.fCognome")} error={errors.cognome?.message}>
-                <input {...register("cognome")} placeholder={t("registrazione.phCognome")} className={inputClass} />
-              </HudField>
-            </div>
-
-            <div className="border border-cyan/20 bg-cyan/5 p-5 space-y-5">
-              <div className="font-mono text-[10px] tracking-[0.3em] text-cyan uppercase">// conferma_credenziali</div>
+          <HudPanel label="dati_principali" code="REQ ★">
+            <div className="space-y-5">
               <div className="grid sm:grid-cols-2 gap-5">
-                <HudField label={t("registrazione.fEmail")} error={errors.email?.message}>
-                  <input {...register("email")} type="email" placeholder={t("registrazione.phEmail")} className={inputClass} />
+                <HudField label={t("registrazione.fNome")} error={errors.nome?.message}>
+                  <input {...register("nome")} placeholder={t("registrazione.phNome")} className={inputClass} />
                 </HudField>
-                <HudField label={t("registrazione.fEmailConferma")} error={errors.email_conferma?.message}>
-                  <input {...register("email_conferma")} type="email" placeholder={t("registrazione.phEmailConferma")} className={inputClass} />
-                </HudField>
-                <HudField label={t("registrazione.fPassword")} error={errors.password?.message}>
-                  <input {...register("password")} type="password" placeholder={t("registrazione.phPassword")} className={inputClass} />
-                </HudField>
-                <HudField label={t("registrazione.fPasswordConferma")} error={errors.password_conferma?.message}>
-                  <input {...register("password_conferma")} type="password" placeholder={t("registrazione.phPasswordConferma")} className={inputClass} />
+                <HudField label={t("registrazione.fCognome")} error={errors.cognome?.message}>
+                  <input {...register("cognome")} placeholder={t("registrazione.phCognome")} className={inputClass} />
                 </HudField>
               </div>
-            </div>
 
-            <details className="group">
-              <summary className="font-mono tracking-[0.25em] text-[10px] text-magenta uppercase cursor-pointer hover:text-cyan transition-colors">
-                ▸ {t("registrazione.campiOpzionali")}
-              </summary>
-              <div className="mt-4 grid sm:grid-cols-2 gap-5">
-                <HudField label={t("registrazione.fTelefono")}>
-                  <input {...register("telefono")} placeholder="+39 ..." className={inputClass} />
-                </HudField>
-                <HudField label={t("registrazione.fPseudonimo")}>
-                  <input {...register("pseudonimo")} placeholder={t("registrazione.phPseudonimo")} className={inputClass} />
-                </HudField>
-                <HudField label={t("registrazione.fDataNascita")}>
-                  <input {...register("data_nascita")} type="date" className={inputClass} />
-                </HudField>
-                <div className="sm:col-span-2">
-                  <HudField label={t("registrazione.fIndirizzo")}>
-                    <input {...register("indirizzo")} placeholder={t("registrazione.phIndirizzo")} className={inputClass} />
+              <div className="border border-cyan/20 bg-cyan/5 p-5 space-y-5">
+                <div className="font-mono text-[10px] tracking-[0.3em] text-cyan uppercase">// conferma_credenziali</div>
+                <div className="grid sm:grid-cols-2 gap-5">
+                  <HudField label={t("registrazione.fEmail")} error={errors.email?.message}>
+                    <input {...register("email")} type="email" placeholder={t("registrazione.phEmail")} className={inputClass} />
                   </HudField>
-                </div>
-                <div className="sm:col-span-2">
-                  <HudField label={t("registrazione.fAvatar")} error={errors.avatar_url?.message}>
-                    <input {...register("avatar_url")} placeholder="https://..." className={inputClass} />
+                  <HudField label={t("registrazione.fEmailConferma")} error={errors.email_conferma?.message}>
+                    <input {...register("email_conferma")} type="email" placeholder={t("registrazione.phEmailConferma")} className={inputClass} />
+                  </HudField>
+                  <HudField label={t("registrazione.fPassword")} error={errors.password?.message}>
+                    <input {...register("password")} type="password" placeholder={t("registrazione.phPassword")} className={inputClass} />
+                  </HudField>
+                  <HudField label={t("registrazione.fPasswordConferma")} error={errors.password_conferma?.message}>
+                    <input {...register("password_conferma")} type="password" placeholder={t("registrazione.phPasswordConferma")} className={inputClass} />
                   </HudField>
                 </div>
               </div>
-            </details>
 
-            {serverError && (
-              <p className="font-mono text-[11px] text-magenta border border-magenta/30 bg-magenta/5 px-4 py-3">
-                ⚠ {serverError}
-              </p>
-            )}
+              {serverError && (
+                <p className="font-mono text-[11px] text-magenta border border-magenta/30 bg-magenta/5 px-4 py-3">
+                  ⚠ {serverError}
+                </p>
+              )}
 
-            <div className="flex flex-wrap gap-3 items-center pt-2">
-              <HudButton type="submit" variant="primary" disabled={loading}>
-                {loading ? `▸ ${t("registrazione.invioLoading")}` : `▸ ${t("registrazione.invioBtn")}`}
-              </HudButton>
-              <Link to="/auth" className="font-mono text-[10px] tracking-widest uppercase text-bone/60 hover:text-cyan transition-colors">
-                {t("registrazione.annulla")}
-              </Link>
+              <div className="flex flex-wrap gap-3 items-center pt-2">
+                <HudButton type="submit" variant="primary" disabled={loading}>
+                  {loading ? `▸ ${t("registrazione.invioLoading")}` : `▸ ${t("registrazione.invioBtn")}`}
+                </HudButton>
+                <Link to="/auth" className="font-mono text-[10px] tracking-widest uppercase text-bone/60 hover:text-cyan transition-colors">
+                  {t("registrazione.annulla")}
+                </Link>
+              </div>
             </div>
-          </form>
-        </HudPanel>
-      </div>
+          </HudPanel>
+
+          <HudPanel label="campi_facoltativi" tone="magenta">
+            <p className="font-serif italic text-bone/70 text-sm">
+              {t("registrazione.panelOpzionaliDesc", "Arricchisci il tuo profilo. Puoi completare o modificare questi dati in qualsiasi momento.")}
+            </p>
+            <div className="mt-5 space-y-4">
+              <HudField label={t("registrazione.fPseudonimo")}>
+                <input {...register("pseudonimo")} placeholder={t("registrazione.phPseudonimo")} className={inputClass} />
+              </HudField>
+              <HudField label={t("registrazione.fTelefono")}>
+                <input {...register("telefono")} placeholder="+39 ..." className={inputClass} />
+              </HudField>
+              <HudField label={t("registrazione.fDataNascita")}>
+                <input {...register("data_nascita")} type="date" className={inputClass} />
+              </HudField>
+              <HudField label={t("registrazione.fIndirizzo")}>
+                <input {...register("indirizzo")} placeholder={t("registrazione.phIndirizzo")} className={inputClass} />
+              </HudField>
+              <HudField label={t("registrazione.fAvatar")} error={errors.avatar_url?.message}>
+                <input {...register("avatar_url")} placeholder="https://..." className={inputClass} />
+              </HudField>
+            </div>
+            <div className="hud-divider my-5" />
+            <p className="font-mono text-[10px] tracking-widest text-bone/40 uppercase">
+              {t("registrazione.emailConfermaNote")}
+            </p>
+          </HudPanel>
+
+        </div>
+      </form>
     </PageShell>
   );
 }
