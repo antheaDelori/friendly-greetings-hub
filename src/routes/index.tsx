@@ -357,7 +357,7 @@ function Index() {
             <p className="mt-6 font-serif italic text-lg text-bone/70 max-w-md">
               {t("home.autoreDesc")}
             </p>
-            <Link to="/auth/profilo-autore" className="mt-8 inline-flex items-center gap-3 border border-cyan bg-cyan/10 text-cyan px-7 py-4 font-mono tracking-[0.22em] text-[11px] uppercase hover:bg-cyan hover:text-void hover:glow-cyan transition-all">
+            <Link to="/auth/registrazione" className="mt-8 inline-flex items-center gap-3 border border-cyan bg-cyan/10 text-cyan px-7 py-4 font-mono tracking-[0.22em] text-[11px] uppercase hover:bg-cyan hover:text-void hover:glow-cyan transition-all">
               ▸ {t("home.autoreBtn")}
             </Link>
           </div>
