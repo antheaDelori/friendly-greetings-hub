@@ -177,6 +177,10 @@ function RegistrazionePage() {
                   {t("registrazione.annulla")}
                 </Link>
               </div>
+              <div className="hud-divider mt-4" />
+              <p className="font-mono text-[10px] tracking-widest text-bone uppercase">
+                {t("registrazione.emailConfermaNote")}
+              </p>
             </div>
           </HudPanel>
 
@@ -201,10 +205,6 @@ function RegistrazionePage() {
                 <input {...register("avatar_url")} placeholder="https://..." className={inputClass} />
               </HudField>
             </div>
-            <div className="hud-divider my-5" />
-            <p className="font-mono text-[10px] tracking-widest text-bone/40 uppercase">
-              {t("registrazione.emailConfermaNote")}
-            </p>
           </HudPanel>
 
         </div>
