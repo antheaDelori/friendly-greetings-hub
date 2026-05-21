@@ -130,10 +130,8 @@ function RegistrazionePage() {
   }
 
   return (
-    <>
-
     <PageShell code="// AUTH/REGISTER.form" title={t("registrazione.pageTitle")} subtitle={t("registrazione.pageSubtitle")}>
-      <div className="grid lg:grid-cols-[1fr_360px] gap-6">
+      <div className="max-w-2xl">
         <HudPanel label="dati_principali" code="REQ ★">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
 
@@ -207,22 +205,7 @@ function RegistrazionePage() {
             </div>
           </form>
         </HudPanel>
-
-        <HudPanel label="vuoi pubblicare?" tone="magenta">
-          <h3 className="font-display text-xl text-bone tracking-tight">{t("registrazione.panelAutoreTitle")}</h3>
-          <p className="mt-3 font-serif italic text-bone/70">
-            {t("registrazione.panelAutoreDesc")}
-          </p>
-          <Link to="/auth/profilo-autore" className="mt-5 inline-block">
-            <HudButton variant="magenta">◆ {t("registrazione.panelAutoreBtn")}</HudButton>
-          </Link>
-          <div className="hud-divider my-6" />
-          <p className="font-mono text-[10px] tracking-widest text-bone/40 uppercase">
-            {t("registrazione.emailConfermaNote")}
-          </p>
-        </HudPanel>
       </div>
     </PageShell>
-    </>
   );
 }
