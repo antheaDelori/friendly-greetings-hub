@@ -130,36 +130,32 @@ export function BookCard({ book, compact = false, libreriaStato = null, onLibrer
               <span className="text-cyan/60">{book.year}</span>
             </div>
             {isLoggedIn && onLibreriaChange && (
-              <div ref={menuRef} className="relative mt-2 pt-2 border-t border-cyan/10">
-                <button
-                  onClick={e => { e.preventDefault(); e.stopPropagation(); setShowMenu(m => !m); }}
-                  className={`w-full font-mono text-[9px] tracking-widest uppercase py-1.5 text-center transition-colors cursor-pointer ${libreriaStato ? STATO_COLOR[libreriaStato] : "text-bone/35 hover:text-cyan"}`}
-                >
-                  {libreriaStato ? `◈ ${STATO_LABEL[libreriaStato]}` : "◈ Aggiungi alla libreria"}
-                </button>
-                {showMenu && (
-                  <div
-                    className="absolute bottom-full left-0 right-0 z-50 glass border border-cyan/30 py-1 mb-1"
-                    onClick={e => e.stopPropagation()}
-                  >
+              <div className="mt-2 pt-2 border-t border-cyan/10">
+                {showMenu ? (
+                  <div className="flex gap-1" onClick={e => e.stopPropagation()}>
                     {(["da_leggere", "in_lettura", "letto"] as LibreriaStato[]).map(s => (
                       <button
                         key={s}
                         onClick={e => { e.preventDefault(); e.stopPropagation(); onLibreriaChange(s); setShowMenu(false); }}
-                        className={`w-full text-left px-3 py-2 font-mono text-[9px] tracking-widest uppercase hover:bg-cyan/10 transition-colors cursor-pointer ${libreriaStato === s ? STATO_COLOR[s] : "text-bone/60"}`}
+                        className={`flex-1 font-mono text-[8px] tracking-wide uppercase py-1.5 border transition-colors cursor-pointer ${libreriaStato === s ? `${STATO_COLOR[s]} border-current bg-current/10` : "text-bone/40 border-bone/15 hover:text-cyan hover:border-cyan/40"}`}
                       >
-                        {STATO_LABEL[s]}
+                        {s === "da_leggere" ? "Leggere" : s === "in_lettura" ? "Lettura" : "Letto ✓"}
                       </button>
                     ))}
                     {libreriaStato && (
                       <button
                         onClick={e => { e.preventDefault(); e.stopPropagation(); onLibreriaChange(null); setShowMenu(false); }}
-                        className="w-full text-left px-3 py-2 font-mono text-[9px] tracking-widest uppercase text-magenta/50 hover:text-magenta hover:bg-magenta/5 transition-colors cursor-pointer border-t border-cyan/10"
-                      >
-                        ✕ Rimuovi
-                      </button>
+                        className="font-mono text-[8px] uppercase px-1.5 py-1.5 border border-magenta/20 text-magenta/40 hover:text-magenta hover:border-magenta/40 transition-colors cursor-pointer"
+                      >✕</button>
                     )}
                   </div>
+                ) : (
+                  <button
+                    onClick={e => { e.preventDefault(); e.stopPropagation(); setShowMenu(true); }}
+                    className={`w-full font-mono text-[9px] tracking-widest uppercase py-1.5 text-center transition-colors cursor-pointer ${libreriaStato ? STATO_COLOR[libreriaStato] : "text-bone/35 hover:text-cyan"}`}
+                  >
+                    {libreriaStato ? `◈ ${STATO_LABEL[libreriaStato]}` : "◈ Aggiungi alla libreria"}
+                  </button>
                 )}
               </div>
             )}
