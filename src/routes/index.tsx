@@ -148,8 +148,8 @@ function Index() {
                 ▸ {t("home.esploraBtn")}
               </Link>
               {isAuthor ? (
-                <span className="inline-flex items-center gap-3 border border-magenta/20 px-7 py-4 font-mono tracking-[0.22em] text-xs uppercase text-magenta/30 cursor-not-allowed select-none">
-                  ✓ {t("home.autoreBtnGiaAutore", "Sei già un autore")}
+                <span className="inline-flex items-center gap-3 border border-magenta/60 bg-magenta/10 px-7 py-4 font-mono tracking-[0.22em] text-xs uppercase text-magenta cursor-default select-none">
+                  ◆ {t("home.autoreBtnGiaAutore", "Sei un autore")}
                 </span>
               ) : (
                 <Link
@@ -378,8 +378,8 @@ function Index() {
               {t("home.autoreDesc")}
             </p>
             {isAuthor ? (
-              <span className="mt-8 inline-flex items-center gap-3 border border-cyan/20 text-cyan/30 px-7 py-4 font-mono tracking-[0.22em] text-[11px] uppercase cursor-not-allowed select-none">
-                ✓ {t("home.autoreBtnGiaAutore", "Sei già un autore")}
+              <span className="mt-8 inline-flex items-center gap-3 border border-cyan bg-cyan/10 text-cyan px-7 py-4 font-mono tracking-[0.22em] text-[11px] uppercase cursor-default select-none">
+                ◆ {t("home.autoreBtnGiaAutore", "Sei un autore")}
               </span>
             ) : (
               <Link to="/auth/registrazione" className="mt-8 inline-flex items-center gap-3 border border-cyan bg-cyan/10 text-cyan px-7 py-4 font-mono tracking-[0.22em] text-[11px] uppercase hover:bg-cyan hover:text-void hover:glow-cyan transition-all">
