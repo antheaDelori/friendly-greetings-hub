@@ -154,7 +154,7 @@ function Index() {
                 </span>
               ) : (
                 <Link
-                  to={isLoggedIn ? "/auth/profilo-autore" : "/auth/registrazione"}
+                  to={isLoggedIn ? "/auth/profilo-autore" : "/auth/registrazione"} search={isLoggedIn ? undefined : { autore: true }}
                   className="inline-flex items-center gap-3 border border-magenta/60 bg-magenta/10 px-7 py-4 font-mono tracking-[0.22em] text-xs uppercase text-magenta hover:bg-magenta hover:text-void hover:glow-magenta transition-all"
                 >
                   ◆ {t("home.divAutoreBtn")}
@@ -383,7 +383,7 @@ function Index() {
                 ◆ {t("home.autoreBtnGiaAutore", "Sei un autore")}
               </span>
             ) : (
-              <Link to={isLoggedIn ? "/auth/profilo-autore" : "/auth/registrazione"} className="mt-8 inline-flex items-center gap-3 border border-cyan bg-cyan/10 text-cyan px-7 py-4 font-mono tracking-[0.22em] text-[11px] uppercase hover:bg-cyan hover:text-void hover:glow-cyan transition-all">
+              <Link to={isLoggedIn ? "/auth/profilo-autore" : "/auth/registrazione"} search={isLoggedIn ? undefined : { autore: true }} className="mt-8 inline-flex items-center gap-3 border border-cyan bg-cyan/10 text-cyan px-7 py-4 font-mono tracking-[0.22em] text-[11px] uppercase hover:bg-cyan hover:text-void hover:glow-cyan transition-all">
                 ▸ {t("home.autoreBtn")}
               </Link>
             )}

@@ -8,6 +8,7 @@ import { HudPanel, PageShell, HudButton } from "@/components/HudPanel";
 import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/auth/registrazione")({
+  validateSearch: z.object({ autore: z.coerce.boolean().optional() }),
   head: () => ({
     meta: [
       { title: "Registrazione — Liberiamo la mente" },
@@ -53,6 +54,7 @@ const inputClass = "mt-2 w-full bg-void/40 border border-cyan/30 px-4 py-3 font-
 
 function RegistrazionePage() {
   const { t, i18n } = useTranslation();
+  const { autore } = Route.useSearch();
   const [serverError, setServerError] = useState<string | null>(null);
   const [emailInviata, setEmailInviata] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -114,9 +116,20 @@ function RegistrazionePage() {
             <span className="text-bone not-italic font-mono text-sm tracking-widest">{emailInviata}</span>
           </p>
           <p className="mt-4 font-serif italic text-base text-bone/50 leading-relaxed">
-            Clicca il link per attivare il tuo account e iniziare a leggere. Il link è valido per 24 ore.
+            Clicca il link per attivare il tuo account{autore ? " e poi completa il tuo profilo autore." : " e iniziare a leggere."} Il link è valido per 24 ore.
           </p>
-          <div className="mt-8 border-t border-cyan/10 pt-6 space-y-2">
+          {autore && (
+            <div className="mt-6 border border-magenta/30 bg-magenta/5 px-5 py-4 text-left">
+              <p className="font-mono text-[10px] tracking-widest text-magenta uppercase mb-2">// passo successivo</p>
+              <p className="font-serif italic text-bone/70 text-sm leading-relaxed">
+                Dopo aver confermato l'email e fatto il primo accesso, completa il tuo profilo autore per iniziare a pubblicare.
+              </p>
+              <Link to="/auth/profilo-autore" className="mt-3 inline-flex items-center gap-2 font-mono text-[10px] tracking-widest uppercase text-magenta hover:text-bone transition-colors">
+                ◆ Vai al profilo autore →
+              </Link>
+            </div>
+          )}
+          <div className="mt-6 border-t border-cyan/10 pt-6 space-y-2">
             <p className="font-mono text-[10px] tracking-widest text-bone/40 uppercase">
               Non trovi l'email? Cerca nello spam:
             </p>
