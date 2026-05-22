@@ -228,39 +228,48 @@ function LibreriaPage() {
               </div>
             )}
 
-            {/* SCAFFALE GENERE SELEZIONATO */}
+            {/* SCAFFALI PER STATO — visibili quando un genere è selezionato */}
             {selectedGenre && genreConfig && (
-              <div>
-                {/* Intestazione scaffale */}
-                <div className="flex items-center gap-4 mb-5">
-                  <span className="font-mono text-[9px] tracking-[0.35em] text-bone uppercase">{genreConfig.code}</span>
-                  <div className="flex-1 h-px bg-cyan/10" />
-                  <span className="font-mono text-[10px] tracking-widest uppercase border border-cyan/40 text-cyan px-3 py-1">
-                    {genreConfig.label}
-                  </span>
-                  <span className="font-mono text-[9px] text-bone/30">{genreEntries.length}</span>
-                </div>
-
-                {genreEntries.length === 0 ? (
-                  <div className="border border-dashed border-cyan/10 py-12 text-center">
-                    <p className="font-serif italic text-bone/25 text-sm">Nessuna opera in questo scaffale</p>
-                    <Link to="/catalogo" className="mt-3 inline-block font-mono text-[10px] tracking-widest uppercase text-cyan/50 hover:text-cyan transition-colors">
-                      ▸ Vai al catalogo
-                    </Link>
-                  </div>
-                ) : (
-                  <div className="relative">
-                    <div className="overflow-x-auto pb-14 scrollbar-thin scrollbar-thumb-cyan/20 scrollbar-track-transparent">
-                      <div className="flex gap-4" style={{ width: "max-content" }}>
-                        {genreEntries.map(entry => (
-                          <BookCover key={entry.id} entry={entry} onCambiaStato={handleCambiaStato} onRimuovi={handleRimuovi} />
-                        ))}
+              <div className="space-y-10">
+                {[
+                  { stato: "in_lettura",  label: "In lettura",  line: "bg-cyan/40",    badge: "border-cyan/60 text-cyan" },
+                  { stato: "da_leggere",  label: "Da leggere",  line: "bg-amber/30",   badge: "border-amber/60 text-amber" },
+                  { stato: "letto",       label: "Letti",       line: "bg-magenta/35", badge: "border-magenta/60 text-magenta" },
+                ].map(shelf => {
+                  const shelfEntries = genreEntries.filter(e => e.stato === shelf.stato);
+                  return (
+                    <div key={shelf.stato}>
+                      {/* Intestazione scaffale */}
+                      <div className="flex items-center gap-4 mb-5">
+                        <span className="font-mono text-[9px] tracking-[0.35em] text-bone uppercase">{genreConfig.label}</span>
+                        <div className="flex-1 h-px bg-white/10" />
+                        <span className={`font-mono text-[10px] tracking-widest uppercase border px-3 py-1 ${shelf.badge}`}>
+                          {shelf.label}
+                        </span>
+                        <span className="font-mono text-[9px] text-bone/50">{shelfEntries.length}</span>
                       </div>
+
+                      {shelfEntries.length === 0 ? (
+                        <div className="border border-dashed border-white/10 py-8 text-center">
+                          <p className="font-serif italic text-bone/30 text-sm">Scaffale vuoto</p>
+                        </div>
+                      ) : (
+                        <div className="relative">
+                          <div className="overflow-x-auto pb-14 scrollbar-thin scrollbar-thumb-cyan/20 scrollbar-track-transparent">
+                            <div className="flex gap-4" style={{ width: "max-content" }}>
+                              {shelfEntries.map(entry => (
+                                <BookCover key={entry.id} entry={entry} onCambiaStato={handleCambiaStato} onRimuovi={handleRimuovi} />
+                              ))}
+                            </div>
+                          </div>
+                          {/* Plancia scaffale */}
+                          <div className={`h-px w-full ${shelf.line}`} />
+                          <div className="h-3 w-full bg-gradient-to-b from-black/20 to-transparent" />
+                        </div>
+                      )}
                     </div>
-                    <div className="h-px w-full bg-cyan/25" />
-                    <div className="h-3 w-full bg-gradient-to-b from-black/20 to-transparent" />
-                  </div>
-                )}
+                  );
+                })}
               </div>
             )}
 
