@@ -97,13 +97,13 @@ function BookCover({ entry, onCambiaStato, onRimuovi }: {
           value={entry.stato}
           onChange={e => { e.stopPropagation(); onCambiaStato(entry.id, e.target.value); }}
           onClick={e => e.stopPropagation()}
-          className="w-full font-mono text-[7px] uppercase tracking-widest border border-cyan/30 bg-void/95 text-bone/70 px-1 py-1 cursor-pointer"
+          className="w-full font-mono text-[7px] uppercase tracking-widest border border-cyan/50 bg-void/95 text-bone px-1 py-1 cursor-pointer"
         >
           {STATI.map(s => <option key={s} value={s}>{STATO_LABEL[s]}</option>)}
         </select>
         <button
           onClick={() => onRimuovi(entry.id)}
-          className="w-full font-mono text-[7px] uppercase tracking-widest text-magenta/60 hover:text-magenta border border-magenta/20 hover:border-magenta/50 bg-void/95 py-1 transition-colors cursor-pointer"
+          className="w-full font-mono text-[7px] uppercase tracking-widest text-magenta hover:text-bone border border-magenta/50 hover:border-magenta bg-void/95 py-1 transition-colors cursor-pointer"
         >
           ✕ rimuovi
         </button>

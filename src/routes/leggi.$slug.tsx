@@ -237,6 +237,21 @@ function ReadPage() {
   // Torna sempre in cima quando si apre il libro
   useEffect(() => { window.scrollTo({ top: 0, behavior: "instant" }); }, []);
 
+  // Auto-aggiorna libreria: da_leggere → in_lettura all'apertura del libro
+  useEffect(() => {
+    if (!isLoggedIn || isAnonymous || !userId || !bookId) return;
+    supabase.from("libreria")
+      .select("id, stato")
+      .eq("user_id", userId)
+      .eq("book_id", bookId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.stato === "da_leggere") {
+          supabase.from("libreria").update({ stato: "in_lettura" }).eq("id", data.id);
+        }
+      });
+  }, [userId, bookId]);
+
   const bookmarkKey = `reading_pos_${book.slug}`;
   const bookmarkParaKey = `bookmark_para_${book.slug}`;
   const proseRef = useRef<HTMLDivElement>(null);
