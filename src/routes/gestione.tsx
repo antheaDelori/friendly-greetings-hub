@@ -401,16 +401,7 @@ function GestionePage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  useEffect(() => {
-    if (loading || cestinoScrolled.current) return;
-    const hasCestinato = books.some(b => b.cestinato && !b.collana_id);
-    if (hasCestinato) {
-      cestinoScrolled.current = true;
-      setTimeout(() => {
-        cestinoSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-      }, 400);
-    }
-  }, [loading, books]);
+  // auto-scroll al cestino rimosso: disturbava il caricamento della pagina
 
   useEffect(() => {
     if (!selected) {
@@ -1320,11 +1311,13 @@ function GestionePage() {
 
                 {/* AI cover generation — only for existing books */}
                 {editingId && (
-                  <div className="border border-cyan/20 bg-cyan/5 p-5 space-y-4">
+                  <div className="border border-cyan/60 bg-cyan/8 p-5 space-y-4 relative">
+                    <span className="absolute -top-px left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan/60 to-transparent" />
                     <div className="flex items-center justify-between">
-                      <div className="font-mono text-[10px] tracking-[0.3em] text-cyan uppercase">// genera_copertina_AI</div>
-                      <span className="font-mono text-[9px] text-bone/50">{aiUsed} / 3 generazioni usate</span>
+                      <div className="font-mono text-[11px] tracking-[0.3em] text-cyan uppercase font-bold">◈ Genera copertina con AI</div>
+                      <span className="font-mono text-[10px] text-bone/70 border border-cyan/30 px-2 py-0.5">{aiUsed} / 3 gratuite</span>
                     </div>
+                    <p className="font-serif italic text-bone/60 text-sm">Descrivi la scena: titolo, autore e logo vengono aggiunti automaticamente.</p>
 
                     {aiUsed < 3 ? (
                       <>
@@ -1342,8 +1335,8 @@ function GestionePage() {
                             {aiGenerating ? "▸ Generazione in corso..." : "◈ Genera copertina AI"}
                           </HudButton>
                           {aiGenerating && (
-                            <span className="font-mono text-[9px] tracking-widest text-bone/50 animate-pulse">
-                              La generazione richiede 30–40 secondi, attendi...
+                            <span className="font-mono text-[11px] tracking-wide text-cyan/90">
+                              ▸ La generazione richiede 30–40 secondi, attendere...
                             </span>
                           )}
                         </div>

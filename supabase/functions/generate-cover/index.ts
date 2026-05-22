@@ -125,7 +125,10 @@ Deno.serve(async (req) => {
   const logoRes = await fetch(LOGO_URL);
   if (!logoRes.ok) return json({ error: "Logo publisher non trovato" }, 500);
   const logoArray = await logoRes.arrayBuffer();
-  const logo_b64 = btoa(String.fromCharCode(...new Uint8Array(logoArray)));
+  const logoBytes = new Uint8Array(logoArray);
+  let logoBinary = "";
+  for (let i = 0; i < logoBytes.length; i++) logoBinary += String.fromCharCode(logoBytes[i]);
+  const logo_b64 = btoa(logoBinary);
 
   return json({ cover_b64, logo_b64, used: (count ?? 0) + 1, limit: FREE_LIMIT });
 });
