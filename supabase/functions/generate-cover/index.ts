@@ -77,7 +77,7 @@ Deno.serve(async (req) => {
   }
 
   // ── GENERATE COVER ──────────────────────────────────────────────────────────
-  const { book_id, prompt } = body;
+  const { book_id, prompt, book_title, author_name } = body;
   if (!book_id || !prompt) return json({ error: "book_id e prompt richiesti" }, 400);
 
   const { count } = await supabase
@@ -100,7 +100,9 @@ Deno.serve(async (req) => {
   formData.append("model", "gpt-image-1");
   formData.append(
     "prompt",
-    `Professional book cover for an Italian literary work. ${prompt}. ` +
+    `Professional book cover for an Italian literary work. ` +
+    `Title: "${book_title ?? ""}". Author: "${author_name ?? ""}". Publisher: "Anthea Delori Edizioni". ` +
+    `${prompt}. ` +
     `The provided image is the publisher logo "Anthea Delori Edizioni" — place it at the bottom center of the cover in a tasteful, elegant position. ` +
     `Vertical portrait orientation, cinematic and atmospheric lighting, high-quality literary art style.`,
   );

@@ -487,7 +487,7 @@ function GestionePage() {
             Authorization: `Bearer ${session.access_token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ book_id: editingId, prompt: aiPrompt }),
+          body: JSON.stringify({ book_id: editingId, prompt: aiPrompt, book_title: titolo, author_name: authorName }),
         },
       );
       const data = await res.json();
@@ -1274,7 +1274,7 @@ function GestionePage() {
                           <textarea
                             value={aiPrompt}
                             onChange={e => setAiPrompt(e.target.value)}
-                            placeholder="Es. Una foresta pluviale notturna con luci bioluminescenti, atmosfera misteriosa e onirica..."
+                            placeholder="Es. Una galassia con un pianeta centrale dominante e mondi periferici in conflitto, atmosfera epica e fantascientifica..."
                             className="mt-2 w-full min-h-20 bg-void/40 border border-cyan/30 px-4 py-3 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-cyan transition-all"
                           />
                         </div>
