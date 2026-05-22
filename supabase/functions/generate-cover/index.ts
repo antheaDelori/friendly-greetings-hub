@@ -120,15 +120,16 @@ Deno.serve(async (req) => {
 
   const genData = await genRes.json();
   const cover_b64: string = genData.data[0].b64_json;
+  const imgArray = Uint8Array.from(atob(cover_b64), (c) => c.charCodeAt(0));
 
-  // Scarica il logo e restituiscilo come base64 — la composizione avviene nel browser
-  const logoRes = await fetch(LOGO_URL);
-  if (!logoRes.ok) return json({ error: "Logo publisher non trovato" }, 500);
-  const logoArray = await logoRes.arrayBuffer();
-  const logoBytes = new Uint8Array(logoArray);
-  let logoBinary = "";
-  for (let i = 0; i < logoBytes.length; i++) logoBinary += String.fromCharCode(logoBytes[i]);
-  const logo_b64 = btoa(logoBinary);
+  // Salva la copertina su Storage e restituisce solo l'URL — risposta piccola, niente base64
+  const storagePath = `ai/${user.id}/${book_id}/${Date.now()}.png`;
+  const { error: uploadErr } = await supabase.storage
+    .from("copertine")
+    .upload(storagePath, imgArray, { contentType: "image/png", upsert: false });
+  if (uploadErr) return json({ error: uploadErr.message }, 500);
 
-  return json({ cover_b64, logo_b64, used: (count ?? 0) + 1, limit: FREE_LIMIT });
+  const { data: urlData } = supabase.storage.from("copertine").getPublicUrl(storagePath);
+
+  return json({ cover_url: urlData.publicUrl, used: (count ?? 0) + 1, limit: FREE_LIMIT });
 });

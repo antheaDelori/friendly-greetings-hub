@@ -110,7 +110,13 @@ const ALTRO_TIPO = "Altro (specifica sotto)";
 const inputClass = "mt-2 w-full bg-void/40 border border-cyan/30 px-4 py-3 font-mono text-bone placeholder:text-bone/30 focus:outline-none focus:border-cyan focus:bg-void/60 transition-all";
 const labelClass = "font-mono text-[10px] tracking-[0.25em] text-cyan/70 uppercase";
 
-function compositeImages(coverB64: string, logoB64: string): Promise<Blob> {
+async function fetchObjectUrl(url: string): Promise<string> {
+  const res = await fetch(url);
+  const blob = await res.blob();
+  return URL.createObjectURL(blob);
+}
+
+function compositeImages(coverObjUrl: string, logoObjUrl: string): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const COVER_W = 1024;
     const COVER_H = 1536;
@@ -138,10 +144,10 @@ function compositeImages(coverB64: string, logoB64: string): Promise<Blob> {
         }, "image/png");
       };
       logo.onerror = () => reject(new Error("Caricamento logo fallito"));
-      logo.src = `data:image/png;base64,${logoB64}`;
+      logo.src = logoObjUrl;
     };
     cover.onerror = () => reject(new Error("Caricamento copertina fallito"));
-    cover.src = `data:image/png;base64,${coverB64}`;
+    cover.src = coverObjUrl;
   });
 }
 
@@ -525,8 +531,15 @@ function GestionePage() {
         return;
       }
 
-      // 2. Composita copertina + logo via Canvas (logo pixel-perfect)
-      const composited = await compositeImages(data.cover_b64, data.logo_b64);
+      // 2. Scarica le immagini come blob (evita CORS canvas) e compone
+      const logoUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/copertine/brand/anthea-delori-logo.png`;
+      const [coverObjUrl, logoObjUrl] = await Promise.all([
+        fetchObjectUrl(data.cover_url),
+        fetchObjectUrl(logoUrl),
+      ]);
+      const composited = await compositeImages(coverObjUrl, logoObjUrl);
+      URL.revokeObjectURL(coverObjUrl);
+      URL.revokeObjectURL(logoObjUrl);
 
       // 3. Carica l'immagine finale su Supabase Storage
       const path = `ai/${userId}/${editingId}/${Date.now()}.png`;
@@ -1335,8 +1348,8 @@ function GestionePage() {
                             {aiGenerating ? "▸ Generazione in corso..." : "◈ Genera copertina AI"}
                           </HudButton>
                           {aiGenerating && (
-                            <span className="font-mono text-[11px] tracking-wide text-cyan/90">
-                              ▸ La generazione richiede 30–40 secondi, attendere...
+                            <span className="font-mono text-[11px] tracking-widest text-cyan uppercase">
+                              ◈ Sintesi visiva in corso...
                             </span>
                           )}
                         </div>
