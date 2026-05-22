@@ -110,6 +110,41 @@ const ALTRO_TIPO = "Altro (specifica sotto)";
 const inputClass = "mt-2 w-full bg-void/40 border border-cyan/30 px-4 py-3 font-mono text-bone placeholder:text-bone/30 focus:outline-none focus:border-cyan focus:bg-void/60 transition-all";
 const labelClass = "font-mono text-[10px] tracking-[0.25em] text-cyan/70 uppercase";
 
+function compositeImages(coverB64: string, logoB64: string): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const COVER_W = 1024;
+    const COVER_H = 1536;
+    const LOGO_W = 260;
+    const LOGO_BOTTOM_PAD = 48;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = COVER_W;
+    canvas.height = COVER_H;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) { reject(new Error("Canvas non supportato")); return; }
+
+    const cover = new Image();
+    cover.onload = () => {
+      ctx.drawImage(cover, 0, 0, COVER_W, COVER_H);
+      const logo = new Image();
+      logo.onload = () => {
+        const logoH = Math.round((logo.naturalHeight / logo.naturalWidth) * LOGO_W);
+        const logoX = Math.round((COVER_W - LOGO_W) / 2);
+        const logoY = COVER_H - logoH - LOGO_BOTTOM_PAD;
+        ctx.drawImage(logo, logoX, logoY, LOGO_W, logoH);
+        canvas.toBlob(blob => {
+          if (!blob) { reject(new Error("Canvas toBlob fallito")); return; }
+          resolve(blob);
+        }, "image/png");
+      };
+      logo.onerror = () => reject(new Error("Caricamento logo fallito"));
+      logo.src = `data:image/png;base64,${logoB64}`;
+    };
+    cover.onerror = () => reject(new Error("Caricamento copertina fallito"));
+    cover.src = `data:image/png;base64,${coverB64}`;
+  });
+}
+
 function generateSlug(title: string): string {
   return title
     .toLowerCase()
@@ -473,12 +508,14 @@ function GestionePage() {
   };
 
   const handleGenerateCover = async () => {
-    if (!editingId || !aiPrompt.trim()) return;
+    if (!editingId || !aiPrompt.trim() || !userId) return;
     setAiGenerating(true);
     setAiError(null);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
+
+      // 1. Chiama la edge function — restituisce cover_b64 + logo_b64
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-cover`,
         {
@@ -494,12 +531,34 @@ function GestionePage() {
       if (!res.ok) {
         if (data.error === "limit_reached") setAiUsed(3);
         else setAiError(data.error ?? "Errore nella generazione. Riprova.");
-      } else {
-        setAiGeneratedUrl(data.image_url);
-        setAiUsed(data.used);
+        return;
       }
-    } catch {
-      setAiError("Errore di connessione. Riprova.");
+
+      // 2. Composita copertina + logo via Canvas (logo pixel-perfect)
+      const composited = await compositeImages(data.cover_b64, data.logo_b64);
+
+      // 3. Carica l'immagine finale su Supabase Storage
+      const path = `ai/${userId}/${editingId}/${Date.now()}.png`;
+      const { error: uploadErr } = await supabase.storage
+        .from("copertine")
+        .upload(path, composited, { contentType: "image/png", upsert: false });
+      if (uploadErr) { setAiError(uploadErr.message); return; }
+
+      const { data: urlData } = supabase.storage.from("copertine").getPublicUrl(path);
+      const imageUrl = urlData.publicUrl;
+
+      // 4. Registra il tentativo
+      await supabase.from("ai_cover_attempts").insert({
+        book_id: editingId,
+        author_id: userId,
+        image_url: imageUrl,
+        prompt: aiPrompt,
+      });
+
+      setAiGeneratedUrl(imageUrl);
+      setAiUsed(data.used);
+    } catch (e) {
+      setAiError(e instanceof Error ? e.message : "Errore di connessione. Riprova.");
     } finally {
       setAiGenerating(false);
     }

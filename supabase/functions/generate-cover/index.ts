@@ -90,59 +90,42 @@ Deno.serve(async (req) => {
     return json({ error: "limit_reached", used: count, limit: FREE_LIMIT }, 429);
   }
 
-  // Scarica il logo publisher da Storage
-  const logoRes = await fetch(LOGO_URL);
-  if (!logoRes.ok) return json({ error: "Logo publisher non trovato" }, 500);
-  const logoBlob = await logoRes.blob();
-
-  // Usa /images/edits per passare il logo come riferimento visivo
-  const formData = new FormData();
-  formData.append("model", "gpt-image-1");
-  formData.append(
-    "prompt",
-    `Create a professional book cover in vertical portrait format (like a real published novel). ` +
-    `COVER TEXT: display the title "${book_title ?? ""}" prominently at the top, and the author name "${author_name ?? ""}" above or below the title. ` +
-    `ILLUSTRATION: the background scene should depict — ${prompt}. ` +
-    `Do NOT render any other text or description on the cover besides title and author name. ` +
-    `The provided image is the publisher logo "Anthea Delori Edizioni" — reproduce it faithfully at the bottom center. ` +
-    `Cinematic lighting, high-quality literary art style.`,
-  );
-  formData.append("n", "1");
-  formData.append("size", "1024x1536");
-  formData.append("quality", "medium");
-  formData.append("image[]", logoBlob, "anthea-delori-logo.png");
-
-  const dalleRes = await fetch("https://api.openai.com/v1/images/edits", {
+  // Genera la copertina — solo illustrazione + titolo + autore, nessun logo
+  const genRes = await fetch("https://api.openai.com/v1/images/generations", {
     method: "POST",
-    headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
-    body: formData,
+    headers: {
+      Authorization: `Bearer ${OPENAI_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "gpt-image-1",
+      prompt:
+        `Create a professional book cover in vertical portrait format (like a real published novel). ` +
+        `COVER TEXT: display the title "${book_title ?? ""}" prominently at the top, ` +
+        `and the author name "${author_name ?? ""}" in a smaller font near the title. ` +
+        `ILLUSTRATION: the background scene should depict — ${prompt}. ` +
+        `Leave a clear empty space at the very bottom (about 15% of the cover height) for a publisher logo to be added later. ` +
+        `Do NOT add any publisher name, logo, or extra text besides title and author name. ` +
+        `Cinematic lighting, high-quality literary art style.`,
+      n: 1,
+      size: "1024x1536",
+      quality: "medium",
+    }),
   });
 
-  if (!dalleRes.ok) {
-    const err = await dalleRes.text();
+  if (!genRes.ok) {
+    const err = await genRes.text();
     return json({ error: err }, 502);
   }
 
-  const dalleData = await dalleRes.json();
-  const b64: string = dalleData.data[0].b64_json;
-  const imgArray = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+  const genData = await genRes.json();
+  const cover_b64: string = genData.data[0].b64_json;
 
-  const storagePath = `ai/${user.id}/${book_id}/${Date.now()}.png`;
-  const { error: uploadErr } = await supabase.storage
-    .from("copertine")
-    .upload(storagePath, imgArray, { contentType: "image/png", upsert: false });
+  // Scarica il logo e restituiscilo come base64 — la composizione avviene nel browser
+  const logoRes = await fetch(LOGO_URL);
+  if (!logoRes.ok) return json({ error: "Logo publisher non trovato" }, 500);
+  const logoArray = await logoRes.arrayBuffer();
+  const logo_b64 = btoa(String.fromCharCode(...new Uint8Array(logoArray)));
 
-  if (uploadErr) return json({ error: uploadErr.message }, 500);
-
-  const { data: urlData } = supabase.storage.from("copertine").getPublicUrl(storagePath);
-  const imageUrl = urlData.publicUrl;
-
-  await supabase.from("ai_cover_attempts").insert({
-    book_id,
-    author_id: user.id,
-    image_url: imageUrl,
-    prompt,
-  });
-
-  return json({ image_url: imageUrl, used: (count ?? 0) + 1, limit: FREE_LIMIT });
+  return json({ cover_b64, logo_b64, used: (count ?? 0) + 1, limit: FREE_LIMIT });
 });
