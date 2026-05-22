@@ -222,6 +222,17 @@ function GestionePage() {
   const lastraRef = useRef<HTMLInputElement>(null);
   const pdfRef = useRef<HTMLInputElement>(null);
   const epubRef = useRef<HTMLInputElement>(null);
+
+  // AI cover generation
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiGeneratedUrl, setAiGeneratedUrl] = useState<string | null>(null);
+  const [aiUsed, setAiUsed] = useState(0);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [showTicketForm, setShowTicketForm] = useState(false);
+  const [ticketMessage, setTicketMessage] = useState("");
+  const [ticketSent, setTicketSent] = useState(false);
+  const [ticketSending, setTicketSending] = useState(false);
   const cestinoSectionRef = useRef<HTMLDivElement>(null);
   const cestinoScrolled = useRef(false);
 
@@ -438,6 +449,18 @@ function GestionePage() {
     setExistingEpubUrl(b.epub_url);
     setCollanaId(b.collana_id ?? "");
     setEditingId(b.id);
+    // reset AI cover state and load attempt count
+    setAiGeneratedUrl(null);
+    setAiError(null);
+    setAiPrompt("");
+    setShowTicketForm(false);
+    setTicketMessage("");
+    setTicketSent(false);
+    supabase
+      .from("ai_cover_attempts")
+      .select("id", { count: "exact", head: true })
+      .eq("book_id", b.id)
+      .then(({ count }) => setAiUsed(count ?? 0));
     setSaveError(null);
     setConfirmMode(null);
     setShowForm(true);
@@ -446,6 +469,70 @@ function GestionePage() {
   const handleModifica = () => {
     if (!selected) return;
     openEditForm(selected);
+  };
+
+  const handleGenerateCover = async () => {
+    if (!editingId || !aiPrompt.trim()) return;
+    setAiGenerating(true);
+    setAiError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-cover`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ book_id: editingId, prompt: aiPrompt }),
+        },
+      );
+      const data = await res.json();
+      if (!res.ok) {
+        if (data.error === "limit_reached") setAiUsed(3);
+        else setAiError(data.error ?? "Errore nella generazione. Riprova.");
+      } else {
+        setAiGeneratedUrl(data.image_url);
+        setAiUsed(data.used);
+      }
+    } catch {
+      setAiError("Errore di connessione. Riprova.");
+    } finally {
+      setAiGenerating(false);
+    }
+  };
+
+  const handleSendTicket = async (bookTitle: string) => {
+    if (!editingId || !ticketMessage.trim()) return;
+    setTicketSending(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-cover`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            action: "ticket",
+            book_id: editingId,
+            book_title: bookTitle,
+            message: ticketMessage,
+          }),
+        },
+      );
+      if (res.ok) setTicketSent(true);
+      else setAiError("Errore nell'invio della richiesta. Riprova.");
+    } catch {
+      setAiError("Errore di connessione. Riprova.");
+    } finally {
+      setTicketSending(false);
+    }
   };
 
   const uploadFile = async (file: File, bucket: string, path: string): Promise<string | null> => {
@@ -1170,6 +1257,96 @@ function GestionePage() {
                     </button>
                   </div>
                 </div>
+
+                {/* AI cover generation — only for existing books */}
+                {editingId && (
+                  <div className="border border-cyan/20 bg-cyan/5 p-5 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="font-mono text-[10px] tracking-[0.3em] text-cyan uppercase">// genera_copertina_AI</div>
+                      <span className="font-mono text-[9px] text-bone/50">{aiUsed} / 3 generazioni usate</span>
+                    </div>
+
+                    {aiUsed < 3 ? (
+                      <>
+                        <div>
+                          <span className={labelClass}>↳ Descrivi la copertina che vuoi</span>
+                          <textarea
+                            value={aiPrompt}
+                            onChange={e => setAiPrompt(e.target.value)}
+                            placeholder="Es. Una foresta pluviale notturna con luci bioluminescenti, atmosfera misteriosa e onirica..."
+                            className="mt-2 w-full min-h-20 bg-void/40 border border-cyan/30 px-4 py-3 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-cyan transition-all"
+                          />
+                        </div>
+                        <HudButton variant="ghost" onClick={handleGenerateCover} disabled={aiGenerating || !aiPrompt.trim()}>
+                          {aiGenerating ? "▸ Generazione in corso..." : "◈ Genera copertina AI"}
+                        </HudButton>
+                        {aiError && (
+                          <p className="font-mono text-[11px] text-magenta">{aiError}</p>
+                        )}
+                        {aiGeneratedUrl && (
+                          <div className="flex gap-5 items-start pt-1">
+                            <img src={aiGeneratedUrl} alt="Copertina generata" className="w-24 h-32 object-cover ring-1 ring-cyan/40 flex-shrink-0" />
+                            <div className="space-y-2">
+                              <p className="font-mono text-[10px] text-cyan uppercase tracking-widest">Copertina generata</p>
+                              <HudButton variant="primary" onClick={() => { setExistingCopertinaUrl(aiGeneratedUrl); setAiGeneratedUrl(null); }}>
+                                ✓ Usa come copertina
+                              </HudButton>
+                              <button
+                                onClick={() => setAiGeneratedUrl(null)}
+                                className="block font-mono text-[9px] uppercase tracking-widest text-bone/40 hover:text-magenta transition-colors cursor-pointer"
+                              >
+                                ✕ scarta
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    ) : !ticketSent ? (
+                      !showTicketForm ? (
+                        <div className="space-y-3">
+                          <p className="font-serif italic text-bone/60 text-sm">Hai usato tutte e 3 le generazioni gratuite per quest'opera.</p>
+                          <button
+                            onClick={() => setShowTicketForm(true)}
+                            className="font-mono text-[10px] uppercase tracking-widest text-magenta border border-magenta/40 hover:border-magenta px-4 py-2 transition-colors cursor-pointer"
+                          >
+                            ◆ Richiedi generazioni aggiuntive
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          <p className="font-serif italic text-bone/60 text-sm leading-relaxed">
+                            Scrivi un messaggio e ti risponderemo per attivare un pacchetto a credito.
+                          </p>
+                          <div>
+                            <span className={labelClass}>↳ Messaggio</span>
+                            <textarea
+                              value={ticketMessage}
+                              onChange={e => setTicketMessage(e.target.value)}
+                              placeholder="Descrivi cosa stai cercando e quante copertine vorresti provare..."
+                              className="mt-2 w-full min-h-20 bg-void/40 border border-magenta/30 px-4 py-3 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-magenta transition-all"
+                            />
+                          </div>
+                          {aiError && <p className="font-mono text-[11px] text-magenta">{aiError}</p>}
+                          <div className="flex gap-3">
+                            <HudButton variant="primary" onClick={() => handleSendTicket(titolo)} disabled={ticketSending || !ticketMessage.trim()}>
+                              {ticketSending ? "▸ Invio..." : "▸ Invia richiesta"}
+                            </HudButton>
+                            <button
+                              onClick={() => setShowTicketForm(false)}
+                              className="font-mono text-[9px] uppercase tracking-widest text-bone/40 hover:text-cyan transition-colors cursor-pointer"
+                            >
+                              annulla
+                            </button>
+                          </div>
+                        </div>
+                      )
+                    ) : (
+                      <p className="font-serif italic text-cyan/80 text-sm">
+                        ✓ Richiesta inviata. Ti risponderemo presto.
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 {saveError && (
                   <p className="font-mono text-[11px] text-magenta border border-magenta/30 bg-magenta/5 px-4 py-3">
