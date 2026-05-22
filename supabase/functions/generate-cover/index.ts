@@ -95,10 +95,10 @@ Deno.serve(async (req) => {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "dall-e-3",
-      prompt: `Book cover illustration for an Italian literary work. ${prompt}. Vertical portrait orientation, cinematic lighting, literary art style. No text, no title, no letters on the image.`,
+      model: "gpt-image-1",
+      prompt: `Book cover for an Italian literary work. ${prompt}. Vertical portrait orientation, cinematic and atmospheric lighting, literary art style.`,
       n: 1,
-      size: "1024x1792",
+      size: "1024x1536",
       quality: "standard",
     }),
   });
@@ -109,11 +109,9 @@ Deno.serve(async (req) => {
   }
 
   const dalleData = await dalleRes.json();
-  const openaiUrl: string = dalleData.data[0].url;
-
-  // Scarica da OpenAI (URL temporanea) e salva in Supabase Storage
-  const imgRes = await fetch(openaiUrl);
-  const imgArray = await imgRes.arrayBuffer();
+  // gpt-image-1 restituisce base64, non URL
+  const b64: string = dalleData.data[0].b64_json;
+  const imgArray = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
 
   const storagePath = `ai/${user.id}/${book_id}/${Date.now()}.png`;
   const { error: uploadErr } = await supabase.storage

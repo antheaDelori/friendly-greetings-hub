@@ -233,6 +233,7 @@ function GestionePage() {
   const [ticketMessage, setTicketMessage] = useState("");
   const [ticketSent, setTicketSent] = useState(false);
   const [ticketSending, setTicketSending] = useState(false);
+  const [aiModalUrl, setAiModalUrl] = useState<string | null>(null);
   const cestinoSectionRef = useRef<HTMLDivElement>(null);
   const cestinoScrolled = useRef(false);
 
@@ -1285,9 +1286,13 @@ function GestionePage() {
                         )}
                         {aiGeneratedUrl && (
                           <div className="flex gap-5 items-start pt-1">
-                            <img src={aiGeneratedUrl} alt="Copertina generata" className="w-24 h-32 object-cover ring-1 ring-cyan/40 flex-shrink-0" />
+                            <button onClick={() => setAiModalUrl(aiGeneratedUrl)} className="flex-shrink-0 cursor-zoom-in group relative">
+                              <img src={aiGeneratedUrl} alt="Copertina generata" className="w-24 h-32 object-cover ring-1 ring-cyan/40 group-hover:ring-cyan transition-all" />
+                              <span className="absolute inset-0 flex items-center justify-center bg-void/40 opacity-0 group-hover:opacity-100 transition-opacity font-mono text-[9px] text-cyan tracking-widest">⊕ ingrandisci</span>
+                            </button>
                             <div className="space-y-2">
                               <p className="font-mono text-[10px] text-cyan uppercase tracking-widest">Copertina generata</p>
+                              <p className="font-mono text-[9px] text-bone/40">Clicca l'immagine per vederla in grande</p>
                               <HudButton variant="primary" onClick={() => { setExistingCopertinaUrl(aiGeneratedUrl); setAiGeneratedUrl(null); }}>
                                 ✓ Usa come copertina
                               </HudButton>
@@ -1947,6 +1952,24 @@ function GestionePage() {
         </div>
       </PageShell>
       <SiteFooter />
+
+      {/* Modal anteprima copertina AI */}
+      {aiModalUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-void/90 backdrop-blur-sm p-6"
+          onClick={() => setAiModalUrl(null)}
+        >
+          <div className="relative max-h-full" onClick={e => e.stopPropagation()}>
+            <img src={aiModalUrl} alt="Anteprima copertina" className="max-h-[85vh] max-w-[90vw] object-contain ring-1 ring-cyan/40" />
+            <button
+              onClick={() => setAiModalUrl(null)}
+              className="absolute -top-3 -right-3 w-8 h-8 bg-void border border-cyan/40 text-bone hover:text-magenta font-mono text-sm flex items-center justify-center transition-colors cursor-pointer"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
