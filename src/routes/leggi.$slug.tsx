@@ -239,22 +239,25 @@ function ReadPage() {
 
   // Auto-aggiorna libreria: da_leggere → in_lettura all'apertura del libro
   useEffect(() => {
-    if (!isLoggedIn || isAnonymous || !userId || !bookId) return;
-    supabase.from("libreria")
-      .select("id, stato")
-      .eq("user_id", userId)
-      .eq("book_id", bookId)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (!data) return;
-        setLibreriaEntryId(data.id);
-        setLibreriaStato(data.stato);
-        if (data.stato === "da_leggere") {
-          supabase.from("libreria").update({ stato: "in_lettura" }).eq("id", data.id);
-          setLibreriaStato("in_lettura");
-        }
-      });
-  }, [userId, bookId]);
+    if (!bookId) return;
+    const checkAndUpdate = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || user.is_anonymous) return;
+      const { data } = await supabase.from("libreria")
+        .select("id, stato")
+        .eq("user_id", user.id)
+        .eq("book_id", bookId)
+        .maybeSingle();
+      if (!data) return;
+      setLibreriaEntryId(data.id);
+      setLibreriaStato(data.stato);
+      if (data.stato === "da_leggere") {
+        await supabase.from("libreria").update({ stato: "in_lettura" }).eq("id", data.id);
+        setLibreriaStato("in_lettura");
+      }
+    };
+    checkAndUpdate();
+  }, [bookId]);
 
   const [libreriaEntryId, setLibreriaEntryId] = useState<string | null>(null);
   const [libreriaStato, setLibreriaStato] = useState<string | null>(null);
