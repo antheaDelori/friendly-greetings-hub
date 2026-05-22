@@ -246,11 +246,24 @@ function ReadPage() {
       .eq("book_id", bookId)
       .maybeSingle()
       .then(({ data }) => {
-        if (data?.stato === "da_leggere") {
+        if (!data) return;
+        setLibreriaEntryId(data.id);
+        setLibreriaStato(data.stato);
+        if (data.stato === "da_leggere") {
           supabase.from("libreria").update({ stato: "in_lettura" }).eq("id", data.id);
+          setLibreriaStato("in_lettura");
         }
       });
   }, [userId, bookId]);
+
+  const [libreriaEntryId, setLibreriaEntryId] = useState<string | null>(null);
+  const [libreriaStato, setLibreriaStato] = useState<string | null>(null);
+
+  const handleSegnaLetto = async () => {
+    if (!libreriaEntryId) return;
+    await supabase.from("libreria").update({ stato: "letto" }).eq("id", libreriaEntryId);
+    setLibreriaStato("letto");
+  };
 
   const bookmarkKey = `reading_pos_${book.slug}`;
   const bookmarkParaKey = `bookmark_para_${book.slug}`;
@@ -772,8 +785,26 @@ function ReadPage() {
                 </div>
               )}
 
+              {/* Banner "segna come letto" — solo sull'ultimo capitolo */}
+              {currentIdx === book.chapters.length - 1 && libreriaEntryId && (
+                <div className="mt-16 border-t border-ink/10 pt-8 text-center">
+                  {libreriaStato === "letto" ? (
+                    <span className="font-display tracking-widest text-sm uppercase text-blood/60">
+                      ✓ Spostato nello scaffale dei libri letti
+                    </span>
+                  ) : (
+                    <button
+                      onClick={handleSegnaLetto}
+                      className="font-display tracking-widest text-sm uppercase text-ink/50 hover:text-blood border border-ink/20 hover:border-blood/40 px-6 py-3 transition-all cursor-pointer"
+                    >
+                      ◈ Lo sposto nello scaffale dei libri letti?
+                    </button>
+                  )}
+                </div>
+              )}
+
               {book.chapters.length > 1 && (
-                <div className="mt-16 flex items-center justify-between border-t border-ink/10 pt-6">
+                <div className="mt-10 flex items-center justify-between border-t border-ink/10 pt-6">
                   <button
                     disabled={currentIdx === 0}
                     onClick={() => setCurrentIdx((i) => Math.max(0, i - 1))}
