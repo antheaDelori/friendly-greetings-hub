@@ -100,11 +100,12 @@ Deno.serve(async (req) => {
   formData.append("model", "gpt-image-1");
   formData.append(
     "prompt",
-    `Professional book cover for an Italian literary work. ` +
-    `Title: "${book_title ?? ""}". Author: "${author_name ?? ""}". Publisher: "Anthea Delori Edizioni". ` +
-    `${prompt}. ` +
-    `The provided image is the publisher logo "Anthea Delori Edizioni" — place it at the bottom center of the cover in a tasteful, elegant position. ` +
-    `Vertical portrait orientation, cinematic and atmospheric lighting, high-quality literary art style.`,
+    `Create a professional book cover in vertical portrait format (like a real published novel). ` +
+    `COVER TEXT: display the title "${book_title ?? ""}" prominently at the top, and the author name "${author_name ?? ""}" above or below the title. ` +
+    `ILLUSTRATION: the background scene should depict — ${prompt}. ` +
+    `Do NOT render any other text or description on the cover besides title and author name. ` +
+    `The provided image is the publisher logo "Anthea Delori Edizioni" — reproduce it faithfully at the bottom center. ` +
+    `Cinematic lighting, high-quality literary art style.`,
   );
   formData.append("n", "1");
   formData.append("size", "1024x1536");

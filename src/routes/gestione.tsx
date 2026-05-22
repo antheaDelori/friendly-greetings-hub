@@ -1278,9 +1278,16 @@ function GestionePage() {
                             className="mt-2 w-full min-h-20 bg-void/40 border border-cyan/30 px-4 py-3 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-cyan transition-all"
                           />
                         </div>
-                        <HudButton variant="ghost" onClick={handleGenerateCover} disabled={aiGenerating || !aiPrompt.trim()}>
-                          {aiGenerating ? "▸ Generazione in corso..." : "◈ Genera copertina AI"}
-                        </HudButton>
+                        <div className="flex items-center gap-4 flex-wrap">
+                          <HudButton variant="ghost" onClick={handleGenerateCover} disabled={aiGenerating || !aiPrompt.trim()}>
+                            {aiGenerating ? "▸ Generazione in corso..." : "◈ Genera copertina AI"}
+                          </HudButton>
+                          {aiGenerating && (
+                            <span className="font-mono text-[9px] tracking-widest text-bone/50 animate-pulse">
+                              La generazione richiede 30–40 secondi, attendi...
+                            </span>
+                          )}
+                        </div>
                         {aiError && (
                           <p className="font-mono text-[11px] text-magenta">{aiError}</p>
                         )}
