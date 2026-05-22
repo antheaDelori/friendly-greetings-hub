@@ -33,12 +33,12 @@ const STATO_BADGE: Record<string, string> = {
 };
 
 const GENERI = [
-  { value: "libro",      label: "Libri" },
-  { value: "racconto",   label: "Racconti" },
-  { value: "saggio",     label: "Saggi" },
-  { value: "articolo",   label: "Articoli" },
-  { value: "buonanotte", label: "Buonanotte" },
-  { value: "poesia",     label: "Poesie" },
+  { value: "libro",      label: "Libri",      code: "SHELF_01" },
+  { value: "racconto",   label: "Racconti",   code: "SHELF_02" },
+  { value: "saggio",     label: "Saggi",      code: "SHELF_03" },
+  { value: "articolo",   label: "Articoli",   code: "SHELF_04" },
+  { value: "buonanotte", label: "Buonanotte", code: "SHELF_05" },
+  { value: "poesia",     label: "Poesie",     code: "SHELF_06" },
 ] as const;
 
 export const Route = createFileRoute("/libreria")({
@@ -63,7 +63,6 @@ function BookCover({ entry, onCambiaStato, onRimuovi }: {
     <div className="group relative flex-shrink-0 w-28">
       <Link to="/leggi/$slug" params={{ slug: book.slug }} className="block relative">
         <div className="relative aspect-[3/4] overflow-hidden bg-void ring-1 ring-white/10 group-hover:ring-cyan/50 transition-all duration-300">
-          {/* HUD corners on hover */}
           <span className="absolute top-1 left-1 w-2.5 h-2.5 border-l border-t border-cyan/70 z-10 opacity-0 group-hover:opacity-100 transition-opacity" />
           <span className="absolute top-1 right-1 w-2.5 h-2.5 border-r border-t border-cyan/70 z-10 opacity-0 group-hover:opacity-100 transition-opacity" />
           <span className="absolute bottom-1 left-1 w-2.5 h-2.5 border-l border-b border-cyan/70 z-10 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -75,7 +74,7 @@ function BookCover({ entry, onCambiaStato, onRimuovi }: {
             className="absolute inset-0 w-full h-full object-cover transition-all duration-500 group-hover:scale-105 group-hover:brightness-60"
           />
 
-          {/* Status badge — sempre visibile */}
+          {/* Status badge */}
           <span className={`absolute top-1.5 left-1.5 z-10 font-mono text-[7px] tracking-widest uppercase px-1.5 py-0.5 ${STATO_BADGE[entry.stato]}`}>
             {entry.stato === "in_lettura" ? "▶" : entry.stato === "letto" ? "✓" : "◈"}
           </span>
@@ -88,7 +87,6 @@ function BookCover({ entry, onCambiaStato, onRimuovi }: {
         </div>
       </Link>
 
-      {/* Titolo sotto */}
       <p className="mt-1.5 font-mono text-[8px] tracking-wide text-bone/40 truncate text-center group-hover:opacity-0 transition-opacity leading-tight">
         {book.titolo}
       </p>
@@ -128,11 +126,7 @@ function LibreriaPage() {
         .select("id, stato, book_id, books(slug, titolo, author_name, copertina_url, genere, anno)")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
-      const loaded = (data ?? []) as unknown as LibreriaEntry[];
-      setEntries(loaded);
-      // auto-seleziona il primo genere con libri
-      const firstGenre = GENERI.find(g => loaded.some(e => e.books?.genere === g.value));
-      if (firstGenre) setSelectedGenre(firstGenre.value);
+      setEntries((data ?? []) as unknown as LibreriaEntry[]);
       setLoading(false);
     };
     init();
@@ -149,9 +143,9 @@ function LibreriaPage() {
   };
 
   const ultimi = entries.slice(0, 6);
-  const genreEntries = selectedGenre ? entries.filter(e => e.books?.genere === selectedGenre) : [];
-  const selectedGenreLabel = GENERI.find(g => g.value === selectedGenre)?.label ?? "";
   const total = entries.length;
+  const genreConfig = GENERI.find(g => g.value === selectedGenre);
+  const genreEntries = selectedGenre ? entries.filter(e => e.books?.genere === selectedGenre) : [];
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -173,84 +167,102 @@ function LibreriaPage() {
             </p>
           </div>
         ) : (
-          <div className="space-y-12">
+          <div className="space-y-10">
 
-            {/* ULTIMI AGGIUNTI */}
-            <div>
-              <div className="flex items-center gap-4 mb-5">
-                <span className="font-mono text-[9px] tracking-[0.35em] text-bone/40 uppercase">// RECENTI</span>
-                <div className="flex-1 h-px bg-cyan/10" />
-                <span className="font-mono text-[10px] tracking-widest uppercase border border-cyan/40 text-cyan px-3 py-1">
-                  Ultimi aggiunti
-                </span>
+            {/* ULTIMI AGGIUNTI — visibile solo se nessun genere selezionato */}
+            {!selectedGenre && (
+              <div>
+                <div className="flex items-center gap-4 mb-5">
+                  <span className="font-mono text-[9px] tracking-[0.35em] text-bone/40 uppercase">// RECENTI</span>
+                  <div className="flex-1 h-px bg-cyan/10" />
+                  <span className="font-mono text-[10px] tracking-widest uppercase border border-cyan/40 text-cyan px-3 py-1">
+                    Ultimi aggiunti
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
+                  {ultimi.map(entry => (
+                    <BookCover key={entry.id} entry={entry} onCambiaStato={handleCambiaStato} onRimuovi={handleRimuovi} />
+                  ))}
+                </div>
+                <div className="mt-6 h-px bg-cyan/10" />
+                <div className="h-3 bg-gradient-to-b from-black/15 to-transparent" />
               </div>
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
-                {ultimi.map(entry => (
-                  <BookCover
-                    key={entry.id}
-                    entry={entry}
-                    onCambiaStato={handleCambiaStato}
-                    onRimuovi={handleRimuovi}
-                  />
-                ))}
-              </div>
-              <div className="mt-6 h-px bg-cyan/10" />
-              <div className="h-3 bg-gradient-to-b from-black/15 to-transparent" />
-            </div>
+            )}
 
-            {/* FILTRO GENERE */}
+            {/* FILTRO GENERE — sempre visibile */}
             <div>
-              <div className="flex items-center gap-4 mb-5">
+              <div className="flex items-center gap-4 mb-4">
                 <span className="font-mono text-[9px] tracking-[0.35em] text-bone/40 uppercase">// PER GENERE</span>
                 <div className="flex-1 h-px bg-cyan/10" />
+                {selectedGenre && (
+                  <button
+                    onClick={() => setSelectedGenre(null)}
+                    className="font-mono text-[9px] tracking-widest uppercase text-bone/30 hover:text-cyan transition-colors"
+                  >
+                    ← recenti
+                  </button>
+                )}
               </div>
-              <div className="flex flex-wrap gap-2 mb-6">
+              <div className="flex flex-wrap gap-2">
                 {GENERI.map(g => {
                   const count = entries.filter(e => e.books?.genere === g.value).length;
-                  if (count === 0) return null;
+                  const isEmpty = count === 0;
+                  const isActive = selectedGenre === g.value;
                   return (
                     <button
                       key={g.value}
-                      onClick={() => setSelectedGenre(g.value)}
+                      onClick={() => !isEmpty && setSelectedGenre(isActive ? null : g.value)}
                       className={`font-mono tracking-[0.2em] text-[10px] uppercase px-4 py-2 border transition-all ${
-                        selectedGenre === g.value
+                        isActive
                           ? "border-cyan bg-cyan/15 text-cyan"
-                          : "border-cyan/20 text-bone/50 hover:border-cyan/50 hover:text-bone"
+                          : isEmpty
+                            ? "border-cyan/10 text-bone/20 cursor-default"
+                            : "border-cyan/20 text-bone/50 hover:border-cyan/50 hover:text-bone cursor-pointer"
                       }`}
                     >
                       ◆ {g.label}
-                      <span className="ml-2 text-bone/30">{count}</span>
+                      <span className={`ml-2 ${isActive ? "text-cyan/60" : "text-bone/20"}`}>{count}</span>
                     </button>
                   );
                 })}
               </div>
+            </div>
 
-              {/* Scaffale genere selezionato — scroll orizzontale */}
-              {selectedGenre && (
-                <div>
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className="font-mono text-[9px] tracking-widest text-bone/30 uppercase">{selectedGenreLabel}</span>
-                    <span className="font-mono text-[9px] text-bone/20">{genreEntries.length}</span>
+            {/* SCAFFALE GENERE SELEZIONATO */}
+            {selectedGenre && genreConfig && (
+              <div>
+                {/* Intestazione scaffale */}
+                <div className="flex items-center gap-4 mb-5">
+                  <span className="font-mono text-[9px] tracking-[0.35em] text-bone/40 uppercase">{genreConfig.code}</span>
+                  <div className="flex-1 h-px bg-cyan/10" />
+                  <span className="font-mono text-[10px] tracking-widest uppercase border border-cyan/40 text-cyan px-3 py-1">
+                    {genreConfig.label}
+                  </span>
+                  <span className="font-mono text-[9px] text-bone/30">{genreEntries.length}</span>
+                </div>
+
+                {genreEntries.length === 0 ? (
+                  <div className="border border-dashed border-cyan/10 py-12 text-center">
+                    <p className="font-serif italic text-bone/25 text-sm">Nessuna opera in questo scaffale</p>
+                    <Link to="/catalogo" className="mt-3 inline-block font-mono text-[10px] tracking-widest uppercase text-cyan/50 hover:text-cyan transition-colors">
+                      ▸ Vai al catalogo
+                    </Link>
                   </div>
+                ) : (
                   <div className="relative">
                     <div className="overflow-x-auto pb-14 scrollbar-thin scrollbar-thumb-cyan/20 scrollbar-track-transparent">
                       <div className="flex gap-4" style={{ width: "max-content" }}>
                         {genreEntries.map(entry => (
-                          <BookCover
-                            key={entry.id}
-                            entry={entry}
-                            onCambiaStato={handleCambiaStato}
-                            onRimuovi={handleRimuovi}
-                          />
+                          <BookCover key={entry.id} entry={entry} onCambiaStato={handleCambiaStato} onRimuovi={handleRimuovi} />
                         ))}
                       </div>
                     </div>
-                    <div className="h-px w-full bg-cyan/20" />
-                    <div className="h-3 w-full bg-gradient-to-b from-black/15 to-transparent" />
+                    <div className="h-px w-full bg-cyan/25" />
+                    <div className="h-3 w-full bg-gradient-to-b from-black/20 to-transparent" />
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
 
           </div>
         )}
