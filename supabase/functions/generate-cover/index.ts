@@ -6,6 +6,8 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const FREE_LIMIT = 3;
+const LOGO_URL = `${SUPABASE_URL}/storage/v1/object/public/copertine/brand/anthea-delori-logo.png`;
+
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -88,19 +90,29 @@ Deno.serve(async (req) => {
     return json({ error: "limit_reached", used: count, limit: FREE_LIMIT }, 429);
   }
 
-  const dalleRes = await fetch("https://api.openai.com/v1/images/generations", {
+  // Scarica il logo publisher da Storage
+  const logoRes = await fetch(LOGO_URL);
+  if (!logoRes.ok) return json({ error: "Logo publisher non trovato" }, 500);
+  const logoBlob = await logoRes.blob();
+
+  // Usa /images/edits per passare il logo come riferimento visivo
+  const formData = new FormData();
+  formData.append("model", "gpt-image-1");
+  formData.append(
+    "prompt",
+    `Professional book cover for an Italian literary work. ${prompt}. ` +
+    `The provided image is the publisher logo "Anthea Delori Edizioni" — place it at the bottom center of the cover in a tasteful, elegant position. ` +
+    `Vertical portrait orientation, cinematic and atmospheric lighting, high-quality literary art style.`,
+  );
+  formData.append("n", "1");
+  formData.append("size", "1024x1536");
+  formData.append("quality", "medium");
+  formData.append("image[]", logoBlob, "anthea-delori-logo.png");
+
+  const dalleRes = await fetch("https://api.openai.com/v1/images/edits", {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${OPENAI_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "gpt-image-1",
-      prompt: `Book cover for an Italian literary work. ${prompt}. Vertical portrait orientation, cinematic and atmospheric lighting, literary art style.`,
-      n: 1,
-      size: "1024x1536",
-      quality: "standard",
-    }),
+    headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
+    body: formData,
   });
 
   if (!dalleRes.ok) {
@@ -109,7 +121,6 @@ Deno.serve(async (req) => {
   }
 
   const dalleData = await dalleRes.json();
-  // gpt-image-1 restituisce base64, non URL
   const b64: string = dalleData.data[0].b64_json;
   const imgArray = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
 
