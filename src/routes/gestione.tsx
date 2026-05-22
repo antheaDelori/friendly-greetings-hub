@@ -285,7 +285,7 @@ function GestionePage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { window.location.replace("/auth"); return; }
       setUserId(user.id);
-      setIsAdmin(user.email === "antheaDelori@live.it");
+      setIsAdmin(user.email?.toLowerCase() === "antheadelori@live.it");
 
       const { data: profileData } = await supabase
         .from("profiles")
@@ -536,7 +536,7 @@ function GestionePage() {
       );
       const data = await res.json();
       if (!res.ok) {
-        if (data.error === "limit_reached") setAiUsed(3);
+        if (data.error === "limit_reached") setAiUsed(10);
         else setAiError(data.error ?? "Errore nella generazione. Riprova.");
         return;
       }
@@ -1340,12 +1340,12 @@ function GestionePage() {
                       <div className="font-mono text-[11px] tracking-[0.3em] text-cyan uppercase font-bold">◈ Genera copertina con AI</div>
                       {isAdmin
                         ? <span className="font-mono text-[10px] text-cyan/70 border border-cyan/30 px-2 py-0.5">∞ illimitate</span>
-                        : <span className="font-mono text-[10px] text-bone/70 border border-cyan/30 px-2 py-0.5">{aiUsed} / 3 gratuite</span>
+                        : <span className="font-mono text-[10px] text-bone/70 border border-cyan/30 px-2 py-0.5">{aiUsed} / 10 gratuite</span>
                       }
                     </div>
                     <p className="font-serif italic text-bone/60 text-sm">Descrivi la scena: titolo, autore e logo vengono aggiunti automaticamente.</p>
 
-                    {(isAdmin || aiUsed < 3) ? (
+                    {(isAdmin || aiUsed < 10) ? (
                       <>
                         <div>
                           <span className={labelClass}>↳ Descrivi la copertina che vuoi</span>
@@ -1399,7 +1399,7 @@ function GestionePage() {
                     ) : !ticketSent ? (
                       !showTicketForm ? (
                         <div className="space-y-3">
-                          <p className="font-serif italic text-bone/60 text-sm">Hai usato tutte e 3 le generazioni gratuite per quest'opera.</p>
+                          <p className="font-serif italic text-bone/60 text-sm">Hai usato tutte e 10 le generazioni gratuite per quest'opera.</p>
                           <button
                             onClick={() => setShowTicketForm(true)}
                             className="font-mono text-[10px] uppercase tracking-widest text-magenta border border-magenta/40 hover:border-magenta px-4 py-2 transition-colors cursor-pointer"
