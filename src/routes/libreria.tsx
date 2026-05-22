@@ -87,7 +87,7 @@ function BookCover({ entry, onCambiaStato, onRimuovi }: {
         </div>
       </Link>
 
-      <p className="mt-1.5 font-mono text-[8px] tracking-wide text-bone/70 truncate text-center group-hover:opacity-0 transition-opacity leading-tight">
+      <p className="mt-1.5 font-mono text-[8px] tracking-wide text-bone truncate text-center group-hover:opacity-0 transition-opacity leading-tight">
         {book.titolo}
       </p>
 
@@ -172,12 +172,12 @@ function LibreriaPage() {
             {/* FILTRO GENERE — sempre visibile, in cima */}
             <div>
               <div className="flex items-center gap-4 mb-4">
-                <span className="font-mono text-[9px] tracking-[0.35em] text-bone/70 uppercase">// PER GENERE</span>
+                <span className="font-mono text-[9px] tracking-[0.35em] text-bone uppercase">// PER GENERE</span>
                 <div className="flex-1 h-px bg-cyan/10" />
                 {selectedGenre && (
                   <button
                     onClick={() => setSelectedGenre(null)}
-                    className="font-mono text-[9px] tracking-widest uppercase text-bone/60 hover:text-cyan transition-colors cursor-pointer"
+                    className="font-mono text-[9px] tracking-widest uppercase text-bone hover:text-cyan transition-colors cursor-pointer"
                   >
                     ← recenti
                   </button>
@@ -196,12 +196,12 @@ function LibreriaPage() {
                         isActive
                           ? "border-cyan bg-cyan/15 text-cyan"
                           : isEmpty
-                            ? "border-cyan/10 text-bone/20 cursor-default"
-                            : "border-cyan/20 text-bone/70 hover:border-cyan/50 hover:text-bone cursor-pointer"
+                            ? "border-cyan/15 text-bone/30 cursor-default"
+                            : "border-cyan/50 text-bone hover:border-cyan hover:text-cyan cursor-pointer"
                       }`}
                     >
                       ◆ {g.label}
-                      <span className={`ml-2 ${isActive ? "text-cyan/70" : isEmpty ? "text-bone/20" : "text-bone/50"}`}>{count}</span>
+                      <span className={`ml-2 ${isActive ? "text-cyan/80" : isEmpty ? "text-bone/30" : "text-bone/60"}`}>{count}</span>
                     </button>
                   );
                 })}
@@ -212,7 +212,7 @@ function LibreriaPage() {
             {!selectedGenre && (
               <div>
                 <div className="flex items-center gap-4 mb-5">
-                  <span className="font-mono text-[9px] tracking-[0.35em] text-bone/70 uppercase">// RECENTI</span>
+                  <span className="font-mono text-[9px] tracking-[0.35em] text-bone uppercase">// RECENTI</span>
                   <div className="flex-1 h-px bg-cyan/10" />
                   <span className="font-mono text-[10px] tracking-widest uppercase border border-cyan/40 text-cyan px-3 py-1">
                     Ultimi aggiunti
@@ -233,7 +233,7 @@ function LibreriaPage() {
               <div>
                 {/* Intestazione scaffale */}
                 <div className="flex items-center gap-4 mb-5">
-                  <span className="font-mono text-[9px] tracking-[0.35em] text-bone/70 uppercase">{genreConfig.code}</span>
+                  <span className="font-mono text-[9px] tracking-[0.35em] text-bone uppercase">{genreConfig.code}</span>
                   <div className="flex-1 h-px bg-cyan/10" />
                   <span className="font-mono text-[10px] tracking-widest uppercase border border-cyan/40 text-cyan px-3 py-1">
                     {genreConfig.label}
