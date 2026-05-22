@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
+import { PageShell } from "@/components/HudPanel";
 import { supabase } from "@/lib/supabase";
 import logo from "@/assets/logo-liberiamo.jpg";
 
@@ -182,22 +183,15 @@ function LibreriaPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <SiteHeader />
-
-      {/* Intestazione — centrata come il resto del sito */}
-      <section className="mx-auto max-w-7xl w-full px-4 sm:px-6 lg:px-10 pt-12 pb-8">
-        <div className="font-mono text-[10px] tracking-[0.3em] text-cyan/70 uppercase">// LA_MIA_LIBRERIA</div>
-        <h1 className="mt-3 font-display text-5xl md:text-6xl text-bone tracking-tight">La mia libreria</h1>
-        <p className="mt-3 font-serif italic text-xl text-bone/65">
-          {loading ? "Caricamento scaffali..." : total === 0 ? "I tuoi scaffali personali." : `${total} ${total === 1 ? "opera" : "opere"} nei tuoi scaffali.`}
-        </p>
-      </section>
-
-      {/* Scaffali — piena larghezza */}
-      <main className="flex-1 px-4 sm:px-6 lg:px-10 pb-16">
+      <PageShell
+        code="// LA_MIA_LIBRERIA"
+        title="La mia libreria"
+        subtitle={loading ? "" : total === 0 ? "I tuoi scaffali personali." : `${total} ${total === 1 ? "opera" : "opere"} nei tuoi scaffali.`}
+      >
         {loading ? (
-          <p className="font-mono text-cyan text-sm animate-pulse mt-8">▸ caricamento scaffali...</p>
+          <p className="font-mono text-cyan text-sm animate-pulse">▸ caricamento scaffali...</p>
         ) : total === 0 ? (
-          <div className="border border-dashed border-cyan/15 py-20 text-center mt-4">
+          <div className="border border-dashed border-cyan/15 py-20 text-center">
             <div className="font-display text-6xl text-bone/10 mb-4">◊</div>
             <p className="font-serif italic text-bone/40 text-lg">Nessun libro ancora.</p>
             <p className="mt-2 font-serif italic text-bone/30">Vai al{" "}
@@ -218,8 +212,7 @@ function LibreriaPage() {
             ))}
           </div>
         )}
-      </main>
-
+      </PageShell>
       <SiteFooter />
     </div>
   );
