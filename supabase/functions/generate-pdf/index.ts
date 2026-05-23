@@ -4,6 +4,8 @@ const CLOUDCONVERT_API_KEY = Deno.env.get("CLOUDCONVERT_API_KEY")!;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+const FREE_LIMIT = 10;
+
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -46,7 +48,10 @@ Deno.serve(async (req) => {
   );
   if (authErr || !user) return json({ error: "Unauthorized" }, 401);
 
-  const { book_id } = await req.json();
+  const body = await req.json();
+  const { book_id } = body;
+  const format: "pdf" | "epub" = body.format === "epub" ? "epub" : "pdf";
+
   if (!book_id) return json({ error: "book_id richiesto" }, 400);
 
   // Verifica ownership e recupera docx_url
@@ -60,6 +65,19 @@ Deno.serve(async (req) => {
   if (book.author_id !== user.id) return json({ error: "Non autorizzato" }, 403);
   if (!book.docx_url) return json({ error: "Nessun file .docx caricato per questa opera" }, 400);
 
+  // Verifica limite conversioni per questo formato
+  const isAdmin = user.email?.toLowerCase() === "antheadelori@live.it";
+  const { count } = await supabase
+    .from("book_conversions")
+    .select("id", { count: "exact", head: true })
+    .eq("book_id", book_id)
+    .eq("author_id", user.id)
+    .eq("format", format);
+
+  if (!isAdmin && (count ?? 0) >= FREE_LIMIT) {
+    return json({ error: "limit_reached", used: count, limit: FREE_LIMIT }, 429);
+  }
+
   // Genera URL firmato (10 min) per CloudConvert
   const { data: signedData, error: signedErr } = await supabase.storage
     .from("libri")
@@ -69,7 +87,11 @@ Deno.serve(async (req) => {
     return json({ error: "Impossibile accedere al file .docx" }, 500);
   }
 
-  // Sottometti job CloudConvert: docx → pdf
+  // Motore CloudConvert per il formato
+  const outputFormat = format; // "pdf" o "epub"
+  const engine = format === "epub" ? "calibre" : "libreoffice";
+
+  // Sottometti job CloudConvert
   const jobRes = await fetch("https://api.cloudconvert.com/v2/jobs", {
     method: "POST",
     headers: {
@@ -83,15 +105,15 @@ Deno.serve(async (req) => {
           url: signedData.signedUrl,
           filename: "book.docx",
         },
-        "convert-to-pdf": {
+        "convert-file": {
           operation: "convert",
           input: "import-docx",
-          output_format: "pdf",
-          engine: "libreoffice",
+          output_format: outputFormat,
+          engine,
         },
-        "export-pdf": {
+        "export-file": {
           operation: "export/url",
-          input: "convert-to-pdf",
+          input: "convert-file",
           inline: false,
           archive_multiple_files: false,
         },
@@ -115,28 +137,41 @@ Deno.serve(async (req) => {
     return json({ error: e instanceof Error ? e.message : "Timeout" }, 504);
   }
 
-  // Estrai URL di download del PDF
+  // Estrai URL di download
   const exportTask = finishedJob.tasks.find(
     (t: any) => t.operation === "export/url" && t.status === "finished",
   );
-  const pdfDownloadUrl = exportTask?.result?.files?.[0]?.url;
-  if (!pdfDownloadUrl) return json({ error: "PDF non trovato nel risultato CloudConvert" }, 500);
+  const downloadUrl = exportTask?.result?.files?.[0]?.url;
+  if (!downloadUrl) return json({ error: `File ${format.toUpperCase()} non trovato nel risultato CloudConvert` }, 500);
 
-  // Scarica il PDF
-  const pdfRes = await fetch(pdfDownloadUrl);
-  if (!pdfRes.ok) return json({ error: "Impossibile scaricare il PDF da CloudConvert" }, 502);
-  const pdfBytes = new Uint8Array(await pdfRes.arrayBuffer());
+  // Scarica il file
+  const fileRes = await fetch(downloadUrl);
+  if (!fileRes.ok) return json({ error: `Impossibile scaricare il ${format.toUpperCase()} da CloudConvert` }, 502);
+  const fileBytes = new Uint8Array(await fileRes.arrayBuffer());
 
-  // Carica il PDF su Supabase Storage (upsert)
-  const storagePath = `${user.id}/${book_id}-generated.pdf`;
+  // Carica su Supabase Storage
+  const ext = format === "epub" ? "epub" : "pdf";
+  const contentType = format === "epub" ? "application/epub+zip" : "application/pdf";
+  const storagePath = `${user.id}/${book_id}-generated.${ext}`;
+
   const { error: uploadErr } = await supabase.storage
     .from("libri")
-    .upload(storagePath, pdfBytes, { contentType: "application/pdf", upsert: true });
+    .upload(storagePath, fileBytes, { contentType, upsert: true });
 
   if (uploadErr) return json({ error: uploadErr.message }, 500);
 
-  // Aggiorna books.file_url con il path del PDF generato
-  await supabase.from("books").update({ file_url: storagePath }).eq("id", book_id);
+  // Aggiorna books: file_url per pdf, epub_url per epub
+  const updateField = format === "epub" ? "epub_url" : "file_url";
+  await supabase.from("books").update({ [updateField]: storagePath }).eq("id", book_id);
 
-  return json({ pdf_path: storagePath });
+  // Registra il tentativo
+  await supabase.from("book_conversions").insert({
+    book_id,
+    author_id: user.id,
+    format,
+    file_path: storagePath,
+  });
+
+  const newCount = (count ?? 0) + 1;
+  return json({ file_path: storagePath, used: newCount, limit: FREE_LIMIT, unlimited: isAdmin });
 });
