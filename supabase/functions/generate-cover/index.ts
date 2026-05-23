@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { Image } from "https://deno.land/x/imagescript@1.2.15/mod.ts";
 
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY")!;
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")!;
@@ -7,6 +8,8 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const FREE_LIMIT = 10;
 const LOGO_URL = `${SUPABASE_URL}/storage/v1/object/public/copertine/brand/anthea-delori-logo.png`;
+const LOGO_TARGET_W = 280;
+const LOGO_BOTTOM_PAD = 52;
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -91,7 +94,7 @@ Deno.serve(async (req) => {
     return json({ error: "limit_reached", used: count, limit: FREE_LIMIT }, 429);
   }
 
-  // Genera la copertina — solo illustrazione + titolo + autore, nessun logo
+  // 1. Genera la copertina con titolo e autore, illustrazione piena
   const genRes = await fetch("https://api.openai.com/v1/images/generations", {
     method: "POST",
     headers: {
@@ -121,13 +124,39 @@ Deno.serve(async (req) => {
 
   const genData = await genRes.json();
   const cover_b64: string = genData.data[0].b64_json;
-  const imgArray = Uint8Array.from(atob(cover_b64), (c) => c.charCodeAt(0));
+  const coverBytes = Uint8Array.from(atob(cover_b64), (c) => c.charCodeAt(0));
 
-  // Salva la copertina su Storage e restituisce solo l'URL — risposta piccola, niente base64
-  const storagePath = `ai/${user.id}/${book_id}/${Date.now()}.png`;
+  // 2. Scarica il logo e compone server-side con ImageScript
+  let finalBytes: Uint8Array;
+  try {
+    const logoRes = await fetch(LOGO_URL);
+    const logoBytes = new Uint8Array(await logoRes.arrayBuffer());
+
+    const [coverImg, logoImg] = await Promise.all([
+      Image.decode(coverBytes),
+      Image.decode(logoBytes),
+    ]);
+
+    // Scala il logo a LOGO_TARGET_W px di larghezza mantenendo le proporzioni
+    const logoH = Math.round((logoImg.height / logoImg.width) * LOGO_TARGET_W);
+    logoImg.resize(LOGO_TARGET_W, logoH);
+
+    // Posizione: centrato orizzontalmente, LOGO_BOTTOM_PAD px dal basso
+    const logoX = Math.round((coverImg.width - LOGO_TARGET_W) / 2) + 1;
+    const logoY = coverImg.height - logoH - LOGO_BOTTOM_PAD + 1;
+    coverImg.composite(logoImg, logoX, logoY);
+
+    finalBytes = await coverImg.encodeJPEG(93);
+  } catch (_) {
+    // Se il compositing fallisce, salva la copertina senza logo
+    finalBytes = coverBytes;
+  }
+
+  // 3. Carica il risultato finale su Storage
+  const storagePath = `ai/${user.id}/${book_id}/${Date.now()}.jpg`;
   const { error: uploadErr } = await supabase.storage
     .from("copertine")
-    .upload(storagePath, imgArray, { contentType: "image/png", upsert: false });
+    .upload(storagePath, finalBytes, { contentType: "image/jpeg", upsert: false });
   if (uploadErr) return json({ error: uploadErr.message }, 500);
 
   const { data: urlData } = supabase.storage.from("copertine").getPublicUrl(storagePath);
