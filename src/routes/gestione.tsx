@@ -137,7 +137,9 @@ function compositeImages(coverObjUrl: string, logoObjUrl: string): Promise<Blob>
         const logoH = Math.round((logo.naturalHeight / logo.naturalWidth) * LOGO_W);
         const logoX = Math.round((COVER_W - LOGO_W) / 2);
         const logoY = COVER_H - logoH - LOGO_BOTTOM_PAD;
+        ctx.globalCompositeOperation = "multiply";
         ctx.drawImage(logo, logoX, logoY, LOGO_W, logoH);
+        ctx.globalCompositeOperation = "source-over";
         canvas.toBlob(blob => {
           if (!blob) { reject(new Error("Canvas toBlob fallito")); return; }
           resolve(blob);
@@ -1361,7 +1363,7 @@ function GestionePage() {
                             {aiGenerating ? "▸ Generazione in corso..." : "◈ Genera copertina AI"}
                           </HudButton>
                           {aiGenerating && (
-                            <div className="flex flex-col gap-2">
+                            <div className="flex items-center gap-3 flex-wrap">
                               <span className="font-mono text-[11px] tracking-widest text-cyan uppercase">◈ Sintesi visiva in corso...</span>
                               <div className="flex gap-1">
                                 {Array.from({ length: 10 }).map((_, i) => (
