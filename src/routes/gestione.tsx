@@ -129,6 +129,9 @@ function compositeImages(coverObjUrl: string, logoObjUrl: string): Promise<Blob>
     const ctx = canvas.getContext("2d");
     if (!ctx) { reject(new Error("Canvas non supportato")); return; }
 
+    ctx.fillStyle = "#000000";
+    ctx.fillRect(0, 0, COVER_W, COVER_H);
+
     const cover = new Image();
     cover.onload = () => {
       ctx.drawImage(cover, 0, 0, COVER_W, COVER_H);
