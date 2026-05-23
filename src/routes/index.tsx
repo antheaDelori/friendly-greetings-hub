@@ -206,6 +206,18 @@ function Index() {
                 ▸ ARTIFACT_001 / EST.2076
               </div>
             </div>
+
+            {/* tagline — sogni nel cassetto */}
+            <div className="mt-6 px-2 text-center">
+              <div className="h-px w-16 bg-gradient-to-r from-transparent via-cyan/40 to-transparent mx-auto mb-4" />
+              <p className="font-serif italic text-bone/75 text-lg md:text-xl leading-snug">
+                Liberiamoli dal cassetto,
+              </p>
+              <p className="font-serif italic text-bone/45 text-base md:text-lg leading-snug mt-0.5">
+                i libri che non hanno mai visto la luce.
+              </p>
+            </div>
+
             <div className="absolute -top-2 right-0 font-mono text-[9px] tracking-widest text-magenta/80">
               STATUS: ALIVE
             </div>
