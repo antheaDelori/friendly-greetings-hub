@@ -105,7 +105,7 @@ Deno.serve(async (req) => {
         `COVER TEXT: display the title "${book_title ?? ""}" prominently at the top, ` +
         `and the author name "${author_name ?? ""}" in a smaller font near the title. ` +
         `ILLUSTRATION: the background scene should depict — ${prompt}. ` +
-        `Leave a clear empty space at the very bottom (about 15% of the cover height) for a publisher logo to be added later. ` +
+        `The illustration must fill the entire cover from edge to edge, including the bottom. ` +
         `Do NOT add any publisher name, logo, or extra text besides title and author name. ` +
         `Cinematic lighting, high-quality literary art style.`,
       n: 1,
