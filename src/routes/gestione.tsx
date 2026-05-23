@@ -1317,10 +1317,11 @@ function GestionePage() {
                         )}
                         {aiGeneratedUrl && (
                           <div className="flex gap-5 items-start pt-1">
-                            <button onClick={() => setAiModalUrl(aiGeneratedUrl)} className="flex-shrink-0 cursor-zoom-in group relative w-24 h-32">
+                            <button onClick={() => setAiModalUrl(aiGeneratedUrl)} className="flex-shrink-0 cursor-zoom-in group relative w-24 h-32 overflow-hidden">
                               <img src={aiGeneratedUrl} alt="Copertina generata" className="w-full h-full object-cover ring-1 ring-cyan/40 group-hover:ring-cyan transition-all" />
-                              <img src={BRAND_LOGO_URL} alt="" className="absolute bottom-1 left-1/2 -translate-x-1/2 w-3/5 pointer-events-none" />
-                              <span className="absolute inset-0 flex items-center justify-center bg-void/40 opacity-0 group-hover:opacity-100 transition-opacity font-mono text-[9px] text-cyan tracking-widest">⊕ ingrandisci</span>
+                              <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-black/90 to-transparent pointer-events-none" />
+                              <img src={BRAND_LOGO_URL} alt="" className="absolute bottom-1 left-1/2 -translate-x-1/2 w-3/5 z-10 pointer-events-none" />
+                              <span className="absolute inset-0 flex items-center justify-center bg-void/40 opacity-0 group-hover:opacity-100 transition-opacity font-mono text-[9px] text-cyan tracking-widest z-20">⊕ ingrandisci</span>
                             </button>
                             <div className="space-y-2">
                               <p className="font-mono text-[10px] text-cyan uppercase tracking-widest">Copertina generata</p>
@@ -1991,9 +1992,10 @@ function GestionePage() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-void/90 backdrop-blur-sm p-6"
           onClick={() => setAiModalUrl(null)}
         >
-          <div className="relative max-h-full" onClick={e => e.stopPropagation()}>
+          <div className="relative max-h-full overflow-hidden" onClick={e => e.stopPropagation()}>
             <img src={aiModalUrl} alt="Anteprima copertina" className="max-h-[85vh] max-w-[90vw] object-contain ring-1 ring-cyan/40" />
-            <img src={BRAND_LOGO_URL} alt="" className="absolute bottom-4 left-1/2 -translate-x-1/2 w-1/4 pointer-events-none" />
+            <div className="absolute bottom-0 left-0 right-0 h-[18%] bg-gradient-to-t from-black/90 to-transparent pointer-events-none" />
+            <img src={BRAND_LOGO_URL} alt="" className="absolute bottom-4 left-1/2 -translate-x-1/2 w-1/4 z-10 pointer-events-none" />
             <button
               onClick={() => setAiModalUrl(null)}
               className="absolute -top-3 -right-3 w-8 h-8 bg-void border border-cyan/40 text-bone hover:text-magenta font-mono text-sm flex items-center justify-center transition-colors cursor-pointer"
