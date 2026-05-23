@@ -64,6 +64,7 @@ type Book = {
   lastra_url: string | null;
   file_url: string | null;
   epub_url: string | null;
+  docx_url: string | null;
   disponibile: boolean;
   cestinato: boolean;
   recuperato: boolean;
@@ -220,10 +221,19 @@ function GestionePage() {
   const [fileEpub, setFileEpub] = useState<File | null>(null);
   const [existingEpubUrl, setExistingEpubUrl] = useState<string | null>(null);
 
+  // PDF generation from .docx
+  const [docxFile, setDocxFile] = useState<File | null>(null);
+  const [existingDocxUrl, setExistingDocxUrl] = useState<string | null>(null);
+  const [pdfGenerating, setPdfGenerating] = useState(false);
+  const [pdfGenError, setPdfGenError] = useState<string | null>(null);
+  const [pdfGenSuccess, setPdfGenSuccess] = useState(false);
+  const [pdfProgress, setPdfProgress] = useState(0);
+
   const copertRef = useRef<HTMLInputElement>(null);
   const lastraRef = useRef<HTMLInputElement>(null);
   const pdfRef = useRef<HTMLInputElement>(null);
   const epubRef = useRef<HTMLInputElement>(null);
+  const docxRef = useRef<HTMLInputElement>(null);
 
   // AI cover generation
   const [aiPrompt, setAiPrompt] = useState("");
@@ -374,9 +384,16 @@ function GestionePage() {
   useEffect(() => {
     if (!aiGenerating) { setAiProgress(0); return; }
     setAiProgress(0);
-    const iv = setInterval(() => setAiProgress(p => Math.min(p + 1, 9)), 4000);
+    const iv = setInterval(() => setAiProgress(p => (p + 1) % 10), 4000);
     return () => clearInterval(iv);
   }, [aiGenerating]);
+
+  useEffect(() => {
+    if (!pdfGenerating) { setPdfProgress(0); return; }
+    setPdfProgress(0);
+    const iv = setInterval(() => setPdfProgress(p => (p + 1) % 10), 3000);
+    return () => clearInterval(iv);
+  }, [pdfGenerating]);
 
   // auto-scroll al cestino rimosso: disturbava il caricamento della pagina
 
@@ -451,6 +468,10 @@ function GestionePage() {
     setExistingLastraUrl(b.lastra_url);
     setExistingFileUrl(b.file_url);
     setExistingEpubUrl(b.epub_url);
+    setExistingDocxUrl(b.docx_url ?? null);
+    setDocxFile(null);
+    setPdfGenError(null);
+    setPdfGenSuccess(false);
     setCollanaId(b.collana_id ?? "");
     setEditingId(b.id);
     // reset AI cover state and load attempt count
@@ -547,6 +568,45 @@ function GestionePage() {
       setAiError("Errore di connessione. Riprova.");
     } finally {
       setTicketSending(false);
+    }
+  };
+
+  const handleUploadAndGeneratePdf = async () => {
+    if (!editingId || !userId) return;
+    if (!docxFile && !existingDocxUrl) return;
+    setPdfGenerating(true);
+    setPdfGenError(null);
+    setPdfGenSuccess(false);
+    try {
+      // 1. Se c'è un nuovo file .docx, caricalo subito
+      if (docxFile) {
+        const path = `${userId}/${editingId}-source.docx`;
+        const { error: upErr } = await supabase.storage.from("libri").upload(path, docxFile, { upsert: true });
+        if (upErr) { setPdfGenError(upErr.message); return; }
+        await supabase.from("books").update({ docx_url: path }).eq("id", editingId);
+        setExistingDocxUrl(path);
+        setDocxFile(null);
+      }
+      // 2. Chiama l'edge function per la conversione
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-pdf`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ book_id: editingId }),
+        },
+      );
+      const data = await res.json();
+      if (!res.ok) { setPdfGenError(data.error ?? "Errore nella conversione. Riprova."); return; }
+      // 3. Aggiorna la UI con il PDF generato
+      setExistingFileUrl(data.pdf_path);
+      setPdfGenSuccess(true);
+    } catch (e) {
+      setPdfGenError(e instanceof Error ? e.message : "Errore di connessione. Riprova.");
+    } finally {
+      setPdfGenerating(false);
     }
   };
 
@@ -1273,6 +1333,61 @@ function GestionePage() {
                   </div>
                 </div>
 
+                {/* Genera PDF da .docx — only for existing books */}
+                {editingId && (
+                  <div className="border border-amber/50 bg-amber/5 p-5 space-y-4 relative">
+                    <span className="absolute -top-px left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber/50 to-transparent" />
+                    <div className="flex items-center justify-between">
+                      <div className="font-mono text-[11px] tracking-[0.3em] text-amber uppercase font-bold">◈ Genera PDF da manoscritto</div>
+                      {existingDocxUrl && !docxFile && (
+                        <span className="font-mono text-[10px] text-amber/70 border border-amber/30 px-2 py-0.5">✓ .docx caricato</span>
+                      )}
+                    </div>
+                    <p className="font-serif italic text-bone/60 text-sm">Carica il tuo manoscritto Word (.docx): il PDF verrà generato automaticamente e salvato sull'opera.</p>
+
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <div>
+                        <input ref={docxRef} type="file" accept=".docx"
+                          onChange={e => { setDocxFile(e.target.files?.[0] ?? null); setPdfGenSuccess(false); }} className="hidden" />
+                        <button type="button" onClick={() => docxRef.current?.click()}
+                          className="border border-amber/40 px-4 py-2 font-mono text-[10px] uppercase tracking-widest hover:border-amber hover:text-amber transition-all text-bone/60 cursor-pointer">
+                          {docxFile ? `✓ ${docxFile.name}` : existingDocxUrl ? "✓ esistente (sostituisci)" : "▸ Scegli .docx"}
+                        </button>
+                      </div>
+                      <HudButton
+                        variant="ghost"
+                        onClick={handleUploadAndGeneratePdf}
+                        disabled={pdfGenerating || (!docxFile && !existingDocxUrl)}
+                      >
+                        {pdfGenerating
+                          ? "▸ Conversione in corso..."
+                          : existingDocxUrl && !docxFile
+                            ? "◈ Rigenera PDF"
+                            : "◈ Carica e genera PDF"}
+                      </HudButton>
+                    </div>
+
+                    {pdfGenerating && (
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <span className="font-mono text-[11px] tracking-widest text-amber uppercase">◈ Conversione in corso...</span>
+                        <div className="flex gap-1">
+                          {Array.from({ length: 10 }).map((_, i) => (
+                            <span key={i} className={`w-3 h-3 border transition-all duration-500 ${i < pdfProgress ? "bg-amber border-amber" : "bg-transparent border-amber/30"}`} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {pdfGenSuccess && (
+                      <p className="font-mono text-[11px] tracking-wide text-cyan uppercase">✓ PDF generato — disponibile per il download nella pagina dell'opera</p>
+                    )}
+
+                    {pdfGenError && (
+                      <p className="font-mono text-[11px] tracking-wide text-magenta uppercase">✗ {pdfGenError}</p>
+                    )}
+                  </div>
+                )}
+
                 {/* AI cover generation — only for existing books */}
                 {editingId && (
                   <div className="border border-cyan/60 bg-cyan/8 p-5 space-y-4 relative">
@@ -1280,7 +1395,7 @@ function GestionePage() {
                     <div className="flex items-center justify-between">
                       <div className="font-mono text-[11px] tracking-[0.3em] text-cyan uppercase font-bold">◈ Genera copertina con AI</div>
                       {isAdmin
-                        ? <span className="font-mono text-[10px] text-cyan/70 border border-cyan/30 px-2 py-0.5">∞ illimitate</span>
+                        ? <span className="font-mono text-xs tracking-widest uppercase text-cyan border border-cyan bg-cyan/10 px-3 py-1 font-bold">∞ Accesso illimitato</span>
                         : <span className="font-mono text-[10px] text-bone/70 border border-cyan/30 px-2 py-0.5">{aiUsed} / 10 gratuite</span>
                       }
                     </div>
