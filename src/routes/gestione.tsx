@@ -144,7 +144,7 @@ function compositeImages(coverObjUrl: string, logoObjUrl: string): Promise<Blob>
         canvas.toBlob(blob => {
           if (!blob) { reject(new Error("Canvas toBlob fallito")); return; }
           resolve(blob);
-        }, "image/png");
+        }, "image/jpeg", 0.93);
       };
       logo.onerror = () => reject(new Error("Caricamento logo fallito"));
       logo.src = logoObjUrl;
@@ -555,10 +555,10 @@ function GestionePage() {
       URL.revokeObjectURL(logoObjUrl);
 
       // 3. Carica l'immagine finale su Supabase Storage
-      const path = `ai/${userId}/${editingId}/${Date.now()}.png`;
+      const path = `ai/${userId}/${editingId}/${Date.now()}.jpg`;
       const { error: uploadErr } = await supabase.storage
         .from("copertine")
-        .upload(path, composited, { contentType: "image/png", upsert: false });
+        .upload(path, composited, { contentType: "image/jpeg", upsert: false });
       if (uploadErr) { setAiError(uploadErr.message); return; }
 
       const { data: urlData } = supabase.storage.from("copertine").getPublicUrl(path);
