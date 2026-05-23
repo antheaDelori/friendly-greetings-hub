@@ -221,18 +221,15 @@ function GestionePage() {
   const [fileEpub, setFileEpub] = useState<File | null>(null);
   const [existingEpubUrl, setExistingEpubUrl] = useState<string | null>(null);
 
-  // Generazione documenti da .docx (PDF + ePub)
+  // Generazione automatica documenti da .docx (PDF + ePub in un click)
   const [docxFile, setDocxFile] = useState<File | null>(null);
   const [existingDocxUrl, setExistingDocxUrl] = useState<string | null>(null);
-  const [pdfGenerating, setPdfGenerating] = useState(false);
-  const [pdfGenError, setPdfGenError] = useState<string | null>(null);
-  const [pdfGenSuccess, setPdfGenSuccess] = useState(false);
-  const [pdfProgress, setPdfProgress] = useState(0);
+  const [docGenerating, setDocGenerating] = useState(false);
+  const [docGenPdfOk, setDocGenPdfOk] = useState(false);
+  const [docGenEpubOk, setDocGenEpubOk] = useState(false);
+  const [docGenError, setDocGenError] = useState<string | null>(null);
+  const [docProgress, setDocProgress] = useState(0);
   const [pdfConvUsed, setPdfConvUsed] = useState(0);
-  const [epubGenerating, setEpubGenerating] = useState(false);
-  const [epubGenError, setEpubGenError] = useState<string | null>(null);
-  const [epubGenSuccess, setEpubGenSuccess] = useState(false);
-  const [epubProgress, setEpubProgress] = useState(0);
   const [epubConvUsed, setEpubConvUsed] = useState(0);
 
   const copertRef = useRef<HTMLInputElement>(null);
@@ -395,18 +392,11 @@ function GestionePage() {
   }, [aiGenerating]);
 
   useEffect(() => {
-    if (!pdfGenerating) { setPdfProgress(0); return; }
-    setPdfProgress(0);
-    const iv = setInterval(() => setPdfProgress(p => (p + 1) % 10), 3000);
+    if (!docGenerating) { setDocProgress(0); return; }
+    setDocProgress(0);
+    const iv = setInterval(() => setDocProgress(p => (p + 1) % 10), 3000);
     return () => clearInterval(iv);
-  }, [pdfGenerating]);
-
-  useEffect(() => {
-    if (!epubGenerating) { setEpubProgress(0); return; }
-    setEpubProgress(0);
-    const iv = setInterval(() => setEpubProgress(p => (p + 1) % 10), 3000);
-    return () => clearInterval(iv);
-  }, [epubGenerating]);
+  }, [docGenerating]);
 
   // auto-scroll al cestino rimosso: disturbava il caricamento della pagina
 
@@ -483,10 +473,9 @@ function GestionePage() {
     setExistingEpubUrl(b.epub_url);
     setExistingDocxUrl(b.docx_url ?? null);
     setDocxFile(null);
-    setPdfGenError(null);
-    setPdfGenSuccess(false);
-    setEpubGenError(null);
-    setEpubGenSuccess(false);
+    setDocGenPdfOk(false);
+    setDocGenEpubOk(false);
+    setDocGenError(null);
     setCollanaId(b.collana_id ?? "");
     // Carica contatori conversioni
     supabase.from("book_conversions").select("id", { count: "exact", head: true })
@@ -593,75 +582,49 @@ function GestionePage() {
     }
   };
 
-  // Helper: carica il .docx se nuovo, poi chiama l'edge function
-  const uploadDocxIfNeeded = async (): Promise<boolean> => {
-    if (!docxFile) return true;
-    const path = `${userId}/${editingId}-source.docx`;
-    const { error: upErr } = await supabase.storage.from("libri").upload(path, docxFile, { upsert: true });
-    if (upErr) return false;
-    await supabase.from("books").update({ docx_url: path }).eq("id", editingId);
-    setExistingDocxUrl(path);
-    setDocxFile(null);
-    return true;
-  };
-
-  const handleUploadAndGeneratePdf = async () => {
+  // Carica .docx e genera PDF + ePub in sequenza
+  const handleGenerateDocs = async () => {
     if (!editingId || !userId || (!docxFile && !existingDocxUrl)) return;
-    setPdfGenerating(true);
-    setPdfGenError(null);
-    setPdfGenSuccess(false);
+    setDocGenerating(true);
+    setDocGenError(null);
+    setDocGenPdfOk(false);
+    setDocGenEpubOk(false);
     try {
-      if (!(await uploadDocxIfNeeded())) { setPdfGenError("Errore nel caricamento del file .docx"); return; }
+      // 1. Carica il .docx se è nuovo
+      if (docxFile) {
+        const path = `${userId}/${editingId}-source.docx`;
+        const { error: upErr } = await supabase.storage.from("libri").upload(path, docxFile, { upsert: true });
+        if (upErr) { setDocGenError(upErr.message); return; }
+        await supabase.from("books").update({ docx_url: path }).eq("id", editingId);
+        setExistingDocxUrl(path);
+        setDocxFile(null);
+      }
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-pdf`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ book_id: editingId, format: "pdf" }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        if (data.error === "limit_reached") setPdfConvUsed(10);
-        else setPdfGenError(data.error ?? "Errore nella conversione. Riprova.");
-        return;
+      const call = async (format: "pdf" | "epub") => {
+        const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-pdf`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ book_id: editingId, format }),
+        });
+        return { ok: res.ok, data: await res.json() };
+      };
+      // 2. Genera PDF (se entro limite)
+      if (isAdmin || pdfConvUsed < 10) {
+        const { ok, data } = await call("pdf");
+        if (ok) { setExistingFileUrl(data.file_path); setPdfConvUsed(data.used); setDocGenPdfOk(true); }
+        else if (data.error !== "limit_reached") { setDocGenError(`PDF: ${data.error ?? "errore"}`); return; }
       }
-      setExistingFileUrl(data.file_path);
-      setPdfConvUsed(data.used);
-      setPdfGenSuccess(true);
-    } catch (e) {
-      setPdfGenError(e instanceof Error ? e.message : "Errore di connessione. Riprova.");
-    } finally {
-      setPdfGenerating(false);
-    }
-  };
-
-  const handleGenerateEpub = async () => {
-    if (!editingId || !userId || (!docxFile && !existingDocxUrl)) return;
-    setEpubGenerating(true);
-    setEpubGenError(null);
-    setEpubGenSuccess(false);
-    try {
-      if (!(await uploadDocxIfNeeded())) { setEpubGenError("Errore nel caricamento del file .docx"); return; }
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-pdf`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ book_id: editingId, format: "epub" }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        if (data.error === "limit_reached") setEpubConvUsed(10);
-        else setEpubGenError(data.error ?? "Errore nella conversione. Riprova.");
-        return;
+      // 3. Genera ePub (se entro limite)
+      if (isAdmin || epubConvUsed < 10) {
+        const { ok, data } = await call("epub");
+        if (ok) { setExistingEpubUrl(data.file_path); setEpubConvUsed(data.used); setDocGenEpubOk(true); }
+        else if (data.error !== "limit_reached") { setDocGenError(`ePub: ${data.error ?? "errore"}`); }
       }
-      setExistingEpubUrl(data.file_path);
-      setEpubConvUsed(data.used);
-      setEpubGenSuccess(true);
     } catch (e) {
-      setEpubGenError(e instanceof Error ? e.message : "Errore di connessione. Riprova.");
+      setDocGenError(e instanceof Error ? e.message : "Errore di connessione. Riprova.");
     } finally {
-      setEpubGenerating(false);
+      setDocGenerating(false);
     }
   };
 
@@ -1388,95 +1351,60 @@ function GestionePage() {
                   </div>
                 </div>
 
-                {/* Genera documenti da .docx — solo su opera esistente */}
-                {editingId && (
-                  <div className="border border-amber/50 bg-amber/5 p-5 space-y-5 relative">
+                {/* Genera documenti da .docx — solo su opera esistente, solo se entro il limite */}
+                {editingId && (isAdmin || pdfConvUsed < 10 || epubConvUsed < 10) && (
+                  <div className="border border-amber/50 bg-amber/5 p-5 space-y-4 relative">
                     <span className="absolute -top-px left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber/50 to-transparent" />
-
-                    {/* Header + sorgente .docx */}
                     <div className="flex items-center justify-between flex-wrap gap-2">
-                      <div className="font-mono text-[11px] tracking-[0.3em] text-amber uppercase font-bold">◈ Genera documenti da manoscritto</div>
-                      {isAdmin && (
-                        <span className="font-mono text-[10px] tracking-widest uppercase text-amber border border-amber bg-amber/10 px-3 py-1 font-bold">∞ Accesso illimitato</span>
-                      )}
+                      <div className="font-mono text-[11px] tracking-[0.3em] text-amber uppercase font-bold">◈ Genera PDF + ePub dal manoscritto</div>
+                      {isAdmin
+                        ? <span className="font-mono text-[10px] tracking-widest uppercase text-amber border border-amber bg-amber/10 px-3 py-1 font-bold">∞ Accesso illimitato</span>
+                        : <span className="font-mono text-[10px] text-bone/50 border border-amber/30 px-2 py-0.5">{Math.max(pdfConvUsed, epubConvUsed)} / 10</span>
+                      }
                     </div>
-                    <p className="font-serif italic text-bone/60 text-sm">Carica il tuo manoscritto Word (.docx): PDF ed ePub vengono generati automaticamente. Hai <strong className="text-amber not-italic">10 conversioni gratuite</strong> per ogni formato.</p>
+                    <p className="font-serif italic text-bone/60 text-sm">
+                      Carica il manoscritto Word (.docx): PDF ed ePub vengono generati automaticamente in un click.
+                      {!isAdmin && <span className="text-amber not-italic font-mono text-[10px] tracking-widest uppercase ml-2">10 generazioni gratuite</span>}
+                    </p>
 
-                    {/* Selezione .docx */}
                     <div className="flex items-center gap-3 flex-wrap">
                       <input ref={docxRef} type="file" accept=".docx"
-                        onChange={e => { setDocxFile(e.target.files?.[0] ?? null); setPdfGenSuccess(false); setEpubGenSuccess(false); }} className="hidden" />
+                        onChange={e => { setDocxFile(e.target.files?.[0] ?? null); setDocGenPdfOk(false); setDocGenEpubOk(false); setDocGenError(null); }}
+                        className="hidden" />
                       <button type="button" onClick={() => docxRef.current?.click()}
                         className="border border-amber/40 px-4 py-2 font-mono text-[10px] uppercase tracking-widest hover:border-amber hover:text-amber transition-all text-bone/60 cursor-pointer">
                         {docxFile ? `✓ ${docxFile.name}` : existingDocxUrl ? "✓ .docx caricato (sostituisci)" : "▸ Scegli .docx"}
                       </button>
-                      {!existingDocxUrl && !docxFile && (
-                        <span className="font-mono text-[10px] text-bone/40 uppercase tracking-widest">← carica prima il manoscritto</span>
-                      )}
+                      <HudButton
+                        variant="ghost"
+                        onClick={handleGenerateDocs}
+                        disabled={docGenerating || (!docxFile && !existingDocxUrl)}
+                      >
+                        {docGenerating ? "▸ Generazione in corso..." : existingDocxUrl && !docxFile ? "◈ Rigenera PDF + ePub" : "◈ Carica e genera PDF + ePub"}
+                      </HudButton>
                     </div>
 
-                    {/* Riga PDF + ePub */}
-                    <div className="grid sm:grid-cols-2 gap-4">
-
-                      {/* PDF */}
-                      <div className="border border-amber/20 bg-amber/5 p-4 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="font-mono text-[10px] tracking-widest text-amber uppercase">PDF</span>
-                          {!isAdmin && (
-                            <span className={`font-mono text-[10px] border px-2 py-0.5 ${pdfConvUsed >= 10 ? "border-magenta/50 text-magenta" : "border-amber/30 text-bone/60"}`}>
-                              {pdfConvUsed} / 10
-                            </span>
-                          )}
+                    {docGenerating && (
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <span className="font-mono text-[11px] tracking-widest text-amber uppercase animate-pulse">
+                          {!docGenPdfOk ? "◈ Generazione PDF..." : "◈ Generazione ePub..."}
+                        </span>
+                        <div className="flex gap-1">
+                          {Array.from({ length: 10 }).map((_, i) => (
+                            <span key={i} className={`w-2.5 h-2.5 border transition-all duration-500 ${i < docProgress ? "bg-amber border-amber" : "bg-transparent border-amber/30"}`} />
+                          ))}
                         </div>
-                        <HudButton
-                          variant="ghost"
-                          onClick={handleUploadAndGeneratePdf}
-                          disabled={pdfGenerating || epubGenerating || (!docxFile && !existingDocxUrl) || (!isAdmin && pdfConvUsed >= 10)}
-                        >
-                          {pdfGenerating ? "▸ In corso..." : existingDocxUrl && !docxFile ? "◈ Rigenera PDF" : "◈ Genera PDF"}
-                        </HudButton>
-                        {pdfGenerating && (
-                          <div className="flex gap-1">
-                            {Array.from({ length: 10 }).map((_, i) => (
-                              <span key={i} className={`w-2.5 h-2.5 border transition-all duration-500 ${i < pdfProgress ? "bg-amber border-amber" : "bg-transparent border-amber/30"}`} />
-                            ))}
-                          </div>
-                        )}
-                        {pdfGenSuccess && <p className="font-mono text-[10px] text-cyan uppercase">✓ PDF pronto</p>}
-                        {pdfGenError && <p className="font-mono text-[10px] text-magenta uppercase">✗ {pdfGenError}</p>}
-                        {!isAdmin && pdfConvUsed >= 10 && <p className="font-mono text-[10px] text-magenta/80 uppercase">Limite raggiunto</p>}
                       </div>
+                    )}
 
-                      {/* ePub */}
-                      <div className="border border-amber/20 bg-amber/5 p-4 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="font-mono text-[10px] tracking-widest text-amber uppercase">ePub</span>
-                          {!isAdmin && (
-                            <span className={`font-mono text-[10px] border px-2 py-0.5 ${epubConvUsed >= 10 ? "border-magenta/50 text-magenta" : "border-amber/30 text-bone/60"}`}>
-                              {epubConvUsed} / 10
-                            </span>
-                          )}
-                        </div>
-                        <HudButton
-                          variant="ghost"
-                          onClick={handleGenerateEpub}
-                          disabled={epubGenerating || pdfGenerating || (!docxFile && !existingDocxUrl) || (!isAdmin && epubConvUsed >= 10)}
-                        >
-                          {epubGenerating ? "▸ In corso..." : existingDocxUrl && !docxFile ? "◈ Rigenera ePub" : "◈ Genera ePub"}
-                        </HudButton>
-                        {epubGenerating && (
-                          <div className="flex gap-1">
-                            {Array.from({ length: 10 }).map((_, i) => (
-                              <span key={i} className={`w-2.5 h-2.5 border transition-all duration-500 ${i < epubProgress ? "bg-amber border-amber" : "bg-transparent border-amber/30"}`} />
-                            ))}
-                          </div>
-                        )}
-                        {epubGenSuccess && <p className="font-mono text-[10px] text-cyan uppercase">✓ ePub pronto</p>}
-                        {epubGenError && <p className="font-mono text-[10px] text-magenta uppercase">✗ {epubGenError}</p>}
-                        {!isAdmin && epubConvUsed >= 10 && <p className="font-mono text-[10px] text-magenta/80 uppercase">Limite raggiunto</p>}
-                      </div>
-
-                    </div>
+                    {(docGenPdfOk || docGenEpubOk) && !docGenerating && (
+                      <p className="font-mono text-[10px] tracking-wide text-cyan uppercase">
+                        {docGenPdfOk && "✓ PDF pronto"}
+                        {docGenPdfOk && docGenEpubOk && " · "}
+                        {docGenEpubOk && "✓ ePub pronto"}
+                      </p>
+                    )}
+                    {docGenError && <p className="font-mono text-[10px] tracking-wide text-magenta uppercase">✗ {docGenError}</p>}
                   </div>
                 )}
 
