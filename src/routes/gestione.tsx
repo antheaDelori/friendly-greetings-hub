@@ -110,49 +110,7 @@ const ALTRO_TIPO = "Altro (specifica sotto)";
 const inputClass = "mt-2 w-full bg-void/40 border border-cyan/30 px-4 py-3 font-mono text-bone placeholder:text-bone/30 focus:outline-none focus:border-cyan focus:bg-void/60 transition-all";
 const labelClass = "font-mono text-[10px] tracking-[0.25em] text-cyan/70 uppercase";
 
-async function fetchObjectUrl(url: string): Promise<string> {
-  const res = await fetch(url);
-  const blob = await res.blob();
-  return URL.createObjectURL(blob);
-}
-
-function compositeImages(coverObjUrl: string, logoObjUrl: string): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    const COVER_W = 1024;
-    const COVER_H = 1536;
-    const LOGO_W = 260;
-    const LOGO_BOTTOM_PAD = 48;
-
-    const canvas = document.createElement("canvas");
-    canvas.width = COVER_W;
-    canvas.height = COVER_H;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) { reject(new Error("Canvas non supportato")); return; }
-
-    ctx.fillStyle = "#000000";
-    ctx.fillRect(0, 0, COVER_W, COVER_H);
-
-    const cover = new Image();
-    cover.onload = () => {
-      ctx.drawImage(cover, 0, 0, COVER_W, COVER_H);
-      const logo = new Image();
-      logo.onload = () => {
-        const logoH = Math.round((logo.naturalHeight / logo.naturalWidth) * LOGO_W);
-        const logoX = Math.round((COVER_W - LOGO_W) / 2);
-        const logoY = COVER_H - logoH - LOGO_BOTTOM_PAD;
-        ctx.drawImage(logo, logoX, logoY, LOGO_W, logoH);
-        canvas.toBlob(blob => {
-          if (!blob) { reject(new Error("Canvas toBlob fallito")); return; }
-          resolve(blob);
-        }, "image/jpeg", 0.93);
-      };
-      logo.onerror = () => reject(new Error("Caricamento logo fallito"));
-      logo.src = logoObjUrl;
-    };
-    cover.onerror = () => reject(new Error("Caricamento copertina fallito"));
-    cover.src = coverObjUrl;
-  });
-}
+const BRAND_LOGO_URL = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/copertine/brand/anthea-delori-logo.png`;
 
 function generateSlug(title: string): string {
   return title
@@ -544,35 +502,15 @@ function GestionePage() {
         return;
       }
 
-      // 2. Scarica le immagini come blob (evita CORS canvas) e compone
-      const logoUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/copertine/brand/anthea-delori-logo.png`;
-      const [coverObjUrl, logoObjUrl] = await Promise.all([
-        fetchObjectUrl(data.cover_url),
-        fetchObjectUrl(logoUrl),
-      ]);
-      const composited = await compositeImages(coverObjUrl, logoObjUrl);
-      URL.revokeObjectURL(coverObjUrl);
-      URL.revokeObjectURL(logoObjUrl);
-
-      // 3. Carica l'immagine finale su Supabase Storage
-      const path = `ai/${userId}/${editingId}/${Date.now()}.jpg`;
-      const { error: uploadErr } = await supabase.storage
-        .from("copertine")
-        .upload(path, composited, { contentType: "image/jpeg", upsert: false });
-      if (uploadErr) { setAiError(uploadErr.message); return; }
-
-      const { data: urlData } = supabase.storage.from("copertine").getPublicUrl(path);
-      const imageUrl = urlData.publicUrl;
-
-      // 4. Registra il tentativo
+      // 2. Registra il tentativo (cover_url già salvata dall'edge function)
       await supabase.from("ai_cover_attempts").insert({
         book_id: editingId,
         author_id: userId,
-        image_url: imageUrl,
+        image_url: data.cover_url,
         prompt: aiPrompt,
       });
 
-      setAiGeneratedUrl(imageUrl);
+      setAiGeneratedUrl(data.cover_url);
       setAiUsed(data.used);
     } catch (e) {
       setAiError(e instanceof Error ? e.message : "Errore di connessione. Riprova.");
@@ -1379,8 +1317,9 @@ function GestionePage() {
                         )}
                         {aiGeneratedUrl && (
                           <div className="flex gap-5 items-start pt-1">
-                            <button onClick={() => setAiModalUrl(aiGeneratedUrl)} className="flex-shrink-0 cursor-zoom-in group relative">
-                              <img src={aiGeneratedUrl} alt="Copertina generata" className="w-24 h-32 object-cover ring-1 ring-cyan/40 group-hover:ring-cyan transition-all" />
+                            <button onClick={() => setAiModalUrl(aiGeneratedUrl)} className="flex-shrink-0 cursor-zoom-in group relative w-24 h-32">
+                              <img src={aiGeneratedUrl} alt="Copertina generata" className="w-full h-full object-cover ring-1 ring-cyan/40 group-hover:ring-cyan transition-all" />
+                              <img src={BRAND_LOGO_URL} alt="" className="absolute bottom-1 left-1/2 -translate-x-1/2 w-3/5 pointer-events-none" />
                               <span className="absolute inset-0 flex items-center justify-center bg-void/40 opacity-0 group-hover:opacity-100 transition-opacity font-mono text-[9px] text-cyan tracking-widest">⊕ ingrandisci</span>
                             </button>
                             <div className="space-y-2">
@@ -2054,6 +1993,7 @@ function GestionePage() {
         >
           <div className="relative max-h-full" onClick={e => e.stopPropagation()}>
             <img src={aiModalUrl} alt="Anteprima copertina" className="max-h-[85vh] max-w-[90vw] object-contain ring-1 ring-cyan/40" />
+            <img src={BRAND_LOGO_URL} alt="" className="absolute bottom-4 left-1/2 -translate-x-1/2 w-1/4 pointer-events-none" />
             <button
               onClick={() => setAiModalUrl(null)}
               className="absolute -top-3 -right-3 w-8 h-8 bg-void border border-cyan/40 text-bone hover:text-magenta font-mono text-sm flex items-center justify-center transition-colors cursor-pointer"
