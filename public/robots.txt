@@ -1,0 +1,5 @@
+# Sito in fase di sviluppo — crawler disabilitati temporaneamente
+# Rimuovere questo file al lancio ufficiale del sito
+
+User-agent: *
+Disallow: /

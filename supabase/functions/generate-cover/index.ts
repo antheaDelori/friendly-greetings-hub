@@ -146,7 +146,7 @@ Deno.serve(async (req) => {
     const logoY = coverImg.height - logoH - LOGO_BOTTOM_PAD + 1;
     coverImg.composite(logoImg, logoX, logoY);
 
-    finalBytes = await coverImg.encodeJPEG(93);
+    finalBytes = await coverImg.encodeJPEG(70);
   } catch (_) {
     // Se il compositing fallisce, salva la copertina senza logo
     finalBytes = coverBytes;
