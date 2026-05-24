@@ -1,4 +1,5 @@
 import { Outlet, Link, createRootRoute } from "@tanstack/react-router";
+import { LangDetectModal } from "@/components/LangDetectModal";
 
 function NotFoundComponent() {
   return (
@@ -28,5 +29,10 @@ export const Route = createRootRoute({
 });
 
 function RootComponent() {
-  return <Outlet />;
+  return (
+    <>
+      <LangDetectModal />
+      <Outlet />
+    </>
+  );
 }
