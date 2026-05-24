@@ -101,10 +101,11 @@ export function LangDetectModal() {
       if (res.ok) {
         setSent(true);
       } else {
-        setSendError("Error sending. Please try again.");
+        const detail = await res.text().catch(() => "");
+        setSendError(`Error ${res.status}${detail ? `: ${detail}` : ""}`);
       }
-    } catch {
-      setSendError("Connection error.");
+    } catch (err) {
+      setSendError(`Connection error: ${String(err)}`);
     } finally {
       setSending(false);
     }
