@@ -623,6 +623,15 @@ function ReadPage() {
               Clicca di nuovo per rimuoverlo.
             </p>
           </div>
+
+          {/* Legenda pulsante Letto — solo desktop */}
+          <div className="w-full hidden lg:flex lg:flex-col mt-2 border-t border-ink/10 pt-4">
+            <div className="font-display tracking-[0.15em] text-[9px] text-ink/50 mb-2 uppercase">— hai già letto?</div>
+            <p className="font-serif text-[11px] text-ink/50 leading-relaxed italic">
+              Puoi segnare un'opera come letta anche se non l'hai terminata qui.
+              È un modo per tenere traccia di ciò che conosci già.
+            </p>
+          </div>
         </aside>
 
         {/* Testo capitolo */}
