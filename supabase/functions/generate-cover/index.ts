@@ -26,6 +26,39 @@ function json(data: unknown, status = 200) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
 
+  const body = await req.json();
+  const { action } = body;
+
+  // ── RICHIESTA LINGUA — non richiede auth ──────────────────────────────────
+  if (action === "langRequest") {
+    const { name, email, language } = body;
+    if (!email || !language) return json({ error: "email e lingua richiesti" }, 400);
+    const authorDisplay = name ? `${name} <${email}>` : email;
+    // Email all'admin
+    await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: "Liberiamo la mente <noreply@liberiamo2076.com>",
+        to: "antheaDelori@live.it",
+        subject: `[Richiesta lingua] ${language} — ${authorDisplay}`,
+        html: `<h2>Nuova richiesta lingua</h2><p><strong>Lingua:</strong> ${language}</p><p><strong>Da:</strong> ${authorDisplay}</p>`,
+      }),
+    });
+    // Email di conferma all'utente
+    await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: "Liberiamo la mente <noreply@liberiamo2076.com>",
+        to: email,
+        subject: "Liberiamo la mente — Richiesta lingua ricevuta",
+        html: `<p>Ciao${name ? ` ${name}` : ""}!</p><p>Abbiamo ricevuto la tua richiesta per la lingua <strong>${language}</strong>.</p><p>Ti contatteremo al più presto per confermarti la disponibilità.</p><p>— Il team di Liberiamo la mente</p>`,
+      }),
+    });
+    return json({ success: true });
+  }
+
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) return json({ error: "Unauthorized" }, 401);
 
@@ -35,9 +68,6 @@ Deno.serve(async (req) => {
     authHeader.replace("Bearer ", ""),
   );
   if (authErr || !user) return json({ error: "Unauthorized" }, 401);
-
-  const body = await req.json();
-  const { action } = body;
 
   // ── TICKET REQUEST ──────────────────────────────────────────────────────────
   if (action === "ticket") {

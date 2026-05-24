@@ -1,9 +1,18 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import i18n from "@/lib/i18n";
 import logo from "@/assets/liberiamo-hero.png";
 import { supabase } from "@/lib/supabase";
 import { getCestinoTranslation } from "@/lib/cestinoI18n";
+
+const LANGUAGES = [
+  { code: "it", flag: "🇮🇹", label: "Italiano" },
+  { code: "en", flag: "🇬🇧", label: "English" },
+  { code: "fr", flag: "🇫🇷", label: "Français" },
+  { code: "de", flag: "🇩🇪", label: "Deutsch" },
+  { code: "es", flag: "🇪🇸", label: "Español" },
+];
 
 type AuthorEntry = { name: string; count: number };
 
@@ -19,19 +28,49 @@ export function SiteHeader() {
   const autoriRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
+  // Language switcher
+  const [langOpen, setLangOpen] = useState(false);
+  const [langModal, setLangModal] = useState(false);
+  const [langName, setLangName] = useState("");
+  const [langEmail, setLangEmail] = useState("");
+  const [langRequested, setLangRequested] = useState("");
+  const [langSending, setLangSending] = useState(false);
+  const [langSent, setLangSent] = useState(false);
+  const [langError, setLangError] = useState<string | null>(null);
+  const langRef = useRef<HTMLDivElement>(null);
+  const currentLang = LANGUAGES.find(l => i18n.language.startsWith(l.code)) ?? LANGUAGES[0];
+
   useEffect(() => { setCestinoTooltip(getCestinoTranslation()); }, []);
 
-  // chiude il dropdown cliccando fuori
+  // chiude i dropdown cliccando fuori
   useEffect(() => {
-    if (!autoriOpen) return;
+    if (!autoriOpen && !langOpen) return;
     const handler = (e: MouseEvent) => {
-      if (autoriRef.current && !autoriRef.current.contains(e.target as Node)) {
-        setAutoriOpen(false);
-      }
+      if (autoriRef.current && !autoriRef.current.contains(e.target as Node)) setAutoriOpen(false);
+      if (langRef.current && !langRef.current.contains(e.target as Node)) setLangOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [autoriOpen]);
+  }, [autoriOpen, langOpen]);
+
+  const handleLangRequest = async () => {
+    if (!langEmail.trim() || !langRequested.trim()) return;
+    setLangSending(true);
+    setLangError(null);
+    try {
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-cover`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "langRequest", name: langName.trim(), email: langEmail.trim(), language: langRequested.trim() }),
+      });
+      if (res.ok) { setLangSent(true); }
+      else { setLangError(t("langSwitch.error")); }
+    } catch {
+      setLangError(t("langSwitch.error"));
+    } finally {
+      setLangSending(false);
+    }
+  };
 
   const handleAutoriToggle = async () => {
     setAutoriOpen(v => !v);
@@ -189,6 +228,43 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
+
+          {/* ── Language switcher ── */}
+          <div ref={langRef} className="relative">
+            <button
+              onClick={() => setLangOpen(v => !v)}
+              className={`font-mono text-[10px] tracking-widest uppercase flex items-center gap-1 px-2 py-2 transition-colors ${langOpen ? "text-cyan" : "text-bone/40 hover:text-cyan"}`}
+            >
+              <span className="text-[14px] leading-none">{currentLang.flag}</span>
+              <span className="hidden sm:inline">{currentLang.code.toUpperCase()}</span>
+              <span className={`text-[8px] transition-transform duration-200 ${langOpen ? "rotate-180" : ""}`}>▾</span>
+            </button>
+            {langOpen && (
+              <div className="absolute top-full right-0 mt-3 w-48 glass border border-cyan/30 z-50 shadow-[0_0_30px_oklch(0.82_0.16_200/0.15)]">
+                <span className="absolute -top-px left-0 right-0 h-px bg-cyan/60" />
+                {LANGUAGES.map(lang => (
+                  <button
+                    key={lang.code}
+                    onClick={() => { i18n.changeLanguage(lang.code); setLangOpen(false); }}
+                    className={`w-full text-left px-4 py-2.5 flex items-center gap-3 hover:bg-cyan/5 transition-colors ${i18n.language.startsWith(lang.code) ? "text-cyan" : "text-bone/70"}`}
+                  >
+                    <span className="text-[14px] leading-none">{lang.flag}</span>
+                    <span className="font-mono text-[10px] tracking-widest uppercase">{lang.label}</span>
+                    {i18n.language.startsWith(lang.code) && <span className="ml-auto font-mono text-[8px] text-cyan">✓</span>}
+                  </button>
+                ))}
+                <div className="border-t border-cyan/15">
+                  <button
+                    onClick={() => { setLangOpen(false); setLangModal(true); }}
+                    className="w-full text-left px-4 py-3 font-mono text-[10px] tracking-widest uppercase text-magenta hover:bg-magenta/5 transition-colors"
+                  >
+                    {t("langSwitch.requestBtn")}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
           {displayName ? (
             <>
               {isAnonymous ? (
@@ -248,6 +324,73 @@ export function SiteHeader() {
           </div>
         </div>
       </div>
+
+      {/* ── Language request modal ── */}
+      {langModal && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-void/80 backdrop-blur-sm"
+          onClick={e => { if (e.target === e.currentTarget) { setLangModal(false); setLangSent(false); setLangError(null); } }}
+        >
+          <div className="relative w-full max-w-md mx-4 glass border border-cyan/30 p-6">
+            <span className="absolute -top-px left-0 right-0 h-px bg-cyan/60" />
+            <h2 className="font-display text-lg tracking-[0.15em] text-bone mb-1">{t("langSwitch.modal_title")}</h2>
+            <p className="font-mono text-[10px] tracking-widest text-bone/50 uppercase mb-5">{t("langSwitch.modal_desc")}</p>
+            {langSent ? (
+              <div className="text-center py-4">
+                <p className="font-mono text-[11px] tracking-widest text-cyan uppercase">{t("langSwitch.success")}</p>
+                <button
+                  onClick={() => { setLangModal(false); setLangSent(false); }}
+                  className="mt-4 font-mono text-[10px] tracking-widest uppercase text-bone/50 hover:text-cyan transition-colors"
+                >
+                  {t("langSwitch.close")}
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="flex flex-col gap-3 mb-4">
+                  <input
+                    type="text"
+                    placeholder={t("langSwitch.fieldName")}
+                    value={langName}
+                    onChange={e => setLangName(e.target.value)}
+                    className="bg-void/60 border border-cyan/20 px-3 py-2 font-mono text-[11px] text-bone placeholder:text-bone/30 focus:outline-none focus:border-cyan/60"
+                  />
+                  <input
+                    type="email"
+                    placeholder={`${t("langSwitch.fieldEmail")} ★`}
+                    value={langEmail}
+                    onChange={e => setLangEmail(e.target.value)}
+                    className="bg-void/60 border border-cyan/20 px-3 py-2 font-mono text-[11px] text-bone placeholder:text-bone/30 focus:outline-none focus:border-cyan/60"
+                  />
+                  <input
+                    type="text"
+                    placeholder={t("langSwitch.fieldLangPh")}
+                    value={langRequested}
+                    onChange={e => setLangRequested(e.target.value)}
+                    className="bg-void/60 border border-cyan/20 px-3 py-2 font-mono text-[11px] text-bone placeholder:text-bone/30 focus:outline-none focus:border-cyan/60"
+                  />
+                </div>
+                {langError && <p className="font-mono text-[10px] text-magenta mb-3">{langError}</p>}
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={() => { setLangModal(false); setLangSent(false); setLangError(null); }}
+                    className="font-mono text-[10px] tracking-widest uppercase text-bone/40 hover:text-bone/70 transition-colors"
+                  >
+                    {t("langSwitch.close")}
+                  </button>
+                  <button
+                    onClick={handleLangRequest}
+                    disabled={langSending || !langEmail.trim() || !langRequested.trim()}
+                    className="relative inline-flex items-center gap-2 border border-cyan/60 bg-cyan/10 px-4 py-2 font-mono text-[10px] uppercase tracking-widest text-cyan hover:bg-cyan hover:text-void transition-all disabled:opacity-40 disabled:pointer-events-none"
+                  >
+                    {langSending ? t("langSwitch.sending") : t("langSwitch.submit")}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </header>
   );
 }
