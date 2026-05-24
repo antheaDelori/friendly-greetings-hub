@@ -55,7 +55,23 @@
     "lettoreTitoloA": "Just want to",
     "lettoreTitoloB": "read?",
     "lettoreDesc": "Free access to all public content. Comment, follow authors, download within the set limits, support those you love with a free donation.",
-    "lettoreBtn": "Start reading"
+    "lettoreBtn": "Start reading",
+    "taglineCassetto": "Let them out of the drawer,",
+    "taglineCassettoSub": "the books that never saw the light."
+  },
+  "langSwitch": {
+    "requestBtn": "Request your language →",
+    "modal_title": "Request your language",
+    "modal_desc": "Your language is not yet available. Request it and we'll write to you to confirm availability as soon as possible.",
+    "fieldName": "Your name",
+    "fieldEmail": "Email",
+    "fieldLang": "Requested language",
+    "fieldLangPh": "e.g. Danish, Dutch, Japanese...",
+    "submit": "Send request",
+    "sending": "Sending...",
+    "success": "Request received! You'll get a confirmation email soon.",
+    "error": "Sending error. Please try again.",
+    "close": "Close"
   },
   "catalogo": {
     "titolo": "All works.",

@@ -55,7 +55,23 @@
     "lettoreTitoloA": "¿Solo quieres",
     "lettoreTitoloB": "leer?",
     "lettoreDesc": "Acceso gratuito a todos los contenidos públicos. Comenta, sigue a los autores, descarga dentro de los límites establecidos, apoya a quien amas con una donación libre.",
-    "lettoreBtn": "Empezar a leer"
+    "lettoreBtn": "Empezar a leer",
+    "taglineCassetto": "Liberémoslos del cajón,",
+    "taglineCassettoSub": "los libros que nunca vieron la luz."
+  },
+  "langSwitch": {
+    "requestBtn": "Solicita tu idioma →",
+    "modal_title": "Solicita tu idioma",
+    "modal_desc": "Tu idioma aún no está disponible. Solicítalo y te confirmaremos la disponibilidad lo antes posible.",
+    "fieldName": "Tu nombre",
+    "fieldEmail": "Email",
+    "fieldLang": "Idioma solicitado",
+    "fieldLangPh": "ej. danés, neerlandés, japonés...",
+    "submit": "Enviar solicitud",
+    "sending": "Enviando...",
+    "success": "Solicitud recibida. Recibirás pronto un correo de confirmación.",
+    "error": "Error al enviar. Inténtalo de nuevo.",
+    "close": "Cerrar"
   },
   "catalogo": {
     "titolo": "Todas las obras.",

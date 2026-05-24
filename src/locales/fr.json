@@ -55,7 +55,23 @@
     "lettoreTitoloA": "Vous voulez juste",
     "lettoreTitoloB": "lire ?",
     "lettoreDesc": "Accès gratuit à tous les contenus publics. Commentez, suivez les auteurs, téléchargez dans les limites prévues, soutenez ceux que vous aimez avec un don libre.",
-    "lettoreBtn": "Commencer à lire"
+    "lettoreBtn": "Commencer à lire",
+    "taglineCassetto": "Libérons-les du tiroir,",
+    "taglineCassettoSub": "les livres qui n'ont jamais vu la lumière."
+  },
+  "langSwitch": {
+    "requestBtn": "Demandez votre langue →",
+    "modal_title": "Demandez votre langue",
+    "modal_desc": "Votre langue n'est pas encore disponible. Faites une demande et nous vous confirmerons la disponibilité dans les meilleurs délais.",
+    "fieldName": "Votre nom",
+    "fieldEmail": "Email",
+    "fieldLang": "Langue demandée",
+    "fieldLangPh": "ex. danois, néerlandais, japonais...",
+    "submit": "Envoyer la demande",
+    "sending": "Envoi...",
+    "success": "Demande reçue ! Vous recevrez bientôt un email de confirmation.",
+    "error": "Erreur d'envoi. Réessayez.",
+    "close": "Fermer"
   },
   "catalogo": {
     "titolo": "Toutes les œuvres.",

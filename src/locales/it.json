@@ -55,7 +55,23 @@
     "lettoreTitoloA": "Vuoi solo",
     "lettoreTitoloB": "leggere?",
     "lettoreDesc": "Accesso gratuito a tutti i contenuti pubblici. Commenta, segui gli autori, scarica nei limiti previsti, sostieni chi ami con una donazione libera.",
-    "lettoreBtn": "Inizia a leggere"
+    "lettoreBtn": "Inizia a leggere",
+    "taglineCassetto": "Liberiamoli dal cassetto,",
+    "taglineCassettoSub": "i libri che non hanno mai visto la luce."
+  },
+  "langSwitch": {
+    "requestBtn": "Richiedi la tua lingua →",
+    "modal_title": "Richiedi la tua lingua",
+    "modal_desc": "La tua lingua non è ancora disponibile. Richiedila: ti scriveremo per confermarti la disponibilità al più presto.",
+    "fieldName": "Il tuo nome",
+    "fieldEmail": "Email",
+    "fieldLang": "Lingua richiesta",
+    "fieldLangPh": "es. danese, olandese, giapponese...",
+    "submit": "Invia richiesta",
+    "sending": "Invio...",
+    "success": "Richiesta ricevuta! Riceverai al più presto la conferma via email.",
+    "error": "Errore nell'invio. Riprova.",
+    "close": "Chiudi"
   },
   "catalogo": {
     "titolo": "Tutte le opere.",

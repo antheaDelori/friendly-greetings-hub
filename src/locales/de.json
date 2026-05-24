@@ -55,7 +55,23 @@
     "lettoreTitoloA": "Einfach nur",
     "lettoreTitoloB": "lesen?",
     "lettoreDesc": "Kostenloser Zugang zu allen öffentlichen Inhalten. Kommentieren, Autoren folgen, im Rahmen des Erlaubten herunterladen, diejenigen unterstützen, die Sie lieben.",
-    "lettoreBtn": "Lesen beginnen"
+    "lettoreBtn": "Lesen beginnen",
+    "taglineCassetto": "Befreien wir sie aus der Schublade,",
+    "taglineCassettoSub": "die Bücher, die nie das Licht erblickt haben."
+  },
+  "langSwitch": {
+    "requestBtn": "Sprache anfragen →",
+    "modal_title": "Sprache anfragen",
+    "modal_desc": "Ihre Sprache ist noch nicht verfügbar. Fordern Sie sie an und wir bestätigen Ihnen die Verfügbarkeit so bald wie möglich.",
+    "fieldName": "Ihr Name",
+    "fieldEmail": "E-Mail",
+    "fieldLang": "Gewünschte Sprache",
+    "fieldLangPh": "z.B. Dänisch, Niederländisch, Japanisch...",
+    "submit": "Anfrage senden",
+    "sending": "Senden...",
+    "success": "Anfrage erhalten! Sie erhalten bald eine Bestätigungs-E-Mail.",
+    "error": "Sendefehler. Bitte erneut versuchen.",
+    "close": "Schließen"
   },
   "catalogo": {
     "titolo": "Alle Werke.",
