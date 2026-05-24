@@ -45,7 +45,7 @@ export function BookCard({ book, compact = false, libreriaStato = null, onLibrer
             hasLastra && !isLetto
               ? "opacity-0 group-hover:opacity-100 group-hover:scale-105"
               : isLetto
-                ? "scale-[0.87] saturate-[45%] brightness-[0.65] group-hover:scale-[0.97] group-hover:saturate-100 group-hover:brightness-100"
+                ? "scale-[0.76] saturate-[45%] brightness-[0.65] group-hover:scale-[0.93] group-hover:saturate-100 group-hover:brightness-100"
                 : "saturate-[30%] brightness-[0.55] group-hover:scale-105 group-hover:saturate-100 group-hover:brightness-100"
           }`}
         />
