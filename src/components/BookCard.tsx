@@ -43,7 +43,7 @@ export function BookCard({ book, compact = false, libreriaStato = null, onLibrer
           alt={book.title}
           className={`absolute inset-0 h-full w-full object-contain transition-all duration-700 ${
             hasLastra && !isLetto
-              ? "opacity-0 group-hover:opacity-100 group-hover:scale-[0.85]"
+              ? "opacity-0 group-hover:opacity-100 group-hover:scale-100"
               : isLetto
                 ? "scale-[0.76] saturate-[45%] brightness-[0.65] group-hover:scale-[0.85] group-hover:saturate-100 group-hover:brightness-100"
                 : "saturate-[30%] brightness-[0.55] group-hover:scale-105 group-hover:saturate-100 group-hover:brightness-100"
