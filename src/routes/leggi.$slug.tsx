@@ -613,7 +613,7 @@ function ReadPage() {
               }`}
             >
               <span className="text-sm leading-none">{userHasLiked ? "♥" : "♡"}</span>
-              <span>{likesCount > 0 ? likesCount : "Like"}</span>
+              <span>Like</span>
             </button>
           ) : (
             <Link
@@ -1016,8 +1016,8 @@ function ReadPage() {
                   </Link>
                 )}
                 {likesCount > 0 && (
-                  <span className="font-mono text-[10px] tracking-widest text-ink/40 uppercase">
-                    {likesCount} {likesCount === 1 ? "persona" : "persone"} hanno apprezzato
+                  <span className="font-mono text-[11px] tracking-widest text-ink/60">
+                    ♥ {likesCount} {likesCount === 1 ? "persona ha apprezzato" : "persone hanno apprezzato"}
                   </span>
                 )}
               </div>
