@@ -585,6 +585,24 @@ function ReadPage() {
             </a>
           )}
 
+          {/* Segna come letto — sempre visibile per utenti loggati */}
+          {isLoggedIn && !isAnonymous && (
+            libreriaStato === "letto" ? (
+              <span className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink/30 text-ink/35 px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase cursor-default select-none">
+                <span className="text-sm leading-none">✓</span>
+                <span>Letto</span>
+              </span>
+            ) : (
+              <button
+                onClick={handleSegnaLetto}
+                className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors cursor-pointer"
+              >
+                <span className="text-sm leading-none">◈</span>
+                <span>Letto?</span>
+              </button>
+            )
+          )}
+
           <div className="w-full lg:mt-4 lg:border-t lg:border-ink/10 lg:pt-4">
             <div className="hidden lg:block font-display tracking-[0.15em] text-[9px] text-ink/50 mb-2 uppercase">— testo</div>
             <div className="flex w-full">
@@ -799,23 +817,19 @@ function ReadPage() {
                 </div>
               )}
 
-              {/* Banner "segna come letto" — solo sull'ultimo capitolo, solo utenti loggati */}
-              {currentIdx === book.chapters.length - 1 && !isAnonymous && (
-                <div className="mt-16 border-t border-cyan/10 pt-8 text-center">
+              {/* Banner fine libro — solo ultimo capitolo, solo utenti loggati */}
+              {currentIdx === book.chapters.length - 1 && isLoggedIn && !isAnonymous && (
+                <div className="mt-16 border-t border-ink/10 pt-8 text-center">
                   {libreriaStato === "letto" ? (
-                    <div className="inline-flex items-center gap-2 font-mono text-[10px] tracking-[0.3em] uppercase text-cyan"
-                      style={{ textShadow: "0 0 8px oklch(0.82 0.16 200 / 0.7)" }}
-                    >
-                      <span className="h-px w-8 bg-cyan/40" />
-                      ✓ ARCHIVIATO — LETTO
-                      <span className="h-px w-8 bg-cyan/40" />
-                    </div>
+                    <span className="font-display tracking-widest text-sm uppercase text-ink/40">
+                      ✓ Spostato nello scaffale dei libri letti
+                    </span>
                   ) : (
                     <button
                       onClick={handleSegnaLetto}
-                      className="inline-flex items-center gap-3 border border-cyan/30 bg-cyan/5 hover:border-cyan/70 hover:bg-cyan/10 px-6 py-3 font-mono text-[10px] tracking-[0.25em] uppercase text-bone/50 hover:text-cyan transition-all"
+                      className="font-display tracking-widest text-sm uppercase text-ink/50 hover:text-blood border border-ink/20 hover:border-blood/40 px-6 py-3 transition-all cursor-pointer"
                     >
-                      ◈ Segna come letto
+                      ◈ Lo sposto nello scaffale dei libri letti?
                     </button>
                   )}
                 </div>
