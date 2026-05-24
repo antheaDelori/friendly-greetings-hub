@@ -263,8 +263,19 @@ function ReadPage() {
   const [libreriaStato, setLibreriaStato] = useState<string | null>(null);
 
   const handleSegnaLetto = async () => {
-    if (!libreriaEntryId) return;
-    await supabase.from("libreria").update({ stato: "letto" }).eq("id", libreriaEntryId);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user || user.is_anonymous) return;
+    if (libreriaEntryId) {
+      // Il libro è già in libreria → aggiorna stato
+      await supabase.from("libreria").update({ stato: "letto" }).eq("id", libreriaEntryId);
+    } else {
+      // Non è in libreria → inserisci direttamente come "letto"
+      const { data } = await supabase.from("libreria")
+        .insert({ user_id: user.id, book_id: bookId, stato: "letto" })
+        .select("id")
+        .single();
+      if (data) setLibreriaEntryId(data.id);
+    }
     setLibreriaStato("letto");
   };
 
@@ -788,19 +799,23 @@ function ReadPage() {
                 </div>
               )}
 
-              {/* Banner "segna come letto" — solo sull'ultimo capitolo */}
-              {currentIdx === book.chapters.length - 1 && libreriaEntryId && (
-                <div className="mt-16 border-t border-ink/10 pt-8 text-center">
+              {/* Banner "segna come letto" — solo sull'ultimo capitolo, solo utenti loggati */}
+              {currentIdx === book.chapters.length - 1 && !isAnonymous && (
+                <div className="mt-16 border-t border-cyan/10 pt-8 text-center">
                   {libreriaStato === "letto" ? (
-                    <span className="font-display tracking-widest text-sm uppercase text-blood/60">
-                      ✓ Spostato nello scaffale dei libri letti
-                    </span>
+                    <div className="inline-flex items-center gap-2 font-mono text-[10px] tracking-[0.3em] uppercase text-cyan"
+                      style={{ textShadow: "0 0 8px oklch(0.82 0.16 200 / 0.7)" }}
+                    >
+                      <span className="h-px w-8 bg-cyan/40" />
+                      ✓ ARCHIVIATO — LETTO
+                      <span className="h-px w-8 bg-cyan/40" />
+                    </div>
                   ) : (
                     <button
                       onClick={handleSegnaLetto}
-                      className="font-display tracking-widest text-sm uppercase text-ink/50 hover:text-blood border border-ink/20 hover:border-blood/40 px-6 py-3 transition-all cursor-pointer"
+                      className="inline-flex items-center gap-3 border border-cyan/30 bg-cyan/5 hover:border-cyan/70 hover:bg-cyan/10 px-6 py-3 font-mono text-[10px] tracking-[0.25em] uppercase text-bone/50 hover:text-cyan transition-all"
                     >
-                      ◈ Lo sposto nello scaffale dei libri letti?
+                      ◈ Segna come letto
                     </button>
                   )}
                 </div>

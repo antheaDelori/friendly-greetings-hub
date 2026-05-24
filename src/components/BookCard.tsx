@@ -86,6 +86,24 @@ export function BookCard({ book, compact = false, libreriaStato = null, onLibrer
         </div>
 
         <div className="absolute bottom-0 inset-x-0 h-24 bg-gradient-to-t from-void via-void/70 to-transparent" />
+
+        {/* ── Timbro "LETTO" — stile timbro bibliotecaria ── */}
+        {libreriaStato === "letto" && (
+          <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden">
+            {/* Velo scuro leggero sulla copertina */}
+            <div className="absolute inset-0 bg-void/35" />
+            {/* Timbro diagonale */}
+            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 -rotate-12 flex items-center gap-1.5 px-3 py-1.5 border border-cyan/80 bg-void/90 backdrop-blur-sm whitespace-nowrap"
+              style={{ boxShadow: "0 0 12px oklch(0.82 0.16 200 / 0.5), inset 0 0 8px oklch(0.82 0.16 200 / 0.08)" }}
+            >
+              <span className="font-mono text-[10px] tracking-[0.3em] uppercase text-cyan"
+                style={{ textShadow: "0 0 8px oklch(0.82 0.16 200 / 0.9)" }}
+              >
+                ✓ LETTO
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className={`p-3 flex flex-col flex-1 relative ${compact ? "p-3" : "p-4"}`}>
@@ -107,17 +125,37 @@ export function BookCard({ book, compact = false, libreriaStato = null, onLibrer
             </div>
             {isLoggedIn && onLibreriaChange && (
               <div className="mt-2 pt-2 border-t border-cyan/10">
-                {libreriaStato ? (
+                {libreriaStato === "letto" ? (
                   <span className="w-full block font-mono text-[9px] tracking-widest uppercase py-1.5 text-center text-cyan/60">
-                    ✓ Nella tua libreria
+                    ✓ Letto
                   </span>
+                ) : libreriaStato ? (
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="font-mono text-[9px] tracking-widest uppercase py-1.5 text-cyan/50">
+                      ✓ In libreria
+                    </span>
+                    <button
+                      onClick={e => { e.preventDefault(); e.stopPropagation(); onLibreriaChange("letto"); }}
+                      className="font-mono text-[9px] tracking-widest uppercase py-1.5 text-bone/30 hover:text-cyan transition-colors cursor-pointer"
+                    >
+                      ◈ Segna come letto
+                    </button>
+                  </div>
                 ) : (
-                  <button
-                    onClick={e => { e.preventDefault(); e.stopPropagation(); onLibreriaChange("da_leggere"); }}
-                    className="w-full font-mono text-[9px] tracking-widest uppercase py-1.5 text-center text-bone/35 hover:text-cyan transition-colors cursor-pointer"
-                  >
-                    ◈ Aggiungimi alla tua libreria
-                  </button>
+                  <div className="flex items-center justify-between gap-1">
+                    <button
+                      onClick={e => { e.preventDefault(); e.stopPropagation(); onLibreriaChange("da_leggere"); }}
+                      className="font-mono text-[9px] tracking-widest uppercase py-1.5 text-bone/35 hover:text-cyan transition-colors cursor-pointer"
+                    >
+                      ◈ Aggiungi alla libreria
+                    </button>
+                    <button
+                      onClick={e => { e.preventDefault(); e.stopPropagation(); onLibreriaChange("letto"); }}
+                      className="font-mono text-[9px] tracking-widest uppercase py-1.5 text-bone/25 hover:text-cyan transition-colors cursor-pointer"
+                    >
+                      ✓ Letto
+                    </button>
+                  </div>
                 )}
               </div>
             )}
