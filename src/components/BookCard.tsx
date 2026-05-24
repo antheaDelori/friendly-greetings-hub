@@ -35,7 +35,7 @@ export function BookCard({ book, compact = false, libreriaStato = null, onLibrer
       <span className="absolute bottom-1.5 left-1.5 w-3 h-3 border-l border-b border-cyan/70 z-10" />
       <span className="absolute bottom-1.5 right-1.5 w-3 h-3 border-r border-b border-cyan/70 z-10" />
 
-      <div className="relative aspect-[3/4] overflow-hidden bg-void">
+      <div className="relative aspect-[3/4] overflow-hidden bg-void mx-1.5 mt-1.5">
 
         {/* Copertina reale */}
         <img
