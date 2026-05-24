@@ -93,7 +93,24 @@ export const Route = createFileRoute("/leggi/$slug")({
       .eq("book_id", data.id)
       .order("created_at", { ascending: false });
 
+    const { count: likesCount } = await supabase
+      .from("likes")
+      .select("id", { count: "exact", head: true })
+      .eq("book_id", data.id);
+
     const { data: { session } } = await supabase.auth.getSession();
+
+    let userHasLiked = false;
+    if (session?.user?.id && !session.user.is_anonymous) {
+      const { data: userLike } = await supabase
+        .from("likes")
+        .select("id")
+        .eq("book_id", data.id)
+        .eq("user_id", session.user.id)
+        .maybeSingle();
+      userHasLiked = !!userLike;
+    }
+
     return {
       book,
       fileUrl: data.file_url as string | null,
@@ -109,6 +126,8 @@ export const Route = createFileRoute("/leggi/$slug")({
       bookId: data.id as string,
       authorId: (data.author_id ?? null) as string | null,
       recensioni: (recensioniData ?? []) as RecensioneItem[],
+      likesCount: (likesCount ?? 0) as number,
+      userHasLiked,
     };
   },
   head: ({ loaderData }) => ({
@@ -289,6 +308,23 @@ function ReadPage() {
   const [downloadingEpub, setDownloadingEpub] = useState(false);
 
   const [recensioni, setRecensioni] = useState<RecensioneItem[]>(inizialiRecensioni);
+
+  const [likesCount, setLikesCount] = useState<number>(Route.useLoaderData().likesCount ?? 0);
+  const [userHasLiked, setUserHasLiked] = useState<boolean>(Route.useLoaderData().userHasLiked ?? false);
+
+  const handleToggleLike = async () => {
+    if (!isLoggedIn || isAnonymous || !bookId) return;
+    if (userHasLiked) {
+      await supabase.from("likes").delete().eq("book_id", bookId).eq("user_id", userId!);
+      setLikesCount(c => c - 1);
+      setUserHasLiked(false);
+    } else {
+      await supabase.from("likes").insert({ book_id: bookId, user_id: userId });
+      setLikesCount(c => c + 1);
+      setUserHasLiked(true);
+    }
+  };
+
   const [recStelle, setRecStelle] = useState(0);
   const [recHover, setRecHover] = useState(0);
   const [recTesto, setRecTesto] = useState("");
@@ -566,6 +602,30 @@ function ReadPage() {
               <span>E-Book</span>
             </Link>
           ) : null}
+          {/* Like — solo per libri Supabase (bookId non vuoto) */}
+          {bookId && (isLoggedIn && !isAnonymous ? (
+            <button
+              onClick={handleToggleLike}
+              className={`flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase transition-colors cursor-pointer ${
+                userHasLiked
+                  ? "border-blood bg-blood/10 text-blood hover:bg-blood hover:text-paper"
+                  : "border-ink text-ink hover:bg-ink hover:text-paper"
+              }`}
+            >
+              <span className="text-sm leading-none">{userHasLiked ? "♥" : "♡"}</span>
+              <span>{likesCount > 0 ? likesCount : "Like"}</span>
+            </button>
+          ) : (
+            <Link
+              to="/auth/"
+              search={{ returnTo: `/leggi/${book.slug}` }}
+              className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors"
+            >
+              <span className="text-sm leading-none">♡</span>
+              <span>Like</span>
+            </Link>
+          ))}
+
           <button
             onClick={() => recensioniRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
             className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors cursor-pointer"
@@ -929,6 +989,39 @@ function ReadPage() {
                 <span className="font-mono text-[10px] tracking-widest text-ink/40 uppercase">{recensioni.length} {recensioni.length === 1 ? "recensione" : "recensioni"}</span>
               )}
             </div>
+
+            {/* Like button nella sezione recensioni */}
+            {bookId && (
+              <div className="mt-5 flex items-center gap-3">
+                {isLoggedIn && !isAnonymous ? (
+                  <button
+                    onClick={handleToggleLike}
+                    className={`inline-flex items-center gap-2 border px-5 py-2.5 font-display tracking-widest text-xs uppercase transition-colors cursor-pointer ${
+                      userHasLiked
+                        ? "border-blood bg-blood/5 text-blood hover:bg-blood hover:text-paper"
+                        : "border-ink/30 text-ink/60 hover:border-blood hover:text-blood"
+                    }`}
+                  >
+                    <span className="text-base leading-none">{userHasLiked ? "♥" : "♡"}</span>
+                    <span>{userHasLiked ? "Ti piace" : "Mi piace"}</span>
+                  </button>
+                ) : (
+                  <Link
+                    to="/auth/"
+                    search={{ returnTo: `/leggi/${book.slug}` }}
+                    className="inline-flex items-center gap-2 border border-ink/30 text-ink/50 px-5 py-2.5 font-display tracking-widest text-xs uppercase hover:border-blood hover:text-blood transition-colors"
+                  >
+                    <span className="text-base leading-none">♡</span>
+                    <span>Mi piace</span>
+                  </Link>
+                )}
+                {likesCount > 0 && (
+                  <span className="font-mono text-[10px] tracking-widest text-ink/40 uppercase">
+                    {likesCount} {likesCount === 1 ? "persona" : "persone"} hanno apprezzato
+                  </span>
+                )}
+              </div>
+            )}
 
             {/* Form recensione */}
             {isLoggedIn && !isAnonymous ? (
