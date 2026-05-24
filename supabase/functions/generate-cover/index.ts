@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
       method: "POST",
       headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        from: "Liberiamo la mente <noreply@liberiamo2076.com>",
+        from: "Liberiamo la mente <notifiche@liberiamo2076.com>",
         to: "antheaDelori@live.it",
         subject: `[Richiesta lingua] ${language} — ${authorDisplay}`,
         html: `<h2>Nuova richiesta lingua</h2><p><strong>Lingua:</strong> ${language}</p><p><strong>Da:</strong> ${authorDisplay}</p>`,
@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
       method: "POST",
       headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        from: "Liberiamo la mente <noreply@liberiamo2076.com>",
+        from: "Liberiamo la mente <notifiche@liberiamo2076.com>",
         to: email,
         subject: "Liberiamo la mente — Richiesta lingua ricevuta",
         html: `<p>Ciao${name ? ` ${name}` : ""}!</p><p>Abbiamo ricevuto la tua richiesta per la lingua <strong>${language}</strong>.</p><p>Ti contatteremo al più presto per confermarti la disponibilità.</p><p>— Il team di Liberiamo la mente</p>`,
@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Liberiamo la mente <noreply@liberiamo2076.com>",
+        from: "Liberiamo la mente <notifiche@liberiamo2076.com>",
         to: "antheaDelori@live.it",
         subject: `[Ticket copertina] ${book_title ?? book_id} — ${authorName}`,
         html,
