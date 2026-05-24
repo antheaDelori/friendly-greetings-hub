@@ -10,6 +10,67 @@ const genreColor: Record<string, string> = {
   articolo: "text-bone border-bone/40",
 };
 
+/** Crepe nel vetro della teca — appare quando il libro è stato letto */
+function CrackedGlass() {
+  return (
+    <div
+      className="absolute inset-0 pointer-events-none group-hover:opacity-20 transition-opacity duration-700 overflow-hidden"
+      style={{ zIndex: 8 }}
+    >
+      {/* Punto di impatto — bagliore */}
+      <div className="absolute rounded-full" style={{
+        bottom: "23%", left: "13%",
+        width: "5px", height: "5px",
+        background: "rgba(220,245,255,1)",
+        boxShadow: "0 0 6px 3px rgba(180,225,255,0.8), 0 0 14px 7px rgba(160,210,255,0.35)",
+        transform: "translate(-50%, 50%)"
+      }} />
+      {/* Crepa principale — sale verso l'alto */}
+      <div className="absolute" style={{
+        bottom: "23%", left: "13%",
+        width: "1.5px", height: "56%",
+        background: "linear-gradient(to top, rgba(210,245,255,0.95) 0%, rgba(185,230,255,0.65) 55%, transparent 100%)",
+        transform: "rotate(14deg)",
+        transformOrigin: "bottom center",
+        filter: "blur(0.4px)"
+      }} />
+      {/* Crepa verso sinistra */}
+      <div className="absolute" style={{
+        bottom: "23%", left: "13%",
+        width: "1px", height: "28%",
+        background: "linear-gradient(to top, rgba(185,230,255,0.85) 0%, rgba(185,230,255,0.4) 50%, transparent 100%)",
+        transform: "rotate(-28deg)",
+        transformOrigin: "bottom center",
+        filter: "blur(0.3px)"
+      }} />
+      {/* Diramazione a metà */}
+      <div className="absolute" style={{
+        bottom: "48%", left: "18%",
+        width: "1px", height: "20%",
+        background: "linear-gradient(to top, rgba(185,230,255,0.7) 0%, transparent 100%)",
+        transform: "rotate(42deg)",
+        transformOrigin: "bottom center",
+        filter: "blur(0.3px)"
+      }} />
+      {/* Scheggia piccola */}
+      <div className="absolute" style={{
+        bottom: "33%", left: "9%",
+        width: "0.5px", height: "11%",
+        background: "linear-gradient(to top, rgba(200,240,255,0.55) 0%, transparent 100%)",
+        transform: "rotate(-6deg)",
+        transformOrigin: "bottom center"
+      }} />
+      {/* Riflesso all'intersezione */}
+      <div className="absolute rounded-full" style={{
+        bottom: "48%", left: "17%",
+        width: "2px", height: "2px",
+        background: "rgba(210,245,255,0.9)",
+        boxShadow: "0 0 3px 1px rgba(185,230,255,0.5)"
+      }} />
+    </div>
+  );
+}
+
 export function BookCard({ book, compact = false, libreriaStato = null, onLibreriaChange, isLoggedIn = false }: {
   book: Book;
   compact?: boolean;
@@ -18,6 +79,7 @@ export function BookCard({ book, compact = false, libreriaStato = null, onLibrer
   isLoggedIn?: boolean;
 }) {
   const hasLastra = Boolean(book.lastra);
+  const isLetto = libreriaStato === "letto";
 
   return (
     <Link
@@ -33,18 +95,20 @@ export function BookCard({ book, compact = false, libreriaStato = null, onLibrer
 
       <div className="relative aspect-[3/4] overflow-hidden bg-void">
 
-        {/* Copertina reale — sempre presente, appare all'hover */}
+        {/* Copertina reale */}
         <img
           src={book.cover}
           alt={book.title}
           className={`absolute inset-0 h-full w-full object-contain transition-all duration-700 group-hover:scale-105 ${
             hasLastra
               ? "opacity-0 group-hover:opacity-100"
-              : "saturate-[30%] brightness-[0.55] group-hover:saturate-100 group-hover:brightness-100"
+              : isLetto
+                ? "saturate-[45%] brightness-[0.65] group-hover:saturate-100 group-hover:brightness-100"
+                : "saturate-[30%] brightness-[0.55] group-hover:saturate-100 group-hover:brightness-100"
           }`}
         />
 
-        {/* Lastra — visibile di default, si dissolve all'hover */}
+        {/* Lastra — si dissolve all'hover */}
         {hasLastra && (
           <img
             src={book.lastra}
@@ -53,22 +117,39 @@ export function BookCard({ book, compact = false, libreriaStato = null, onLibrer
           />
         )}
 
-        {/* Effetto vetro museo — solo se non c'è lastra */}
+        {/* Effetto vetro museo — intatto o in frantumi */}
         {!hasLastra && (
-          <>
+          isLetto ? (
+            /* Vetro in frantumi: overlay scuro ridotto + crepe */
             <div
               className="absolute inset-0 group-hover:opacity-0 transition-opacity duration-700 pointer-events-none"
               style={{
-                background: [
-                  "radial-gradient(ellipse 65% 35% at 50% 5%, rgba(210,238,255,0.55) 0%, rgba(180,220,255,0.15) 55%, transparent 100%)",
-                  "linear-gradient(135deg, rgba(220,240,255,0.13) 0%, transparent 35%)",
-                  "linear-gradient(to bottom, rgba(8,18,55,0.58) 0%, rgba(4,22,60,0.22) 55%, rgba(8,18,55,0.50) 100%)",
-                ].join(", "),
+                background: "linear-gradient(to bottom, rgba(8,18,55,0.28) 0%, rgba(4,22,60,0.06) 55%, rgba(8,18,55,0.22) 100%)",
               }}
             />
-            <div className="absolute inset-0 bg-gradient-to-br from-cyan/20 via-transparent to-magenta/15 mix-blend-overlay group-hover:opacity-30 transition-opacity duration-700" />
-          </>
+          ) : (
+            /* Vetro intatto */
+            <>
+              <div
+                className="absolute inset-0 group-hover:opacity-0 transition-opacity duration-700 pointer-events-none"
+                style={{
+                  background: [
+                    "radial-gradient(ellipse 65% 35% at 50% 5%, rgba(210,238,255,0.55) 0%, rgba(180,220,255,0.15) 55%, transparent 100%)",
+                    "linear-gradient(135deg, rgba(220,240,255,0.13) 0%, transparent 35%)",
+                    "linear-gradient(to bottom, rgba(8,18,55,0.58) 0%, rgba(4,22,60,0.22) 55%, rgba(8,18,55,0.50) 100%)",
+                  ].join(", "),
+                }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-br from-cyan/20 via-transparent to-magenta/15 mix-blend-overlay group-hover:opacity-30 transition-opacity duration-700" />
+            </>
+          )
         )}
+
+        {/* Crepe sulla lastra (se ha lastra ed è letto) */}
+        {hasLastra && isLetto && <CrackedGlass />}
+
+        {/* Crepe sul vetro (se non ha lastra ed è letto) */}
+        {!hasLastra && isLetto && <CrackedGlass />}
 
         {/* Scanlines — sempre */}
         <div className="absolute inset-0 pointer-events-none" style={{
@@ -86,24 +167,6 @@ export function BookCard({ book, compact = false, libreriaStato = null, onLibrer
         </div>
 
         <div className="absolute bottom-0 inset-x-0 h-24 bg-gradient-to-t from-void via-void/70 to-transparent" />
-
-        {/* ── Timbro "LETTO" — stile timbro bibliotecaria ── */}
-        {libreriaStato === "letto" && (
-          <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden">
-            {/* Velo scuro leggero sulla copertina */}
-            <div className="absolute inset-0 bg-void/35" />
-            {/* Timbro diagonale */}
-            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 -rotate-12 flex items-center gap-1.5 px-3 py-1.5 border border-cyan/80 bg-void/90 backdrop-blur-sm whitespace-nowrap"
-              style={{ boxShadow: "0 0 12px oklch(0.82 0.16 200 / 0.5), inset 0 0 8px oklch(0.82 0.16 200 / 0.08)" }}
-            >
-              <span className="font-mono text-[10px] tracking-[0.3em] uppercase text-cyan"
-                style={{ textShadow: "0 0 8px oklch(0.82 0.16 200 / 0.9)" }}
-              >
-                ✓ LETTO
-              </span>
-            </div>
-          </div>
-        )}
       </div>
 
       <div className={`p-3 flex flex-col flex-1 relative ${compact ? "p-3" : "p-4"}`}>
@@ -125,8 +188,8 @@ export function BookCard({ book, compact = false, libreriaStato = null, onLibrer
             </div>
             {isLoggedIn && onLibreriaChange && (
               <div className="mt-2 pt-2 border-t border-cyan/10">
-                {libreriaStato === "letto" ? (
-                  <span className="w-full block font-mono text-[9px] tracking-widest uppercase py-1.5 text-center text-cyan/60">
+                {isLetto ? (
+                  <span className="w-full block font-mono text-[9px] tracking-widest uppercase py-1.5 text-center text-cyan/50">
                     ✓ Letto
                   </span>
                 ) : libreriaStato ? (
