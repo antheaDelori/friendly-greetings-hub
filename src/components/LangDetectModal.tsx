@@ -90,7 +90,12 @@ export function LangDetectModal() {
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-cover`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            // Anon key richiesto dal gateway Supabase (JWT verify abilitato).
+            // È una chiave pubblica: sicuro usarla nel frontend.
+            "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
           body: JSON.stringify({
             action: "langRequest",
             email: email.trim(),
