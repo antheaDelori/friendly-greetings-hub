@@ -51,18 +51,21 @@ export function LangDetectModal() {
   const [sendError, setSendError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Already dismissed? Never show again.
-    if (localStorage.getItem(DISMISSED_KEY)) return;
+    const params = new URLSearchParams(window.location.search);
+    const isTest = params.get("testlang") === "1";
 
-    const raw =
-      (navigator.language ?? (navigator.languages?.[0] ?? "it"));
+    // Already dismissed? Never show again (unless testing).
+    if (!isTest && localStorage.getItem(DISMISSED_KEY)) return;
+
+    const raw = navigator.language ?? navigator.languages?.[0] ?? "it";
     const code = raw.split("-")[0].toLowerCase();
 
-    // Supported language → i18next handles it automatically, no modal needed.
-    if (SUPPORTED.includes(code)) return;
+    // In test mode use "Norwegian" as fake unsupported language;
+    // in production skip if the browser language is already supported.
+    if (!isTest && SUPPORTED.includes(code)) return;
 
-    setDetectedCode(code);
-    setDetectedName(getLangName(code));
+    setDetectedCode(isTest ? "no" : code);
+    setDetectedName(isTest ? "Norwegian" : getLangName(code));
     setShow(true);
   }, []);
 
