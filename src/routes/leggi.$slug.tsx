@@ -313,15 +313,19 @@ function ReadPage() {
   const [userHasLiked, setUserHasLiked] = useState<boolean>(Route.useLoaderData().userHasLiked ?? false);
 
   const handleToggleLike = async () => {
-    if (!isLoggedIn || isAnonymous || !bookId) return;
+    if (!isLoggedIn || isAnonymous || !bookId || !userId) return;
     if (userHasLiked) {
-      await supabase.from("likes").delete().eq("book_id", bookId).eq("user_id", userId!);
-      setLikesCount(c => c - 1);
+      // Aggiornamento ottimistico immediato
       setUserHasLiked(false);
+      setLikesCount((c: number) => Math.max(0, c - 1));
+      const { error } = await supabase.from("likes").delete().eq("book_id", bookId).eq("user_id", userId);
+      if (error) { setUserHasLiked(true); setLikesCount((c: number) => c + 1); } // rollback
     } else {
-      await supabase.from("likes").insert({ book_id: bookId, user_id: userId });
-      setLikesCount(c => c + 1);
+      // Aggiornamento ottimistico immediato
       setUserHasLiked(true);
+      setLikesCount((c: number) => c + 1);
+      const { error } = await supabase.from("likes").insert({ book_id: bookId, user_id: userId });
+      if (error) { setUserHasLiked(false); setLikesCount((c: number) => Math.max(0, c - 1)); } // rollback
     }
   };
 
