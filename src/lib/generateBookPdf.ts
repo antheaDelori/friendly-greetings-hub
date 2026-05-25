@@ -315,6 +315,36 @@ export async function generateBookPdf(
     pageCounter++;
   }
 
+  // ── FILIGRANA — su tutte le pagine, come il bollo della cartiera ──────────
+  // Usiamo le operazioni PDF raw per impostare l'opacità (GState).
+  // La filigrana è centrata nella pagina, quasi trasparente, testo verticale.
+  const internalDoc = doc as unknown as {
+    internal: { write: (...args: string[]) => void };
+  };
+
+  for (let p = 1; p <= totalPages; p++) {
+    doc.setPage(p);
+
+    // Salva lo stato grafico corrente
+    internalDoc.internal.write("q");
+    // Imposta opacità fill e stroke al 6%
+    internalDoc.internal.write("0.06 ca 0.06 CA");
+
+    // Iniziali grandi — centro pagina
+    doc.setFont("times", "italic");
+    doc.setFontSize(64);
+    doc.setTextColor(0, 0, 0);
+    doc.text("ADE", PW / 2, PH / 2 - 4, { align: "center" });
+
+    // Nome editore — sotto le iniziali
+    doc.setFont("times", "normal");
+    doc.setFontSize(9);
+    doc.text("AntheaDelori Edizioni", PW / 2, PH / 2 + 14, { align: "center" });
+
+    // Ripristina lo stato grafico (opacità normale)
+    internalDoc.internal.write("Q");
+  }
+
   // ── SALVA ─────────────────────────────────────────────────────────────────
   doc.save(`${safeFilename(book.title)}-stampa.pdf`);
 }
