@@ -28,6 +28,7 @@ type DbBook = {
   copertina_url: string | null;
   lastra_url: string | null;
   author_name: string | null;
+  tag: string[] | null;
 };
 
 function dbToBook(b: DbBook): Book {
@@ -75,6 +76,7 @@ function CatalogoPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [libreriaMap, setLibreriaMap] = useState<Record<string, string>>({});
+  const [tagsMap, setTagsMap] = useState<Record<string, string[]>>({});
   const searchRef = useRef<HTMLDivElement>(null);
   const userFilteredRef = useRef(false);
 
@@ -102,12 +104,15 @@ function CatalogoPage() {
     const fetchBooks = async () => {
       const { data } = await supabase
         .from("books")
-        .select("id, slug, titolo, descrizione, genere, anno, letture, copertina_url, lastra_url, author_name")
+        .select("id, slug, titolo, descrizione, genere, anno, letture, copertina_url, lastra_url, author_name, tag")
         .eq("disponibile", true)
         .order("created_at", { ascending: false });
       const raw = (data ?? []) as DbBook[];
       setDbBooksRaw(raw);
       setDbBooks(raw.map(dbToBook));
+      const tm: Record<string, string[]> = {};
+      for (const b of raw) tm[b.slug] = b.tag ?? [];
+      setTagsMap(tm);
     };
     const fetchAuth = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -169,11 +174,13 @@ function CatalogoPage() {
     const filtered = allBooks.filter((b) => {
       const matchesGenre = genre === "" || b.genre === genre;
       const text = q.trim().toLowerCase();
+      const tags = tagsMap[b.slug] ?? [];
       const matchesQ =
         !text ||
         b.title.toLowerCase().includes(text) ||
         b.author.toLowerCase().includes(text) ||
-        b.tagline.toLowerCase().includes(text);
+        b.tagline.toLowerCase().includes(text) ||
+        tags.some(t => t.toLowerCase().includes(text));
       return matchesGenre && matchesQ;
     });
     if (sort === "recenti") return filtered;
@@ -182,7 +189,7 @@ function CatalogoPage() {
       if (sort === "anno") return a.year - b.year;
       return b.rating - a.rating;
     });
-  }, [allBooks, q, genre, sort]);
+  }, [allBooks, q, genre, sort, tagsMap]);
 
   return (
     <div className="min-h-screen flex flex-col">
