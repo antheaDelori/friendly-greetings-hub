@@ -1034,7 +1034,9 @@ function ReadPage() {
                   <div className="font-display tracking-widest text-[10px] uppercase text-blood mb-2">— la tua recensione</div>
                   <div className="flex gap-0.5 mb-2">
                     {Array.from({ length: 5 }, (_, i) => (
-                      <span key={i} className={`text-lg ${i < miaRecensione.stelle ? "text-blood" : "text-ink/20"}`}>★</span>
+                      <span key={i} className={`text-lg ${i < miaRecensione.stelle ? "text-blood" : "text-ink/25"}`}>
+                        {i < miaRecensione.stelle ? "★" : "☆"}
+                      </span>
                     ))}
                   </div>
                   {miaRecensione.testo && <p className="font-serif italic text-ink/70 text-sm leading-relaxed">{miaRecensione.testo}</p>}
@@ -1103,7 +1105,9 @@ function ReadPage() {
                       <div className="flex items-center gap-3">
                         <div className="flex gap-0.5">
                           {Array.from({ length: 5 }, (_, i) => (
-                            <span key={i} className={`text-sm ${i < r.stelle ? "text-blood" : "text-ink/20"}`}>★</span>
+                            <span key={i} className={`text-sm ${i < r.stelle ? "text-blood" : "text-ink/25"}`}>
+                              {i < r.stelle ? "★" : "☆"}
+                            </span>
                           ))}
                         </div>
                         <span className="font-display tracking-widest text-[10px] uppercase text-ink/60">
