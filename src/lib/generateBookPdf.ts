@@ -64,32 +64,19 @@ function safeFilename(title: string): string {
 
 export async function generateBookPdf(
   book: Book,
-  authorBio?: string | null,
-  userId?: string | null
+  authorBio?: string | null
 ): Promise<void> {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a5" });
 
-  // ── METADATA PDF (primo livello di tracciabilità) ──────────────────────────
-  // Visibile nelle proprietà del file, non all'occhio ma leggibile da tool forensi.
-  const downloadTs = new Date().toISOString();
-  const fingerprint = [
-    "LIBERIAMO2076",
-    book.slug,
-    userId ?? "anonymous",
-    downloadTs,
-  ].join("|");
-
+  // ── METADATA PDF — marchio d'origine della piattaforma ───────────────────
+  // Come il colophon di un editore: identifica la casa editrice, non il lettore.
   doc.setProperties({
     title: book.title,
     author: book.author,
     subject: `${book.genre} — Liberiamo la mente`,
-    keywords: `liberiamo2076.com ${book.slug}`,
+    keywords: `liberiamo2076.com AntheaDelori-Edizioni`,
     creator: "AntheaDelori Edizioni — liberiamo2076.com",
-    // Campo Producer usato come carrier della firma
   });
-  // Marker grezzo nel trailer del PDF
-  (doc as unknown as { internal: { write: (...a: string[]) => void } })
-    .internal.write(`% LIBERIAMO_FINGERPRINT:${fingerprint}`);
 
   // Stato paginazione
   let currentPage = 1;
@@ -338,28 +325,18 @@ export async function generateBookPdf(
     pageCounter++;
   }
 
-  // ── FIRMA INVISIBILE (steganografia testuale) ─────────────────────────────
-  // Testo bianco su sfondo bianco: invisibile all'occhio umano e in stampa,
-  // ma estraibile da qualsiasi tool di text-extraction PDF (pdftotext,
-  // pdfminer, Acrobat, ecc.). Contiene slug libro + user ID + timestamp.
-  // Tre posizioni ridondanti per pagina → resistente a tagli/ritagli.
-  //
-  // Per estrarlo: pdftotext -layout file.pdf - | grep LIBERIAMO
-  //
-  const watermarkPayload = `[LIBERIAMO2076|${book.slug}|${userId ?? "anon"}|${downloadTs}|AntheaDelori-Edizioni]`;
+  // ── MARCHIO D'ORIGINE (invisibile) ───────────────────────────────────────
+  // Testo bianco su bianco: non visibile, non invasivo, nessun dato personale.
+  // Solo il nome della piattaforma — come il bollo in rilievo della cartiera.
+  const originMark = `AntheaDelori Edizioni · liberiamo2076.com · ${book.slug}`;
 
   for (let p = 1; p <= totalPages; p++) {
     doc.setPage(p);
     doc.setFont("times", "normal");
-    doc.setFontSize(0.1);           // impercettibile anche ingrandendo
-    doc.setTextColor(255, 255, 255); // bianco su bianco
-
-    // Tre posizioni: angolo sup-sx, centro, angolo inf-dx
-    doc.text(watermarkPayload, 1, 1);
-    doc.text(watermarkPayload, PW / 2, PH / 2, { align: "center" });
-    doc.text(watermarkPayload, PW - 1, PH - 1, { align: "right" });
-
-    doc.setTextColor(0); // ripristina colore normale
+    doc.setFontSize(0.1);
+    doc.setTextColor(255, 255, 255);
+    doc.text(originMark, PW / 2, PH / 2, { align: "center" });
+    doc.setTextColor(0);
   }
 
   // ── SALVA ─────────────────────────────────────────────────────────────────

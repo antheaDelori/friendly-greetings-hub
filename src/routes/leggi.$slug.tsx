@@ -648,7 +648,7 @@ function ReadPage() {
             onClick={async () => {
               if (pdfLoading) return;
               setPdfLoading(true);
-              try { await generateBookPdf(book, authorBio, userId); }
+              try { await generateBookPdf(book, authorBio); }
               finally { setPdfLoading(false); }
             }}
             disabled={pdfLoading}
