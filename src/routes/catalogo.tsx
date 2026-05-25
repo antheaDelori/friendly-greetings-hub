@@ -77,20 +77,32 @@ function CatalogoPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [libreriaMap, setLibreriaMap] = useState<Record<string, string>>({});
   const [tagsMap, setTagsMap] = useState<Record<string, string[]>>({});
+  const [localQ, setLocalQ] = useState(q); // valore locale dell'input, inviato solo su submit
   const searchRef = useRef<HTMLDivElement>(null);
   const userFilteredRef = useRef(false);
 
-  // Quando l'utente clicca un filtro, scrolla in su fino a mostrare la search box in cima
-  useEffect(() => {
-    if (!userFilteredRef.current) return;
-    userFilteredRef.current = false;
+  const scrollToSearch = () => {
     const id = setTimeout(() => {
       if (!searchRef.current) return;
       const top = searchRef.current.getBoundingClientRect().top + window.scrollY;
       window.scrollTo({ top: top - 130, behavior: "smooth" });
     }, 50);
+    return id;
+  };
+
+  // Scroll quando cambia genere/collane (click filtro)
+  useEffect(() => {
+    if (!userFilteredRef.current) return;
+    userFilteredRef.current = false;
+    const id = scrollToSearch();
     return () => clearTimeout(id);
   }, [genre, showCollane]);
+
+  // Lancia la ricerca: aggiorna URL e scrolla
+  const handleSearch = () => {
+    setQ(localQ);
+    scrollToSearch();
+  };
 
   type Search = z.infer<typeof searchSchema>;
   const setQ = (val: string) =>
@@ -208,17 +220,30 @@ function CatalogoPage() {
 
           {/* search */}
           <div ref={searchRef} className="mt-10 glass p-5 hud-frame">
-            <div className="relative">
-              <span className="absolute left-0 top-1/2 -translate-y-1/2 font-mono text-cyan text-sm">▸</span>
+            <div className="relative flex items-center">
+              <span className="absolute left-0 top-1/2 -translate-y-1/2 font-mono text-cyan text-sm pointer-events-none">▸</span>
               <input
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
+                value={localQ}
+                onChange={(e) => setLocalQ(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }}
                 placeholder={t("catalogo.searchPlaceholder")}
-                className="w-full bg-transparent border-b border-cyan/30 focus:border-cyan outline-none py-3 pl-6 pr-32 font-mono text-lg text-bone placeholder:text-bone/30 transition-colors"
+                className="w-full bg-transparent border-b border-cyan/30 focus:border-cyan outline-none py-3 pl-6 pr-36 font-mono text-lg text-bone placeholder:text-bone/30 transition-colors"
               />
-              <span className="absolute right-0 top-1/2 -translate-y-1/2 font-mono text-[10px] tracking-widest text-cyan/70 uppercase">
-                {results.length.toString().padStart(3, "0")} match
-              </span>
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-3">
+                {/* counter — aggiornato solo dopo ricerca */}
+                {q && (
+                  <span className="font-mono text-[10px] tracking-widest text-cyan/70 uppercase">
+                    {results.length.toString().padStart(3, "0")} match
+                  </span>
+                )}
+                {/* bottone cerca */}
+                <button
+                  onClick={handleSearch}
+                  className="font-mono text-[11px] tracking-widest uppercase text-void bg-cyan px-3 py-1 hover:bg-magenta transition-colors"
+                >
+                  ▸ cerca
+                </button>
+              </div>
             </div>
           </div>
         </div>
