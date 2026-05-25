@@ -1057,8 +1057,8 @@ function ReadPage() {
                           onClick={() => setRecStelle(s)}
                           onMouseEnter={() => setRecHover(s)}
                           onMouseLeave={() => setRecHover(0)}
-                          className={`text-2xl transition-colors cursor-pointer ${s <= (recHover || recStelle) ? "text-blood" : "text-ink/20"}`}
-                        >★</button>
+                          className={`text-2xl transition-colors cursor-pointer ${s <= (recHover || recStelle) ? "text-blood" : "text-ink/30"}`}
+                        >{s <= (recHover || recStelle) ? "★" : "☆"}</button>
                       ))}
                     </div>
                   </div>
