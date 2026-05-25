@@ -73,7 +73,7 @@ function Index() {
 
   useEffect(() => {
     const fetchAll = async () => {
-      const ALL_GENRES: Genre[] = ["libro", "racconto", "saggio", "articolo", "buonanotte", "poesia"];
+      const ALL_GENRES: Genre[] = ["libro", "racconto", "saggio", "articolo", "novelle", "poesia"];
 
       const { data } = await supabase
         .from("books")

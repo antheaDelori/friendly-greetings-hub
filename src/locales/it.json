@@ -88,7 +88,7 @@
     "nessunRacconto": "Nessun racconto ancora presente in archivio.",
     "nessunSaggio": "Nessun saggio ancora presente in archivio.",
     "nessunArticolo": "Nessun articolo ancora presente in archivio.",
-    "nessunBuonanotte": "Nessun racconto della sera ancora presente in archivio.",
+    "nessunNovelle": "Nessuna novella ancora presente in archivio.",
     "nessunPoesia": "Nessuna poesia ancora presente in archivio.",
     "nessunGenere": "Nessuna opera ancora presente in archivio.",
     "nessunCollana": "Nessuna collana ancora presente in archivio.",
@@ -107,7 +107,7 @@
     "racconto": "Racconti",
     "saggio": "Saggi",
     "articolo": "Articoli",
-    "buonanotte": "Novelle",
+    "novelle": "Novelle",
     "poesia": "Poesie"
   },
   "generiTag": {
@@ -115,7 +115,7 @@
     "racconto": "Racconto",
     "saggio": "Saggio",
     "articolo": "Articolo",
-    "buonanotte": "Novella",
+    "novelle": "Novella",
     "poesia": "Poesia"
   },
   "ui": {

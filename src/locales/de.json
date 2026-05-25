@@ -88,7 +88,7 @@
     "nessunRacconto": "Noch keine Erzählungen im Archiv.",
     "nessunSaggio": "Noch keine Essays im Archiv.",
     "nessunArticolo": "Noch keine Artikel im Archiv.",
-    "nessunBuonanotte": "Noch keine Gutenachtgeschichten im Archiv.",
+    "nessunNovelle": "Noch keine Novellen im Archiv.",
     "nessunPoesia": "Noch keine Gedichte im Archiv.",
     "nessunGenere": "Noch keine Werke im Archiv.",
     "nessunCollana": "Noch keine Sammlungen im Archiv.",
@@ -107,7 +107,7 @@
     "racconto": "Erzählungen",
     "saggio": "Essays",
     "articolo": "Artikel",
-    "buonanotte": "Gutenachtgeschichten",
+    "novelle": "Novellen",
     "poesia": "Gedichte"
   },
   "generiTag": {
@@ -115,7 +115,7 @@
     "racconto": "Erzählung",
     "saggio": "Essay",
     "articolo": "Artikel",
-    "buonanotte": "Gutenachtgeschichte",
+    "novelle": "Novelle",
     "poesia": "Gedicht"
   },
   "ui": {

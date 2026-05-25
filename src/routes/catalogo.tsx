@@ -7,13 +7,13 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { BookCard } from "@/components/BookCard";
 import { genres, type Genre, type Book } from "@/data/books";
 
-const ALL_GENRES: Genre[] = ["libro", "racconto", "saggio", "articolo", "buonanotte", "poesia"];
+const ALL_GENRES: Genre[] = ["libro", "racconto", "saggio", "articolo", "novelle", "poesia"];
 import { supabase } from "@/lib/supabase";
 import logo from "@/assets/logo-liberiamo.jpg";
 
 const searchSchema = z.object({
   q: z.string().default(""),
-  genre: z.enum(["", "libro", "racconto", "saggio", "articolo", "buonanotte", "poesia"]).default(""),
+  genre: z.enum(["", "libro", "racconto", "saggio", "articolo", "novelle", "poesia"]).default(""),
   sort: z.enum(["letti", "recenti", "anno", "rating"]).default("recenti"),
 });
 
@@ -314,7 +314,7 @@ function CatalogoPage() {
                 racconto: "catalogo.nessunRacconto",
                 saggio: "catalogo.nessunSaggio",
                 articolo: "catalogo.nessunArticolo",
-                buonanotte: "catalogo.nessunBuonanotte",
+                novelle: "catalogo.nessunNovelle",
                 poesia: "catalogo.nessunPoesia",
               } as Record<string, string>)[genre] ?? "catalogo.nessunGenere"))}
             </p>

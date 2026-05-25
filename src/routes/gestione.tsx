@@ -76,13 +76,13 @@ type Book = {
   collana_id: string | null;
 };
 
-const GENERI = ["libro", "racconto", "saggio", "articolo", "buonanotte", "poesia"] as const;
+const GENERI = ["libro", "racconto", "saggio", "articolo", "novelle", "poesia"] as const;
 const GENERE_LABELS: Record<string, string> = {
   libro: "Libro", racconto: "Racconto", saggio: "Saggio", articolo: "Articolo",
-  buonanotte: "Novelle", poesia: "Poesia",
+  novelle: "Novelle", poesia: "Poesia",
 };
 const GENERE_TOOLTIP: Record<string, string> = {
-  buonanotte: "Racconti della sera",
+  novelle: "Racconti brevi",
 };
 const ACCESSI = ["gratuito", "premium", "riservato"] as const;
 const TARGET = ["tutti", "bambini (0–8)", "ragazzi (9–12)", "adolescenti (13–17)", "adulti (18+)"] as const;
@@ -375,7 +375,7 @@ function GestionePage() {
   const handleNewBookInCollana = (cId: string) => {
     resetForm();
     setCollanaId(cId);
-    setGenere("buonanotte");
+    setGenere("novelle");
     setSelected(null);
     setSelectedCollana(null);
     setShowCollanaForm(false);
@@ -1967,7 +1967,7 @@ function GestionePage() {
               <div className="space-y-5">
                 <div>
                   <span className={labelClass}>↳ Titolo collana ★</span>
-                  <input value={collanaTitolo} onChange={e => setCollanaTitolo(e.target.value)} placeholder="Es. Novelle della buonanotte" className={inputClass} />
+                  <input value={collanaTitolo} onChange={e => setCollanaTitolo(e.target.value)} placeholder="Es. Le novelle di primavera" className={inputClass} />
                 </div>
                 <div>
                   <span className={labelClass}>↳ Descrizione</span>

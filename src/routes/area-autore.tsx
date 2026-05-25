@@ -222,7 +222,7 @@ function AreaAutorePage() {
                       { g: "racconto", label: "Racconti" },
                       { g: "saggio", label: "Saggi" },
                       { g: "articolo", label: "Articoli" },
-                      { g: "buonanotte", label: "Novelle" },
+                      { g: "novelle", label: "Novelle" },
                       { g: "poesia", label: "Poesie" },
                     ] as { g: string; label: string; tooltip?: string }[]).map(({ g, label, tooltip }) => {
                       const n = bookStats.perGenere[g] ?? 0;

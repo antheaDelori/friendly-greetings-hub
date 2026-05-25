@@ -37,7 +37,7 @@ const GENERI = [
   { value: "racconto",   label: "Racconti",   code: "SHELF_02" },
   { value: "saggio",     label: "Saggi",      code: "SHELF_03" },
   { value: "articolo",   label: "Articoli",   code: "SHELF_04" },
-  { value: "buonanotte", label: "Buonanotte", code: "SHELF_05" },
+  { value: "novelle", label: "Novelle", code: "SHELF_05" },
   { value: "poesia",     label: "Poesie",     code: "SHELF_06" },
 ] as const;
 

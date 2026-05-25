@@ -14,7 +14,7 @@ export const Route = createFileRoute("/auth/profilo-autore")({
   component: ProfiloAutorePage,
 });
 
-const GENERI_VALUES = ["libro", "racconto", "saggio", "articolo", "buonanotte", "poesia"] as const;
+const GENERI_VALUES = ["libro", "racconto", "saggio", "articolo", "novelle", "poesia"] as const;
 
 function ProfiloAutorePage() {
   const { t } = useTranslation();

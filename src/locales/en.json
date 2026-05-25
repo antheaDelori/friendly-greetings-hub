@@ -88,7 +88,7 @@
     "nessunRacconto": "No stories yet in the archive.",
     "nessunSaggio": "No essays yet in the archive.",
     "nessunArticolo": "No articles yet in the archive.",
-    "nessunBuonanotte": "No bedtime stories yet in the archive.",
+    "nessunNovelle": "No short stories yet in the archive.",
     "nessunPoesia": "No poems yet in the archive.",
     "nessunGenere": "No works yet in the archive.",
     "nessunCollana": "No collections yet in the archive.",
@@ -107,7 +107,7 @@
     "racconto": "Short stories",
     "saggio": "Essays",
     "articolo": "Articles",
-    "buonanotte": "Bedtime stories",
+    "novelle": "Short stories",
     "poesia": "Poetry"
   },
   "generiTag": {
@@ -115,7 +115,7 @@
     "racconto": "Short story",
     "saggio": "Essay",
     "articolo": "Article",
-    "buonanotte": "Bedtime story",
+    "novelle": "Short story",
     "poesia": "Poetry"
   },
   "ui": {
