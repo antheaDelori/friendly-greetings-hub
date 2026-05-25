@@ -76,12 +76,22 @@ function CatalogoPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [libreriaMap, setLibreriaMap] = useState<Record<string, string>>({});
   const gridRef = useRef<HTMLElement>(null);
+  const userFilteredRef = useRef(false);
 
   const scrollToGrid = () => {
     if (!gridRef.current) return;
     const top = gridRef.current.getBoundingClientRect().top + window.scrollY;
     window.scrollTo({ top: top - 180, behavior: "smooth" });
   };
+
+  // Scroll alla griglia ogni volta che l'utente cambia filtro (non al mount iniziale)
+  useEffect(() => {
+    if (!userFilteredRef.current) return;
+    userFilteredRef.current = false;
+    // Piccolo delay per aspettare che TanStack Router finisca di aggiornare l'URL
+    const id = setTimeout(scrollToGrid, 50);
+    return () => clearTimeout(id);
+  }, [genre, showCollane]);
 
   type Search = z.infer<typeof searchSchema>;
   const setQ = (val: string) =>
@@ -218,7 +228,7 @@ function CatalogoPage() {
               {genres.map((g) => (
                 <button
                   key={g.value}
-                  onClick={() => { setShowCollane(false); setGenre(genre === g.value ? "" : g.value); scrollToGrid(); }}
+                  onClick={() => { userFilteredRef.current = true; setShowCollane(false); setGenre(genre === g.value ? "" : g.value); }}
                   className={`relative group font-mono tracking-[0.22em] text-[10px] uppercase px-4 py-2 border transition-all ${
                     genre === g.value
                       ? "border-cyan bg-cyan/15 text-cyan glow-cyan"
@@ -237,7 +247,7 @@ function CatalogoPage() {
             <div className="border-t border-cyan/[0.08]" />
             <div>
               <button
-                onClick={() => { setShowCollane(v => !v); setGenre(""); scrollToGrid(); }}
+                onClick={() => { userFilteredRef.current = true; setShowCollane(v => !v); setGenre(""); }}
                 className={`font-mono tracking-[0.22em] text-[10px] uppercase px-4 py-2 border transition-all ${
                   showCollane ? "border-magenta bg-magenta/15 text-magenta" : "border-magenta/30 text-bone/60 hover:border-magenta/60 hover:text-magenta"
                 }`}
