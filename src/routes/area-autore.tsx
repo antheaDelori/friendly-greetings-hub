@@ -33,6 +33,27 @@ type AccessLog = {
   created_at: string;
 };
 
+type BookEngagement = {
+  id: string;
+  titolo: string;
+  copertina_url: string | null;
+  slug: string;
+  letture: number;
+  avgStelle: number;
+  numRecensioni: number;
+  numLikes: number;
+  numLibreria: number;
+};
+
+type RecentRecensione = {
+  book_id: string;
+  bookTitolo: string;
+  nome_display: string | null;
+  stelle: number;
+  testo: string | null;
+  created_at: string;
+};
+
 export const Route = createFileRoute("/area-autore")({
   head: () => ({
     meta: [
@@ -50,6 +71,8 @@ function AreaAutorePage() {
   const [authorProfile, setAuthorProfile] = useState<AuthorProfile | null>(null);
   const [bookStats, setBookStats] = useState<BookStats>({ count: 0, letture: 0, downloads: 0, perGenere: {} });
   const [logs, setLogs] = useState<AccessLog[]>([]);
+  const [bookEngagement, setBookEngagement] = useState<BookEngagement[]>([]);
+  const [recentRecensioni, setRecentRecensioni] = useState<RecentRecensione[]>([]);
 
   useEffect(() => {
     const init = async () => {
@@ -59,11 +82,12 @@ function AreaAutorePage() {
       setEmail(user.email ?? null);
       const uid = user.id;
 
-      const [profileRes, authorRes, booksRes, logsRes] = await Promise.all([
+      const [profileRes, authorRes, booksRes, logsRes, booksFullRes] = await Promise.all([
         supabase.from("profiles").select("nome, cognome, pseudonimo, is_blocked, block_reason, created_at").eq("id", uid).single(),
         supabase.from("author_profiles").select("bio, generi").eq("id", uid).maybeSingle(),
         supabase.from("books").select("letture, downloads, genere").eq("author_id", uid),
         supabase.from("access_logs").select("id, event, status, created_at").eq("user_id", uid).order("created_at", { ascending: false }).limit(5),
+        supabase.from("books").select("id, titolo, copertina_url, slug, letture").eq("author_id", uid).eq("disponibile", true).order("created_at", { ascending: false }),
       ]);
 
       if (profileRes.data) setProfile(profileRes.data);
@@ -84,6 +108,41 @@ function AreaAutorePage() {
       }
 
       if (logsRes.data) setLogs(logsRes.data);
+
+      // — Engagement: recensioni, like, libreria per ogni libro
+      const booksFull = booksFullRes.data ?? [];
+      const bookIds = booksFull.map(b => b.id);
+      if (bookIds.length > 0) {
+        const [recRes, likeRes, libRes, recentRecRes] = await Promise.all([
+          supabase.from("recensioni").select("book_id, stelle").in("book_id", bookIds),
+          supabase.from("likes").select("book_id").in("book_id", bookIds),
+          supabase.from("libreria").select("book_id").in("book_id", bookIds),
+          supabase.from("recensioni")
+            .select("book_id, nome_display, stelle, testo, created_at")
+            .in("book_id", bookIds)
+            .not("testo", "is", null)
+            .order("created_at", { ascending: false })
+            .limit(8),
+        ]);
+        const bookTitleMap = Object.fromEntries(booksFull.map(b => [b.id, b.titolo]));
+        const engagement: BookEngagement[] = booksFull.map(b => {
+          const bookRec = (recRes.data ?? []).filter(r => r.book_id === b.id);
+          const avg = bookRec.length > 0
+            ? bookRec.reduce((s: number, r: { stelle: number }) => s + r.stelle, 0) / bookRec.length
+            : 0;
+          return {
+            id: b.id, titolo: b.titolo, copertina_url: b.copertina_url, slug: b.slug,
+            letture: b.letture ?? 0, avgStelle: avg, numRecensioni: bookRec.length,
+            numLikes: (likeRes.data ?? []).filter((l: { book_id: string }) => l.book_id === b.id).length,
+            numLibreria: (libRes.data ?? []).filter((l: { book_id: string }) => l.book_id === b.id).length,
+          };
+        });
+        setBookEngagement(engagement);
+        setRecentRecensioni((recentRecRes.data ?? []).map((r: { book_id: string; nome_display: string | null; stelle: number; testo: string | null; created_at: string }) => ({
+          ...r, bookTitolo: bookTitleMap[r.book_id] ?? "Opera",
+        })));
+      }
+
       setLoading(false);
     };
     init();
@@ -257,6 +316,121 @@ function AreaAutorePage() {
           </HudPanel>
 
         </div>
+
+        {/* ── COSA PENSANO I TUOI LETTORI ── */}
+        {bookEngagement.length > 0 && (
+          <div className="mt-16">
+            <div className="font-mono text-[9px] tracking-[0.3em] text-cyan/50 uppercase mb-2">// engagement</div>
+            <h2 className="font-display text-2xl text-bone mb-8">Cosa pensano i tuoi lettori</h2>
+
+            {/* Totali globali */}
+            {(() => {
+              const totalLikes = bookEngagement.reduce((s, b) => s + b.numLikes, 0);
+              const totalRec = bookEngagement.reduce((s, b) => s + b.numRecensioni, 0);
+              const allStelle = bookEngagement.filter(b => b.avgStelle > 0);
+              const globalAvg = allStelle.length > 0
+                ? allStelle.reduce((s, b) => s + b.avgStelle, 0) / allStelle.length
+                : 0;
+              return (
+                <div className="grid grid-cols-3 gap-px bg-cyan/10 border border-cyan/15 mb-8">
+                  {[
+                    { label: "Rating medio", value: globalAvg > 0 ? `★ ${globalAvg.toFixed(1)}` : "—" },
+                    { label: "Recensioni", value: totalRec },
+                    { label: "Like totali", value: `♥ ${totalLikes}` },
+                  ].map(({ label, value }) => (
+                    <div key={label} className="bg-void px-5 py-4 flex flex-col gap-1">
+                      <span className="font-mono text-[9px] tracking-[0.25em] text-bone/40 uppercase">{label}</span>
+                      <span className="font-display text-xl text-cyan">{value}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+
+            {/* Card per ogni libro */}
+            <div className="space-y-3 mb-12">
+              {bookEngagement.map(b => (
+                <Link
+                  key={b.id}
+                  to="/leggi/$slug"
+                  params={{ slug: b.slug }}
+                  className="group flex gap-4 glass border border-cyan/15 hover:border-cyan/35 p-4 transition-all relative"
+                >
+                  <span className="absolute top-1.5 left-1.5 w-2 h-2 border-l border-t border-cyan/40" />
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 border-r border-t border-cyan/40" />
+                  <span className="absolute bottom-1.5 left-1.5 w-2 h-2 border-l border-b border-cyan/40" />
+                  <span className="absolute bottom-1.5 right-1.5 w-2 h-2 border-r border-b border-cyan/40" />
+
+                  {/* Cover */}
+                  <div className="w-12 flex-shrink-0 aspect-[3/4] overflow-hidden bg-deep/60">
+                    {b.copertina_url
+                      ? <img src={b.copertina_url} alt={b.titolo} className="w-full h-full object-cover saturate-50 group-hover:saturate-100 transition-all duration-500" />
+                      : <div className="w-full h-full flex items-center justify-center text-cyan/20 text-lg">◆</div>
+                    }
+                  </div>
+
+                  {/* Dati */}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-display text-sm text-bone group-hover:text-cyan transition-colors leading-snug mb-2 truncate">
+                      {b.titolo}
+                    </p>
+                    <div className="flex flex-wrap gap-x-5 gap-y-1.5">
+                      {[
+                        { label: "Letture", val: b.letture.toLocaleString("it-IT"), color: "text-bone/70" },
+                        { label: "Rating", val: b.avgStelle > 0 ? `★ ${b.avgStelle.toFixed(1)}` : "—", color: "text-amber" },
+                        { label: "Recens.", val: String(b.numRecensioni), color: "text-bone/70" },
+                        { label: "Like", val: `♥ ${b.numLikes}`, color: "text-blood" },
+                        { label: "Libreria", val: String(b.numLibreria), color: "text-cyan/70" },
+                      ].map(({ label, val, color }) => (
+                        <div key={label} className="flex flex-col gap-0">
+                          <span className="font-mono text-[8px] tracking-widest text-bone/30 uppercase">{label}</span>
+                          <span className={`font-display text-sm ${color}`}>{val}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            {/* Recensioni recenti con testo */}
+            {recentRecensioni.length > 0 && (
+              <div>
+                <div className="font-mono text-[9px] tracking-[0.25em] text-bone/40 uppercase mb-4">— Ultime recensioni</div>
+                <div className="space-y-3">
+                  {recentRecensioni.map((r, i) => (
+                    <div key={i} className="glass border border-cyan/10 p-4">
+                      <div className="flex items-start justify-between gap-4 mb-2">
+                        <div>
+                          <span className="font-mono text-[9px] tracking-widest text-cyan/50 uppercase">{r.bookTitolo}</span>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="flex gap-0.5">
+                              {Array.from({ length: 5 }, (_, i) => (
+                                <span key={i} className={`text-xs ${i < r.stelle ? "text-blood" : "text-bone/20"}`}>
+                                  {i < r.stelle ? "★" : "☆"}
+                                </span>
+                              ))}
+                            </span>
+                            <span className="font-mono text-[9px] text-bone/40">{r.nome_display ?? "Lettore"}</span>
+                          </div>
+                        </div>
+                        <span className="font-mono text-[9px] text-bone/25 flex-shrink-0">
+                          {new Date(r.created_at).toLocaleDateString("it-IT", { day: "2-digit", month: "short", year: "numeric" })}
+                        </span>
+                      </div>
+                      {r.testo && (
+                        <p className="font-serif italic text-sm text-bone/55 leading-relaxed line-clamp-3">
+                          "{r.testo}"
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
       </PageShell>
       <SiteFooter />
     </div>
