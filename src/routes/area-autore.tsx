@@ -75,6 +75,7 @@ function AreaAutorePage() {
   const [bookEngagement, setBookEngagement] = useState<BookEngagement[]>([]);
   const [recentRecensioni, setRecentRecensioni] = useState<RecentRecensione[]>([]);
   const [pdfLoadingId, setPdfLoadingId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -83,6 +84,7 @@ function AreaAutorePage() {
 
       setEmail(user.email ?? null);
       const uid = user.id;
+      setCurrentUserId(uid);
 
       const [profileRes, authorRes, booksRes, logsRes, booksFullRes] = await Promise.all([
         supabase.from("profiles").select("nome, cognome, pseudonimo, is_blocked, block_reason, created_at").eq("id", uid).single(),
@@ -495,7 +497,7 @@ function AreaAutorePage() {
                         description: bd.descrizione ?? "",
                         chapters,
                       };
-                      await generateBookPdf(bookObj, authorProfile?.bio ?? null);
+                      await generateBookPdf(bookObj, authorProfile?.bio ?? null, currentUserId);
                     } finally {
                       setPdfLoadingId(null);
                     }

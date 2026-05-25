@@ -64,9 +64,32 @@ function safeFilename(title: string): string {
 
 export async function generateBookPdf(
   book: Book,
-  authorBio?: string | null
+  authorBio?: string | null,
+  userId?: string | null
 ): Promise<void> {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a5" });
+
+  // ── METADATA PDF (primo livello di tracciabilità) ──────────────────────────
+  // Visibile nelle proprietà del file, non all'occhio ma leggibile da tool forensi.
+  const downloadTs = new Date().toISOString();
+  const fingerprint = [
+    "LIBERIAMO2076",
+    book.slug,
+    userId ?? "anonymous",
+    downloadTs,
+  ].join("|");
+
+  doc.setProperties({
+    title: book.title,
+    author: book.author,
+    subject: `${book.genre} — Liberiamo la mente`,
+    keywords: `liberiamo2076.com ${book.slug}`,
+    creator: "AntheaDelori Edizioni — liberiamo2076.com",
+    // Campo Producer usato come carrier della firma
+  });
+  // Marker grezzo nel trailer del PDF
+  (doc as unknown as { internal: { write: (...a: string[]) => void } })
+    .internal.write(`% LIBERIAMO_FINGERPRINT:${fingerprint}`);
 
   // Stato paginazione
   let currentPage = 1;
@@ -315,34 +338,28 @@ export async function generateBookPdf(
     pageCounter++;
   }
 
-  // ── FILIGRANA — su tutte le pagine, come il bollo della cartiera ──────────
-  // Usiamo le operazioni PDF raw per impostare l'opacità (GState).
-  // La filigrana è centrata nella pagina, quasi trasparente, testo verticale.
-  const internalDoc = doc as unknown as {
-    internal: { write: (...args: string[]) => void };
-  };
+  // ── FIRMA INVISIBILE (steganografia testuale) ─────────────────────────────
+  // Testo bianco su sfondo bianco: invisibile all'occhio umano e in stampa,
+  // ma estraibile da qualsiasi tool di text-extraction PDF (pdftotext,
+  // pdfminer, Acrobat, ecc.). Contiene slug libro + user ID + timestamp.
+  // Tre posizioni ridondanti per pagina → resistente a tagli/ritagli.
+  //
+  // Per estrarlo: pdftotext -layout file.pdf - | grep LIBERIAMO
+  //
+  const watermarkPayload = `[LIBERIAMO2076|${book.slug}|${userId ?? "anon"}|${downloadTs}|AntheaDelori-Edizioni]`;
 
   for (let p = 1; p <= totalPages; p++) {
     doc.setPage(p);
-
-    // Salva lo stato grafico corrente
-    internalDoc.internal.write("q");
-    // Imposta opacità fill e stroke al 6%
-    internalDoc.internal.write("0.06 ca 0.06 CA");
-
-    // Iniziali grandi — centro pagina
-    doc.setFont("times", "italic");
-    doc.setFontSize(64);
-    doc.setTextColor(0, 0, 0);
-    doc.text("ADE", PW / 2, PH / 2 - 4, { align: "center" });
-
-    // Nome editore — sotto le iniziali
     doc.setFont("times", "normal");
-    doc.setFontSize(9);
-    doc.text("AntheaDelori Edizioni", PW / 2, PH / 2 + 14, { align: "center" });
+    doc.setFontSize(0.1);           // impercettibile anche ingrandendo
+    doc.setTextColor(255, 255, 255); // bianco su bianco
 
-    // Ripristina lo stato grafico (opacità normale)
-    internalDoc.internal.write("Q");
+    // Tre posizioni: angolo sup-sx, centro, angolo inf-dx
+    doc.text(watermarkPayload, 1, 1);
+    doc.text(watermarkPayload, PW / 2, PH / 2, { align: "center" });
+    doc.text(watermarkPayload, PW - 1, PH - 1, { align: "right" });
+
+    doc.setTextColor(0); // ripristina colore normale
   }
 
   // ── SALVA ─────────────────────────────────────────────────────────────────
