@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -75,6 +75,13 @@ function CatalogoPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [libreriaMap, setLibreriaMap] = useState<Record<string, string>>({});
+  const gridRef = useRef<HTMLElement>(null);
+
+  const scrollToGrid = () => {
+    if (!gridRef.current) return;
+    const top = gridRef.current.getBoundingClientRect().top + window.scrollY;
+    window.scrollTo({ top: top - 180, behavior: "smooth" });
+  };
 
   type Search = z.infer<typeof searchSchema>;
   const setQ = (val: string) =>
@@ -211,7 +218,7 @@ function CatalogoPage() {
               {genres.map((g) => (
                 <button
                   key={g.value}
-                  onClick={() => { setShowCollane(false); setGenre(genre === g.value ? "" : g.value); }}
+                  onClick={() => { setShowCollane(false); setGenre(genre === g.value ? "" : g.value); scrollToGrid(); }}
                   className={`relative group font-mono tracking-[0.22em] text-[10px] uppercase px-4 py-2 border transition-all ${
                     genre === g.value
                       ? "border-cyan bg-cyan/15 text-cyan glow-cyan"
@@ -230,7 +237,7 @@ function CatalogoPage() {
             <div className="border-t border-cyan/[0.08]" />
             <div>
               <button
-                onClick={() => { setShowCollane(v => !v); setGenre(""); }}
+                onClick={() => { setShowCollane(v => !v); setGenre(""); scrollToGrid(); }}
                 className={`font-mono tracking-[0.22em] text-[10px] uppercase px-4 py-2 border transition-all ${
                   showCollane ? "border-magenta bg-magenta/15 text-magenta" : "border-magenta/30 text-bone/60 hover:border-magenta/60 hover:text-magenta"
                 }`}
@@ -261,7 +268,7 @@ function CatalogoPage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10 py-12 flex-1">
+      <section ref={gridRef} className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10 py-12 flex-1">
         {showCollane ? (
           collane.length === 0 ? (
             <div className="text-center py-24 glass p-12 hud-frame">

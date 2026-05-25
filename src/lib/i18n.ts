@@ -16,9 +16,10 @@ i18n
     fallbackLng: "it",
     supportedLngs: ["it", "en", "de", "fr", "es"],
     detection: {
-      order: ["querystring", "navigator"],
+      order: ["localStorage", "querystring", "navigator"],
       lookupQuerystring: "lang",
-      caches: [],
+      lookupLocalStorage: "preferred_lang",
+      caches: ["localStorage"],
     },
     interpolation: { escapeValue: false },
   });
