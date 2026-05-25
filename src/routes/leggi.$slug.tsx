@@ -5,6 +5,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { getBookBySlug, type Book, type Genre } from "@/data/books";
 import { supabase } from "@/lib/supabase";
 import logo from "@/assets/logo-liberiamo.jpg";
+import { generateBookPdf } from "@/lib/generateBookPdf";
 
 type RecensioneItem = {
   id: string;
@@ -78,13 +79,15 @@ export const Route = createFileRoute("/leggi/$slug")({
       .order("ordine");
 
     let donationUrl: string | null = null;
+    let authorBio: string | null = null;
     if (data.author_id) {
       const { data: profile } = await supabase
         .from("author_profiles")
-        .select("donation_url")
+        .select("donation_url, bio")
         .eq("id", data.author_id)
         .maybeSingle();
       donationUrl = profile?.donation_url ?? null;
+      authorBio = profile?.bio ?? null;
     }
 
     const { data: recensioniData } = await supabase
@@ -128,6 +131,7 @@ export const Route = createFileRoute("/leggi/$slug")({
       recensioni: (recensioniData ?? []) as RecensioneItem[],
       likesCount: (likesCount ?? 0) as number,
       userHasLiked,
+      authorBio,
     };
   },
   head: ({ loaderData }) => ({
@@ -209,7 +213,7 @@ function getOrCreateVisitorId(userId?: string | null): string {
 }
 
 function ReadPage() {
-  const { book, fileUrl, epubUrl, donationUrl, isLoggedIn, isAnonymous, userId, allegati, isCestinato, votiCestino: initialVoti, recuperato, bookId, authorId, recensioni: inizialiRecensioni } = Route.useLoaderData();
+  const { book, fileUrl, epubUrl, donationUrl, isLoggedIn, isAnonymous, userId, allegati, isCestinato, votiCestino: initialVoti, recuperato, bookId, authorId, recensioni: inizialiRecensioni, authorBio } = Route.useLoaderData();
   const isAuthor = !!userId && !!authorId && userId === authorId;
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const router = useRouter();
@@ -311,6 +315,7 @@ function ReadPage() {
 
   const [likesCount, setLikesCount] = useState<number>(Route.useLoaderData().likesCount ?? 0);
   const [userHasLiked, setUserHasLiked] = useState<boolean>(Route.useLoaderData().userHasLiked ?? false);
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   const handleToggleLike = async () => {
     if (!isLoggedIn || isAnonymous || !bookId || !userId) return;
@@ -637,6 +642,22 @@ function ReadPage() {
             <span className="text-sm leading-none">★</span>
             <span>Recensisci</span>
           </button>
+
+          {/* Stampa PDF */}
+          <button
+            onClick={async () => {
+              if (pdfLoading) return;
+              setPdfLoading(true);
+              try { await generateBookPdf(book, authorBio); }
+              finally { setPdfLoading(false); }
+            }}
+            disabled={pdfLoading}
+            className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors cursor-pointer disabled:opacity-40"
+          >
+            <span className="text-sm leading-none">{pdfLoading ? "…" : "⎙"}</span>
+            <span>{pdfLoading ? "Genera" : "Stampa"}</span>
+          </button>
+
           {donationUrl && (
             <a
               href={donationUrl}

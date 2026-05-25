@@ -4,6 +4,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { HudPanel, PageShell, HudButton } from "@/components/HudPanel";
 import { supabase } from "@/lib/supabase";
+import { generateBookPdf } from "@/lib/generateBookPdf";
 
 type Profile = {
   nome: string | null;
@@ -73,6 +74,7 @@ function AreaAutorePage() {
   const [logs, setLogs] = useState<AccessLog[]>([]);
   const [bookEngagement, setBookEngagement] = useState<BookEngagement[]>([]);
   const [recentRecensioni, setRecentRecensioni] = useState<RecentRecensione[]>([]);
+  const [pdfLoadingId, setPdfLoadingId] = useState<string | null>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -430,6 +432,87 @@ function AreaAutorePage() {
             )}
           </div>
         )}
+
+      {/* ─── LE TUE OPERE — Esporta PDF ─────────────────────────────── */}
+      {bookEngagement.length > 0 && (
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10 py-12">
+          <h2 className="font-display text-2xl text-bone mb-2">Le tue opere</h2>
+          <p className="font-mono text-[10px] tracking-widest text-bone/40 uppercase mb-8">
+            Scarica il PDF A5 pronto per la stampa
+          </p>
+          <div className="divide-y divide-cyan/10 border border-cyan/15 glass">
+            {bookEngagement.map(b => (
+              <div key={b.id} className="flex items-center gap-4 px-5 py-4">
+                {/* Copertina mini */}
+                {b.copertina_url
+                  ? <img src={b.copertina_url} alt={b.titolo} className="w-10 h-14 object-cover flex-shrink-0 ring-1 ring-cyan/30" />
+                  : <div className="w-10 h-14 flex-shrink-0 bg-void border border-cyan/20 flex items-center justify-center font-display text-bone/20">◊</div>
+                }
+                {/* Info libro */}
+                <div className="flex-1 min-w-0">
+                  <p className="font-display text-bone tracking-tight truncate">{b.titolo}</p>
+                  <p className="font-mono text-[9px] tracking-widest text-bone/40 uppercase mt-0.5">
+                    {b.letture} letture · {b.numRecensioni} rec · ♥ {b.numLikes}
+                  </p>
+                </div>
+                {/* Bottone export */}
+                <button
+                  disabled={!!pdfLoadingId}
+                  onClick={async () => {
+                    if (pdfLoadingId) return;
+                    setPdfLoadingId(b.id);
+                    try {
+                      // Carica dati completi del libro + capitoli
+                      const [bookRes, chapRes] = await Promise.all([
+                        supabase.from("books")
+                          .select("slug, titolo, descrizione, genere, anno, copertina_url, author_name")
+                          .eq("id", b.id)
+                          .maybeSingle(),
+                        supabase.from("capitoli")
+                          .select("id, ordine, titolo, testo")
+                          .eq("book_id", b.id)
+                          .order("ordine", { ascending: true }),
+                      ]);
+                      const bd = bookRes.data;
+                      if (!bd) return;
+                      const chapters = (chapRes.data ?? []).map((c: { id: string; titolo: string; testo: string }) => ({
+                        id: c.id,
+                        title: c.titolo ?? `Capitolo`,
+                        content: [c.testo ?? ""],
+                        isHtml: true,
+                      }));
+                      const bookObj = {
+                        slug: bd.slug,
+                        title: bd.titolo,
+                        author: bd.author_name ?? profile?.nome ?? "Autore",
+                        authorSlug: "",
+                        genre: bd.genere as import("@/data/books").Genre,
+                        year: bd.anno ?? new Date().getFullYear(),
+                        reads: b.letture,
+                        rating: b.avgStelle,
+                        cover: bd.copertina_url ?? "",
+                        tagline: bd.descrizione?.slice(0, 140) ?? "",
+                        description: bd.descrizione ?? "",
+                        chapters,
+                      };
+                      await generateBookPdf(bookObj, authorProfile?.bio ?? null);
+                    } finally {
+                      setPdfLoadingId(null);
+                    }
+                  }}
+                  className="flex-shrink-0 inline-flex items-center gap-2 border border-cyan/40 bg-cyan/5 px-4 py-2 font-mono text-[10px] tracking-widest uppercase text-cyan hover:bg-cyan hover:text-void transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  {pdfLoadingId === b.id ? (
+                    <><span className="animate-pulse">⏳</span> Genera…</>
+                  ) : (
+                    <><span>⎙</span> PDF stampa</>
+                  )}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       </PageShell>
       <SiteFooter />
