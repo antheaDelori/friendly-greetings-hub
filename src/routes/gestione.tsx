@@ -247,6 +247,7 @@ function GestionePage() {
   const [aiGeneratedUrl, setAiGeneratedUrl] = useState<string | null>(null);
   const [aiUsed, setAiUsed] = useState(0);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [showAiCoverForm, setShowAiCoverForm] = useState(false);
   const [showTicketForm, setShowTicketForm] = useState(false);
   const [ticketMessage, setTicketMessage] = useState("");
   const [ticketSent, setTicketSent] = useState(false);
@@ -1584,53 +1585,146 @@ function GestionePage() {
               {openSection === 3 && editingId && (
                 <div className="border border-cyan/20 border-t-0 p-5 space-y-5">
 
-                  {/* File uploads */}
-                  <div className="grid sm:grid-cols-3 gap-5">
-                    <div>
-                      <span className={labelClass}>↳ Copertina (hover)</span>
-                      <input ref={copertRef} type="file" accept="image/*"
-                        onChange={e => setCopertina(e.target.files?.[0] ?? null)} className="hidden" />
-                      <button type="button" onClick={() => copertRef.current?.click()}
-                        className="mt-2 w-full border border-cyan/30 px-4 py-3 font-mono text-[10px] text-left uppercase tracking-widest hover:border-cyan hover:text-cyan transition-all text-bone/60">
-                        {copertina ? `✓ ${copertina.name}` : existingCopertinaUrl ? "✓ esistente (cambia)" : "▸ Scegli immagine"}
-                      </button>
-                    </div>
-                    <div>
-                      <span className={labelClass}>↳ Lastra (catalogo)</span>
-                      <input ref={lastraRef} type="file" accept="image/*"
-                        onChange={e => setLastra(e.target.files?.[0] ?? null)} className="hidden" />
-                      <button type="button" onClick={() => lastraRef.current?.click()}
-                        className="mt-2 w-full border border-magenta/30 px-4 py-3 font-mono text-[10px] text-left uppercase tracking-widest hover:border-magenta hover:text-magenta transition-all text-bone/60">
-                        {lastra ? `✓ ${lastra.name}` : existingLastraUrl ? "✓ esistente (cambia)" : "▸ Scegli lastra"}
-                      </button>
-                    </div>
-                    <div>
-                      <span className={labelClass}>↳ File PDF</span>
-                      <input ref={pdfRef} type="file" accept=".pdf"
-                        onChange={e => setFilePdf(e.target.files?.[0] ?? null)} className="hidden" />
-                      <button type="button" onClick={() => pdfRef.current?.click()}
-                        className="mt-2 w-full border border-cyan/30 px-4 py-3 font-mono text-[10px] text-left uppercase tracking-widest hover:border-cyan hover:text-cyan transition-all text-bone/60">
-                        {filePdf ? `✓ ${filePdf.name}` : existingFileUrl ? "✓ esistente (cambia)" : "▸ Scegli PDF"}
-                      </button>
-                    </div>
-                    <div className="sm:col-start-3">
-                      <span className={labelClass}>↳ File ePub (opzionale)</span>
-                      <input ref={epubRef} type="file" accept=".epub"
-                        onChange={e => setFileEpub(e.target.files?.[0] ?? null)} className="hidden" />
-                      <button type="button" onClick={() => epubRef.current?.click()}
-                        className="mt-2 w-full border border-cyan/30 px-4 py-3 font-mono text-[10px] text-left uppercase tracking-widest hover:border-cyan hover:text-cyan transition-all text-bone/60">
-                        {fileEpub ? `✓ ${fileEpub.name}` : existingEpubUrl ? "✓ esistente (cambia)" : "▸ Scegli ePub"}
-                      </button>
-                    </div>
-                  </div>
+                  {/* ── COPERTINA ── */}
+                  <div>
+                    <div className="font-mono text-[10px] tracking-widest text-cyan/70 uppercase mb-3">// copertina</div>
 
-                  {saveMaterialiError && (
-                    <p className="font-mono text-[11px] text-magenta border border-magenta/30 bg-magenta/5 px-4 py-3">⚠ {saveMaterialiError}</p>
-                  )}
-                  <div className="flex gap-3">
-                    <HudButton variant="primary" onClick={handleSaveMateriali} disabled={savingMateriali}>
-                      {savingMateriali ? "▸ Salvataggio..." : "▸ Salva materiali"}
-                    </HudButton>
+                    {/* Anteprima copertina esistente */}
+                    {existingCopertinaUrl && (
+                      <div className="mb-4 flex items-start gap-4">
+                        <img src={existingCopertinaUrl} alt="Copertina attuale" className="w-20 h-28 object-cover ring-1 ring-cyan/40 flex-shrink-0" />
+                        <div className="font-mono text-[9px] text-bone/40 tracking-widest uppercase pt-1">copertina attuale</div>
+                      </div>
+                    )}
+
+                    <div className="flex gap-3 flex-wrap">
+                      {/* Carica copertina */}
+                      <input ref={copertRef} type="file" accept="image/*"
+                        onChange={e => { setCopertina(e.target.files?.[0] ?? null); setShowAiCoverForm(false); }} className="hidden" />
+                      <button type="button" onClick={() => copertRef.current?.click()}
+                        className={`flex items-center gap-2 border px-5 py-3 font-mono text-[10px] uppercase tracking-widest transition-all ${
+                          copertina ? "border-cyan bg-cyan/10 text-cyan" : "border-cyan/40 text-bone/60 hover:border-cyan hover:text-cyan"
+                        }`}>
+                        <span>◈</span>
+                        <span>{copertina ? `✓ ${copertina.name}` : "Carica copertina"}</span>
+                      </button>
+
+                      {/* Genera con AI */}
+                      <button type="button" onClick={() => { setShowAiCoverForm(v => !v); setCopertina(null); }}
+                        className={`flex items-center gap-2 border px-5 py-3 font-mono text-[10px] uppercase tracking-widest transition-all ${
+                          showAiCoverForm ? "border-cyan bg-cyan/10 text-cyan" : "border-cyan/40 text-bone/60 hover:border-cyan hover:text-cyan"
+                        }`}>
+                        <span>◈</span>
+                        <span>Genera con AI</span>
+                      </button>
+                    </div>
+
+                    {/* Salva copertina caricata */}
+                    {copertina && (
+                      <div className="mt-4">
+                        {saveMaterialiError && (
+                          <p className="font-mono text-[11px] text-magenta border border-magenta/30 bg-magenta/5 px-4 py-3 mb-3">⚠ {saveMaterialiError}</p>
+                        )}
+                        <HudButton variant="primary" onClick={handleSaveMateriali} disabled={savingMateriali}>
+                          {savingMateriali ? "▸ Salvataggio..." : "▸ Salva copertina"}
+                        </HudButton>
+                      </div>
+                    )}
+
+                    {/* Form AI (espandibile) */}
+                    {showAiCoverForm && (
+                      <div className="mt-4 border border-cyan/30 bg-cyan/5 p-5 space-y-4 relative">
+                        <span className="absolute -top-px left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan/60 to-transparent" />
+                        <div className="flex items-center justify-between">
+                          <div className="font-mono text-[11px] tracking-[0.3em] text-cyan uppercase font-bold">◈ Genera copertina con AI</div>
+                          {isAdmin
+                            ? <span className="font-mono text-xs tracking-widest uppercase text-cyan border border-cyan bg-cyan/10 px-3 py-1 font-bold">∞ Accesso illimitato</span>
+                            : <span className="font-mono text-[10px] text-bone/70 border border-cyan/30 px-2 py-0.5">{aiUsed} / 10 gratuite</span>
+                          }
+                        </div>
+                        <p className="font-serif italic text-bone/60 text-sm">Descrivi la scena: titolo, autore e logo vengono aggiunti automaticamente.</p>
+
+                        {(isAdmin || aiUsed < 10) ? (
+                          <>
+                            <div>
+                              <span className={labelClass}>↳ Descrivi la copertina che vuoi</span>
+                              <textarea value={aiPrompt} onChange={e => setAiPrompt(e.target.value)}
+                                placeholder="Es. Una galassia con un pianeta centrale dominante e mondi periferici in conflitto, atmosfera epica e fantascientifica..."
+                                className="mt-2 w-full min-h-20 bg-void/40 border border-cyan/30 px-4 py-3 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-cyan transition-all" />
+                            </div>
+                            <div className="flex items-center gap-4 flex-wrap">
+                              <HudButton variant="ghost" onClick={handleGenerateCover} disabled={aiGenerating || !aiPrompt.trim()}>
+                                {aiGenerating ? "▸ Generazione in corso..." : "◈ Genera copertina AI"}
+                              </HudButton>
+                              {aiGenerating && (
+                                <div className="flex items-center gap-3 flex-wrap">
+                                  <span className="font-mono text-[11px] tracking-widest text-cyan uppercase">◈ Sintesi visiva in corso...</span>
+                                  <div className="flex gap-1">
+                                    {Array.from({ length: 10 }).map((_, i) => (
+                                      <span key={i} className={`w-3 h-3 border transition-all duration-500 ${i < aiProgress ? "bg-cyan border-cyan" : "bg-transparent border-cyan/30"}`} />
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            {aiError && <p className="font-mono text-[11px] text-magenta">{aiError}</p>}
+                            {aiGeneratedUrl && (
+                              <div className="flex gap-5 items-start pt-1">
+                                <button onClick={() => setAiModalUrl(aiGeneratedUrl)} className="flex-shrink-0 cursor-zoom-in group relative w-24 h-32">
+                                  <img src={aiGeneratedUrl} alt="Copertina generata" className="w-full h-full object-cover ring-1 ring-cyan/40 group-hover:ring-cyan transition-all" />
+                                  <span className="absolute inset-0 flex items-center justify-center bg-void/40 opacity-0 group-hover:opacity-100 transition-opacity font-mono text-[9px] text-cyan tracking-widest">⊕ ingrandisci</span>
+                                </button>
+                                <div className="space-y-2">
+                                  <p className="font-mono text-[10px] text-cyan uppercase tracking-widest">Copertina generata</p>
+                                  <p className="font-mono text-[9px] text-bone/40">Clicca l'immagine per vederla in grande</p>
+                                  <HudButton variant="primary" onClick={() => { setExistingCopertinaUrl(aiGeneratedUrl); setAiGeneratedUrl(null); setShowAiCoverForm(false); }}>
+                                    ✓ Usa come copertina
+                                  </HudButton>
+                                  <button onClick={() => setAiGeneratedUrl(null)}
+                                    className="block font-mono text-[9px] uppercase tracking-widest text-bone/40 hover:text-magenta transition-colors cursor-pointer">
+                                    ✕ scarta
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        ) : !ticketSent ? (
+                          !showTicketForm ? (
+                            <div className="space-y-3">
+                              <p className="font-serif italic text-bone/60 text-sm">Hai usato tutte e 10 le generazioni gratuite per quest'opera.</p>
+                              <button onClick={() => setShowTicketForm(true)}
+                                className="font-mono text-[10px] uppercase tracking-widest text-magenta border border-magenta/40 hover:border-magenta px-4 py-2 transition-colors cursor-pointer">
+                                ◆ Richiedi generazioni aggiuntive
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="space-y-4">
+                              <p className="font-serif italic text-bone/60 text-sm leading-relaxed">
+                                Scrivi un messaggio e ti risponderemo per attivare un pacchetto a credito.
+                              </p>
+                              <div>
+                                <span className={labelClass}>↳ Messaggio</span>
+                                <textarea value={ticketMessage} onChange={e => setTicketMessage(e.target.value)}
+                                  placeholder="Descrivi cosa stai cercando e quante copertine vorresti provare..."
+                                  className="mt-2 w-full min-h-20 bg-void/40 border border-magenta/30 px-4 py-3 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-magenta transition-all" />
+                              </div>
+                              {aiError && <p className="font-mono text-[11px] text-magenta">{aiError}</p>}
+                              <div className="flex gap-3">
+                                <HudButton variant="primary" onClick={() => handleSendTicket(titolo)} disabled={ticketSending || !ticketMessage.trim()}>
+                                  {ticketSending ? "▸ Invio..." : "▸ Invia richiesta"}
+                                </HudButton>
+                                <button onClick={() => setShowTicketForm(false)}
+                                  className="font-mono text-[9px] uppercase tracking-widest text-bone/40 hover:text-cyan transition-colors cursor-pointer">
+                                  annulla
+                                </button>
+                              </div>
+                            </div>
+                          )
+                        ) : (
+                          <p className="font-serif italic text-cyan/80 text-sm">✓ Richiesta inviata. Ti risponderemo presto.</p>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Genera documenti da .docx */}
@@ -1683,166 +1777,6 @@ function GestionePage() {
                     </div>
                   )}
 
-                  {/* AI cover generation */}
-                  <div className="border border-cyan/60 bg-cyan/8 p-5 space-y-4 relative">
-                    <span className="absolute -top-px left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan/60 to-transparent" />
-                    <div className="flex items-center justify-between">
-                      <div className="font-mono text-[11px] tracking-[0.3em] text-cyan uppercase font-bold">◈ Genera copertina con AI</div>
-                      {isAdmin
-                        ? <span className="font-mono text-xs tracking-widest uppercase text-cyan border border-cyan bg-cyan/10 px-3 py-1 font-bold">∞ Accesso illimitato</span>
-                        : <span className="font-mono text-[10px] text-bone/70 border border-cyan/30 px-2 py-0.5">{aiUsed} / 10 gratuite</span>
-                      }
-                    </div>
-                    <p className="font-serif italic text-bone/60 text-sm">Descrivi la scena: titolo, autore e logo vengono aggiunti automaticamente.</p>
-
-                    {(isAdmin || aiUsed < 10) ? (
-                      <>
-                        <div>
-                          <span className={labelClass}>↳ Descrivi la copertina che vuoi</span>
-                          <textarea value={aiPrompt} onChange={e => setAiPrompt(e.target.value)}
-                            placeholder="Es. Una galassia con un pianeta centrale dominante e mondi periferici in conflitto, atmosfera epica e fantascientifica..."
-                            className="mt-2 w-full min-h-20 bg-void/40 border border-cyan/30 px-4 py-3 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-cyan transition-all" />
-                        </div>
-                        <div className="flex items-center gap-4 flex-wrap">
-                          <HudButton variant="ghost" onClick={handleGenerateCover} disabled={aiGenerating || !aiPrompt.trim()}>
-                            {aiGenerating ? "▸ Generazione in corso..." : "◈ Genera copertina AI"}
-                          </HudButton>
-                          {aiGenerating && (
-                            <div className="flex items-center gap-3 flex-wrap">
-                              <span className="font-mono text-[11px] tracking-widest text-cyan uppercase">◈ Sintesi visiva in corso...</span>
-                              <div className="flex gap-1">
-                                {Array.from({ length: 10 }).map((_, i) => (
-                                  <span key={i} className={`w-3 h-3 border transition-all duration-500 ${i < aiProgress ? "bg-cyan border-cyan" : "bg-transparent border-cyan/30"}`} />
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                        {aiError && <p className="font-mono text-[11px] text-magenta">{aiError}</p>}
-                        {aiGeneratedUrl && (
-                          <div className="flex gap-5 items-start pt-1">
-                            <button onClick={() => setAiModalUrl(aiGeneratedUrl)} className="flex-shrink-0 cursor-zoom-in group relative w-24 h-32">
-                              <img src={aiGeneratedUrl} alt="Copertina generata" className="w-full h-full object-cover ring-1 ring-cyan/40 group-hover:ring-cyan transition-all" />
-                              <span className="absolute inset-0 flex items-center justify-center bg-void/40 opacity-0 group-hover:opacity-100 transition-opacity font-mono text-[9px] text-cyan tracking-widest">⊕ ingrandisci</span>
-                            </button>
-                            <div className="space-y-2">
-                              <p className="font-mono text-[10px] text-cyan uppercase tracking-widest">Copertina generata</p>
-                              <p className="font-mono text-[9px] text-bone/40">Clicca l'immagine per vederla in grande</p>
-                              <HudButton variant="primary" onClick={() => { setExistingCopertinaUrl(aiGeneratedUrl); setAiGeneratedUrl(null); }}>
-                                ✓ Usa come copertina
-                              </HudButton>
-                              <button onClick={() => setAiGeneratedUrl(null)}
-                                className="block font-mono text-[9px] uppercase tracking-widest text-bone/40 hover:text-magenta transition-colors cursor-pointer">
-                                ✕ scarta
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    ) : !ticketSent ? (
-                      !showTicketForm ? (
-                        <div className="space-y-3">
-                          <p className="font-serif italic text-bone/60 text-sm">Hai usato tutte e 10 le generazioni gratuite per quest'opera.</p>
-                          <button onClick={() => setShowTicketForm(true)}
-                            className="font-mono text-[10px] uppercase tracking-widest text-magenta border border-magenta/40 hover:border-magenta px-4 py-2 transition-colors cursor-pointer">
-                            ◆ Richiedi generazioni aggiuntive
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="space-y-4">
-                          <p className="font-serif italic text-bone/60 text-sm leading-relaxed">
-                            Scrivi un messaggio e ti risponderemo per attivare un pacchetto a credito.
-                          </p>
-                          <div>
-                            <span className={labelClass}>↳ Messaggio</span>
-                            <textarea value={ticketMessage} onChange={e => setTicketMessage(e.target.value)}
-                              placeholder="Descrivi cosa stai cercando e quante copertine vorresti provare..."
-                              className="mt-2 w-full min-h-20 bg-void/40 border border-magenta/30 px-4 py-3 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-magenta transition-all" />
-                          </div>
-                          {aiError && <p className="font-mono text-[11px] text-magenta">{aiError}</p>}
-                          <div className="flex gap-3">
-                            <HudButton variant="primary" onClick={() => handleSendTicket(titolo)} disabled={ticketSending || !ticketMessage.trim()}>
-                              {ticketSending ? "▸ Invio..." : "▸ Invia richiesta"}
-                            </HudButton>
-                            <button onClick={() => setShowTicketForm(false)}
-                              className="font-mono text-[9px] uppercase tracking-widest text-bone/40 hover:text-cyan transition-colors cursor-pointer">
-                              annulla
-                            </button>
-                          </div>
-                        </div>
-                      )
-                    ) : (
-                      <p className="font-serif italic text-cyan/80 text-sm">✓ Richiesta inviata. Ti risponderemo presto.</p>
-                    )}
-                  </div>
-
-                  {/* Edizioni aggiuntive */}
-                  <div className="hud-divider my-3" />
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="font-mono text-[10px] tracking-widest text-cyan/70 uppercase">// edizioni aggiuntive</span>
-                    {!showEditionForm && (
-                      <button onClick={() => { setShowEditionForm(true); setEdEdizione(""); setEdAnno(String(new Date().getFullYear())); setEdIsbn(""); setEdCopertina(null); }}
-                        className="font-mono text-[10px] tracking-widest text-magenta uppercase hover:text-cyan transition-colors">
-                        + nuova edizione
-                      </button>
-                    )}
-                  </div>
-
-                  {edizioni.length === 0 && !showEditionForm && (
-                    <p className="font-serif italic text-bone/40 text-sm mb-3">Nessuna edizione aggiuntiva.</p>
-                  )}
-
-                  {edizioni.map(e => (
-                    <div key={e.id} className="flex items-start gap-3 border border-cyan/10 p-3 mb-2">
-                      {e.copertina_url && (
-                        <img src={e.copertina_url} alt="" className="w-12 h-16 object-cover ring-1 ring-cyan/20 flex-shrink-0" />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        {e.edizione && <div className="font-mono text-[10px] uppercase tracking-widest text-cyan/70">{e.edizione}</div>}
-                        <div className="font-mono text-[9px] text-bone/50 tracking-widest mt-1">
-                          {[e.anno, e.isbn].filter(Boolean).join(" · ")}
-                        </div>
-                      </div>
-                      <button onClick={() => handleDeleteEdizione(e.id)}
-                        className="flex-shrink-0 font-mono text-[10px] text-magenta/50 hover:text-magenta border border-transparent hover:border-magenta/40 hover:bg-magenta/5 px-2 py-1 transition-colors">
-                        ✕
-                      </button>
-                    </div>
-                  ))}
-
-                  {showEditionForm && (
-                    <div className="border border-cyan/20 bg-cyan/5 p-4 space-y-4 mt-2">
-                      <div className="font-mono text-[9px] tracking-[0.3em] text-cyan/60 uppercase">// nuova edizione</div>
-                      <div className="grid sm:grid-cols-3 gap-4">
-                        <div>
-                          <span className={labelClass}>↳ Edizione</span>
-                          <input value={edEdizione} onChange={e => setEdEdizione(e.target.value)} placeholder="es. Seconda edizione" className={inputClass} />
-                        </div>
-                        <div>
-                          <span className={labelClass}>↳ Anno</span>
-                          <input value={edAnno} onChange={e => setEdAnno(e.target.value)} type="number" className={inputClass} />
-                        </div>
-                        <div>
-                          <span className={labelClass}>↳ ISBN</span>
-                          <input value={edIsbn} onChange={e => setEdIsbn(e.target.value)} placeholder="978-88-..." className={inputClass} />
-                        </div>
-                        <div>
-                          <span className={labelClass}>↳ Copertina</span>
-                          <input ref={edCopertinaRef} type="file" accept="image/*" onChange={e => setEdCopertina(e.target.files?.[0] ?? null)} className="hidden" />
-                          <button type="button" onClick={() => edCopertinaRef.current?.click()}
-                            className="mt-2 w-full border border-cyan/30 px-4 py-3 font-mono text-[10px] text-left uppercase tracking-widest hover:border-cyan hover:text-cyan transition-all text-bone/60">
-                            {edCopertina ? `✓ ${edCopertina.name}` : "▸ Scegli immagine"}
-                          </button>
-                        </div>
-                      </div>
-                      <div className="flex gap-3">
-                        <HudButton variant="primary" onClick={handleSaveEdizione} disabled={savingEdition}>
-                          {savingEdition ? "▸ Salvataggio..." : "▸ Salva edizione"}
-                        </HudButton>
-                        <HudButton variant="ghost" onClick={() => setShowEditionForm(false)}>annulla</HudButton>
-                      </div>
-                    </div>
-                  )}
 
                 </div>
               )}
