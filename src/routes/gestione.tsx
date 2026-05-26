@@ -144,6 +144,9 @@ function GestionePage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmMode, setConfirmMode] = useState<"archivia" | "cestino" | null>(null);
+  const [openSection, setOpenSection] = useState<1 | 2 | 3>(1);
+  const [savingMateriali, setSavingMateriali] = useState(false);
+  const [saveMaterialiError, setSaveMaterialiError] = useState<string | null>(null);
   const [authorName, setAuthorName] = useState("");
 
   // Collane
@@ -369,6 +372,7 @@ function GestionePage() {
     resetForm();
     if (filterGenere) setGenere(filterGenere);
     setSelected(null);
+    setOpenSection(1);
     setShowForm(true);
   };
 
@@ -380,6 +384,7 @@ function GestionePage() {
     setSelectedCollana(null);
     setShowCollanaForm(false);
     setShowCollanaList(false);
+    setOpenSection(1);
     setShowForm(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -499,6 +504,7 @@ function GestionePage() {
       .then(({ count }) => setAiUsed(count ?? 0));
     setSaveError(null);
     setConfirmMode(null);
+    setOpenSection(1);
     setShowForm(true);
   };
 
@@ -644,29 +650,9 @@ function GestionePage() {
     setSaveError(null);
 
     try {
-      let copertina_url: string | null = existingCopertinaUrl;
-      let lastra_url: string | null = existingLastraUrl;
-      let file_url: string | null = existingFileUrl;
-      let epub_url: string | null = existingEpubUrl;
       let newBookId: string | null = null;
 
       if (editingId) {
-        if (copertina) {
-          const ext = copertina.name.split(".").pop();
-          copertina_url = await uploadFile(copertina, "copertine", `${userId}/${editingId}-cover.${ext}`);
-        }
-        if (lastra) {
-          const ext = lastra.name.split(".").pop();
-          lastra_url = await uploadFile(lastra, "copertine", `${userId}/${editingId}-lastra.${ext}`);
-        }
-        if (filePdf) {
-          const ext = filePdf.name.split(".").pop();
-          file_url = await uploadFile(filePdf, "libri", `${userId}/${editingId}-file.${ext}`);
-        }
-        if (fileEpub) {
-          epub_url = await uploadFile(fileEpub, "libri", `${userId}/${editingId}-epub.epub`);
-        }
-
         const { error } = await supabase.from("books").update({
           titolo: titolo.trim(),
           sottotitolo: sottotitolo.trim() || null,
@@ -681,10 +667,6 @@ function GestionePage() {
           descrizione: descrizione.trim() || null,
           estratto: estratto.trim() || null,
           tag: tagStr ? tagStr.split(",").map(t => t.trim()).filter(Boolean) : [],
-          copertina_url,
-          lastra_url,
-          file_url,
-          epub_url,
           author_name: authorName || null,
           collana_id: collanaId || null,
         }).eq("id", editingId);
@@ -692,21 +674,6 @@ function GestionePage() {
         if (error) { setSaveError(error.message); return; }
       } else {
         const slug = generateSlug(titolo) + "-" + Date.now().toString(36);
-        if (copertina) {
-          const ext = copertina.name.split(".").pop();
-          copertina_url = await uploadFile(copertina, "copertine", `${userId}/${slug}.${ext}`);
-        }
-        if (lastra) {
-          const ext = lastra.name.split(".").pop();
-          lastra_url = await uploadFile(lastra, "copertine", `${userId}/${slug}-lastra.${ext}`);
-        }
-        if (filePdf) {
-          const ext = filePdf.name.split(".").pop();
-          file_url = await uploadFile(filePdf, "libri", `${userId}/${slug}.${ext}`);
-        }
-        if (fileEpub) {
-          epub_url = await uploadFile(fileEpub, "libri", `${userId}/${slug}-epub.epub`);
-        }
 
         const { data: insertData, error } = await supabase.from("books").insert({
           author_id: userId,
@@ -724,10 +691,6 @@ function GestionePage() {
           descrizione: descrizione.trim() || null,
           estratto: estratto.trim() || null,
           tag: tagStr ? tagStr.split(",").map(t => t.trim()).filter(Boolean) : [],
-          copertina_url,
-          lastra_url,
-          file_url,
-          epub_url,
           author_name: authorName || null,
           collana_id: collanaId || null,
         }).select("id").single();
@@ -749,14 +712,69 @@ function GestionePage() {
         await supabase.from("capitoli").delete().eq("book_id", savedBookId).eq("ordine", 1);
       }
 
-      setShowForm(false);
-      setEditingId(null);
-      setSelected(null);
+      // Nuova opera salvata → sblocca sezioni 02 e 03, vai ai capitoli
+      if (!editingId && newBookId) {
+        setEditingId(newBookId);
+        const { data: nb } = await supabase.from("books").select("*").eq("id", newBookId).single();
+        if (nb) setSelected(nb as Book);
+        setOpenSection(2);
+      }
       await loadBooks(userId);
     } catch {
       setSaveError("Errore durante il salvataggio. Riprova.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSaveMateriali = async () => {
+    if (!editingId || !userId) return;
+    setSavingMateriali(true);
+    setSaveMaterialiError(null);
+    try {
+      let copertina_url: string | null = existingCopertinaUrl;
+      let lastra_url: string | null = existingLastraUrl;
+      let file_url: string | null = existingFileUrl;
+      let epub_url: string | null = existingEpubUrl;
+
+      if (copertina) {
+        const ext = copertina.name.split(".").pop();
+        copertina_url = await uploadFile(copertina, "copertine", `${userId}/${editingId}-cover.${ext}`);
+      }
+      if (lastra) {
+        const ext = lastra.name.split(".").pop();
+        lastra_url = await uploadFile(lastra, "copertine", `${userId}/${editingId}-lastra.${ext}`);
+      }
+      if (filePdf) {
+        const ext = filePdf.name.split(".").pop();
+        file_url = await uploadFile(filePdf, "libri", `${userId}/${editingId}-file.${ext}`);
+      }
+      if (fileEpub) {
+        epub_url = await uploadFile(fileEpub, "libri", `${userId}/${editingId}-epub.epub`);
+      }
+
+      const { error } = await supabase.from("books").update({
+        copertina_url,
+        lastra_url,
+        file_url,
+        epub_url,
+      }).eq("id", editingId);
+
+      if (error) { setSaveMaterialiError(error.message); return; }
+
+      setExistingCopertinaUrl(copertina_url);
+      setExistingLastraUrl(lastra_url);
+      setExistingFileUrl(file_url);
+      setExistingEpubUrl(epub_url);
+      setCopertina(null);
+      setLastra(null);
+      setFilePdf(null);
+      setFileEpub(null);
+      await loadBooks(userId);
+    } catch {
+      setSaveMaterialiError("Errore durante il salvataggio dei materiali.");
+    } finally {
+      setSavingMateriali(false);
     }
   };
 
@@ -1158,258 +1176,514 @@ function GestionePage() {
             )}
           </HudPanel>
 
-          {/* Form nuova / modifica opera */}
+          {/* ── FORM NUOVA / MODIFICA OPERA (ACCORDION) ── */}
           {showForm && (
-            <HudPanel label={editingId ? "modifica opera" : collanaId ? "nuova novella" : "nuova opera"} code={editingId ? "EDIT" : "NEW"}>
-              <div className="space-y-5">
+            <div className="space-y-1">
 
-                <div className="grid sm:grid-cols-2 gap-5">
-                  <div>
-                    <span className={labelClass}>↳ Titolo ★</span>
-                    <input value={titolo} onChange={e => setTitolo(e.target.value)} placeholder="Il titolo dell'opera" className={inputClass} />
-                  </div>
-                  <div>
-                    <span className={labelClass}>↳ Sottotitolo</span>
-                    <input value={sottotitolo} onChange={e => setSottotitolo(e.target.value)} placeholder="Opzionale" className={inputClass} />
-                  </div>
+              {/* Header */}
+              <div className="flex items-center justify-between mb-2">
+                <div className="font-mono text-[11px] tracking-[0.3em] text-cyan/70 uppercase">
+                  // {editingId ? "modifica opera" : collanaId ? "nuova novella" : "nuova opera"}
+                  {editingId && <span className="text-bone/20 ml-3">· {editingId.slice(0, 6).toUpperCase()}</span>}
                 </div>
+                <button type="button" onClick={() => { setShowForm(false); setEditingId(null); }}
+                  className="font-mono text-[9px] uppercase tracking-widest text-bone/40 hover:text-magenta transition-colors cursor-pointer">
+                  ✕ chiudi
+                </button>
+              </div>
 
-                {(editingId || !filterGenere) ? (
+              {/* ═══════════ 01 — METADATI ═══════════ */}
+              <button type="button" onClick={() => setOpenSection(1)}
+                className={`w-full flex items-center gap-3 px-5 py-4 border transition-all cursor-pointer ${
+                  openSection === 1 ? "border-cyan bg-cyan/5" : "border-cyan/30 hover:border-cyan"
+                }`}>
+                <span className={`font-mono text-[11px] w-7 h-7 border flex items-center justify-center flex-shrink-0 ${
+                  openSection === 1 ? "border-cyan text-cyan" : "border-cyan/40 text-bone/50"
+                }`}>01</span>
+                <div className="flex-1 text-left">
+                  <div className={`font-mono text-[11px] tracking-[0.3em] uppercase ${openSection === 1 ? "text-cyan" : "text-bone/70"}`}>Metadati</div>
+                  <div className="font-mono text-[9px] tracking-widest text-bone/40 mt-0.5">titolo · genere · sinossi · collana</div>
+                </div>
+                <span className={`font-mono text-[9px] tracking-widest uppercase ${openSection === 1 ? "text-cyan" : "text-bone/40"}`}>{openSection === 1 ? "▲" : "▼"}</span>
+              </button>
+              {openSection === 1 && (
+                <div className="border border-cyan/20 border-t-0 p-5 space-y-5">
+
+                  <div className="grid sm:grid-cols-2 gap-5">
+                    <div>
+                      <span className={labelClass}>↳ Titolo ★</span>
+                      <input value={titolo} onChange={e => setTitolo(e.target.value)} placeholder="Il titolo dell'opera" className={inputClass} />
+                    </div>
+                    <div>
+                      <span className={labelClass}>↳ Sottotitolo</span>
+                      <input value={sottotitolo} onChange={e => setSottotitolo(e.target.value)} placeholder="Opzionale" className={inputClass} />
+                    </div>
+                  </div>
+
+                  {(editingId || !filterGenere) ? (
+                    <div>
+                      <span className={labelClass}>↳ Genere ★</span>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {GENERI.map(g => (
+                          <button key={g} type="button" onClick={() => setGenere(g)}
+                            className={`relative group border px-4 py-2 font-mono text-[10px] uppercase tracking-widest transition-all ${
+                              genere === g ? "border-cyan bg-cyan/15 text-cyan" : "border-cyan/30 text-bone/70 hover:border-cyan"
+                            }`}>
+                            ◆ {GENERE_LABELS[g]}
+                            {GENERE_TOOLTIP[g] && (
+                              <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 whitespace-nowrap border border-cyan/40 bg-void px-2 py-1 font-mono text-[8px] tracking-widest text-cyan opacity-0 transition-opacity group-hover:opacity-100 z-10">
+                                {GENERE_TOOLTIP[g]}
+                              </span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="font-mono text-[10px] tracking-widest text-bone/40 uppercase border border-cyan/15 px-4 py-2 inline-flex items-center gap-2">
+                      <span className="text-cyan/50">◆</span> Genere: <span className="text-cyan">{genere}</span>
+                    </div>
+                  )}
+
+                  {/* Tipo e Target */}
+                  <div className="grid sm:grid-cols-2 gap-5">
+                    <div>
+                      <span className={labelClass}>↳ Tipo / Sottogenere</span>
+                      <select value={tipo} onChange={e => { setTipo(e.target.value); setTipoAltro(""); }}
+                        className={inputClass + " cursor-pointer"}>
+                        <option value="">— Seleziona —</option>
+                        {TIPI.map(t => (
+                          <option key={t} value={t} disabled={t.startsWith("—")} className={t.startsWith("—") ? "text-bone/40 font-bold" : ""}>{t}</option>
+                        ))}
+                      </select>
+                      {tipo === ALTRO_TIPO && (
+                        <>
+                          <input value={tipoAltro} onChange={e => setTipoAltro(e.target.value)}
+                            placeholder="es. Fantascienza intimista, Romanzo corale…"
+                            className={inputClass + " mt-2"} autoFocus />
+                          <p className="mt-1 font-mono text-[9px] text-bone/40 tracking-wide">
+                            Scrivi il genere che meglio descrive l'opera — verrà salvato così.
+                          </p>
+                        </>
+                      )}
+                    </div>
+                    <div>
+                      <span className={labelClass}>↳ Target / Fascia di pubblico</span>
+                      <select value={target} onChange={e => setTarget(e.target.value)} className={inputClass + " cursor-pointer"}>
+                        {TARGET.map(t => (<option key={t} value={t}>{t}</option>))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                    <div>
+                      <span className={labelClass}>↳ Edizione</span>
+                      <input value={edizione} onChange={e => setEdizione(e.target.value)} placeholder="Prima edizione" className={inputClass} />
+                    </div>
+                    <div>
+                      <span className={labelClass}>↳ Anno</span>
+                      <input value={anno} onChange={e => setAnno(e.target.value)} type="number" className={inputClass} />
+                    </div>
+                    <div>
+                      <span className={labelClass}>↳ Lingua</span>
+                      <input value={lingua} onChange={e => setLingua(e.target.value)} placeholder="it" className={inputClass} />
+                    </div>
+                    <div>
+                      <span className={labelClass}>↳ ISBN</span>
+                      <input value={isbn} onChange={e => setIsbn(e.target.value)} placeholder="978-88-..." className={inputClass} />
+                    </div>
+                  </div>
+
                   <div>
-                    <span className={labelClass}>↳ Genere ★</span>
+                    <span className={labelClass}>↳ Accesso</span>
                     <div className="mt-2 flex flex-wrap gap-2">
-                      {GENERI.map(g => (
-                        <button key={g} type="button" onClick={() => setGenere(g)}
-                          className={`relative group border px-4 py-2 font-mono text-[10px] uppercase tracking-widest transition-all ${
-                            genere === g ? "border-cyan bg-cyan/15 text-cyan" : "border-cyan/30 text-bone/70 hover:border-cyan"
+                      {ACCESSI.map(a => (
+                        <button key={a} type="button" onClick={() => setAccesso(a)}
+                          className={`border px-4 py-2 font-mono text-[10px] uppercase tracking-widest transition-all ${
+                            accesso === a ? "border-magenta bg-magenta/15 text-magenta" : "border-cyan/30 text-bone/70 hover:border-cyan"
                           }`}>
-                          ◆ {GENERE_LABELS[g]}
-                          {GENERE_TOOLTIP[g] && (
-                            <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 whitespace-nowrap border border-cyan/40 bg-void px-2 py-1 font-mono text-[8px] tracking-widest text-cyan opacity-0 transition-opacity group-hover:opacity-100 z-10">
-                              {GENERE_TOOLTIP[g]}
-                            </span>
-                          )}
+                          {a}
                         </button>
                       ))}
                     </div>
                   </div>
-                ) : (
-                  <div className="font-mono text-[10px] tracking-widest text-bone/40 uppercase border border-cyan/15 px-4 py-2 inline-flex items-center gap-2">
-                    <span className="text-cyan/50">◆</span> Genere: <span className="text-cyan">{genere}</span>
-                  </div>
-                )}
 
-                {/* Tipo e Target */}
-                <div className="grid sm:grid-cols-2 gap-5">
                   <div>
-                    <span className={labelClass}>↳ Tipo / Sottogenere</span>
-                    <select value={tipo} onChange={e => { setTipo(e.target.value); setTipoAltro(""); }}
-                      className={inputClass + " cursor-pointer"}>
-                      <option value="">— Seleziona —</option>
-                      {TIPI.map(t => (
-                        <option
-                          key={t}
-                          value={t}
-                          disabled={t.startsWith("—")}
-                          className={t.startsWith("—") ? "text-bone/40 font-bold" : ""}
-                        >
-                          {t}
-                        </option>
-                      ))}
-                    </select>
-                    {tipo === ALTRO_TIPO && (
-                      <>
-                        <input
-                          value={tipoAltro}
-                          onChange={e => setTipoAltro(e.target.value)}
-                          placeholder="es. Fantascienza intimista, Romanzo corale…"
-                          className={inputClass + " mt-2"}
-                          autoFocus
-                        />
-                        <p className="mt-1 font-mono text-[9px] text-bone/40 tracking-wide">
-                          Scrivi il genere che meglio descrive l'opera — verrà salvato così.
-                        </p>
-                      </>
+                    <span className={labelClass}>↳ Descrizione / Sinossi</span>
+                    <textarea value={descrizione} onChange={e => setDescrizione(e.target.value)}
+                      placeholder="Di cosa parla la tua opera..."
+                      className="mt-2 w-full min-h-24 bg-void/40 border border-cyan/30 px-4 py-3 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-cyan transition-all" />
+                  </div>
+
+                  <div>
+                    <span className={labelClass}>↳ Estratto (anteprima pubblica)</span>
+                    <textarea value={estratto} onChange={e => setEstratto(e.target.value)}
+                      placeholder="Le prime righe o un brano rappresentativo..."
+                      className="mt-2 w-full min-h-24 bg-void/40 border border-cyan/30 px-4 py-3 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-cyan transition-all" />
+                  </div>
+
+                  {collanaId && (
+                    <div>
+                      <span className={labelClass}>↳ Testo completo</span>
+                      <RichTextEditor value={testoCompleto} onChange={setTestoCompleto} />
+                    </div>
+                  )}
+
+                  <div>
+                    <span className={labelClass}>↳ Tag (separati da virgola)</span>
+                    <input value={tagStr} onChange={e => setTagStr(e.target.value)} placeholder="fantascienza, distopia, futuro" className={inputClass} />
+                  </div>
+
+                  {collane.length > 0 && (
+                    <div>
+                      <span className={labelClass}>↳ Collana (opzionale)</span>
+                      <select value={collanaId} onChange={e => setCollanaId(e.target.value)} className={inputClass + " cursor-pointer"}>
+                        <option value="">— Nessuna collana —</option>
+                        {collane.map(c => <option key={c.id} value={c.id}>{c.titolo}</option>)}
+                      </select>
+                    </div>
+                  )}
+
+                  {saveError && (
+                    <p className="font-mono text-[11px] text-magenta border border-magenta/30 bg-magenta/5 px-4 py-3">⚠ {saveError}</p>
+                  )}
+                  <div className="flex gap-3">
+                    <HudButton variant="primary" onClick={handleSave} disabled={saving || !titolo.trim()}>
+                      {saving ? "▸ Salvataggio..." : editingId ? (collanaId ? "▸ Aggiorna novella" : "▸ Aggiorna opera") : (collanaId ? "▸ Salva novella" : "▸ Salva opera")}
+                    </HudButton>
+                    <HudButton variant="ghost" onClick={() => { setShowForm(false); setEditingId(null); }}>
+                      annulla
+                    </HudButton>
+                  </div>
+                </div>
+              )}
+
+              {/* ═══════════ 02 — CAPITOLI ═══════════ */}
+              <button type="button" onClick={() => editingId && setOpenSection(2)} disabled={!editingId}
+                className={`w-full flex items-center gap-3 px-5 py-4 border transition-all ${
+                  !editingId ? "border-cyan/10 cursor-not-allowed" :
+                  openSection === 2 ? "border-cyan bg-cyan/5 cursor-pointer" : "border-cyan/30 hover:border-cyan cursor-pointer"
+                }`}>
+                <span className={`font-mono text-[11px] w-7 h-7 border flex items-center justify-center flex-shrink-0 ${
+                  !editingId ? "border-cyan/15 text-bone/20" :
+                  openSection === 2 ? "border-cyan text-cyan" : "border-cyan/40 text-bone/50"
+                }`}>02</span>
+                <div className="flex-1 text-left">
+                  <div className={`font-mono text-[11px] tracking-[0.3em] uppercase ${
+                    !editingId ? "text-bone/20" : openSection === 2 ? "text-cyan" : "text-bone/70"
+                  }`}>Capitoli</div>
+                  <div className={`font-mono text-[9px] tracking-widest mt-0.5 ${!editingId ? "text-bone/15" : "text-bone/40"}`}>
+                    {editingId ? `${capitoli.length} capitoli · materiali extra` : "— salva prima i metadati —"}
+                  </div>
+                </div>
+                <span className={`font-mono text-[9px] tracking-widest uppercase ${
+                  !editingId ? "text-bone/20" : openSection === 2 ? "text-cyan" : "text-bone/40"
+                }`}>{!editingId ? "⊗" : openSection === 2 ? "▲" : "▼"}</span>
+              </button>
+              {openSection === 2 && editingId && selected && (
+                <div className="border border-cyan/20 border-t-0 p-5 space-y-4">
+
+                  {/* Capitoli */}
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-[10px] tracking-widest text-cyan/70 uppercase">// capitoli</span>
+                    {!showCapitoloForm && (
+                      <button onClick={() => {
+                        setEditingCapitoloId(null);
+                        setCapTitolo("");
+                        setCapTesto("");
+                        setCapOrdine(capitoli.length + 1);
+                        setCapError(null);
+                        setShowCapitoloForm(true);
+                      }}
+                        className="font-mono text-[10px] tracking-widest text-magenta uppercase hover:text-cyan transition-colors">
+                        + nuovo capitolo
+                      </button>
                     )}
                   </div>
-                  <div>
-                    <span className={labelClass}>↳ Target / Fascia di pubblico</span>
-                    <select value={target} onChange={e => setTarget(e.target.value)}
-                      className={inputClass + " cursor-pointer"}>
-                      {TARGET.map(t => (
-                        <option key={t} value={t}>{t}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
 
-                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                  <div>
-                    <span className={labelClass}>↳ Edizione</span>
-                    <input value={edizione} onChange={e => setEdizione(e.target.value)} placeholder="Prima edizione" className={inputClass} />
-                  </div>
-                  <div>
-                    <span className={labelClass}>↳ Anno</span>
-                    <input value={anno} onChange={e => setAnno(e.target.value)} type="number" className={inputClass} />
-                  </div>
-                  <div>
-                    <span className={labelClass}>↳ Lingua</span>
-                    <input value={lingua} onChange={e => setLingua(e.target.value)} placeholder="it" className={inputClass} />
-                  </div>
-                  <div>
-                    <span className={labelClass}>↳ ISBN</span>
-                    <input value={isbn} onChange={e => setIsbn(e.target.value)} placeholder="978-88-..." className={inputClass} />
-                  </div>
-                </div>
+                  {capitoli.length === 0 && !showCapitoloForm && (
+                    <p className="font-serif italic text-bone/40 text-sm">Nessun capitolo aggiunto.</p>
+                  )}
 
-                <div>
-                  <span className={labelClass}>↳ Accesso</span>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {ACCESSI.map(a => (
-                      <button key={a} type="button" onClick={() => setAccesso(a)}
-                        className={`border px-4 py-2 font-mono text-[10px] uppercase tracking-widest transition-all ${
-                          accesso === a ? "border-magenta bg-magenta/15 text-magenta" : "border-cyan/30 text-bone/70 hover:border-cyan"
-                        }`}>
-                        {a}
+                  {capitoli.map((c) => (
+                    <div key={c.id} className="flex items-center gap-3 border border-cyan/10 p-3">
+                      <span className="font-mono text-[10px] text-cyan/40 w-6 flex-shrink-0">{String(c.ordine).padStart(2, "0")}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-mono text-[10px] uppercase tracking-widest text-bone/70 truncate">{c.titolo}</div>
+                        <div className="font-mono text-[9px] text-bone/30 mt-0.5 truncate">{c.testo.slice(0, 80)}…</div>
+                      </div>
+                      <button onClick={() => handleEditCapitolo(c)} title="Modifica capitolo"
+                        className="flex items-center gap-1 font-mono text-[10px] text-cyan/50 hover:text-cyan border border-transparent hover:border-cyan/40 hover:bg-cyan/5 px-2 py-1 transition-colors flex-shrink-0">
+                        ✎ <span className="hidden sm:inline tracking-widest uppercase">Modifica</span>
                       </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <span className={labelClass}>↳ Descrizione / Sinossi</span>
-                  <textarea value={descrizione} onChange={e => setDescrizione(e.target.value)}
-                    placeholder="Di cosa parla la tua opera..."
-                    className="mt-2 w-full min-h-24 bg-void/40 border border-cyan/30 px-4 py-3 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-cyan transition-all" />
-                </div>
-
-                <div>
-                  <span className={labelClass}>↳ Estratto (anteprima pubblica)</span>
-                  <textarea value={estratto} onChange={e => setEstratto(e.target.value)}
-                    placeholder="Le prime righe o un brano rappresentativo..."
-                    className="mt-2 w-full min-h-24 bg-void/40 border border-cyan/30 px-4 py-3 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-cyan transition-all" />
-                </div>
-
-                {collanaId && (
-                  <div>
-                    <span className={labelClass}>↳ Testo completo</span>
-                    <RichTextEditor value={testoCompleto} onChange={setTestoCompleto} />
-                  </div>
-                )}
-
-                <div>
-                  <span className={labelClass}>↳ Tag (separati da virgola)</span>
-                  <input value={tagStr} onChange={e => setTagStr(e.target.value)} placeholder="fantascienza, distopia, futuro" className={inputClass} />
-                </div>
-
-                {collane.length > 0 && (
-                  <div>
-                    <span className={labelClass}>↳ Collana (opzionale)</span>
-                    <select value={collanaId} onChange={e => setCollanaId(e.target.value)} className={inputClass + " cursor-pointer"}>
-                      <option value="">— Nessuna collana —</option>
-                      {collane.map(c => <option key={c.id} value={c.id}>{c.titolo}</option>)}
-                    </select>
-                  </div>
-                )}
-
-                <div className="grid sm:grid-cols-3 gap-5">
-                  <div>
-                    <span className={labelClass}>↳ Copertina (hover)</span>
-                    <input ref={copertRef} type="file" accept="image/*"
-                      onChange={e => setCopertina(e.target.files?.[0] ?? null)} className="hidden" />
-                    <button type="button" onClick={() => copertRef.current?.click()}
-                      className="mt-2 w-full border border-cyan/30 px-4 py-3 font-mono text-[10px] text-left uppercase tracking-widest hover:border-cyan hover:text-cyan transition-all text-bone/60">
-                      {copertina ? `✓ ${copertina.name}` : existingCopertinaUrl ? "✓ esistente (cambia)" : "▸ Scegli immagine"}
-                    </button>
-                  </div>
-                  <div>
-                    <span className={labelClass}>↳ Lastra (catalogo)</span>
-                    <input ref={lastraRef} type="file" accept="image/*"
-                      onChange={e => setLastra(e.target.files?.[0] ?? null)} className="hidden" />
-                    <button type="button" onClick={() => lastraRef.current?.click()}
-                      className="mt-2 w-full border border-magenta/30 px-4 py-3 font-mono text-[10px] text-left uppercase tracking-widest hover:border-magenta hover:text-magenta transition-all text-bone/60">
-                      {lastra ? `✓ ${lastra.name}` : existingLastraUrl ? "✓ esistente (cambia)" : "▸ Scegli lastra"}
-                    </button>
-                  </div>
-                  <div>
-                    <span className={labelClass}>↳ File PDF</span>
-                    <input ref={pdfRef} type="file" accept=".pdf"
-                      onChange={e => setFilePdf(e.target.files?.[0] ?? null)} className="hidden" />
-                    <button type="button" onClick={() => pdfRef.current?.click()}
-                      className="mt-2 w-full border border-cyan/30 px-4 py-3 font-mono text-[10px] text-left uppercase tracking-widest hover:border-cyan hover:text-cyan transition-all text-bone/60">
-                      {filePdf ? `✓ ${filePdf.name}` : existingFileUrl ? "✓ esistente (cambia)" : "▸ Scegli PDF"}
-                    </button>
-                  </div>
-                  <div className="sm:col-start-3">
-                    <span className={labelClass}>↳ File ePub (opzionale)</span>
-                    <input ref={epubRef} type="file" accept=".epub"
-                      onChange={e => setFileEpub(e.target.files?.[0] ?? null)} className="hidden" />
-                    <button type="button" onClick={() => epubRef.current?.click()}
-                      className="mt-2 w-full border border-cyan/30 px-4 py-3 font-mono text-[10px] text-left uppercase tracking-widest hover:border-cyan hover:text-cyan transition-all text-bone/60">
-                      {fileEpub ? `✓ ${fileEpub.name}` : existingEpubUrl ? "✓ esistente (cambia)" : "▸ Scegli ePub"}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Genera documenti da .docx — solo su opera esistente, solo se entro il limite */}
-                {editingId && (isAdmin || pdfConvUsed < 10 || epubConvUsed < 10) && (
-                  <div className="border border-amber/50 bg-amber/5 p-5 space-y-4 relative">
-                    <span className="absolute -top-px left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber/50 to-transparent" />
-                    <div className="flex items-center justify-between flex-wrap gap-2">
-                      <div className="font-mono text-[11px] tracking-[0.3em] text-amber uppercase font-bold">◈ Genera PDF + ePub dal manoscritto</div>
-                      {isAdmin
-                        ? <span className="font-mono text-[10px] tracking-widest uppercase text-amber border border-amber bg-amber/10 px-3 py-1 font-bold">∞ Accesso illimitato</span>
-                        : <span className="font-mono text-[10px] text-bone/50 border border-amber/30 px-2 py-0.5">{Math.max(pdfConvUsed, epubConvUsed)} / 10</span>
-                      }
+                      {confirmDeleteCapitoloId === c.id ? (
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <span className="font-mono text-[9px] text-magenta/80 tracking-widest uppercase">Elimina?</span>
+                          <button onClick={() => { handleDeleteCapitolo(c.id); setConfirmDeleteCapitoloId(null); }}
+                            className="font-mono text-[9px] text-magenta border border-magenta/50 hover:bg-magenta hover:text-paper px-2 py-1 transition-colors">Sì</button>
+                          <button onClick={() => setConfirmDeleteCapitoloId(null)}
+                            className="font-mono text-[9px] text-bone/50 border border-bone/20 hover:border-bone/50 hover:text-bone px-2 py-1 transition-colors">No</button>
+                        </div>
+                      ) : (
+                        <button onClick={() => setConfirmDeleteCapitoloId(c.id)} title="Elimina capitolo"
+                          className="flex items-center gap-1 font-mono text-[10px] text-magenta/50 hover:text-magenta border border-transparent hover:border-magenta/40 hover:bg-magenta/5 px-2 py-1 transition-colors flex-shrink-0">
+                          ✕ <span className="hidden sm:inline tracking-widest uppercase">Elimina</span>
+                        </button>
+                      )}
                     </div>
-                    <p className="font-serif italic text-bone/60 text-sm">
-                      Carica il manoscritto Word (.docx): PDF ed ePub vengono generati automaticamente in un click.
-                      {!isAdmin && <span className="text-amber not-italic font-mono text-[10px] tracking-widest uppercase ml-2">10 generazioni gratuite</span>}
-                    </p>
+                  ))}
 
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <input ref={docxRef} type="file" accept=".docx"
-                        onChange={e => { setDocxFile(e.target.files?.[0] ?? null); setDocGenPdfOk(false); setDocGenEpubOk(false); setDocGenError(null); }}
-                        className="hidden" />
-                      <button type="button" onClick={() => docxRef.current?.click()}
-                        className="border border-amber/40 px-4 py-2 font-mono text-[10px] uppercase tracking-widest hover:border-amber hover:text-amber transition-all text-bone/60 cursor-pointer">
-                        {docxFile ? `✓ ${docxFile.name}` : existingDocxUrl ? "✓ .docx caricato (sostituisci)" : "▸ Scegli .docx"}
-                      </button>
-                      <HudButton
-                        variant="ghost"
-                        onClick={handleGenerateDocs}
-                        disabled={docGenerating || (!docxFile && !existingDocxUrl)}
-                      >
-                        {docGenerating ? "▸ Generazione in corso..." : existingDocxUrl && !docxFile ? "◈ Rigenera PDF + ePub" : "◈ Carica e genera PDF + ePub"}
-                      </HudButton>
-                    </div>
-
-                    {docGenerating && (
-                      <div className="flex items-center gap-3 flex-wrap">
-                        <span className="font-mono text-[11px] tracking-widest text-amber uppercase animate-pulse">
-                          {!docGenPdfOk ? "◈ Generazione PDF..." : "◈ Generazione ePub..."}
-                        </span>
-                        <div className="flex gap-1">
-                          {Array.from({ length: 10 }).map((_, i) => (
-                            <span key={i} className={`w-2.5 h-2.5 border transition-all duration-500 ${i < docProgress ? "bg-amber border-amber" : "bg-transparent border-amber/30"}`} />
-                          ))}
+                  {showCapitoloForm && (
+                    <div className="border border-cyan/20 bg-cyan/5 p-4 space-y-4 mt-2">
+                      <div className="font-mono text-[9px] tracking-[0.3em] text-cyan/60 uppercase">
+                        // {editingCapitoloId ? "modifica capitolo" : "nuovo capitolo"}
+                      </div>
+                      <div className="grid sm:grid-cols-4 gap-4">
+                        <div>
+                          <span className={labelClass}>↳ Ordine</span>
+                          <input value={capOrdine} onChange={e => setCapOrdine(parseInt(e.target.value) || 1)}
+                            type="number" min={1} className={inputClass} />
+                        </div>
+                        <div className="sm:col-span-3">
+                          <span className={labelClass}>↳ Titolo capitolo</span>
+                          <input value={capTitolo} onChange={e => setCapTitolo(e.target.value)}
+                            placeholder="Es. Capitolo I — L'inizio" className={inputClass} />
                         </div>
                       </div>
-                    )}
+                      <div>
+                        <span className={labelClass}>↳ Testo</span>
+                        <RichTextEditor value={capTesto} onChange={setCapTesto} />
+                      </div>
+                      {capError && (
+                        <p className="font-mono text-[11px] text-magenta border border-magenta/30 bg-magenta/5 px-4 py-3">⚠ {capError}</p>
+                      )}
+                      <div className="flex gap-3">
+                        <HudButton variant="primary" onClick={handleSaveCapitolo} disabled={savingCapitolo || !capTitolo.trim()}>
+                          {savingCapitolo ? "▸ Salvataggio..." : editingCapitoloId ? "▸ Aggiorna capitolo" : "▸ Salva capitolo"}
+                        </HudButton>
+                        <HudButton variant="ghost" onClick={() => { setShowCapitoloForm(false); setEditingCapitoloId(null); setCapError(null); }}>
+                          annulla
+                        </HudButton>
+                      </div>
+                    </div>
+                  )}
 
-                    {(docGenPdfOk || docGenEpubOk) && !docGenerating && (
-                      <p className="font-mono text-[10px] tracking-wide text-cyan uppercase">
-                        {docGenPdfOk && "✓ PDF pronto"}
-                        {docGenPdfOk && docGenEpubOk && " · "}
-                        {docGenEpubOk && "✓ ePub pronto"}
-                      </p>
+                  {/* Materiali extra (allegati) */}
+                  <div className="hud-divider my-3" />
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-[10px] tracking-widest text-cyan/70 uppercase">// materiali extra</span>
+                    {!showAllegatoForm && (
+                      <button onClick={() => { setAllegaTitolo(""); setAllegaDescrizione(""); setAllegaFile(null); setAllegaError(null); setShowAllegatoForm(true); }}
+                        className="font-mono text-[10px] tracking-widest text-magenta uppercase hover:text-cyan transition-colors">
+                        + Aggiungi materiale
+                      </button>
                     )}
-                    {docGenError && <p className="font-mono text-[10px] tracking-wide text-magenta uppercase">✗ {docGenError}</p>}
                   </div>
-                )}
 
-                {/* AI cover generation — only for existing books */}
-                {editingId && (
+                  {allegati.length === 0 && !showAllegatoForm && (
+                    <p className="font-serif italic text-bone/40 text-sm">Nessun materiale extra aggiunto.</p>
+                  )}
+
+                  {allegati.map((a) => (
+                    <div key={a.id} className="flex items-center gap-3 border border-cyan/10 p-3">
+                      <span className="font-mono text-[10px] text-cyan/40 flex-shrink-0">
+                        {a.tipo === "immagine" ? "◈" : a.tipo === "pdf" ? "↓" : "◆"}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-mono text-[10px] uppercase tracking-widest text-bone/70 truncate">{a.titolo}</div>
+                        <div className="font-mono text-[9px] text-bone/30 mt-0.5">{a.tipo}</div>
+                      </div>
+                      {confirmDeleteAllegatoId === a.id ? (
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <span className="font-mono text-[9px] text-magenta/80 tracking-widest uppercase">Elimina?</span>
+                          <button onClick={() => { handleDeleteAllegato(a); setConfirmDeleteAllegatoId(null); }}
+                            className="font-mono text-[9px] text-magenta border border-magenta/50 hover:bg-magenta hover:text-paper px-2 py-1 transition-colors">Sì</button>
+                          <button onClick={() => setConfirmDeleteAllegatoId(null)}
+                            className="font-mono text-[9px] text-bone/50 border border-bone/20 hover:border-bone/50 hover:text-bone px-2 py-1 transition-colors">No</button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <button onClick={() => handleEditAllegato(a)} title="Modifica materiale"
+                            className="flex items-center gap-1 font-mono text-[10px] text-cyan/50 hover:text-cyan border border-transparent hover:border-cyan/40 hover:bg-cyan/5 px-2 py-1 transition-colors">
+                            ✎ <span className="hidden sm:inline tracking-widest uppercase">Modifica</span>
+                          </button>
+                          <button onClick={() => setConfirmDeleteAllegatoId(a.id)}
+                            className="flex items-center gap-1 font-mono text-[10px] text-magenta/50 hover:text-magenta border border-transparent hover:border-magenta/40 hover:bg-magenta/5 px-2 py-1 transition-colors">
+                            ✕ <span className="hidden sm:inline tracking-widest uppercase">Elimina</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+
+                  {showAllegatoForm && (
+                    <div className="border border-cyan/20 bg-cyan/5 p-4 space-y-4 mt-2">
+                      <div className="font-mono text-[9px] tracking-[0.3em] text-cyan/60 uppercase">
+                        {editingAllegatoId ? "// modifica materiale" : "// nuovo materiale"}
+                      </div>
+                      <div>
+                        <span className={labelClass}>↳ Titolo</span>
+                        <input value={allegaTitolo} onChange={e => setAllegaTitolo(e.target.value)}
+                          placeholder="Es. Albero genealogico, Mappa del mondo…" className={inputClass} />
+                      </div>
+                      <div>
+                        <span className={labelClass}>↳ Descrizione (opzionale)</span>
+                        <textarea value={allegaDescrizione} onChange={e => setAllegaDescrizione(e.target.value)}
+                          placeholder="Breve descrizione del materiale, personaggi principali, come leggerlo…"
+                          rows={3} className={inputClass + " resize-none"} />
+                      </div>
+                      <div>
+                        <span className={labelClass}>
+                          ↳ File (immagine o PDF){editingAllegatoId && " — lascia vuoto per mantenere quello attuale"}
+                        </span>
+                        <input ref={allegaFileRef} type="file" accept="image/*,.pdf"
+                          onChange={e => setAllegaFile(e.target.files?.[0] ?? null)}
+                          className={inputClass + " cursor-pointer file:mr-3 file:font-mono file:text-[10px] file:border file:border-cyan/30 file:bg-transparent file:text-cyan/70 file:px-2 file:py-1"} />
+                        {allegaFile && (
+                          <p className="mt-1 font-mono text-[9px] text-bone/40">{allegaFile.name} — {(allegaFile.size / 1024).toFixed(0)} KB</p>
+                        )}
+                      </div>
+                      {allegaError && (
+                        <p className="font-mono text-[11px] text-magenta border border-magenta/30 bg-magenta/5 px-4 py-3">⚠ {allegaError}</p>
+                      )}
+                      <div className="flex gap-3">
+                        <HudButton variant="primary" onClick={handleSaveAllegato}
+                          disabled={savingAllegato || !allegaTitolo.trim() || (!editingAllegatoId && !allegaFile)}>
+                          {savingAllegato ? "▸ Salvataggio..." : editingAllegatoId ? "▸ Aggiorna materiale" : "▸ Salva materiale"}
+                        </HudButton>
+                        <HudButton variant="ghost" onClick={() => { setShowAllegatoForm(false); setEditingAllegatoId(null); setAllegaError(null); }}>annulla</HudButton>
+                      </div>
+                    </div>
+                  )}
+
+                </div>
+              )}
+
+              {/* ═══════════ 03 — MATERIALI ═══════════ */}
+              <button type="button" onClick={() => editingId && setOpenSection(3)} disabled={!editingId}
+                className={`w-full flex items-center gap-3 px-5 py-4 border transition-all ${
+                  !editingId ? "border-cyan/10 cursor-not-allowed" :
+                  openSection === 3 ? "border-cyan bg-cyan/5 cursor-pointer" : "border-cyan/30 hover:border-cyan cursor-pointer"
+                }`}>
+                <span className={`font-mono text-[11px] w-7 h-7 border flex items-center justify-center flex-shrink-0 ${
+                  !editingId ? "border-cyan/15 text-bone/20" :
+                  openSection === 3 ? "border-cyan text-cyan" : "border-cyan/40 text-bone/50"
+                }`}>03</span>
+                <div className="flex-1 text-left">
+                  <div className={`font-mono text-[11px] tracking-[0.3em] uppercase ${
+                    !editingId ? "text-bone/20" : openSection === 3 ? "text-cyan" : "text-bone/70"
+                  }`}>Materiali</div>
+                  <div className={`font-mono text-[9px] tracking-widest mt-0.5 ${!editingId ? "text-bone/15" : "text-bone/40"}`}>
+                    {editingId ? "copertina · file · edizioni" : "— salva prima i metadati —"}
+                  </div>
+                </div>
+                <span className={`font-mono text-[9px] tracking-widest uppercase ${
+                  !editingId ? "text-bone/20" : openSection === 3 ? "text-cyan" : "text-bone/40"
+                }`}>{!editingId ? "⊗" : openSection === 3 ? "▲" : "▼"}</span>
+              </button>
+              {openSection === 3 && editingId && (
+                <div className="border border-cyan/20 border-t-0 p-5 space-y-5">
+
+                  {/* File uploads */}
+                  <div className="grid sm:grid-cols-3 gap-5">
+                    <div>
+                      <span className={labelClass}>↳ Copertina (hover)</span>
+                      <input ref={copertRef} type="file" accept="image/*"
+                        onChange={e => setCopertina(e.target.files?.[0] ?? null)} className="hidden" />
+                      <button type="button" onClick={() => copertRef.current?.click()}
+                        className="mt-2 w-full border border-cyan/30 px-4 py-3 font-mono text-[10px] text-left uppercase tracking-widest hover:border-cyan hover:text-cyan transition-all text-bone/60">
+                        {copertina ? `✓ ${copertina.name}` : existingCopertinaUrl ? "✓ esistente (cambia)" : "▸ Scegli immagine"}
+                      </button>
+                    </div>
+                    <div>
+                      <span className={labelClass}>↳ Lastra (catalogo)</span>
+                      <input ref={lastraRef} type="file" accept="image/*"
+                        onChange={e => setLastra(e.target.files?.[0] ?? null)} className="hidden" />
+                      <button type="button" onClick={() => lastraRef.current?.click()}
+                        className="mt-2 w-full border border-magenta/30 px-4 py-3 font-mono text-[10px] text-left uppercase tracking-widest hover:border-magenta hover:text-magenta transition-all text-bone/60">
+                        {lastra ? `✓ ${lastra.name}` : existingLastraUrl ? "✓ esistente (cambia)" : "▸ Scegli lastra"}
+                      </button>
+                    </div>
+                    <div>
+                      <span className={labelClass}>↳ File PDF</span>
+                      <input ref={pdfRef} type="file" accept=".pdf"
+                        onChange={e => setFilePdf(e.target.files?.[0] ?? null)} className="hidden" />
+                      <button type="button" onClick={() => pdfRef.current?.click()}
+                        className="mt-2 w-full border border-cyan/30 px-4 py-3 font-mono text-[10px] text-left uppercase tracking-widest hover:border-cyan hover:text-cyan transition-all text-bone/60">
+                        {filePdf ? `✓ ${filePdf.name}` : existingFileUrl ? "✓ esistente (cambia)" : "▸ Scegli PDF"}
+                      </button>
+                    </div>
+                    <div className="sm:col-start-3">
+                      <span className={labelClass}>↳ File ePub (opzionale)</span>
+                      <input ref={epubRef} type="file" accept=".epub"
+                        onChange={e => setFileEpub(e.target.files?.[0] ?? null)} className="hidden" />
+                      <button type="button" onClick={() => epubRef.current?.click()}
+                        className="mt-2 w-full border border-cyan/30 px-4 py-3 font-mono text-[10px] text-left uppercase tracking-widest hover:border-cyan hover:text-cyan transition-all text-bone/60">
+                        {fileEpub ? `✓ ${fileEpub.name}` : existingEpubUrl ? "✓ esistente (cambia)" : "▸ Scegli ePub"}
+                      </button>
+                    </div>
+                  </div>
+
+                  {saveMaterialiError && (
+                    <p className="font-mono text-[11px] text-magenta border border-magenta/30 bg-magenta/5 px-4 py-3">⚠ {saveMaterialiError}</p>
+                  )}
+                  <div className="flex gap-3">
+                    <HudButton variant="primary" onClick={handleSaveMateriali} disabled={savingMateriali}>
+                      {savingMateriali ? "▸ Salvataggio..." : "▸ Salva materiali"}
+                    </HudButton>
+                  </div>
+
+                  {/* Genera documenti da .docx */}
+                  {(isAdmin || pdfConvUsed < 10 || epubConvUsed < 10) && (
+                    <div className="border border-amber/50 bg-amber/5 p-5 space-y-4 relative">
+                      <span className="absolute -top-px left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber/50 to-transparent" />
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <div className="font-mono text-[11px] tracking-[0.3em] text-amber uppercase font-bold">◈ Genera PDF + ePub dal manoscritto</div>
+                        {isAdmin
+                          ? <span className="font-mono text-[10px] tracking-widest uppercase text-amber border border-amber bg-amber/10 px-3 py-1 font-bold">∞ Accesso illimitato</span>
+                          : <span className="font-mono text-[10px] text-bone/50 border border-amber/30 px-2 py-0.5">{Math.max(pdfConvUsed, epubConvUsed)} / 10</span>
+                        }
+                      </div>
+                      <p className="font-serif italic text-bone/60 text-sm">
+                        Carica il manoscritto Word (.docx): PDF ed ePub vengono generati automaticamente in un click.
+                        {!isAdmin && <span className="text-amber not-italic font-mono text-[10px] tracking-widest uppercase ml-2">10 generazioni gratuite</span>}
+                      </p>
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <input ref={docxRef} type="file" accept=".docx"
+                          onChange={e => { setDocxFile(e.target.files?.[0] ?? null); setDocGenPdfOk(false); setDocGenEpubOk(false); setDocGenError(null); }}
+                          className="hidden" />
+                        <button type="button" onClick={() => docxRef.current?.click()}
+                          className="border border-amber/40 px-4 py-2 font-mono text-[10px] uppercase tracking-widest hover:border-amber hover:text-amber transition-all text-bone/60 cursor-pointer">
+                          {docxFile ? `✓ ${docxFile.name}` : existingDocxUrl ? "✓ .docx caricato (sostituisci)" : "▸ Scegli .docx"}
+                        </button>
+                        <HudButton variant="ghost" onClick={handleGenerateDocs} disabled={docGenerating || (!docxFile && !existingDocxUrl)}>
+                          {docGenerating ? "▸ Generazione in corso..." : existingDocxUrl && !docxFile ? "◈ Rigenera PDF + ePub" : "◈ Carica e genera PDF + ePub"}
+                        </HudButton>
+                      </div>
+                      {docGenerating && (
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <span className="font-mono text-[11px] tracking-widest text-amber uppercase animate-pulse">
+                            {!docGenPdfOk ? "◈ Generazione PDF..." : "◈ Generazione ePub..."}
+                          </span>
+                          <div className="flex gap-1">
+                            {Array.from({ length: 10 }).map((_, i) => (
+                              <span key={i} className={`w-2.5 h-2.5 border transition-all duration-500 ${i < docProgress ? "bg-amber border-amber" : "bg-transparent border-amber/30"}`} />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {(docGenPdfOk || docGenEpubOk) && !docGenerating && (
+                        <p className="font-mono text-[10px] tracking-wide text-cyan uppercase">
+                          {docGenPdfOk && "✓ PDF pronto"}
+                          {docGenPdfOk && docGenEpubOk && " · "}
+                          {docGenEpubOk && "✓ ePub pronto"}
+                        </p>
+                      )}
+                      {docGenError && <p className="font-mono text-[10px] tracking-wide text-magenta uppercase">✗ {docGenError}</p>}
+                    </div>
+                  )}
+
+                  {/* AI cover generation */}
                   <div className="border border-cyan/60 bg-cyan/8 p-5 space-y-4 relative">
                     <span className="absolute -top-px left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan/60 to-transparent" />
                     <div className="flex items-center justify-between">
@@ -1425,12 +1699,9 @@ function GestionePage() {
                       <>
                         <div>
                           <span className={labelClass}>↳ Descrivi la copertina che vuoi</span>
-                          <textarea
-                            value={aiPrompt}
-                            onChange={e => setAiPrompt(e.target.value)}
+                          <textarea value={aiPrompt} onChange={e => setAiPrompt(e.target.value)}
                             placeholder="Es. Una galassia con un pianeta centrale dominante e mondi periferici in conflitto, atmosfera epica e fantascientifica..."
-                            className="mt-2 w-full min-h-20 bg-void/40 border border-cyan/30 px-4 py-3 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-cyan transition-all"
-                          />
+                            className="mt-2 w-full min-h-20 bg-void/40 border border-cyan/30 px-4 py-3 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-cyan transition-all" />
                         </div>
                         <div className="flex items-center gap-4 flex-wrap">
                           <HudButton variant="ghost" onClick={handleGenerateCover} disabled={aiGenerating || !aiPrompt.trim()}>
@@ -1447,9 +1718,7 @@ function GestionePage() {
                             </div>
                           )}
                         </div>
-                        {aiError && (
-                          <p className="font-mono text-[11px] text-magenta">{aiError}</p>
-                        )}
+                        {aiError && <p className="font-mono text-[11px] text-magenta">{aiError}</p>}
                         {aiGeneratedUrl && (
                           <div className="flex gap-5 items-start pt-1">
                             <button onClick={() => setAiModalUrl(aiGeneratedUrl)} className="flex-shrink-0 cursor-zoom-in group relative w-24 h-32">
@@ -1462,10 +1731,8 @@ function GestionePage() {
                               <HudButton variant="primary" onClick={() => { setExistingCopertinaUrl(aiGeneratedUrl); setAiGeneratedUrl(null); }}>
                                 ✓ Usa come copertina
                               </HudButton>
-                              <button
-                                onClick={() => setAiGeneratedUrl(null)}
-                                className="block font-mono text-[9px] uppercase tracking-widest text-bone/40 hover:text-magenta transition-colors cursor-pointer"
-                              >
+                              <button onClick={() => setAiGeneratedUrl(null)}
+                                className="block font-mono text-[9px] uppercase tracking-widest text-bone/40 hover:text-magenta transition-colors cursor-pointer">
                                 ✕ scarta
                               </button>
                             </div>
@@ -1476,10 +1743,8 @@ function GestionePage() {
                       !showTicketForm ? (
                         <div className="space-y-3">
                           <p className="font-serif italic text-bone/60 text-sm">Hai usato tutte e 10 le generazioni gratuite per quest'opera.</p>
-                          <button
-                            onClick={() => setShowTicketForm(true)}
-                            className="font-mono text-[10px] uppercase tracking-widest text-magenta border border-magenta/40 hover:border-magenta px-4 py-2 transition-colors cursor-pointer"
-                          >
+                          <button onClick={() => setShowTicketForm(true)}
+                            className="font-mono text-[10px] uppercase tracking-widest text-magenta border border-magenta/40 hover:border-magenta px-4 py-2 transition-colors cursor-pointer">
                             ◆ Richiedi generazioni aggiuntive
                           </button>
                         </div>
@@ -1490,51 +1755,99 @@ function GestionePage() {
                           </p>
                           <div>
                             <span className={labelClass}>↳ Messaggio</span>
-                            <textarea
-                              value={ticketMessage}
-                              onChange={e => setTicketMessage(e.target.value)}
+                            <textarea value={ticketMessage} onChange={e => setTicketMessage(e.target.value)}
                               placeholder="Descrivi cosa stai cercando e quante copertine vorresti provare..."
-                              className="mt-2 w-full min-h-20 bg-void/40 border border-magenta/30 px-4 py-3 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-magenta transition-all"
-                            />
+                              className="mt-2 w-full min-h-20 bg-void/40 border border-magenta/30 px-4 py-3 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-magenta transition-all" />
                           </div>
                           {aiError && <p className="font-mono text-[11px] text-magenta">{aiError}</p>}
                           <div className="flex gap-3">
                             <HudButton variant="primary" onClick={() => handleSendTicket(titolo)} disabled={ticketSending || !ticketMessage.trim()}>
                               {ticketSending ? "▸ Invio..." : "▸ Invia richiesta"}
                             </HudButton>
-                            <button
-                              onClick={() => setShowTicketForm(false)}
-                              className="font-mono text-[9px] uppercase tracking-widest text-bone/40 hover:text-cyan transition-colors cursor-pointer"
-                            >
+                            <button onClick={() => setShowTicketForm(false)}
+                              className="font-mono text-[9px] uppercase tracking-widest text-bone/40 hover:text-cyan transition-colors cursor-pointer">
                               annulla
                             </button>
                           </div>
                         </div>
                       )
                     ) : (
-                      <p className="font-serif italic text-cyan/80 text-sm">
-                        ✓ Richiesta inviata. Ti risponderemo presto.
-                      </p>
+                      <p className="font-serif italic text-cyan/80 text-sm">✓ Richiesta inviata. Ti risponderemo presto.</p>
                     )}
                   </div>
-                )}
 
-                {saveError && (
-                  <p className="font-mono text-[11px] text-magenta border border-magenta/30 bg-magenta/5 px-4 py-3">
-                    ⚠ {saveError}
-                  </p>
-                )}
+                  {/* Edizioni aggiuntive */}
+                  <div className="hud-divider my-3" />
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="font-mono text-[10px] tracking-widest text-cyan/70 uppercase">// edizioni aggiuntive</span>
+                    {!showEditionForm && (
+                      <button onClick={() => { setShowEditionForm(true); setEdEdizione(""); setEdAnno(String(new Date().getFullYear())); setEdIsbn(""); setEdCopertina(null); }}
+                        className="font-mono text-[10px] tracking-widest text-magenta uppercase hover:text-cyan transition-colors">
+                        + nuova edizione
+                      </button>
+                    )}
+                  </div>
 
-                <div className="flex gap-3">
-                  <HudButton variant="primary" onClick={handleSave} disabled={saving || !titolo.trim()}>
-                    {saving ? "▸ Salvataggio..." : editingId ? (collanaId ? "▸ Aggiorna novella" : "▸ Aggiorna opera") : (collanaId ? "▸ Salva novella" : "▸ Salva opera")}
-                  </HudButton>
-                  <HudButton variant="ghost" onClick={() => { setShowForm(false); setEditingId(null); }}>
-                    annulla
-                  </HudButton>
+                  {edizioni.length === 0 && !showEditionForm && (
+                    <p className="font-serif italic text-bone/40 text-sm mb-3">Nessuna edizione aggiuntiva.</p>
+                  )}
+
+                  {edizioni.map(e => (
+                    <div key={e.id} className="flex items-start gap-3 border border-cyan/10 p-3 mb-2">
+                      {e.copertina_url && (
+                        <img src={e.copertina_url} alt="" className="w-12 h-16 object-cover ring-1 ring-cyan/20 flex-shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        {e.edizione && <div className="font-mono text-[10px] uppercase tracking-widest text-cyan/70">{e.edizione}</div>}
+                        <div className="font-mono text-[9px] text-bone/50 tracking-widest mt-1">
+                          {[e.anno, e.isbn].filter(Boolean).join(" · ")}
+                        </div>
+                      </div>
+                      <button onClick={() => handleDeleteEdizione(e.id)}
+                        className="flex-shrink-0 font-mono text-[10px] text-magenta/50 hover:text-magenta border border-transparent hover:border-magenta/40 hover:bg-magenta/5 px-2 py-1 transition-colors">
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+
+                  {showEditionForm && (
+                    <div className="border border-cyan/20 bg-cyan/5 p-4 space-y-4 mt-2">
+                      <div className="font-mono text-[9px] tracking-[0.3em] text-cyan/60 uppercase">// nuova edizione</div>
+                      <div className="grid sm:grid-cols-3 gap-4">
+                        <div>
+                          <span className={labelClass}>↳ Edizione</span>
+                          <input value={edEdizione} onChange={e => setEdEdizione(e.target.value)} placeholder="es. Seconda edizione" className={inputClass} />
+                        </div>
+                        <div>
+                          <span className={labelClass}>↳ Anno</span>
+                          <input value={edAnno} onChange={e => setEdAnno(e.target.value)} type="number" className={inputClass} />
+                        </div>
+                        <div>
+                          <span className={labelClass}>↳ ISBN</span>
+                          <input value={edIsbn} onChange={e => setEdIsbn(e.target.value)} placeholder="978-88-..." className={inputClass} />
+                        </div>
+                        <div>
+                          <span className={labelClass}>↳ Copertina</span>
+                          <input ref={edCopertinaRef} type="file" accept="image/*" onChange={e => setEdCopertina(e.target.files?.[0] ?? null)} className="hidden" />
+                          <button type="button" onClick={() => edCopertinaRef.current?.click()}
+                            className="mt-2 w-full border border-cyan/30 px-4 py-3 font-mono text-[10px] text-left uppercase tracking-widest hover:border-cyan hover:text-cyan transition-all text-bone/60">
+                            {edCopertina ? `✓ ${edCopertina.name}` : "▸ Scegli immagine"}
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex gap-3">
+                        <HudButton variant="primary" onClick={handleSaveEdizione} disabled={savingEdition}>
+                          {savingEdition ? "▸ Salvataggio..." : "▸ Salva edizione"}
+                        </HudButton>
+                        <HudButton variant="ghost" onClick={() => setShowEditionForm(false)}>annulla</HudButton>
+                      </div>
+                    </div>
+                  )}
+
                 </div>
-              </div>
-            </HudPanel>
+              )}
+
+            </div>
           )}
 
           {/* Dettaglio opera selezionata */}
@@ -1586,283 +1899,6 @@ function GestionePage() {
                 <span>▸ {selected.letture} letture</span>
                 <span>▸ {selected.downloads} download</span>
               </div>
-
-              {/* Edizioni aggiuntive */}
-              <div className="hud-divider my-5" />
-              <div className="flex items-center justify-between mb-3">
-                <span className="font-mono text-[10px] tracking-widest text-cyan/70 uppercase">// edizioni aggiuntive</span>
-                {!showEditionForm && (
-                  <button
-                    onClick={() => { setShowEditionForm(true); setEdEdizione(""); setEdAnno(String(new Date().getFullYear())); setEdIsbn(""); setEdCopertina(null); }}
-                    className="font-mono text-[10px] tracking-widest text-magenta uppercase hover:text-cyan transition-colors"
-                  >
-                    + nuova edizione
-                  </button>
-                )}
-              </div>
-
-              {edizioni.length === 0 && !showEditionForm && (
-                <p className="font-serif italic text-bone/40 text-sm mb-3">Nessuna edizione aggiuntiva.</p>
-              )}
-
-              {edizioni.map(e => (
-                <div key={e.id} className="flex items-start gap-3 border border-cyan/10 p-3 mb-2">
-                  {e.copertina_url && (
-                    <img src={e.copertina_url} alt="" className="w-12 h-16 object-cover ring-1 ring-cyan/20 flex-shrink-0" />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    {e.edizione && <div className="font-mono text-[10px] uppercase tracking-widest text-cyan/70">{e.edizione}</div>}
-                    <div className="font-mono text-[9px] text-bone/50 tracking-widest mt-1">
-                      {[e.anno, e.isbn].filter(Boolean).join(" · ")}
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => handleDeleteEdizione(e.id)}
-                    title="Elimina edizione"
-                    className="flex items-center gap-1 font-mono text-[10px] text-magenta/50 hover:text-magenta border border-transparent hover:border-magenta/40 hover:bg-magenta/5 px-2 py-1 transition-colors flex-shrink-0"
-                  >
-                    ✕ <span className="hidden sm:inline tracking-widest uppercase">Elimina</span>
-                  </button>
-                </div>
-              ))}
-
-              {showEditionForm && (
-                <div className="border border-cyan/20 bg-cyan/5 p-4 space-y-4 mt-3">
-                  <div className="font-mono text-[9px] tracking-[0.3em] text-cyan/60 uppercase">// nuova edizione</div>
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div>
-                      <span className={labelClass}>↳ Edizione</span>
-                      <input value={edEdizione} onChange={e => setEdEdizione(e.target.value)} placeholder="Es. Seconda edizione" className={inputClass} />
-                    </div>
-                    <div>
-                      <span className={labelClass}>↳ Anno</span>
-                      <input value={edAnno} onChange={e => setEdAnno(e.target.value)} type="number" className={inputClass} />
-                    </div>
-                    <div>
-                      <span className={labelClass}>↳ ISBN</span>
-                      <input value={edIsbn} onChange={e => setEdIsbn(e.target.value)} placeholder="978-88-..." className={inputClass} />
-                    </div>
-                    <div>
-                      <span className={labelClass}>↳ Copertina</span>
-                      <input ref={edCopertinaRef} type="file" accept="image/*" onChange={e => setEdCopertina(e.target.files?.[0] ?? null)} className="hidden" />
-                      <button type="button" onClick={() => edCopertinaRef.current?.click()}
-                        className="mt-2 w-full border border-cyan/30 px-4 py-3 font-mono text-[10px] text-left uppercase tracking-widest hover:border-cyan hover:text-cyan transition-all text-bone/60">
-                        {edCopertina ? `✓ ${edCopertina.name}` : "▸ Scegli immagine"}
-                      </button>
-                    </div>
-                  </div>
-                  <div className="flex gap-3">
-                    <HudButton variant="primary" onClick={handleSaveEdizione} disabled={savingEdition}>
-                      {savingEdition ? "▸ Salvataggio..." : "▸ Salva edizione"}
-                    </HudButton>
-                    <HudButton variant="ghost" onClick={() => setShowEditionForm(false)}>annulla</HudButton>
-                  </div>
-                </div>
-              )}
-
-              {/* Capitoli */}
-              <div className="hud-divider my-5" />
-              <div className="flex items-center justify-between mb-3">
-                <span className="font-mono text-[10px] tracking-widest text-cyan/70 uppercase">// capitoli</span>
-                {!showCapitoloForm && (
-                  <button
-                    onClick={() => {
-                      setEditingCapitoloId(null);
-                      setCapTitolo("");
-                      setCapTesto("");
-                      setCapOrdine(capitoli.length + 1);
-                      setCapError(null);
-                      setShowCapitoloForm(true);
-                    }}
-                    className="font-mono text-[10px] tracking-widest text-magenta uppercase hover:text-cyan transition-colors"
-                  >
-                    + nuovo capitolo
-                  </button>
-                )}
-              </div>
-
-              {capitoli.length === 0 && !showCapitoloForm && (
-                <p className="font-serif italic text-bone/40 text-sm mb-3">Nessun capitolo aggiunto.</p>
-              )}
-
-              {capitoli.map((c) => (
-                <div key={c.id} className="flex items-center gap-3 border border-cyan/10 p-3 mb-2">
-                  <span className="font-mono text-[10px] text-cyan/40 w-6 flex-shrink-0">{String(c.ordine).padStart(2, "0")}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-mono text-[10px] uppercase tracking-widest text-bone/70 truncate">{c.titolo}</div>
-                    <div className="font-mono text-[9px] text-bone/30 mt-0.5 truncate">{c.testo.slice(0, 80)}…</div>
-                  </div>
-                  <button
-                    onClick={() => handleEditCapitolo(c)}
-                    title="Modifica capitolo"
-                    className="flex items-center gap-1 font-mono text-[10px] text-cyan/50 hover:text-cyan border border-transparent hover:border-cyan/40 hover:bg-cyan/5 px-2 py-1 transition-colors flex-shrink-0"
-                  >
-                    ✎ <span className="hidden sm:inline tracking-widest uppercase">Modifica</span>
-                  </button>
-                  {confirmDeleteCapitoloId === c.id ? (
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      <span className="font-mono text-[9px] text-magenta/80 tracking-widest uppercase">Elimina?</span>
-                      <button
-                        onClick={() => { handleDeleteCapitolo(c.id); setConfirmDeleteCapitoloId(null); }}
-                        className="font-mono text-[9px] text-magenta border border-magenta/50 hover:bg-magenta hover:text-paper px-2 py-1 transition-colors"
-                      >Sì</button>
-                      <button
-                        onClick={() => setConfirmDeleteCapitoloId(null)}
-                        className="font-mono text-[9px] text-bone/50 border border-bone/20 hover:border-bone/50 hover:text-bone px-2 py-1 transition-colors"
-                      >No</button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setConfirmDeleteCapitoloId(c.id)}
-                      title="Elimina capitolo"
-                      className="flex items-center gap-1 font-mono text-[10px] text-magenta/50 hover:text-magenta border border-transparent hover:border-magenta/40 hover:bg-magenta/5 px-2 py-1 transition-colors flex-shrink-0"
-                    >
-                      ✕ <span className="hidden sm:inline tracking-widest uppercase">Elimina</span>
-                    </button>
-                  )}
-                </div>
-              ))}
-
-              {showCapitoloForm && (
-                <div className="border border-cyan/20 bg-cyan/5 p-4 space-y-4 mt-3">
-                  <div className="font-mono text-[9px] tracking-[0.3em] text-cyan/60 uppercase">
-                    // {editingCapitoloId ? "modifica capitolo" : "nuovo capitolo"}
-                  </div>
-                  <div className="grid sm:grid-cols-4 gap-4">
-                    <div>
-                      <span className={labelClass}>↳ Ordine</span>
-                      <input
-                        value={capOrdine}
-                        onChange={e => setCapOrdine(parseInt(e.target.value) || 1)}
-                        type="number" min={1}
-                        className={inputClass}
-                      />
-                    </div>
-                    <div className="sm:col-span-3">
-                      <span className={labelClass}>↳ Titolo capitolo</span>
-                      <input
-                        value={capTitolo}
-                        onChange={e => setCapTitolo(e.target.value)}
-                        placeholder="Es. Capitolo I — L'inizio"
-                        className={inputClass}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <span className={labelClass}>↳ Testo</span>
-                    <RichTextEditor value={capTesto} onChange={setCapTesto} />
-                  </div>
-                  {capError && (
-                    <p className="font-mono text-[11px] text-magenta border border-magenta/30 bg-magenta/5 px-4 py-3">
-                      ⚠ {capError}
-                    </p>
-                  )}
-                  <div className="flex gap-3">
-                    <HudButton variant="primary" onClick={handleSaveCapitolo} disabled={savingCapitolo || !capTitolo.trim()}>
-                      {savingCapitolo ? "▸ Salvataggio..." : editingCapitoloId ? "▸ Aggiorna capitolo" : "▸ Salva capitolo"}
-                    </HudButton>
-                    <HudButton variant="ghost" onClick={() => { setShowCapitoloForm(false); setEditingCapitoloId(null); setCapError(null); }}>
-                      annulla
-                    </HudButton>
-                  </div>
-                </div>
-              )}
-
-              {/* Materiali extra */}
-              <div className="hud-divider my-5" />
-              <div className="flex items-center justify-between mb-3">
-                <span className="font-mono text-[10px] tracking-widest text-cyan/70 uppercase">// materiali extra</span>
-                {!showAllegatoForm && (
-                  <button
-                    onClick={() => { setAllegaTitolo(""); setAllegaDescrizione(""); setAllegaFile(null); setAllegaError(null); setShowAllegatoForm(true); }}
-                    className="font-mono text-[10px] tracking-widest text-magenta uppercase hover:text-cyan transition-colors"
-                  >+ Aggiungi materiale</button>
-                )}
-              </div>
-
-              {allegati.length === 0 && !showAllegatoForm && (
-                <p className="font-serif italic text-bone/40 text-sm mb-3">Nessun materiale extra aggiunto.</p>
-              )}
-
-              {allegati.map((a) => (
-                <div key={a.id} className="flex items-center gap-3 border border-cyan/10 p-3 mb-2">
-                  <span className="font-mono text-[10px] text-cyan/40 flex-shrink-0">
-                    {a.tipo === "immagine" ? "◈" : a.tipo === "pdf" ? "↓" : "◆"}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-mono text-[10px] uppercase tracking-widest text-bone/70 truncate">{a.titolo}</div>
-                    <div className="font-mono text-[9px] text-bone/30 mt-0.5">{a.tipo}</div>
-                  </div>
-                  {confirmDeleteAllegatoId === a.id ? (
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      <span className="font-mono text-[9px] text-magenta/80 tracking-widest uppercase">Elimina?</span>
-                      <button onClick={() => { handleDeleteAllegato(a); setConfirmDeleteAllegatoId(null); }}
-                        className="font-mono text-[9px] text-magenta border border-magenta/50 hover:bg-magenta hover:text-paper px-2 py-1 transition-colors">Sì</button>
-                      <button onClick={() => setConfirmDeleteAllegatoId(null)}
-                        className="font-mono text-[9px] text-bone/50 border border-bone/20 hover:border-bone/50 hover:text-bone px-2 py-1 transition-colors">No</button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      <button
-                        onClick={() => handleEditAllegato(a)}
-                        title="Modifica materiale"
-                        className="flex items-center gap-1 font-mono text-[10px] text-cyan/50 hover:text-cyan border border-transparent hover:border-cyan/40 hover:bg-cyan/5 px-2 py-1 transition-colors"
-                      >
-                        ✎ <span className="hidden sm:inline tracking-widest uppercase">Modifica</span>
-                      </button>
-                      <button onClick={() => setConfirmDeleteAllegatoId(a.id)}
-                        className="flex items-center gap-1 font-mono text-[10px] text-magenta/50 hover:text-magenta border border-transparent hover:border-magenta/40 hover:bg-magenta/5 px-2 py-1 transition-colors">
-                        ✕ <span className="hidden sm:inline tracking-widest uppercase">Elimina</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
-
-              {showAllegatoForm && (
-                <div className="border border-cyan/20 bg-cyan/5 p-4 space-y-4 mt-3">
-                  <div className="font-mono text-[9px] tracking-[0.3em] text-cyan/60 uppercase">
-                    {editingAllegatoId ? "// modifica materiale" : "// nuovo materiale"}
-                  </div>
-                  <div>
-                    <span className={labelClass}>↳ Titolo</span>
-                    <input value={allegaTitolo} onChange={e => setAllegaTitolo(e.target.value)}
-                      placeholder="Es. Albero genealogico, Mappa del mondo…"
-                      className={inputClass} />
-                  </div>
-                  <div>
-                    <span className={labelClass}>↳ Descrizione (opzionale)</span>
-                    <textarea
-                      value={allegaDescrizione}
-                      onChange={e => setAllegaDescrizione(e.target.value)}
-                      placeholder="Breve descrizione del materiale, personaggi principali, come leggerlo…"
-                      rows={3}
-                      className={inputClass + " resize-none"}
-                    />
-                  </div>
-                  <div>
-                    <span className={labelClass}>
-                      ↳ File (immagine o PDF){editingAllegatoId && " — lascia vuoto per mantenere quello attuale"}
-                    </span>
-                    <input ref={allegaFileRef} type="file" accept="image/*,.pdf"
-                      onChange={e => setAllegaFile(e.target.files?.[0] ?? null)}
-                      className={inputClass + " cursor-pointer file:mr-3 file:font-mono file:text-[10px] file:border file:border-cyan/30 file:bg-transparent file:text-cyan/70 file:px-2 file:py-1"} />
-                    {allegaFile && (
-                      <p className="mt-1 font-mono text-[9px] text-bone/40">{allegaFile.name} — {(allegaFile.size / 1024).toFixed(0)} KB</p>
-                    )}
-                  </div>
-                  {allegaError && (
-                    <p className="font-mono text-[11px] text-magenta border border-magenta/30 bg-magenta/5 px-4 py-3">⚠ {allegaError}</p>
-                  )}
-                  <div className="flex gap-3">
-                    <HudButton variant="primary" onClick={handleSaveAllegato}
-                      disabled={savingAllegato || !allegaTitolo.trim() || (!editingAllegatoId && !allegaFile)}>
-                      {savingAllegato ? "▸ Salvataggio..." : editingAllegatoId ? "▸ Aggiorna materiale" : "▸ Salva materiale"}
-                    </HudButton>
-                    <HudButton variant="ghost" onClick={() => { setShowAllegatoForm(false); setEditingAllegatoId(null); setAllegaError(null); }}>annulla</HudButton>
-                  </div>
-                </div>
-              )}
 
               <div className="mt-5 space-y-4">
                 {selected.cestinato ? (
@@ -1927,6 +1963,7 @@ function GestionePage() {
               </div>
             </HudPanel>
           )}
+
 
           {!showForm && !selected && !showCollanaForm && !selectedCollana && !showCollanaList && (
             <HudPanel label="area di lavoro" tone="magenta">

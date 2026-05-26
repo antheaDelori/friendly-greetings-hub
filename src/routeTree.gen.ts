@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RegolamentoRouteImport } from './routes/regolamento'
+import { Route as LibreriaRouteImport } from './routes/libreria'
 import { Route as GestioneRouteImport } from './routes/gestione'
 import { Route as DonazioniRouteImport } from './routes/donazioni'
 import { Route as CommunityRouteImport } from './routes/community'
@@ -30,6 +31,11 @@ import { Route as AuthProfiloAutoreRouteImport } from './routes/auth.profilo-aut
 const RegolamentoRoute = RegolamentoRouteImport.update({
   id: '/regolamento',
   path: '/regolamento',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LibreriaRoute = LibreriaRouteImport.update({
+  id: '/libreria',
+  path: '/libreria',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GestioneRoute = GestioneRouteImport.update({
@@ -123,6 +129,7 @@ export interface FileRoutesByFullPath {
   '/community': typeof CommunityRouteWithChildren
   '/donazioni': typeof DonazioniRoute
   '/gestione': typeof GestioneRoute
+  '/libreria': typeof LibreriaRoute
   '/regolamento': typeof RegolamentoRoute
   '/auth/profilo-autore': typeof AuthProfiloAutoreRoute
   '/auth/registrazione': typeof AuthRegistrazioneRoute
@@ -141,6 +148,7 @@ export interface FileRoutesByTo {
   '/community': typeof CommunityRouteWithChildren
   '/donazioni': typeof DonazioniRoute
   '/gestione': typeof GestioneRoute
+  '/libreria': typeof LibreriaRoute
   '/regolamento': typeof RegolamentoRoute
   '/auth/profilo-autore': typeof AuthProfiloAutoreRoute
   '/auth/registrazione': typeof AuthRegistrazioneRoute
@@ -161,6 +169,7 @@ export interface FileRoutesById {
   '/community': typeof CommunityRouteWithChildren
   '/donazioni': typeof DonazioniRoute
   '/gestione': typeof GestioneRoute
+  '/libreria': typeof LibreriaRoute
   '/regolamento': typeof RegolamentoRoute
   '/auth/profilo-autore': typeof AuthProfiloAutoreRoute
   '/auth/registrazione': typeof AuthRegistrazioneRoute
@@ -182,6 +191,7 @@ export interface FileRouteTypes {
     | '/community'
     | '/donazioni'
     | '/gestione'
+    | '/libreria'
     | '/regolamento'
     | '/auth/profilo-autore'
     | '/auth/registrazione'
@@ -200,6 +210,7 @@ export interface FileRouteTypes {
     | '/community'
     | '/donazioni'
     | '/gestione'
+    | '/libreria'
     | '/regolamento'
     | '/auth/profilo-autore'
     | '/auth/registrazione'
@@ -219,6 +230,7 @@ export interface FileRouteTypes {
     | '/community'
     | '/donazioni'
     | '/gestione'
+    | '/libreria'
     | '/regolamento'
     | '/auth/profilo-autore'
     | '/auth/registrazione'
@@ -239,6 +251,7 @@ export interface RootRouteChildren {
   CommunityRoute: typeof CommunityRouteWithChildren
   DonazioniRoute: typeof DonazioniRoute
   GestioneRoute: typeof GestioneRoute
+  LibreriaRoute: typeof LibreriaRoute
   RegolamentoRoute: typeof RegolamentoRoute
   CollaneSlugRoute: typeof CollaneSlugRoute
   DownloadSlugRoute: typeof DownloadSlugRoute
@@ -252,6 +265,13 @@ declare module '@tanstack/react-router' {
       path: '/regolamento'
       fullPath: '/regolamento'
       preLoaderRoute: typeof RegolamentoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/libreria': {
+      id: '/libreria'
+      path: '/libreria'
+      fullPath: '/libreria'
+      preLoaderRoute: typeof LibreriaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/gestione': {
@@ -405,6 +425,7 @@ const rootRouteChildren: RootRouteChildren = {
   CommunityRoute: CommunityRouteWithChildren,
   DonazioniRoute: DonazioniRoute,
   GestioneRoute: GestioneRoute,
+  LibreriaRoute: LibreriaRoute,
   RegolamentoRoute: RegolamentoRoute,
   CollaneSlugRoute: CollaneSlugRoute,
   DownloadSlugRoute: DownloadSlugRoute,
