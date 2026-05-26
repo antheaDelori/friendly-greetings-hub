@@ -11,8 +11,17 @@ const genreColor: Record<string, string> = {
   articolo: "text-bone border-bone/40",
 };
 
-/** Teca in frantumi — immagine PNG con trasparenza */
-const TECA_ROTTA = "https://fgdekayammkldwkxqutd.supabase.co/storage/v1/object/public/copertine/brand/teca%20rotta.png";
+// Overlay PNG trasparenti — teche di sistema (stessa dimensione, stesso stile)
+const TECA_INTERA = "https://fgdekayammkldwkxqutd.supabase.co/storage/v1/object/public/copertine/brand/teca%20intera.png";
+const TECA_ROTTA  = "https://fgdekayammkldwkxqutd.supabase.co/storage/v1/object/public/copertine/brand/teca%20rotta.png";
+
+// Posizione della copertina nella finestra interna della teca (prospettiva 3D)
+// left > right perché la parete sinistra è più spessa in prospettiva
+// Aggiusta questi valori se la copertina non si centra bene nel vetro
+const COVER_LEFT   = "left-[22%]";
+const COVER_RIGHT  = "right-[8%]";
+const COVER_TOP    = "top-[14%]";
+const COVER_BOTTOM = "bottom-[17%]";
 
 export function BookCard({ book, compact = false, libreriaStato = null, onLibreriaChange, isLoggedIn = false }: {
   book: Book;
@@ -21,10 +30,10 @@ export function BookCard({ book, compact = false, libreriaStato = null, onLibrer
   onLibreriaChange?: (stato: LibreriaStato | null) => void;
   isLoggedIn?: boolean;
 }) {
-  const hasLastra = Boolean(book.lastra);
   const isLetto = libreriaStato === "letto";
-  const [coverLoaded, setCoverLoaded] = useState(false);
-  const [lastraLoaded, setLastraLoaded] = useState(false);
+  const [coverLoaded,      setCoverLoaded]      = useState(false);
+  const [tecaInteraLoaded, setTecaInteraLoaded] = useState(false);
+  const [tecaRottaLoaded,  setTecaRottaLoaded]  = useState(false);
 
   return (
     <Link
@@ -40,68 +49,49 @@ export function BookCard({ book, compact = false, libreriaStato = null, onLibrer
 
       <div className="relative aspect-[3/4] overflow-hidden bg-void mx-1.5 mt-1.5">
 
-        {/* Copertina reale */}
+        {/* Copertina — posizionata nella finestra interna della teca */}
         <img
           src={book.cover}
           alt={book.title}
           onLoad={() => setCoverLoaded(true)}
-          className={`absolute inset-0 h-full w-full object-contain transition-all duration-700 ${
-            !coverLoaded ? "opacity-0" :
-            hasLastra && !isLetto
-              ? "opacity-0 group-hover:opacity-100 group-hover:scale-90"
+          className={`absolute object-contain transition-all duration-700
+            ${COVER_LEFT} ${COVER_RIGHT} ${COVER_TOP} ${COVER_BOTTOM} ${
+            !coverLoaded
+              ? "opacity-0"
               : isLetto
-                ? "scale-[0.76] saturate-[45%] brightness-[0.65] group-hover:scale-[0.85] group-hover:saturate-100 group-hover:brightness-100"
-                : "saturate-[30%] brightness-[0.55] group-hover:scale-105 group-hover:saturate-100 group-hover:brightness-100"
+                ? "saturate-[45%] brightness-[0.65] group-hover:saturate-100 group-hover:brightness-100"
+                : "saturate-[30%] brightness-[0.55] group-hover:saturate-100 group-hover:brightness-100"
           }`}
         />
 
-        {/* Lastra — si dissolve all'hover (solo se non letto) */}
-        {hasLastra && !isLetto && (
-          <img
-            src={book.lastra}
-            alt=""
-            onLoad={() => setLastraLoaded(true)}
-            className={`absolute inset-0 h-full w-full object-contain transition-opacity duration-700 ${
-              !lastraLoaded ? "opacity-0" : "group-hover:opacity-0"
-            }`}
-          />
-        )}
+        {/* Teca intera — libri non letti (precaricata, nascosta quando letto) */}
+        <img
+          src={TECA_INTERA}
+          alt=""
+          onLoad={() => setTecaInteraLoaded(true)}
+          className={`absolute inset-0 w-full h-full object-fill pointer-events-none transition-opacity duration-700 ${
+            !tecaInteraLoaded || isLetto ? "opacity-0" : "group-hover:opacity-0"
+          }`}
+          style={{ zIndex: 7 }}
+        />
 
-        {/* Effetto vetro museo intatto — solo se non ha lastra e non è letto */}
-        {!hasLastra && !isLetto && (
-          <>
-            <div
-              className="absolute inset-0 group-hover:opacity-0 transition-opacity duration-700 pointer-events-none"
-              style={{
-                background: [
-                  "radial-gradient(ellipse 65% 35% at 50% 5%, rgba(210,238,255,0.55) 0%, rgba(180,220,255,0.15) 55%, transparent 100%)",
-                  "linear-gradient(135deg, rgba(220,240,255,0.13) 0%, transparent 35%)",
-                  "linear-gradient(to bottom, rgba(8,18,55,0.58) 0%, rgba(4,22,60,0.22) 55%, rgba(8,18,55,0.50) 100%)",
-                ].join(", "),
-              }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-br from-cyan/20 via-transparent to-magenta/15 mix-blend-overlay group-hover:opacity-30 transition-opacity duration-700" />
-          </>
-        )}
-
-        {/* Teca in frantumi — overlay quando il libro è stato letto */}
-        {isLetto && (
-          <img
-            src={TECA_ROTTA}
-            alt=""
-            className="absolute inset-0 w-full h-full object-fill pointer-events-none group-hover:opacity-0 transition-opacity duration-700"
-            style={{ zIndex: 7 }}
-          />
-        )}
+        {/* Teca rotta — libri letti (precaricata, nascosta quando non letto) */}
+        <img
+          src={TECA_ROTTA}
+          alt=""
+          onLoad={() => setTecaRottaLoaded(true)}
+          className={`absolute inset-0 w-full h-full object-fill pointer-events-none transition-opacity duration-700 ${
+            !tecaRottaLoaded || !isLetto ? "opacity-0" : "group-hover:opacity-0"
+          }`}
+          style={{ zIndex: 7 }}
+        />
 
         {/* Scanlines — sempre */}
         <div className="absolute inset-0 pointer-events-none" style={{
           backgroundImage: "repeating-linear-gradient(0deg, transparent 0, transparent 2px, oklch(0.82 0.16 200 / 0.06) 2px, oklch(0.82 0.16 200 / 0.06) 3px)"
         }} />
 
-        <span
-          className={`absolute top-3 left-3 ${genreColor[book.genre]} bg-void/70 backdrop-blur font-mono tracking-[0.2em] text-[9px] uppercase px-2 py-1 border z-10`}
-        >
+        <span className={`absolute top-3 left-3 ${genreColor[book.genre]} bg-void/70 backdrop-blur font-mono tracking-[0.2em] text-[9px] uppercase px-2 py-1 border z-10`}>
           ◆ {book.genre}
         </span>
 
