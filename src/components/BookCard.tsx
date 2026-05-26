@@ -15,13 +15,6 @@ const genreColor: Record<string, string> = {
 const TECA_INTERA = "https://fgdekayammkldwkxqutd.supabase.co/storage/v1/object/public/copertine/brand/teca%20intera.png";
 const TECA_ROTTA  = "https://fgdekayammkldwkxqutd.supabase.co/storage/v1/object/public/copertine/brand/teca%20rotta.png";
 
-// Posizione della copertina nella finestra interna della teca (prospettiva 3D)
-// left > right perché la parete sinistra è più spessa in prospettiva
-// Aggiusta questi valori se la copertina non si centra bene nel vetro
-const COVER_LEFT   = "left-[22%]";
-const COVER_RIGHT  = "right-[8%]";
-const COVER_TOP    = "top-[14%]";
-const COVER_BOTTOM = "bottom-[17%]";
 
 export function BookCard({ book, compact = false, libreriaStato = null, onLibreriaChange, isLoggedIn = false }: {
   book: Book;
@@ -49,13 +42,12 @@ export function BookCard({ book, compact = false, libreriaStato = null, onLibrer
 
       <div className="relative aspect-[3/4] overflow-hidden bg-void mx-1.5 mt-1.5">
 
-        {/* Copertina — posizionata nella finestra interna della teca */}
+        {/* Copertina — riempie il container, le pareti opache della teca mascherano i bordi */}
         <img
           src={book.cover}
           alt={book.title}
           onLoad={() => setCoverLoaded(true)}
-          className={`absolute object-contain transition-all duration-700
-            ${COVER_LEFT} ${COVER_RIGHT} ${COVER_TOP} ${COVER_BOTTOM} ${
+          className={`absolute inset-0 h-full w-full object-contain transition-all duration-700 ${
             !coverLoaded
               ? "opacity-0"
               : isLetto
