@@ -144,7 +144,7 @@ function GestionePage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmMode, setConfirmMode] = useState<"archivia" | "cestino" | null>(null);
-  const [openSection, setOpenSection] = useState<1 | 2 | 3>(1);
+  const [openSection, setOpenSection] = useState<0 | 1 | 2 | 3>(1);
   const [savingMateriali, setSavingMateriali] = useState(false);
   const [saveMaterialiError, setSaveMaterialiError] = useState<string | null>(null);
   const [authorName, setAuthorName] = useState("");
@@ -1193,7 +1193,7 @@ function GestionePage() {
               </div>
 
               {/* ═══════════ 01 — METADATI ═══════════ */}
-              <button type="button" onClick={() => setOpenSection(1)}
+              <button type="button" onClick={() => setOpenSection(openSection === 1 ? 0 : 1)}
                 className={`w-full flex items-center gap-3 px-5 py-4 border transition-all cursor-pointer ${
                   openSection === 1 ? "border-cyan bg-cyan/5" : "border-cyan/30 hover:border-cyan"
                 }`}>
@@ -1359,7 +1359,7 @@ function GestionePage() {
               )}
 
               {/* ═══════════ 02 — CAPITOLI ═══════════ */}
-              <button type="button" onClick={() => editingId && setOpenSection(2)} disabled={!editingId}
+              <button type="button" onClick={() => editingId && setOpenSection(openSection === 2 ? 0 : 2)} disabled={!editingId}
                 className={`w-full flex items-center gap-3 px-5 py-4 border transition-all ${
                   !editingId ? "border-cyan/10 cursor-not-allowed" :
                   openSection === 2 ? "border-cyan bg-cyan/5 cursor-pointer" : "border-cyan/30 hover:border-cyan cursor-pointer"
@@ -1560,7 +1560,7 @@ function GestionePage() {
               )}
 
               {/* ═══════════ 03 — MATERIALI ═══════════ */}
-              <button type="button" onClick={() => editingId && setOpenSection(3)} disabled={!editingId}
+              <button type="button" onClick={() => editingId && setOpenSection(openSection === 3 ? 0 : 3)} disabled={!editingId}
                 className={`w-full flex items-center gap-3 px-5 py-4 border transition-all ${
                   !editingId ? "border-cyan/10 cursor-not-allowed" :
                   openSection === 3 ? "border-cyan bg-cyan/5 cursor-pointer" : "border-cyan/30 hover:border-cyan cursor-pointer"
