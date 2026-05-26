@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { useState } from "react";
 import type { Book } from "@/data/books";
 
 type LibreriaStato = "da_leggere" | "in_lettura" | "letto";
@@ -22,6 +23,8 @@ export function BookCard({ book, compact = false, libreriaStato = null, onLibrer
 }) {
   const hasLastra = Boolean(book.lastra);
   const isLetto = libreriaStato === "letto";
+  const [coverLoaded, setCoverLoaded] = useState(false);
+  const [lastraLoaded, setLastraLoaded] = useState(false);
 
   return (
     <Link
@@ -41,7 +44,9 @@ export function BookCard({ book, compact = false, libreriaStato = null, onLibrer
         <img
           src={book.cover}
           alt={book.title}
+          onLoad={() => setCoverLoaded(true)}
           className={`absolute inset-0 h-full w-full object-contain transition-all duration-700 ${
+            !coverLoaded ? "opacity-0" :
             hasLastra && !isLetto
               ? "opacity-0 group-hover:opacity-100 group-hover:scale-90"
               : isLetto
@@ -55,7 +60,10 @@ export function BookCard({ book, compact = false, libreriaStato = null, onLibrer
           <img
             src={book.lastra}
             alt=""
-            className="absolute inset-0 h-full w-full object-contain transition-opacity duration-700 group-hover:opacity-0"
+            onLoad={() => setLastraLoaded(true)}
+            className={`absolute inset-0 h-full w-full object-contain transition-opacity duration-700 ${
+              !lastraLoaded ? "opacity-0" : "group-hover:opacity-0"
+            }`}
           />
         )}
 
