@@ -144,7 +144,7 @@ function GestionePage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmMode, setConfirmMode] = useState<"archivia" | "cestino" | null>(null);
-  const [openSection, setOpenSection] = useState<0 | 1 | 2 | 3>(1);
+  const [openSection, setOpenSection] = useState<0 | 1 | 2 | 3 | 4>(1);
   const [savingMateriali, setSavingMateriali] = useState(false);
   const [saveMaterialiError, setSaveMaterialiError] = useState<string | null>(null);
   const [authorName, setAuthorName] = useState("");
@@ -1560,7 +1560,7 @@ function GestionePage() {
                 </div>
               )}
 
-              {/* ═══════════ 03 — MATERIALI ═══════════ */}
+              {/* ═══════════ 03 — COPERTINA ═══════════ */}
               <button type="button" onClick={() => editingId && setOpenSection(openSection === 3 ? 0 : 3)} disabled={!editingId}
                 className={`w-full flex items-center gap-3 px-5 py-4 border transition-all ${
                   !editingId ? "border-cyan/10 cursor-not-allowed" :
@@ -1573,9 +1573,9 @@ function GestionePage() {
                 <div className="flex-1 text-left">
                   <div className={`font-mono text-[11px] tracking-[0.3em] uppercase ${
                     !editingId ? "text-bone/20" : openSection === 3 ? "text-cyan" : "text-bone/70"
-                  }`}>Materiali</div>
+                  }`}>Copertina</div>
                   <div className={`font-mono text-[9px] tracking-widest mt-0.5 ${!editingId ? "text-bone/15" : "text-bone/40"}`}>
-                    {editingId ? "copertina · file · edizioni" : "— salva prima i metadati —"}
+                    {editingId ? "carica · genera con AI" : "— salva prima i metadati —"}
                   </div>
                 </div>
                 <span className={`font-mono text-[9px] tracking-widest uppercase ${
@@ -1727,19 +1727,48 @@ function GestionePage() {
                     )}
                   </div>
 
+
+                </div>
+              )}
+
+              {/* ══════════ 04 — GENERA PDF ed E-BOOK ══════════ */}
+              <button type="button" onClick={() => editingId && setOpenSection(openSection === 4 ? 0 : 4)} disabled={!editingId}
+                className={`w-full flex items-center gap-3 px-5 py-4 border transition-all ${
+                  !editingId ? "border-cyan/10 cursor-not-allowed" :
+                  openSection === 4 ? "border-cyan bg-cyan/5 cursor-pointer" : "border-cyan/30 hover:border-cyan cursor-pointer"
+                }`}>
+                <span className={`font-mono text-[11px] w-7 h-7 border flex items-center justify-center flex-shrink-0 ${
+                  !editingId ? "border-cyan/15 text-bone/20" :
+                  openSection === 4 ? "border-cyan text-cyan" : "border-cyan/40 text-bone/50"
+                }`}>04</span>
+                <div className="flex-1 text-left">
+                  <div className={`font-mono text-[11px] tracking-[0.3em] uppercase ${
+                    !editingId ? "text-bone/20" : openSection === 4 ? "text-cyan" : "text-bone/70"
+                  }`}>Genera PDF ed E-Book</div>
+                  <div className={`font-mono text-[9px] tracking-widest mt-0.5 ${!editingId ? "text-bone/15" : "text-bone/40"}`}>
+                    {editingId ? "dal manoscritto .docx" : "— salva prima i metadati —"}
+                  </div>
+                </div>
+                <span className={`font-mono text-[9px] tracking-widest uppercase ${
+                  !editingId ? "text-bone/20" : openSection === 4 ? "text-cyan" : "text-bone/40"
+                }`}>{!editingId ? "⊗" : openSection === 4 ? "▲" : "▼"}</span>
+              </button>
+              {openSection === 4 && editingId && (
+                <div className="border border-cyan/20 border-t-0 p-5 space-y-5">
+
                   {/* Genera documenti da .docx */}
                   {(isAdmin || pdfConvUsed < 10 || epubConvUsed < 10) && (
                     <div className="border border-amber/50 bg-amber/5 p-5 space-y-4 relative">
                       <span className="absolute -top-px left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber/50 to-transparent" />
                       <div className="flex items-center justify-between flex-wrap gap-2">
-                        <div className="font-mono text-[11px] tracking-[0.3em] text-amber uppercase font-bold">◈ Genera PDF + ePub dal manoscritto</div>
+                        <div className="font-mono text-[11px] tracking-[0.3em] text-amber uppercase font-bold">◈ Genera PDF + E-Book dal manoscritto</div>
                         {isAdmin
                           ? <span className="font-mono text-[10px] tracking-widest uppercase text-amber border border-amber bg-amber/10 px-3 py-1 font-bold">∞ Accesso illimitato</span>
                           : <span className="font-mono text-[10px] text-bone/50 border border-amber/30 px-2 py-0.5">{Math.max(pdfConvUsed, epubConvUsed)} / 10</span>
                         }
                       </div>
                       <p className="font-serif italic text-bone/60 text-sm">
-                        Carica il manoscritto Word (.docx): PDF ed ePub vengono generati automaticamente in un click.
+                        Carica il manoscritto Word (.docx): PDF ed E-Book vengono generati automaticamente in un click.
                         {!isAdmin && <span className="text-amber not-italic font-mono text-[10px] tracking-widest uppercase ml-2">10 generazioni gratuite</span>}
                       </p>
                       <div className="flex items-center gap-3 flex-wrap">
@@ -1751,13 +1780,13 @@ function GestionePage() {
                           {docxFile ? `✓ ${docxFile.name}` : existingDocxUrl ? "✓ .docx caricato (sostituisci)" : "▸ Scegli .docx"}
                         </button>
                         <HudButton variant="ghost" onClick={handleGenerateDocs} disabled={docGenerating || (!docxFile && !existingDocxUrl)}>
-                          {docGenerating ? "▸ Generazione in corso..." : existingDocxUrl && !docxFile ? "◈ Rigenera PDF + ePub" : "◈ Carica e genera PDF + ePub"}
+                          {docGenerating ? "▸ Generazione in corso..." : existingDocxUrl && !docxFile ? "◈ Rigenera PDF + E-Book" : "◈ Carica e genera PDF + E-Book"}
                         </HudButton>
                       </div>
                       {docGenerating && (
                         <div className="flex items-center gap-3 flex-wrap">
                           <span className="font-mono text-[11px] tracking-widest text-amber uppercase animate-pulse">
-                            {!docGenPdfOk ? "◈ Generazione PDF..." : "◈ Generazione ePub..."}
+                            {!docGenPdfOk ? "◈ Generazione PDF..." : "◈ Generazione E-Book..."}
                           </span>
                           <div className="flex gap-1">
                             {Array.from({ length: 10 }).map((_, i) => (
@@ -1770,13 +1799,12 @@ function GestionePage() {
                         <p className="font-mono text-[10px] tracking-wide text-cyan uppercase">
                           {docGenPdfOk && "✓ PDF pronto"}
                           {docGenPdfOk && docGenEpubOk && " · "}
-                          {docGenEpubOk && "✓ ePub pronto"}
+                          {docGenEpubOk && "✓ E-Book pronto"}
                         </p>
                       )}
                       {docGenError && <p className="font-mono text-[10px] tracking-wide text-magenta uppercase">✗ {docGenError}</p>}
                     </div>
                   )}
-
 
                 </div>
               )}
