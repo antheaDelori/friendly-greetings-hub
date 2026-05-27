@@ -42,12 +42,14 @@ export function BookCard({ book, compact = false, libreriaStato = null, onLibrer
 
       <div className="relative aspect-[3/4] overflow-hidden bg-void mx-1.5 mt-1.5">
 
-        {/* Copertina — riempie il container, le pareti opache della teca mascherano i bordi */}
+        {/* Copertina — posizionata nella finestra interna della teca (misurata in Photoshop) */}
+        {/* teca 425×638px: finestra a x=96 y=50, dim 243×470 → left 23% right 20% top 8% bottom 19% */}
         <img
           src={book.cover}
           alt={book.title}
           onLoad={() => setCoverLoaded(true)}
-          className={`absolute inset-0 h-full w-full object-contain transition-all duration-700 ${
+          className={`absolute object-contain transition-all duration-700
+            left-[23%] right-[20%] top-[8%] bottom-[19%] ${
             !coverLoaded
               ? "opacity-0"
               : isLetto
