@@ -45,7 +45,7 @@ export function BookCard({ book, compact = false, libreriaStato = null, onLibrer
       <div className="relative aspect-[3/4] overflow-hidden bg-void mx-1.5 mt-1.5">
 
         {/* Copertina — per copertine con teca baked-in: full fill; per le altre: finestra interna */}
-        <div className={`absolute ${!showOverlay ? "inset-0" : "left-[23%] right-[20%] top-[8%] bottom-[19%]"} overflow-hidden`}>
+        <div className={`absolute ${!showOverlay ? "inset-0" : "left-[31%] right-[18%] top-[15%] bottom-[18%]"} overflow-hidden`}>
           <img
             src={book.cover}
             alt={book.title}
