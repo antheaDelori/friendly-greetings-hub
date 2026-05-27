@@ -1597,6 +1597,15 @@ function GestionePage() {
                       </div>
                     )}
 
+                    {/* Specifiche per copertina caricata manualmente */}
+                    <div className="mb-3 font-mono text-[9px] tracking-widest text-bone/35 border border-cyan/10 px-3 py-2 inline-flex gap-3">
+                      <span>↳ 486 × 940 px</span>
+                      <span className="text-bone/20">·</span>
+                      <span>JPG o PNG</span>
+                      <span className="text-bone/20">·</span>
+                      <span>max 500 KB</span>
+                    </div>
+
                     <div className="flex gap-3 flex-wrap">
                       {/* Carica copertina */}
                       <input ref={copertRef} type="file" accept="image/*"
