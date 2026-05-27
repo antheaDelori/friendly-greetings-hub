@@ -256,6 +256,7 @@ function GestionePage() {
   const [aiProgress, setAiProgress] = useState(0);
   const [savingAiCover, setSavingAiCover] = useState(false);
   const [saveAiCoverError, setSaveAiCoverError] = useState<string | null>(null);
+  const [saveFlash, setSaveFlash] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const cestinoSectionRef = useRef<HTMLDivElement>(null);
   const cestinoScrolled = useRef(false);
@@ -721,6 +722,11 @@ function GestionePage() {
         const { data: nb } = await supabase.from("books").select("*").eq("id", newBookId).single();
         if (nb) setSelected(nb as Book);
         setOpenSection(2);
+      } else if (editingId) {
+        // Aggiornamento → chiudi tutti i box e lampeggia CHIUDI
+        setOpenSection(0);
+        setSaveFlash(true);
+        setTimeout(() => setSaveFlash(false), 2200);
       }
       await loadBooks(userId);
     } catch {
@@ -1207,9 +1213,13 @@ function GestionePage() {
                   // {editingId ? "modifica opera" : collanaId ? "nuova novella" : "nuova opera"}
                   {editingId && <span className="text-bone/20 ml-3">· {editingId.slice(0, 6).toUpperCase()}</span>}
                 </div>
-                <button type="button" onClick={() => { setShowForm(false); setEditingId(null); }}
-                  className="font-mono text-[9px] uppercase tracking-widest text-bone/40 hover:text-magenta transition-colors cursor-pointer">
-                  ✕ chiudi
+                <button type="button" onClick={() => { setShowForm(false); setEditingId(null); setSaveFlash(false); }}
+                  className={`font-mono text-[9px] uppercase tracking-widest transition-all duration-300 cursor-pointer ${
+                    saveFlash
+                      ? "text-cyan border border-cyan px-2.5 py-1 bg-cyan/10 text-glow-cyan animate-pulse"
+                      : "text-bone/40 hover:text-magenta"
+                  }`}>
+                  {saveFlash ? "✓ salvato — chiudi" : "✕ chiudi"}
                 </button>
               </div>
 
