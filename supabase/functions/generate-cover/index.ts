@@ -176,7 +176,17 @@ Deno.serve(async (req) => {
     const logoY = coverImg.height - logoH - LOGO_BOTTOM_PAD + 1;
     coverImg.composite(logoImg, logoX, logoY);
 
-    finalBytes = await coverImg.encodeJPEG(70);
+    // Ritaglia a 486×940px (finestra interna della teca: ratio 243:470)
+    // scala per altezza → crop centrato in larghezza
+    const TARGET_W = 486;
+    const TARGET_H = 940;
+    const scaleH = TARGET_H / coverImg.height;          // 940/1536 ≈ 0.612
+    const scaledW = Math.round(coverImg.width * scaleH); // 1024*0.612 ≈ 627
+    coverImg.resize(scaledW, TARGET_H);
+    const cropX = Math.max(0, Math.round((scaledW - TARGET_W) / 2));
+    coverImg.crop(cropX, 0, TARGET_W, TARGET_H);
+
+    finalBytes = await coverImg.encodeJPEG(82);
   } catch (_) {
     // Se il compositing fallisce, salva la copertina senza logo
     finalBytes = coverBytes;
