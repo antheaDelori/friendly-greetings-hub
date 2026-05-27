@@ -308,6 +308,7 @@ Deno.serve(async (req) => {
 
   // 3. Perspective warp + teca composite + logo
   let finalBytes: Uint8Array;
+  let bakedTeca = false;
   try {
     const [flatCover, tecaImg, logoImg] = await Promise.all([
       Image.decode(coverRaw),
@@ -332,6 +333,7 @@ Deno.serve(async (req) => {
     canvas.resize(OUT_W, OUT_H);
 
     finalBytes = await canvas.encodeJPEG(85);
+    bakedTeca = true; // compositing riuscito → segniamo nell'URL
   } catch (_) {
     // Fallback: salva la copertina flat senza teca
     finalBytes = coverRaw;
@@ -345,5 +347,7 @@ Deno.serve(async (req) => {
   if (uploadErr) return json({ error: uploadErr.message }, 500);
 
   const { data: urlData } = supabase.storage.from("copertine").getPublicUrl(storagePath);
-  return json({ cover_url: urlData.publicUrl, used: (count ?? 0) + 1, limit: FREE_LIMIT, unlimited: isAdmin });
+  // ?v=teca segnala al frontend che la teca è già baked → disabilita l'overlay CSS
+  const coverUrl = bakedTeca ? `${urlData.publicUrl}?v=teca` : urlData.publicUrl;
+  return json({ cover_url: coverUrl, used: (count ?? 0) + 1, limit: FREE_LIMIT, unlimited: isAdmin });
 });
