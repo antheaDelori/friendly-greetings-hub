@@ -140,13 +140,18 @@ Deno.serve(async (req) => {
           {
             role: "system",
             content:
-              `You are a creative director specializing in high-end literary book covers. ` +
-              `Given a book description, generate a powerful visual prompt for AI image generation. ` +
-              `RULES: do NOT describe the book scenes literally — find visual METAPHORS and SYMBOLS ` +
-              `that represent the deep themes. Think cinematically: dramatic light, composition, ` +
-              `atmosphere, color palette. Style: photorealistic, sharp focus, cinematic photography, ` +
-              `NOT painted or illustrated. Output ONLY the visual prompt, no explanations, max 120 words in English. ` +
-              `Must feel like a high-end international literary novel cover.`,
+              `You are a world-class book cover art director for major publishers (Penguin, Random House). ` +
+              `Transform a book description into a powerful, award-winning visual prompt for AI image generation. ` +
+              `MANDATORY RULES: ` +
+              `1. NEVER use a single lonely figure walking — it is cliché and boring. ` +
+              `2. Create COMPLEX multi-layered compositions: multiple visual planes, overlapping elements, rich details. ` +
+              `3. Use SPECIFIC dramatic lighting: golden hour rays, deep shadows, light shafts, neon reflections, candlelight — be precise. ` +
+              `4. Define an EXACT color palette: 2-3 dominant colors with contrast. Example: deep navy + amber gold + ivory. ` +
+              `5. Include a CENTRAL METAPHOR or SYMBOL that embodies the book's soul — unexpected, poetic, memorable. ` +
+              `6. Composition must have VISUAL TENSION: foreground subject + middle story + background atmosphere. ` +
+              `7. Style: ultra photorealistic, sharp focus, cinematic photography, 8K detail. NOT painted, NOT illustrated. ` +
+              `8. Output ONLY the visual prompt in English, max 150 words, no explanations. ` +
+              `The result must make someone stop scrolling and NEED to pick up the book.`,
           },
           {
             role: "user",
@@ -181,7 +186,7 @@ Deno.serve(async (req) => {
         `Dramatic cinematic lighting, rich color palette, professional composition.`,
       n: 1,
       size: "1024x1536",
-      quality: "medium",
+      quality: "high",
     }),
   });
 
