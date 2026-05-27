@@ -254,6 +254,8 @@ function GestionePage() {
   const [ticketSending, setTicketSending] = useState(false);
   const [aiModalUrl, setAiModalUrl] = useState<string | null>(null);
   const [aiProgress, setAiProgress] = useState(0);
+  const [savingAiCover, setSavingAiCover] = useState(false);
+  const [saveAiCoverError, setSaveAiCoverError] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const cestinoSectionRef = useRef<HTMLDivElement>(null);
   const cestinoScrolled = useRef(false);
@@ -776,6 +778,24 @@ function GestionePage() {
       setSaveMaterialiError("Errore durante il salvataggio dei materiali.");
     } finally {
       setSavingMateriali(false);
+    }
+  };
+
+  const handleSaveAiCover = async (url: string) => {
+    if (!editingId || !userId) return;
+    setSavingAiCover(true);
+    setSaveAiCoverError(null);
+    try {
+      const { error } = await supabase.from("books").update({ copertina_url: url }).eq("id", editingId);
+      if (error) { setSaveAiCoverError(error.message); return; }
+      setExistingCopertinaUrl(url);
+      setAiGeneratedUrl(null);
+      setShowAiCoverForm(false);
+      await loadBooks(userId);
+    } catch {
+      setSaveAiCoverError("Errore durante il salvataggio della copertina.");
+    } finally {
+      setSavingAiCover(false);
     }
   };
 
@@ -1697,8 +1717,11 @@ function GestionePage() {
                                 <div className="space-y-2">
                                   <p className="font-mono text-[10px] text-cyan uppercase tracking-widest">Copertina generata</p>
                                   <p className="font-mono text-[9px] text-bone/40">Clicca l'immagine per vederla in grande</p>
-                                  <HudButton variant="primary" onClick={() => { setExistingCopertinaUrl(aiGeneratedUrl); setAiGeneratedUrl(null); setShowAiCoverForm(false); }}>
-                                    ✓ Usa come copertina
+                                  {saveAiCoverError && (
+                                    <p className="font-mono text-[10px] text-magenta">⚠ {saveAiCoverError}</p>
+                                  )}
+                                  <HudButton variant="primary" onClick={() => handleSaveAiCover(aiGeneratedUrl!)} disabled={savingAiCover}>
+                                    {savingAiCover ? "▸ Salvataggio..." : "▸ Salva copertina"}
                                   </HudButton>
                                   <button onClick={() => setAiGeneratedUrl(null)}
                                     className="block font-mono text-[9px] uppercase tracking-widest text-bone/40 hover:text-magenta transition-colors cursor-pointer">
