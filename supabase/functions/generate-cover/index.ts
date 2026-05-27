@@ -26,26 +26,27 @@ const FACE = [
 ];
 
 // Spine (lato sinistro del libro)
+// TR/BR estesi fino a x=317 (bordo sinistro della FACE) per chiudere il gap rosso
 const SPINE = [
-  { x: 287, y: 229  }, // TL
-  { x: 308, y: 231  }, // TR
-  { x: 308, y: 1292 }, // BR
-  { x: 287, y: 1294 }, // BL
+  { x: 285, y: 227  }, // TL (+2px buffer)
+  { x: 317, y: 234  }, // TR → tocca il bordo sx della FACE
+  { x: 317, y: 1292 }, // BR → tocca il bordo sx della FACE
+  { x: 285, y: 1296 }, // BL (+2px buffer)
 ];
 
 // Riflesso spine
 const SPINE_REFL = [
-  { x: 287, y: 1296 }, // TL
-  { x: 308, y: 1294 }, // TR
-  { x: 308, y: 1310 }, // BR
-  { x: 287, y: 1312 }, // BL
+  { x: 285, y: 1294 }, // TL
+  { x: 317, y: 1258 }, // TR — allineato con COVER_REFL
+  { x: 317, y: 1272 }, // BR
+  { x: 285, y: 1314 }, // BL
 ];
 
 // Riflesso copertina frontale
 const COVER_REFL = [
   { x: 314, y: 1296 }, // TL (AS)
-  { x: 840, y: 1258 }, // TR (AD)
-  { x: 840, y: 1272 }, // BR (BD)
+  { x: 842, y: 1258 }, // TR (AD) — esteso a x=842 per coprire gap dx
+  { x: 842, y: 1272 }, // BR (BD)
   { x: 314, y: 1312 }, // BL (BS)
 ];
 
