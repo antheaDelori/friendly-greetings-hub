@@ -8,8 +8,30 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const FREE_LIMIT = 10;
 const LOGO_URL = `${SUPABASE_URL}/storage/v1/object/public/copertine/brand/anthea-delori-logo.png`;
-const LOGO_TARGET_W = 280;
-const LOGO_BOTTOM_PAD = 52;
+const TECA_URL = `${SUPABASE_URL}/storage/v1/object/public/copertine/brand/teca-libro.png`;
+
+// ── Teca dimensions (Photoshop → Image Size) ──────────────────────────────────
+const TECA_W = 1024;
+const TECA_H = 1536;
+
+// Cover face corners in teca pixel space (Photoshop Info panel, central zone)
+//   TL → TR → BR → BL  (clockwise in screen coords)
+const FACE = [
+  { x: 317, y: 234  }, // top-left
+  { x: 842, y: 289  }, // top-right
+  { x: 842, y: 1256 }, // bottom-right
+  { x: 317, y: 1292 }, // bottom-left
+];
+
+// Logo: centered on cover face, LOGO_BOTTOM_PAD px above face bottom
+const LOGO_W        = 220;
+const LOGO_BOTTOM_PAD = 38;
+const FACE_CENTER_X = Math.round((FACE[0].x + FACE[1].x) / 2);          // ~580
+const FACE_BOTTOM_Y = Math.round((FACE[2].y + FACE[3].y) / 2);          // ~1274
+
+// Final output size (2:3 ratio, matches teca proportions)
+const OUT_W = 512;
+const OUT_H = Math.round(OUT_W * TECA_H / TECA_W); // 768
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -23,6 +45,116 @@ function json(data: unknown, status = 200) {
   });
 }
 
+// ── Gaussian elimination (8×8 system for homography) ─────────────────────────
+function gaussSolve(A: number[][], b: number[]): number[] {
+  const n = A.length;
+  const M = A.map((row, i) => [...row, b[i]]);
+  for (let col = 0; col < n; col++) {
+    let maxRow = col;
+    for (let row = col + 1; row < n; row++)
+      if (Math.abs(M[row][col]) > Math.abs(M[maxRow][col])) maxRow = row;
+    [M[col], M[maxRow]] = [M[maxRow], M[col]];
+    for (let row = col + 1; row < n; row++) {
+      const f = M[row][col] / M[col][col];
+      for (let j = col; j <= n; j++) M[row][j] -= f * M[col][j];
+    }
+  }
+  const x = new Array(n).fill(0);
+  for (let i = n - 1; i >= 0; i--) {
+    x[i] = M[i][n];
+    for (let j = i + 1; j < n; j++) x[i] -= M[i][j] * x[j];
+    x[i] /= M[i][i];
+  }
+  return x;
+}
+
+// ── 3×3 homography from 4 point-pairs (DLT) ──────────────────────────────────
+function computeH(
+  src: Array<{ x: number; y: number }>,
+  dst: Array<{ x: number; y: number }>,
+): number[] {
+  const A: number[][] = [];
+  const b: number[] = [];
+  for (let i = 0; i < 4; i++) {
+    const { x: sx, y: sy } = src[i];
+    const { x: dx, y: dy } = dst[i];
+    A.push([sx, sy, 1, 0, 0, 0, -dx * sx, -dx * sy]);
+    b.push(dx);
+    A.push([0, 0, 0, sx, sy, 1, -dy * sx, -dy * sy]);
+    b.push(dy);
+  }
+  return [...gaussSolve(A, b), 1]; // h8 = 1 (normalised)
+}
+
+// ── Point-in-convex-quad test (CW winding in screen coords) ──────────────────
+function inQuad(px: number, py: number, q: Array<{ x: number; y: number }>): boolean {
+  for (let i = 0; i < 4; i++) {
+    const a = q[i], b = q[(i + 1) % 4];
+    if ((b.x - a.x) * (py - a.y) - (b.y - a.y) * (px - a.x) < -0.5) return false;
+  }
+  return true;
+}
+
+// ── Perspective warp: flat cover → teca face (inverse mapping + bilinear) ────
+function warpToFace(cover: Image): Image {
+  const cW = cover.width, cH = cover.height;
+
+  // Source = 4 corners of the flat cover image
+  const srcPts = [
+    { x: 0,      y: 0      },
+    { x: cW - 1, y: 0      },
+    { x: cW - 1, y: cH - 1 },
+    { x: 0,      y: cH - 1 },
+  ];
+
+  // Backward homography: teca pixel → cover pixel
+  const H  = computeH(FACE, srcPts);
+  const [h0, h1, h2, h3, h4, h5, h6, h7] = H; // h8 = 1
+
+  // Transparent canvas (TECA_W × TECA_H, all zeros = transparent)
+  const canvas = new Image(TECA_W, TECA_H);
+  const out    = canvas.bitmap;
+  const src    = cover.bitmap;
+
+  const minX = Math.max(0, Math.min(...FACE.map(p => p.x)) | 0);
+  const maxX = Math.min(TECA_W - 1, Math.ceil(Math.max(...FACE.map(p => p.x))));
+  const minY = Math.max(0, Math.min(...FACE.map(p => p.y)) | 0);
+  const maxY = Math.min(TECA_H - 1, Math.ceil(Math.max(...FACE.map(p => p.y))));
+
+  for (let y = minY; y <= maxY; y++) {
+    for (let x = minX; x <= maxX; x++) {
+      if (!inQuad(x, y, FACE)) continue;
+
+      const denom = h6 * x + h7 * y + 1;
+      if (Math.abs(denom) < 1e-10) continue;
+
+      const u = (h0 * x + h1 * y + h2) / denom;
+      const v = (h3 * x + h4 * y + h5) / denom;
+      if (u < 0 || u >= cW || v < 0 || v >= cH) continue;
+
+      // Bilinear interpolation
+      const x0 = u | 0, y0 = v | 0;
+      const x1 = x0 + 1 < cW ? x0 + 1 : x0;
+      const y1 = y0 + 1 < cH ? y0 + 1 : y0;
+      const fx = u - x0, fy = v - y0;
+      const w00 = (1 - fx) * (1 - fy), w10 = fx * (1 - fy);
+      const w01 = (1 - fx) * fy,       w11 = fx * fy;
+
+      const i00 = 4 * (y0 * cW + x0), i10 = 4 * (y0 * cW + x1);
+      const i01 = 4 * (y1 * cW + x0), i11 = 4 * (y1 * cW + x1);
+      const oi  = 4 * (y * TECA_W + x);
+
+      out[oi]     = src[i00]     * w00 + src[i10]     * w10 + src[i01]     * w01 + src[i11]     * w11;
+      out[oi + 1] = src[i00 + 1] * w00 + src[i10 + 1] * w10 + src[i01 + 1] * w01 + src[i11 + 1] * w11;
+      out[oi + 2] = src[i00 + 2] * w00 + src[i10 + 2] * w10 + src[i01 + 2] * w01 + src[i11 + 2] * w11;
+      out[oi + 3] = 255; // fully opaque
+    }
+  }
+  return canvas;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
 
@@ -34,7 +166,6 @@ Deno.serve(async (req) => {
     const { name, email, language } = body;
     if (!email || !language) return json({ error: "email e lingua richiesti" }, 400);
     const authorDisplay = name ? `${name} <${email}>` : email;
-    // Email all'admin
     await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
@@ -45,7 +176,6 @@ Deno.serve(async (req) => {
         html: `<h2>Nuova richiesta lingua</h2><p><strong>Lingua:</strong> ${language}</p><p><strong>Da:</strong> ${authorDisplay}</p>`,
       }),
     });
-    // Email di conferma all'utente
     await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
@@ -63,13 +193,12 @@ Deno.serve(async (req) => {
   if (!authHeader) return json({ error: "Unauthorized" }, 401);
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
   const { data: { user }, error: authErr } = await supabase.auth.getUser(
     authHeader.replace("Bearer ", ""),
   );
   if (authErr || !user) return json({ error: "Unauthorized" }, 401);
 
-  // ── TICKET REQUEST ──────────────────────────────────────────────────────────
+  // ── TICKET REQUEST ────────────────────────────────────────────────────────
   if (action === "ticket") {
     const { book_id, book_title, message } = body;
     const userEmail = user.email ?? "sconosciuta";
@@ -78,22 +207,16 @@ Deno.serve(async (req) => {
       [authorMeta?.nome, authorMeta?.cognome].filter(Boolean).join(" ") ||
       authorMeta?.pseudonimo ||
       userEmail;
-
     const html = `
 <h2>Richiesta ticket copertine AI</h2>
 <p><strong>Autore:</strong> ${authorName} &lt;${userEmail}&gt;</p>
 <p><strong>Opera (book_id):</strong> ${book_id}</p>
 <p><strong>Titolo:</strong> ${book_title ?? "—"}</p>
 <p><strong>Messaggio:</strong></p>
-<p>${message ?? "—"}</p>
-    `.trim();
-
+<p>${message ?? "—"}</p>`.trim();
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-        "Content-Type": "application/json",
-      },
+      headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         from: "Liberiamo la mente <notifiche@liberiamo2076.com>",
         to: "antheaDelori@live.it",
@@ -101,15 +224,11 @@ Deno.serve(async (req) => {
         html,
       }),
     });
-
-    if (!res.ok) {
-      const err = await res.text();
-      return json({ error: err }, 502);
-    }
+    if (!res.ok) return json({ error: await res.text() }, 502);
     return json({ success: true });
   }
 
-  // ── GENERATE COVER ──────────────────────────────────────────────────────────
+  // ── GENERATE COVER ────────────────────────────────────────────────────────
   const { book_id, prompt, book_title, author_name } = body;
   if (!book_id || !prompt) return json({ error: "book_id e prompt richiesti" }, 400);
 
@@ -124,15 +243,12 @@ Deno.serve(async (req) => {
     return json({ error: "limit_reached", used: count, limit: FREE_LIMIT }, 429);
   }
 
-  // 1. GPT-4o trasforma la descrizione in un prompt visivo creativo
+  // 1. GPT-4o: trasforma la descrizione in un prompt visivo creativo
   let visualPrompt = prompt;
   try {
     const gptRes = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
-        "Content-Type": "application/json",
-      },
+      headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "gpt-4o",
         max_tokens: 200,
@@ -164,17 +280,12 @@ Deno.serve(async (req) => {
       const gptData = await gptRes.json();
       visualPrompt = gptData.choices?.[0]?.message?.content?.trim() ?? prompt;
     }
-  } catch (_) {
-    // fallback: usa il prompt originale dell'autore
-  }
+  } catch (_) { /* fallback: usa il prompt originale */ }
 
-  // 2. Genera la copertina con il prompt visivo arricchito
+  // 2. gpt-image-1: genera la copertina flat 1024×1536
   const genRes = await fetch("https://api.openai.com/v1/images/generations", {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${OPENAI_API_KEY}`,
-      "Content-Type": "application/json",
-    },
+    headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       model: "gpt-image-1",
       prompt:
@@ -189,53 +300,44 @@ Deno.serve(async (req) => {
       quality: "high",
     }),
   });
+  if (!genRes.ok) return json({ error: await genRes.text() }, 502);
 
-  if (!genRes.ok) {
-    const err = await genRes.text();
-    return json({ error: err }, 502);
-  }
-
-  const genData = await genRes.json();
+  const genData     = await genRes.json();
   const cover_b64: string = genData.data[0].b64_json;
-  const coverBytes = Uint8Array.from(atob(cover_b64), (c) => c.charCodeAt(0));
+  const coverRaw    = Uint8Array.from(atob(cover_b64), (c) => c.charCodeAt(0));
 
-  // 2. Scarica il logo e compone server-side con ImageScript
+  // 3. Perspective warp + teca composite + logo
   let finalBytes: Uint8Array;
   try {
-    const logoRes = await fetch(LOGO_URL);
-    const logoBytes = new Uint8Array(await logoRes.arrayBuffer());
-
-    const [coverImg, logoImg] = await Promise.all([
-      Image.decode(coverBytes),
-      Image.decode(logoBytes),
+    const [flatCover, tecaImg, logoImg] = await Promise.all([
+      Image.decode(coverRaw),
+      fetch(TECA_URL).then(r => r.arrayBuffer()).then(ab => Image.decode(new Uint8Array(ab))),
+      fetch(LOGO_URL).then(r => r.arrayBuffer()).then(ab => Image.decode(new Uint8Array(ab))),
     ]);
 
-    // Scala il logo a LOGO_TARGET_W px di larghezza mantenendo le proporzioni
-    const logoH = Math.round((logoImg.height / logoImg.width) * LOGO_TARGET_W);
-    logoImg.resize(LOGO_TARGET_W, logoH);
+    // Warp copertina flat nella faccia della teca (prospettiva corretta)
+    const canvas = warpToFace(flatCover);
 
-    // Posizione: centrato orizzontalmente, LOGO_BOTTOM_PAD px dal basso
-    const logoX = Math.round((coverImg.width - LOGO_TARGET_W) / 2) + 1;
-    const logoY = coverImg.height - logoH - LOGO_BOTTOM_PAD + 1;
-    coverImg.composite(logoImg, logoX, logoY);
+    // Sovrapponi la teca (PNG con zona centrale trasparente)
+    canvas.composite(tecaImg, 0, 0);
 
-    // Ritaglia a 486×940px (finestra interna della teca: ratio 243:470)
-    // scala per altezza → crop centrato in larghezza
-    const TARGET_W = 486;
-    const TARGET_H = 940;
-    const scaleH = TARGET_H / coverImg.height;          // 940/1536 ≈ 0.612
-    const scaledW = Math.round(coverImg.width * scaleH); // 1024*0.612 ≈ 627
-    coverImg.resize(scaledW, TARGET_H);
-    const cropX = Math.max(0, Math.round((scaledW - TARGET_W) / 2));
-    coverImg.crop(cropX, 0, TARGET_W, TARGET_H);
+    // Logo centrato sulla faccia del libro, LOGO_BOTTOM_PAD px sopra il fondo
+    const logoH = Math.round((logoImg.height / logoImg.width) * LOGO_W);
+    logoImg.resize(LOGO_W, logoH);
+    const logoX = FACE_CENTER_X - Math.round(LOGO_W / 2);
+    const logoY = FACE_BOTTOM_Y - logoH - LOGO_BOTTOM_PAD;
+    canvas.composite(logoImg, logoX, logoY);
 
-    finalBytes = await coverImg.encodeJPEG(82);
+    // Ridimensiona a OUT_W × OUT_H (512×768, ratio 2:3)
+    canvas.resize(OUT_W, OUT_H);
+
+    finalBytes = await canvas.encodeJPEG(85);
   } catch (_) {
-    // Se il compositing fallisce, salva la copertina senza logo
-    finalBytes = coverBytes;
+    // Fallback: salva la copertina flat senza teca
+    finalBytes = coverRaw;
   }
 
-  // 3. Carica il risultato finale su Storage
+  // 4. Carica su Storage
   const storagePath = `ai/${user.id}/${book_id}/${Date.now()}.jpg`;
   const { error: uploadErr } = await supabase.storage
     .from("copertine")
@@ -243,6 +345,5 @@ Deno.serve(async (req) => {
   if (uploadErr) return json({ error: uploadErr.message }, 500);
 
   const { data: urlData } = supabase.storage.from("copertine").getPublicUrl(storagePath);
-
   return json({ cover_url: urlData.publicUrl, used: (count ?? 0) + 1, limit: FREE_LIMIT, unlimited: isAdmin });
 });

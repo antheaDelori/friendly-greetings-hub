@@ -11,11 +11,6 @@ const genreColor: Record<string, string> = {
   articolo: "text-bone border-bone/40",
 };
 
-// Overlay PNG trasparenti — teche di sistema (stessa dimensione, stesso stile)
-const TECA_INTERA = "https://fgdekayammkldwkxqutd.supabase.co/storage/v1/object/public/copertine/brand/teca%20intera.png";
-const TECA_ROTTA  = "https://fgdekayammkldwkxqutd.supabase.co/storage/v1/object/public/copertine/brand/teca%20rotta.png";
-
-
 export function BookCard({ book, compact = false, libreriaStato = null, onLibreriaChange, isLoggedIn = false }: {
   book: Book;
   compact?: boolean;
@@ -24,9 +19,11 @@ export function BookCard({ book, compact = false, libreriaStato = null, onLibrer
   isLoggedIn?: boolean;
 }) {
   const isLetto = libreriaStato === "letto";
-  const [coverLoaded,      setCoverLoaded]      = useState(false);
-  const [tecaInteraLoaded, setTecaInteraLoaded] = useState(false);
-  const [tecaRottaLoaded,  setTecaRottaLoaded]  = useState(false);
+  const [coverLoaded, setCoverLoaded] = useState(false);
+
+  // Le copertine AI (path /ai/) hanno già la teca composita baked-in lato server.
+  // Le copertine manuali vengono mostrate flat (saranno rigenerate con AI).
+  const isAiCover = book.cover.includes("/copertine/ai/");
 
   return (
     <Link
@@ -40,62 +37,24 @@ export function BookCard({ book, compact = false, libreriaStato = null, onLibrer
       <span className="absolute bottom-1.5 left-1.5 w-3 h-3 border-l border-b border-cyan/70 z-10" />
       <span className="absolute bottom-1.5 right-1.5 w-3 h-3 border-r border-b border-cyan/70 z-10" />
 
-      <div className="relative aspect-[3/4] overflow-hidden bg-void mx-1.5 mt-1.5">
+      {/* Image area — aspect 2:3 per copertine AI con teca composita */}
+      <div className={`relative overflow-hidden bg-void mx-1.5 mt-1.5 ${isAiCover ? "aspect-[2/3]" : "aspect-[3/4]"}`}>
 
-        {/* Copertina 3D — posizionata nella finestra interna della teca */}
-        {/* teca 425×638px: finestra a x=96 y=50, dim 243×470 → left 23% right 20% top 8% bottom 19% */}
-        {/* transform: prospettiva libro che guarda leggermente a destra, come la teca */}
-        <div
-          className="absolute left-[23%] right-[20%] top-[8%] bottom-[19%] overflow-hidden"
-          style={{ transform: "perspective(500px) rotateY(14deg)" }}
-        >
-          <img
-            src={book.cover}
-            alt={book.title}
-            onLoad={() => setCoverLoaded(true)}
-            className={`w-full h-full object-cover transition-all duration-700 ${
-              !coverLoaded
-                ? "opacity-0"
-                : isLetto
-                  ? "saturate-[45%] brightness-[0.65] group-hover:saturate-100 group-hover:brightness-100"
-                  : "saturate-[30%] brightness-[0.55] group-hover:saturate-100 group-hover:brightness-100"
-            }`}
-          />
-          {/* Dorso del libro — gradiente scuro sul bordo destro (rotateY positivo = bordo dx avanti) */}
-          <div
-            className="absolute inset-y-0 right-0 w-3 pointer-events-none"
-            style={{ background: "linear-gradient(to left, rgba(0,0,0,0.70), transparent)" }}
-          />
-          {/* Highlight bordo sinistro */}
-          <div
-            className="absolute inset-y-0 left-0 w-1 pointer-events-none"
-            style={{ background: "linear-gradient(to right, rgba(255,255,255,0.08), transparent)" }}
-          />
-        </div>
-
-        {/* Teca intera — libri non letti (precaricata, nascosta quando letto) */}
+        {/* Copertina */}
         <img
-          src={TECA_INTERA}
-          alt=""
-          onLoad={() => setTecaInteraLoaded(true)}
-          className={`absolute inset-0 w-full h-full object-fill pointer-events-none transition-opacity duration-700 ${
-            !tecaInteraLoaded || isLetto ? "opacity-0" : "group-hover:opacity-0"
+          src={book.cover}
+          alt={book.title}
+          onLoad={() => setCoverLoaded(true)}
+          className={`w-full h-full object-cover transition-all duration-700 ${
+            !coverLoaded
+              ? "opacity-0"
+              : isLetto
+                ? "saturate-[55%] brightness-[0.70] group-hover:saturate-100 group-hover:brightness-100"
+                : "saturate-[35%] brightness-[0.60] group-hover:saturate-100 group-hover:brightness-100"
           }`}
-          style={{ zIndex: 7 }}
         />
 
-        {/* Teca rotta — libri letti (precaricata, nascosta quando non letto) */}
-        <img
-          src={TECA_ROTTA}
-          alt=""
-          onLoad={() => setTecaRottaLoaded(true)}
-          className={`absolute inset-0 w-full h-full object-fill pointer-events-none transition-opacity duration-700 ${
-            !tecaRottaLoaded || !isLetto ? "opacity-0" : "group-hover:opacity-0"
-          }`}
-          style={{ zIndex: 7 }}
-        />
-
-        {/* Scanlines — sempre */}
+        {/* Scanlines */}
         <div className="absolute inset-0 pointer-events-none" style={{
           backgroundImage: "repeating-linear-gradient(0deg, transparent 0, transparent 2px, oklch(0.82 0.16 200 / 0.06) 2px, oklch(0.82 0.16 200 / 0.06) 3px)"
         }} />
