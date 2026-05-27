@@ -23,14 +23,11 @@ export function BookCard({ book, compact = false, libreriaStato = null, onLibrer
   isLoggedIn?: boolean;
 }) {
   const isLetto = libreriaStato === "letto";
-  const [coverLoaded,      setCoverLoaded]      = useState(false);
-  const [tecaInteraLoaded, setTecaInteraLoaded] = useState(false);
-  const [tecaRottaLoaded,  setTecaRottaLoaded]  = useState(false);
+  const [coverLoaded, setCoverLoaded] = useState(false);
 
   // Copertine generate dal NUOVO sistema (teca già baked-in server-side):
   // riconoscibili dal parametro ?v=teca nel futuro — per ora mostriamo overlay per tutti
-  const hasBakedTeca = book.cover.includes("?v=teca");
-  const showOverlay = !hasBakedTeca;
+  const showOverlay = !book.cover.includes("?v=teca");
 
   return (
     <Link
@@ -48,7 +45,7 @@ export function BookCard({ book, compact = false, libreriaStato = null, onLibrer
       <div className="relative aspect-[3/4] overflow-hidden bg-void mx-1.5 mt-1.5">
 
         {/* Copertina — per copertine con teca baked-in: full fill; per le altre: finestra interna */}
-        <div className={`absolute ${hasBakedTeca ? "inset-0" : "left-[23%] right-[20%] top-[8%] bottom-[19%]"} overflow-hidden`}>
+        <div className={`absolute ${!showOverlay ? "inset-0" : "left-[23%] right-[20%] top-[8%] bottom-[19%]"} overflow-hidden`}>
           <img
             src={book.cover}
             alt={book.title}
@@ -68,9 +65,8 @@ export function BookCard({ book, compact = false, libreriaStato = null, onLibrer
           <img
             src={TECA_INTERA}
             alt=""
-            onLoad={() => setTecaInteraLoaded(true)}
             className={`absolute inset-0 w-full h-full object-fill pointer-events-none transition-opacity duration-700 ${
-              !tecaInteraLoaded || isLetto ? "opacity-0" : "group-hover:opacity-0"
+              isLetto ? "opacity-0" : ""
             }`}
             style={{ zIndex: 7 }}
           />
@@ -81,9 +77,8 @@ export function BookCard({ book, compact = false, libreriaStato = null, onLibrer
           <img
             src={TECA_ROTTA}
             alt=""
-            onLoad={() => setTecaRottaLoaded(true)}
             className={`absolute inset-0 w-full h-full object-fill pointer-events-none transition-opacity duration-700 ${
-              !tecaRottaLoaded || !isLetto ? "opacity-0" : "group-hover:opacity-0"
+              !isLetto ? "opacity-0" : ""
             }`}
             style={{ zIndex: 7 }}
           />
