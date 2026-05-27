@@ -124,7 +124,46 @@ Deno.serve(async (req) => {
     return json({ error: "limit_reached", used: count, limit: FREE_LIMIT }, 429);
   }
 
-  // 1. Genera la copertina con titolo e autore, illustrazione piena
+  // 1. GPT-4o trasforma la descrizione in un prompt visivo creativo
+  let visualPrompt = prompt;
+  try {
+    const gptRes = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-4o",
+        max_tokens: 200,
+        messages: [
+          {
+            role: "system",
+            content:
+              `You are a creative director specializing in high-end literary book covers. ` +
+              `Given a book description, generate a powerful visual prompt for AI image generation. ` +
+              `RULES: do NOT describe the book scenes literally — find visual METAPHORS and SYMBOLS ` +
+              `that represent the deep themes. Think cinematically: dramatic light, composition, ` +
+              `atmosphere, color palette. Style: photorealistic, sharp focus, cinematic photography, ` +
+              `NOT painted or illustrated. Output ONLY the visual prompt, no explanations, max 120 words in English. ` +
+              `Must feel like a high-end international literary novel cover.`,
+          },
+          {
+            role: "user",
+            content: `Title: "${book_title ?? ""}"\nAuthor: "${author_name ?? ""}"\nDescription: ${prompt}`,
+          },
+        ],
+      }),
+    });
+    if (gptRes.ok) {
+      const gptData = await gptRes.json();
+      visualPrompt = gptData.choices?.[0]?.message?.content?.trim() ?? prompt;
+    }
+  } catch (_) {
+    // fallback: usa il prompt originale dell'autore
+  }
+
+  // 2. Genera la copertina con il prompt visivo arricchito
   const genRes = await fetch("https://api.openai.com/v1/images/generations", {
     method: "POST",
     headers: {
@@ -134,13 +173,12 @@ Deno.serve(async (req) => {
     body: JSON.stringify({
       model: "gpt-image-1",
       prompt:
-        `Create a professional book cover in vertical portrait format (like a real published novel). ` +
-        `COVER TEXT: display the title "${book_title ?? ""}" prominently at the top, ` +
-        `and the author name "${author_name ?? ""}" in a smaller font near the title. ` +
-        `ILLUSTRATION: the background scene should depict — ${prompt}. ` +
-        `The illustration must fill the entire cover from edge to edge, including the bottom. ` +
-        `Do NOT add any publisher name, logo, or extra text besides title and author name. ` +
-        `Cinematic lighting, high-quality literary art style.`,
+        `High-end literary novel book cover. Photorealistic, sharp focus, cinematic photography style, NOT painted or illustrated. ` +
+        `COVER TEXT: title "${book_title ?? ""}" in large elegant typography, ` +
+        `author name "${author_name ?? ""}" in smaller font. ` +
+        `VISUAL CONCEPT: ${visualPrompt}. ` +
+        `Full bleed image edge to edge. No publisher logo or extra text. ` +
+        `Dramatic cinematic lighting, rich color palette, professional composition.`,
       n: 1,
       size: "1024x1536",
       quality: "medium",
