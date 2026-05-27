@@ -44,19 +44,21 @@ export function BookCard({ book, compact = false, libreriaStato = null, onLibrer
 
         {/* Copertina — posizionata nella finestra interna della teca (misurata in Photoshop) */}
         {/* teca 425×638px: finestra a x=96 y=50, dim 243×470 → left 23% right 20% top 8% bottom 19% */}
-        <img
-          src={book.cover}
-          alt={book.title}
-          onLoad={() => setCoverLoaded(true)}
-          className={`absolute object-contain transition-all duration-700
-            left-[23%] right-[20%] top-[8%] bottom-[19%] ${
-            !coverLoaded
-              ? "opacity-0"
-              : isLetto
-                ? "saturate-[45%] brightness-[0.65] group-hover:saturate-100 group-hover:brightness-100"
-                : "saturate-[30%] brightness-[0.55] group-hover:saturate-100 group-hover:brightness-100"
-          }`}
-        />
+        {/* Wrapper div definisce il bounding box esplicito; img si adatta dentro con w-full h-full */}
+        <div className="absolute left-[23%] right-[20%] top-[8%] bottom-[19%] overflow-hidden">
+          <img
+            src={book.cover}
+            alt={book.title}
+            onLoad={() => setCoverLoaded(true)}
+            className={`w-full h-full object-cover transition-all duration-700 ${
+              !coverLoaded
+                ? "opacity-0"
+                : isLetto
+                  ? "saturate-[45%] brightness-[0.65] group-hover:saturate-100 group-hover:brightness-100"
+                  : "saturate-[30%] brightness-[0.55] group-hover:saturate-100 group-hover:brightness-100"
+            }`}
+          />
+        </div>
 
         {/* Teca intera — libri non letti (precaricata, nascosta quando letto) */}
         <img
