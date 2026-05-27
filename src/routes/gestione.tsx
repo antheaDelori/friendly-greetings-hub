@@ -393,7 +393,7 @@ function GestionePage() {
   useEffect(() => {
     if (!aiGenerating) { setAiProgress(0); return; }
     setAiProgress(0);
-    const iv = setInterval(() => setAiProgress(p => (p + 1) % 10), 4000);
+    const iv = setInterval(() => setAiProgress(p => (p + 1) % 21), 4000);
     return () => clearInterval(iv);
   }, [aiGenerating]);
 
@@ -1669,11 +1669,19 @@ function GestionePage() {
                                 {aiGenerating ? "▸ Generazione in corso..." : "◈ Genera copertina AI"}
                               </HudButton>
                               {aiGenerating && (
-                                <div className="flex items-center gap-3 flex-wrap">
-                                  <span className="font-mono text-[11px] tracking-widest text-cyan uppercase">◈ Sintesi visiva in corso...</span>
+                                <div className="flex flex-col gap-1.5">
+                                  <span className="font-mono text-[11px] tracking-widest text-cyan uppercase">
+                                    ◈ Sintesi visiva in corso...{" "}
+                                    <span className="text-cyan/40 normal-case">~60-90 sec</span>
+                                  </span>
                                   <div className="flex gap-1">
                                     {Array.from({ length: 10 }).map((_, i) => (
-                                      <span key={i} className={`w-3 h-3 border transition-all duration-500 ${i < aiProgress ? "bg-cyan border-cyan" : "bg-transparent border-cyan/30"}`} />
+                                      <span key={i} className={`w-3 h-3 border transition-all duration-500 ${i < Math.min(aiProgress, 10) ? "bg-cyan border-cyan" : "bg-transparent border-cyan/30"}`} />
+                                    ))}
+                                  </div>
+                                  <div className="flex gap-1">
+                                    {Array.from({ length: 10 }).map((_, i) => (
+                                      <span key={i} className={`w-3 h-3 border transition-all duration-500 ${i < Math.max(0, aiProgress - 10) ? "bg-cyan border-cyan" : "bg-transparent border-cyan/30"}`} />
                                     ))}
                                   </div>
                                 </div>
