@@ -14,14 +14,45 @@ const TECA_URL = `${SUPABASE_URL}/storage/v1/object/public/copertine/brand/teca-
 const TECA_W = 1024;
 const TECA_H = 1536;
 
-// Cover face corners in teca pixel space (Photoshop Info panel, central zone)
-//   TL → TR → BR → BL  (clockwise in screen coords)
+// ── Geometry — tutte le misure in pixel-spazio teca (1024×1536) ──────────────
+//   ordine: TL → TR → BR → BL  (clockwise in screen coords)
+
+// Faccia frontale del libro
 const FACE = [
-  { x: 317, y: 234  }, // top-left
-  { x: 842, y: 289  }, // top-right
-  { x: 842, y: 1256 }, // bottom-right
-  { x: 317, y: 1292 }, // bottom-left
+  { x: 317, y: 234  }, // TL
+  { x: 842, y: 289  }, // TR
+  { x: 842, y: 1256 }, // BR
+  { x: 317, y: 1292 }, // BL
 ];
+
+// Spine (lato sinistro del libro)
+const SPINE = [
+  { x: 287, y: 229  }, // TL
+  { x: 308, y: 231  }, // TR
+  { x: 308, y: 1292 }, // BR
+  { x: 287, y: 1294 }, // BL
+];
+
+// Riflesso spine
+const SPINE_REFL = [
+  { x: 287, y: 1296 }, // TL
+  { x: 308, y: 1294 }, // TR
+  { x: 308, y: 1310 }, // BR
+  { x: 287, y: 1312 }, // BL
+];
+
+// Riflesso copertina frontale
+const COVER_REFL = [
+  { x: 314, y: 1296 }, // TL (AS)
+  { x: 840, y: 1258 }, // TR (AD)
+  { x: 840, y: 1272 }, // BR (BD)
+  { x: 314, y: 1312 }, // BL (BS)
+];
+
+// Spine source: quanti px dal bordo sinistro del cover flat usiamo per la spine
+const SPINE_SOURCE_W  = 40;
+// Reflection source: quanti px dal fondo del cover flat usiamo per i riflessi
+const REFL_SOURCE_H   = 80;
 
 // Logo: centered on cover face, LOGO_BOTTOM_PAD px above face bottom
 const LOGO_W        = 220;
@@ -151,6 +182,64 @@ function warpToFace(cover: Image): Image {
     }
   }
   return canvas;
+}
+
+// ── Warp generico: src quad → dst quad, con darkFactor e fadeY opzionale ─────
+// fadeY=true → darkFactor decresce linearmente da top (pieno) a bottom (nero)
+// Usato per spine (no fade) e riflessi (fade verso il basso)
+function warpRegion(
+  src: Image,
+  srcQuad: Array<{ x: number; y: number }>,
+  dstQuad: Array<{ x: number; y: number }>,
+  canvas: Image,
+  darkFactor: number,
+  fadeY = false,
+): void {
+  const sW = src.width, sH = src.height;
+  const H  = computeH(dstQuad, srcQuad);
+  const [h0, h1, h2, h3, h4, h5, h6, h7] = H;
+  const out    = canvas.bitmap;
+  const srcBmp = src.bitmap;
+
+  const minX = Math.max(0, Math.min(...dstQuad.map(p => p.x)) | 0);
+  const maxX = Math.min(TECA_W - 1, Math.ceil(Math.max(...dstQuad.map(p => p.x))));
+  const minY = Math.max(0, Math.min(...dstQuad.map(p => p.y)) | 0);
+  const maxY = Math.min(TECA_H - 1, Math.ceil(Math.max(...dstQuad.map(p => p.y))));
+  const dstH = Math.max(1, maxY - minY);
+
+  for (let y = minY; y <= maxY; y++) {
+    const localDark = fadeY
+      ? darkFactor * (1 - (y - minY) / dstH)
+      : darkFactor;
+
+    for (let x = minX; x <= maxX; x++) {
+      if (!inQuad(x, y, dstQuad)) continue;
+
+      const denom = h6 * x + h7 * y + 1;
+      if (Math.abs(denom) < 1e-10) continue;
+
+      const u = (h0 * x + h1 * y + h2) / denom;
+      const v = (h3 * x + h4 * y + h5) / denom;
+      if (u < 0 || u >= sW || v < 0 || v >= sH) continue;
+
+      // Bilinear interpolation
+      const x0 = u | 0, y0 = v | 0;
+      const x1 = x0 + 1 < sW ? x0 + 1 : x0;
+      const y1 = y0 + 1 < sH ? y0 + 1 : y0;
+      const fx = u - x0, fy = v - y0;
+      const w00 = (1 - fx) * (1 - fy), w10 = fx * (1 - fy);
+      const w01 = (1 - fx) * fy,       w11 = fx * fy;
+
+      const i00 = 4 * (y0 * sW + x0), i10 = 4 * (y0 * sW + x1);
+      const i01 = 4 * (y1 * sW + x0), i11 = 4 * (y1 * sW + x1);
+      const oi  = 4 * (y * TECA_W + x);
+
+      out[oi]     = Math.round((srcBmp[i00]     * w00 + srcBmp[i10]     * w10 + srcBmp[i01]     * w01 + srcBmp[i11]     * w11) * localDark);
+      out[oi + 1] = Math.round((srcBmp[i00 + 1] * w00 + srcBmp[i10 + 1] * w10 + srcBmp[i01 + 1] * w01 + srcBmp[i11 + 1] * w11) * localDark);
+      out[oi + 2] = Math.round((srcBmp[i00 + 2] * w00 + srcBmp[i10 + 2] * w10 + srcBmp[i01 + 2] * w01 + srcBmp[i11 + 2] * w11) * localDark);
+      out[oi + 3] = 255;
+    }
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -306,7 +395,7 @@ Deno.serve(async (req) => {
   const cover_b64: string = genData.data[0].b64_json;
   const coverRaw    = Uint8Array.from(atob(cover_b64), (c) => c.charCodeAt(0));
 
-  // 3. Perspective warp + teca composite + logo
+  // 3. Perspective warp + teca composite + spine + riflessi + logo
   let finalBytes: Uint8Array;
   let bakedTeca = false;
   try {
@@ -316,24 +405,68 @@ Deno.serve(async (req) => {
       fetch(LOGO_URL).then(r => r.arrayBuffer()).then(ab => Image.decode(new Uint8Array(ab))),
     ]);
 
-    // Warp copertina flat nella faccia della teca (prospettiva corretta)
+    const cW = flatCover.width, cH = flatCover.height;
+    const spineW = Math.min(SPINE_SOURCE_W, cW);
+
+    // 3a. Warp copertina flat nella faccia della teca
     const canvas = warpToFace(flatCover);
 
-    // Sovrapponi la teca (PNG con zona centrale trasparente)
+    // 3b. Teca overlay (zona faccia trasparente → cover visibile;
+    //     zone spine/riflessi = rosse opaque in teca-libro.png → sovrascritte sotto)
     canvas.composite(tecaImg, 0, 0);
 
-    // Logo centrato sulla faccia del libro, LOGO_BOTTOM_PAD px sopra il fondo
+    // 3c. Spine: striscia sinistra del cover, scurita al 45%, warped nell'area spine
+    //     Disegnata DOPO la teca per sovrascrivere i pixel rossi placeholder
+    warpRegion(
+      flatCover,
+      [{ x: 0, y: 0 }, { x: spineW - 1, y: 0 }, { x: spineW - 1, y: cH - 1 }, { x: 0, y: cH - 1 }],
+      SPINE,
+      canvas,
+      0.45,
+    );
+
+    // 3d. Riflesso spine: striscia sinistra capovolta (bottom → top) con fade
+    warpRegion(
+      flatCover,
+      [
+        { x: 0,          y: cH - 1                     }, // TL → cover bottom-left
+        { x: spineW - 1, y: cH - 1                     }, // TR → cover bottom-right
+        { x: spineW - 1, y: cH - 1 - REFL_SOURCE_H     }, // BR → cover più in alto
+        { x: 0,          y: cH - 1 - REFL_SOURCE_H     }, // BL
+      ],
+      SPINE_REFL,
+      canvas,
+      0.30,
+      true, // fadeY: scurisce verso il basso
+    );
+
+    // 3e. Riflesso copertina: fondo del cover capovolto con fade
+    warpRegion(
+      flatCover,
+      [
+        { x: 0,      y: cH - 1                 }, // TL → cover bottom-left
+        { x: cW - 1, y: cH - 1                 }, // TR → cover bottom-right
+        { x: cW - 1, y: cH - 1 - REFL_SOURCE_H }, // BR
+        { x: 0,      y: cH - 1 - REFL_SOURCE_H }, // BL
+      ],
+      COVER_REFL,
+      canvas,
+      0.35,
+      true, // fadeY
+    );
+
+    // 3f. Logo centrato sulla faccia del libro, LOGO_BOTTOM_PAD px sopra il fondo
     const logoH = Math.round((logoImg.height / logoImg.width) * LOGO_W);
     logoImg.resize(LOGO_W, logoH);
     const logoX = FACE_CENTER_X - Math.round(LOGO_W / 2);
     const logoY = FACE_BOTTOM_Y - logoH - LOGO_BOTTOM_PAD;
     canvas.composite(logoImg, logoX, logoY);
 
-    // Ridimensiona a OUT_W × OUT_H (512×768, ratio 2:3)
+    // 3g. Ridimensiona a OUT_W × OUT_H (512×768, ratio 2:3)
     canvas.resize(OUT_W, OUT_H);
 
     finalBytes = await canvas.encodeJPEG(85);
-    bakedTeca = true; // compositing riuscito → segniamo nell'URL
+    bakedTeca = true;
   } catch (_) {
     // Fallback: salva la copertina flat senza teca
     finalBytes = coverRaw;
