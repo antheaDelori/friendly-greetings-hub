@@ -501,11 +501,17 @@ function GestionePage() {
     setShowTicketForm(false);
     setTicketMessage("");
     setTicketSent(false);
+    // Carica contatore tentativi + ultimo prompt usato (per non perderlo al rientro)
     supabase
       .from("ai_cover_attempts")
-      .select("id", { count: "exact", head: true })
+      .select("id, prompt", { count: "exact" })
       .eq("book_id", b.id)
-      .then(({ count }) => setAiUsed(count ?? 0));
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .then(({ data, count }) => {
+        setAiUsed(count ?? 0);
+        if (data?.[0]?.prompt) setAiPrompt(data[0].prompt);
+      });
     setSaveError(null);
     setConfirmMode(null);
     setOpenSection(1);
