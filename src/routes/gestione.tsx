@@ -1651,7 +1651,10 @@ function GestionePage() {
                             : <span className="font-mono text-[10px] text-bone/70 border border-cyan/30 px-2 py-0.5">{aiUsed} / 10 gratuite</span>
                           }
                         </div>
-                        <p className="font-serif italic text-bone/60 text-sm">Descrivi la scena: titolo, autore e logo vengono aggiunti automaticamente.</p>
+                        <p className="font-serif italic text-bone/60 text-sm">
+                          La copertina viene elaborata sulla base del testo che scrivi — più la descrizione è dettagliata e vicina alla tua idea, più il risultato sarà quello che immagini.
+                          Titolo, autore e logo vengono aggiunti automaticamente.
+                        </p>
 
                         {(isAdmin || aiUsed < 10) ? (
                           <>
