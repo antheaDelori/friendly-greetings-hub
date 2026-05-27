@@ -46,8 +46,8 @@ export function BookCard({ book, compact = false, libreriaStato = null, onLibrer
         {/* teca 425×638px: finestra a x=96 y=50, dim 243×470 → left 23% right 20% top 8% bottom 19% */}
         {/* transform: prospettiva libro che guarda leggermente a destra, come la teca */}
         <div
-          className="absolute left-[23%] right-[20%] top-[8%] bottom-[19%]"
-          style={{ transform: "perspective(500px) rotateY(-14deg)" }}
+          className="absolute left-[23%] right-[20%] top-[8%] bottom-[19%] overflow-hidden"
+          style={{ transform: "perspective(500px) rotateY(14deg)" }}
         >
           <img
             src={book.cover}
@@ -61,15 +61,15 @@ export function BookCard({ book, compact = false, libreriaStato = null, onLibrer
                   : "saturate-[30%] brightness-[0.55] group-hover:saturate-100 group-hover:brightness-100"
             }`}
           />
-          {/* Dorso del libro — gradiente scuro sul bordo sinistro */}
+          {/* Dorso del libro — gradiente scuro sul bordo destro (rotateY positivo = bordo dx avanti) */}
           <div
-            className="absolute inset-y-0 left-0 w-3 pointer-events-none"
-            style={{ background: "linear-gradient(to right, rgba(0,0,0,0.70), transparent)" }}
+            className="absolute inset-y-0 right-0 w-3 pointer-events-none"
+            style={{ background: "linear-gradient(to left, rgba(0,0,0,0.70), transparent)" }}
           />
-          {/* Highlight bordo destro — luce sul lato opposto al dorso */}
+          {/* Highlight bordo sinistro */}
           <div
-            className="absolute inset-y-0 right-0 w-1 pointer-events-none"
-            style={{ background: "linear-gradient(to left, rgba(255,255,255,0.08), transparent)" }}
+            className="absolute inset-y-0 left-0 w-1 pointer-events-none"
+            style={{ background: "linear-gradient(to right, rgba(255,255,255,0.08), transparent)" }}
           />
         </div>
 
