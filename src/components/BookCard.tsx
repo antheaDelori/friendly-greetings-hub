@@ -66,7 +66,7 @@ export function BookCard({ book, compact = false, libreriaStato = null, onLibrer
             src={TECA_INTERA}
             alt=""
             className={`absolute inset-0 w-full h-full object-fill pointer-events-none transition-opacity duration-700 ${
-              isLetto ? "opacity-0" : ""
+              isLetto ? "opacity-0" : "group-hover:opacity-0"
             }`}
             style={{ zIndex: 7 }}
           />
@@ -78,7 +78,7 @@ export function BookCard({ book, compact = false, libreriaStato = null, onLibrer
             src={TECA_ROTTA}
             alt=""
             className={`absolute inset-0 w-full h-full object-fill pointer-events-none transition-opacity duration-700 ${
-              !isLetto ? "opacity-0" : ""
+              !isLetto ? "opacity-0" : "group-hover:opacity-0"
             }`}
             style={{ zIndex: 7 }}
           />

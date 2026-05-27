@@ -1,5 +1,7 @@
 @import "tailwindcss" source(none);
 @source "../src";
+/* Classi usate in template literal condizionali — forziamo generazione */
+@source inline("group-hover:opacity-0 group-hover:opacity-100");
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
