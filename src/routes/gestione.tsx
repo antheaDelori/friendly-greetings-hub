@@ -726,7 +726,7 @@ function GestionePage() {
         // Aggiornamento → chiudi tutti i box e lampeggia CHIUDI
         setOpenSection(0);
         setSaveFlash(true);
-        setTimeout(() => setSaveFlash(false), 2200);
+        setTimeout(() => setSaveFlash(false), 4000);
       }
       await loadBooks(userId);
     } catch {
@@ -779,6 +779,9 @@ function GestionePage() {
       setLastra(null);
       setFilePdf(null);
       setFileEpub(null);
+      setOpenSection(0);
+      setSaveFlash(true);
+      setTimeout(() => setSaveFlash(false), 4000);
       await loadBooks(userId);
     } catch {
       setSaveMaterialiError("Errore durante il salvataggio dei materiali.");
@@ -797,6 +800,9 @@ function GestionePage() {
       setExistingCopertinaUrl(url);
       setAiGeneratedUrl(null);
       setShowAiCoverForm(false);
+      setOpenSection(0);
+      setSaveFlash(true);
+      setTimeout(() => setSaveFlash(false), 4000);
       await loadBooks(userId);
     } catch {
       setSaveAiCoverError("Errore durante il salvataggio della copertina.");
