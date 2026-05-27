@@ -25,9 +25,12 @@ export function BookCard({ book, compact = false, libreriaStato = null, onLibrer
   const isLetto = libreriaStato === "letto";
   const [coverLoaded, setCoverLoaded] = useState(false);
 
-  // Copertine generate dal NUOVO sistema (teca già baked-in server-side):
-  // riconoscibili dal parametro ?v=teca nel futuro — per ora mostriamo overlay per tutti
-  const showOverlay = !book.cover.includes("?v=teca");
+  // Copertine AI (path /copertine/ai/) hanno la teca baked-in server-side.
+  // Fallback: anche ?v=teca come marker esplicito.
+  // Tutto il resto (upload manuale, vecchie cover) usa il CSS overlay.
+  const showOverlay =
+    !book.cover.includes("/copertine/ai/") &&
+    !book.cover.includes("?v=teca");
 
   return (
     <Link
