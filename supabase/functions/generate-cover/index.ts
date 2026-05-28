@@ -56,9 +56,9 @@ const SPINE_SOURCE_W  = 40;
 const REFL_SOURCE_H   = 80;
 
 // Logo: in basso a sinistra della faccia del libro
-const LOGO_W          = 190;   // larghezza nel canvas teca (1024px)
-const LOGO_BOTTOM_PAD = 42;    // px sopra il fondo della faccia
-const LOGO_LEFT_PAD   = 14;    // px dal bordo sinistro della faccia
+const LOGO_W          = 115;   // piccolo e discreto
+const LOGO_BOTTOM_PAD = 36;    // px sopra il fondo della faccia
+const LOGO_LEFT_PAD   = 18;    // px dal bordo sinistro della faccia
 const FACE_BOTTOM_Y   = Math.round((FACE[2].y + FACE[3].y) / 2);        // ~1274
 
 // Final output size (2:3 ratio, matches teca proportions)
@@ -294,34 +294,20 @@ function fillGradientReflection(
   }
 }
 
-// ── Logo blend: luminanza × vignetta circolare ───────────────────────────────
-// Rende trasparente il nero di sfondo e sfuma i bordi del logo con gradiente
-// circolare. Il nero puro (luminanza=0) → alpha=0; l'oro → quasi opaco.
-// vignetteStart: raggio (0-1) oltre il quale inizia la sfumatura.
-function applyLogoBlend(img: Image, vignetteStart = 0.58): void {
-  const w = img.width, h = img.height;
+// ── Logo blend: rimozione sfondo nero per soglia di luminosità ───────────────
+// Pixel scuri (sfondo nero) → trasparenti. Pixel brillanti (oro, bianco) →
+// opachi. Transizione morbida nella zona di softness per evitare bordi netti.
+// maxAlpha: opacità massima (0-255) — abbassare per logo più discreto.
+function applyLogoBlend(img: Image, threshold = 45, softness = 90, maxAlpha = 210): void {
   const bmp = img.bitmap;
-  const cx = w / 2, cy = h / 2;
-  const maxR = Math.sqrt(cx * cx + cy * cy);
-
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const oi = 4 * (y * w + x);
-      const r = bmp[oi], g = bmp[oi + 1], b = bmp[oi + 2];
-
-      // Luminanza percepita (0=nero, 1=bianco/oro)
-      const lum = (r * 0.299 + g * 0.587 + b * 0.114) / 255;
-      // Boost mid-tones: oro (~lum 0.55) resta ben visibile
-      const lumAlpha = Math.min(1, lum * 2.2);
-
-      // Vignetta circolare: piena dentro vignetteStart, sfuma a 0 al bordo
-      const dist = Math.sqrt((x - cx) ** 2 + (y - cy) ** 2) / maxR;
-      const vigAlpha = dist < vignetteStart
-        ? 1.0
-        : Math.max(0, 1 - (dist - vignetteStart) / (1 - vignetteStart));
-
-      bmp[oi + 3] = Math.round(255 * lumAlpha * vigAlpha);
-    }
+  for (let i = 0; i < bmp.length; i += 4) {
+    const r = bmp[i], g = bmp[i + 1], b = bmp[i + 2];
+    // Canale massimo: preserva meglio i toni dorati rispetto alla media
+    const brightness = Math.max(r, g, b);
+    const raw = brightness <= threshold ? 0
+      : brightness >= threshold + softness ? maxAlpha
+      : Math.round(maxAlpha * (brightness - threshold) / softness);
+    bmp[i + 3] = raw;
   }
 }
 
