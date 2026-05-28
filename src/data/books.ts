@@ -17,6 +17,7 @@ export type Book = {
   reads: number;
   rating: number;
   cover: string;
+  coverRotta?: string;
   lastra?: string;
   tagline: string;
   description: string;

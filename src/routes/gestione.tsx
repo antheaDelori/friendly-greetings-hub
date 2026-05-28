@@ -246,6 +246,7 @@ function GestionePage() {
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiGeneratedUrl, setAiGeneratedUrl] = useState<string | null>(null);
   const [aiGeneratedFlatUrl, setAiGeneratedFlatUrl] = useState<string | null>(null);
+  const [aiGeneratedRottaUrl, setAiGeneratedRottaUrl] = useState<string | null>(null);
   const [aiUsed, setAiUsed] = useState(0);
   const [aiError, setAiError] = useState<string | null>(null);
   const [showAiCoverForm, setShowAiCoverForm] = useState(false);
@@ -561,6 +562,7 @@ function GestionePage() {
 
       setAiGeneratedUrl(data.cover_url);
       setAiGeneratedFlatUrl(data.flat_url ?? null);
+      setAiGeneratedRottaUrl(data.rotta_url ?? null);
       setAiUsed(data.used);
     } catch (e) {
       setAiError(e instanceof Error ? e.message : "Errore di connessione. Riprova.");
@@ -854,11 +856,13 @@ function GestionePage() {
       const { error } = await supabase.from("books").update({
         copertina_url: url,
         copertina_flat_url: aiGeneratedFlatUrl ?? null,
+        copertina_rotta_url: aiGeneratedRottaUrl ?? null,
       }).eq("id", editingId);
       if (error) { setSaveAiCoverError(error.message); return; }
       setExistingCopertinaUrl(url);
       setAiGeneratedUrl(null);
       setAiGeneratedFlatUrl(null);
+      setAiGeneratedRottaUrl(null);
       setShowAiCoverForm(false);
       setOpenSection(0);
       setSaveFlash(true);

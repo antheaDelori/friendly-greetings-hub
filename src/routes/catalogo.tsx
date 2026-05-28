@@ -26,6 +26,7 @@ type DbBook = {
   anno: number | null;
   letture: number;
   copertina_url: string | null;
+  copertina_rotta_url: string | null;
   lastra_url: string | null;
   author_name: string | null;
   tag: string[] | null;
@@ -43,6 +44,7 @@ function dbToBook(b: DbBook): Book {
     reads: b.letture,
     rating: 0,
     cover: b.copertina_url ?? logo,
+    coverRotta: b.copertina_rotta_url ?? undefined,
     lastra: b.lastra_url ?? undefined,
     tagline: b.descrizione?.slice(0, 140) ?? "",
     description: b.descrizione ?? "",
@@ -116,7 +118,7 @@ function CatalogoPage() {
     const fetchBooks = async () => {
       const { data } = await supabase
         .from("books")
-        .select("id, slug, titolo, descrizione, genere, anno, letture, copertina_url, lastra_url, author_name, tag")
+        .select("id, slug, titolo, descrizione, genere, anno, letture, copertina_url, copertina_rotta_url, lastra_url, author_name, tag")
         .eq("disponibile", true)
         .order("created_at", { ascending: false });
       const raw = (data ?? []) as DbBook[];

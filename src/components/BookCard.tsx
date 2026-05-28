@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Book } from "@/data/books";
 
 type LibreriaStato = "da_leggere" | "in_lettura" | "letto";
@@ -32,6 +32,12 @@ export function BookCard({ book, compact = false, libreriaStato = null, onLibrer
     !book.cover.includes("/copertine/ai/") &&
     !book.cover.includes("?v=teca");
 
+  // Per AI covers: mostra la teca rotta quando il libro è "letto" (se disponibile)
+  const coverSrc = (!showOverlay && isLetto && book.coverRotta) ? book.coverRotta : book.cover;
+
+  // Reset coverLoaded quando cambia l'URL della copertina (es. intera ↔ rotta)
+  useEffect(() => { setCoverLoaded(false); }, [coverSrc]);
+
   return (
     <Link
       to="/leggi/$slug"
@@ -50,7 +56,7 @@ export function BookCard({ book, compact = false, libreriaStato = null, onLibrer
         {/* Copertina — per copertine con teca baked-in: full fill; per le altre: finestra interna */}
         <div className={`absolute ${!showOverlay ? "inset-0" : "left-[31%] right-[18%] top-[15%] bottom-[18%]"} overflow-hidden`}>
           <img
-            src={book.cover}
+            src={coverSrc}
             alt={book.title}
             onLoad={() => setCoverLoaded(true)}
             className={`w-full h-full object-cover transition-all duration-700 ${
