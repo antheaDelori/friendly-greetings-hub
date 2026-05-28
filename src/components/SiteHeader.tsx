@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import logo from "@/assets/liberiamo-hero.png";
+import logo from "@/assets/liberiamo-hero.webp";
 import { supabase } from "@/lib/supabase";
 import { getCestinoTranslation } from "@/lib/cestinoI18n";
 

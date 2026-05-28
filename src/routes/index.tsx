@@ -7,7 +7,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { BookCard } from "@/components/BookCard";
 import { type Book, type Genre } from "@/data/books";
 import { supabase } from "@/lib/supabase";
-import logo from "@/assets/liberiamo-hero.png";
+import logo from "@/assets/liberiamo-hero.webp";
 import logoFallback from "@/assets/logo-liberiamo.jpg";
 
 const FEATURED_GENRES: Genre[] = ["libro", "racconto", "saggio", "poesia"];

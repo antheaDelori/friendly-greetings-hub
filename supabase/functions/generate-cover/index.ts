@@ -243,6 +243,57 @@ function warpRegion(
   }
 }
 
+// ── Riflessione a gradiente colore ────────────────────────────────────────────
+// Campiona il colore medio di un'area della copertina flat e lo blende sul
+// pavimento della teca con fade lineare (opaco in alto → trasparente in basso).
+// Nessuna compressione di pixel: risultato pulito qualunque sia la copertina.
+function fillGradientReflection(
+  src: Image,
+  sampleX: number, sampleY: number, sampleW: number, sampleH: number,
+  dstQuad: Array<{ x: number; y: number }>,
+  canvas: Image,
+  maxAlpha: number,
+): void {
+  // 1. Colore medio dell'area sorgente
+  const sW = src.width;
+  const srcBmp = src.bitmap;
+  let r = 0, g = 0, b = 0, count = 0;
+  const endY = Math.min(sampleY + sampleH, src.height);
+  const endX = Math.min(sampleX + sampleW, sW);
+  for (let y = sampleY; y < endY; y++) {
+    for (let x = sampleX; x < endX; x++) {
+      const i = 4 * (y * sW + x);
+      r += srcBmp[i]; g += srcBmp[i + 1]; b += srcBmp[i + 2]; count++;
+    }
+  }
+  if (count === 0) return;
+  r = Math.round(r / count);
+  g = Math.round(g / count);
+  b = Math.round(b / count);
+
+  // 2. Blend gradiente sul quad destinazione
+  const out = canvas.bitmap;
+  const minY = Math.max(0, Math.min(...dstQuad.map(p => p.y)) | 0);
+  const maxY = Math.min(TECA_H - 1, Math.ceil(Math.max(...dstQuad.map(p => p.y))));
+  const minX = Math.max(0, Math.min(...dstQuad.map(p => p.x)) | 0);
+  const maxX = Math.min(TECA_W - 1, Math.ceil(Math.max(...dstQuad.map(p => p.x))));
+  const dstH = Math.max(1, maxY - minY);
+
+  for (let y = minY; y <= maxY; y++) {
+    const t = (y - minY) / dstH;      // 0 = top, 1 = bottom
+    const alpha = maxAlpha * (1 - t); // sfuma a 0 verso il basso
+    if (alpha < 0.01) continue;
+    for (let x = minX; x <= maxX; x++) {
+      if (!inQuad(x, y, dstQuad)) continue;
+      const oi = 4 * (y * TECA_W + x);
+      if (out[oi + 3] === 0) continue; // salta pixel trasparenti
+      out[oi]     = Math.min(255, Math.round(out[oi]     * (1 - alpha) + r * alpha));
+      out[oi + 1] = Math.min(255, Math.round(out[oi + 1] * (1 - alpha) + g * alpha));
+      out[oi + 2] = Math.min(255, Math.round(out[oi + 2] * (1 - alpha) + b * alpha));
+    }
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
@@ -426,34 +477,22 @@ Deno.serve(async (req) => {
       0.45,
     );
 
-    // 3d. Riflesso spine: striscia sinistra capovolta (bottom → top) con fade
-    warpRegion(
+    // 3d. Riflesso spine: gradiente colore dal bordo sinistro del cover
+    fillGradientReflection(
       flatCover,
-      [
-        { x: 0,          y: cH - 1                     }, // TL → cover bottom-left
-        { x: spineW - 1, y: cH - 1                     }, // TR → cover bottom-right
-        { x: spineW - 1, y: cH - 1 - REFL_SOURCE_H     }, // BR → cover più in alto
-        { x: 0,          y: cH - 1 - REFL_SOURCE_H     }, // BL
-      ],
+      0, cH - REFL_SOURCE_H, spineW, REFL_SOURCE_H,
       SPINE_REFL,
       canvas,
       0.30,
-      true, // fadeY: scurisce verso il basso
     );
 
-    // 3e. Riflesso copertina: fondo del cover capovolto con fade
-    warpRegion(
+    // 3e. Riflesso copertina: gradiente colore dal fondo del cover
+    fillGradientReflection(
       flatCover,
-      [
-        { x: 0,      y: cH - 1                 }, // TL → cover bottom-left
-        { x: cW - 1, y: cH - 1                 }, // TR → cover bottom-right
-        { x: cW - 1, y: cH - 1 - REFL_SOURCE_H }, // BR
-        { x: 0,      y: cH - 1 - REFL_SOURCE_H }, // BL
-      ],
+      0, cH - REFL_SOURCE_H, cW, REFL_SOURCE_H,
       COVER_REFL,
       canvas,
-      0.35,
-      true, // fadeY
+      0.40,
     );
 
     // 3f. Logo centrato sulla faccia del libro, LOGO_BOTTOM_PAD px sopra il fondo
