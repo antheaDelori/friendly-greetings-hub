@@ -644,8 +644,56 @@ function GestionePage() {
     }
   };
 
+  // Ridimensiona e comprime la copertina a 486×940px JPEG ≤ 500KB
+  // Usato prima dell'upload per normalizzare qualsiasi immagine caricata dall'autore
+  const resizeCover = (file: File): Promise<Blob> =>
+    new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const TARGET_W = 486, TARGET_H = 940, MAX_BYTES = 500_000;
+        const canvas = document.createElement("canvas");
+        canvas.width = TARGET_W;
+        canvas.height = TARGET_H;
+        const ctx = canvas.getContext("2d")!;
+
+        // Cover-fit: scala mantenendo le proporzioni, centra con letterbox nero
+        const scale = Math.max(TARGET_W / img.width, TARGET_H / img.height);
+        const sw = img.width * scale, sh = img.height * scale;
+        const sx = (TARGET_W - sw) / 2, sy = (TARGET_H - sh) / 2;
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, 0, TARGET_W, TARGET_H);
+        ctx.drawImage(img, sx, sy, sw, sh);
+
+        // Prova qualità 0.90 → 0.80 → 0.70 finché ≤ 500KB
+        const tryEncode = (q: number) => {
+          canvas.toBlob(blob => {
+            if (!blob) return reject(new Error("Canvas toBlob fallito"));
+            if (blob.size <= MAX_BYTES || q <= 0.70) return resolve(blob);
+            tryEncode(q - 0.10);
+          }, "image/jpeg", q);
+        };
+        tryEncode(0.90);
+      };
+      img.onerror = reject;
+      img.src = url;
+    });
+
   const uploadFile = async (file: File, bucket: string, path: string): Promise<string | null> => {
-    const { error } = await supabase.storage.from(bucket).upload(path, file, { upsert: true });
+    // Normalizza automaticamente le copertine caricate manualmente
+    let toUpload: File | Blob = file;
+    if (bucket === "copertine" && file.type.startsWith("image/")) {
+      try {
+        toUpload = await resizeCover(file);
+      } catch {
+        // fallback: carica il file originale
+      }
+    }
+    const { error } = await supabase.storage.from(bucket).upload(path, toUpload, {
+      upsert: true,
+      contentType: "image/jpeg",
+    });
     if (error) return null;
     if (bucket === "copertine") {
       const { data } = supabase.storage.from(bucket).getPublicUrl(path);
