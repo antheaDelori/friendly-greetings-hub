@@ -648,33 +648,38 @@ function GestionePage() {
     }
   };
 
-  // Ridimensiona e comprime la copertina a 486×940px JPEG ≤ 500KB
-  // Usato prima dell'upload per normalizzare qualsiasi immagine caricata dall'autore
+  // Normalizza la copertina: ridimensiona proporzionalmente entro 600×1000px,
+  // converte in JPEG e comprime finché ≤ 800KB. Non forza dimensioni esatte.
   const resizeCover = (file: File): Promise<Blob> =>
     new Promise((resolve, reject) => {
       const img = new Image();
       const url = URL.createObjectURL(file);
       img.onload = () => {
         URL.revokeObjectURL(url);
-        const TARGET_W = 486, TARGET_H = 940, MAX_BYTES = 800_000;
+        const MAX_W = 600, MAX_H = 1000, MAX_BYTES = 800_000;
+
+        // Scala proporzionalmente solo se supera i limiti massimi
+        let w = img.width, h = img.height;
+        if (w > MAX_W || h > MAX_H) {
+          const scale = Math.min(MAX_W / w, MAX_H / h);
+          w = Math.round(w * scale);
+          h = Math.round(h * scale);
+        }
+
         const canvas = document.createElement("canvas");
-        canvas.width = TARGET_W;
-        canvas.height = TARGET_H;
+        canvas.width = w;
+        canvas.height = h;
         const ctx = canvas.getContext("2d")!;
-
-        // Cover-fit: scala mantenendo le proporzioni, centra con letterbox nero
-        const scale = Math.max(TARGET_W / img.width, TARGET_H / img.height);
-        const sw = img.width * scale, sh = img.height * scale;
-        const sx = (TARGET_W - sw) / 2, sy = (TARGET_H - sh) / 2;
+        // Sfondo nero per gestire PNG con trasparenza
         ctx.fillStyle = "#000";
-        ctx.fillRect(0, 0, TARGET_W, TARGET_H);
-        ctx.drawImage(img, sx, sy, sw, sh);
+        ctx.fillRect(0, 0, w, h);
+        ctx.drawImage(img, 0, 0, w, h);
 
-        // Prova qualità 0.90 → 0.80 → 0.70 finché ≤ 500KB
+        // Prova qualità 0.90 → 0.80 → 0.70 → 0.60 finché ≤ 800KB
         const tryEncode = (q: number) => {
           canvas.toBlob(blob => {
             if (!blob) return reject(new Error("Canvas toBlob fallito"));
-            if (blob.size <= MAX_BYTES || q <= 0.70) return resolve(blob);
+            if (blob.size <= MAX_BYTES || q <= 0.60) return resolve(blob);
             tryEncode(q - 0.10);
           }, "image/jpeg", q);
         };
