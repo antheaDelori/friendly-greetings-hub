@@ -2019,7 +2019,11 @@ function GestionePage() {
             <HudPanel label="dettaglio" code={`ID:${selected.id.slice(0, 6).toUpperCase()}`}>
               <div className="flex items-start gap-5">
                 {selected.copertina_url ? (
-                  <img src={selected.copertina_url} alt="" className="w-24 h-32 object-cover ring-1 ring-cyan/30" />
+                  <img
+                    src={(selected as unknown as Record<string, string | null>).copertina_flat_url ?? selected.copertina_url}
+                    alt=""
+                    className="w-24 h-32 object-cover ring-1 ring-cyan/30"
+                  />
                 ) : (
                   <div className="w-24 h-32 bg-void/60 border border-cyan/20 flex items-center justify-center font-display text-4xl text-bone/20">◊</div>
                 )}
