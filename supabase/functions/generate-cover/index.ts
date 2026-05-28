@@ -449,6 +449,7 @@ Deno.serve(async (req) => {
 
   // 3. Perspective warp + teca composite + spine + riflessi + logo
   let finalBytes: Uint8Array;
+  let flatBytesForUpload: Uint8Array | null = null;
   let bakedTeca = false;
   try {
     const [flatCover, tecaImg, logoImg] = await Promise.all([
@@ -505,6 +506,10 @@ Deno.serve(async (req) => {
     // 3g. Ridimensiona a OUT_W × OUT_H (512×768, ratio 2:3)
     canvas.resize(OUT_W, OUT_H);
 
+    // Prepara flat (riusa flatCover già in memoria — evita un secondo decode)
+    flatCover.resize(OUT_W, OUT_H);
+    flatBytesForUpload = await flatCover.encodeJPEG(85);
+
     finalBytes = await canvas.encodeJPEG(85);
     bakedTeca = true;
   } catch (_) {
@@ -512,29 +517,27 @@ Deno.serve(async (req) => {
     finalBytes = coverRaw;
   }
 
-  // 4. Carica su Storage: teca (catalog) + flat (pagina di lettura)
+  // 4. Carica su Storage: teca + flat in parallelo
   const ts = Date.now();
   const storagePath = `ai/${user.id}/${book_id}/${ts}.jpg`;
-  const { error: uploadErr } = await supabase.storage
-    .from("copertine")
-    .upload(storagePath, finalBytes, { contentType: "image/jpeg", upsert: false });
-  if (uploadErr) return json({ error: uploadErr.message }, 500);
+  const flatPath    = `ai-flat/${user.id}/${book_id}/${ts}.jpg`;
 
-  // Copertina flat ridimensionata a OUT_W×OUT_H — usata sulla pagina di lettura
+  const uploadPromises: Promise<unknown>[] = [
+    supabase.storage.from("copertine").upload(storagePath, finalBytes, { contentType: "image/jpeg", upsert: false }),
+  ];
+  if (flatBytesForUpload) {
+    uploadPromises.push(
+      supabase.storage.from("copertine").upload(flatPath, flatBytesForUpload, { contentType: "image/jpeg", upsert: false }),
+    );
+  }
+  const [tecaResult] = await Promise.all(uploadPromises) as [{ error: { message: string } | null }];
+  if (tecaResult.error) return json({ error: tecaResult.error.message }, 500);
+
   let flatUrl: string | null = null;
-  try {
-    const flatImg = await Image.decode(coverRaw);
-    flatImg.resize(OUT_W, OUT_H);
-    const flatBytes = await flatImg.encodeJPEG(85);
-    const flatPath = `ai-flat/${user.id}/${book_id}/${ts}.jpg`;
-    const { error: flatErr } = await supabase.storage
-      .from("copertine")
-      .upload(flatPath, flatBytes, { contentType: "image/jpeg", upsert: false });
-    if (!flatErr) {
-      const { data: flatUrlData } = supabase.storage.from("copertine").getPublicUrl(flatPath);
-      flatUrl = flatUrlData.publicUrl;
-    }
-  } catch (_) { /* fallback: la pagina di lettura userà la teca */ }
+  if (flatBytesForUpload) {
+    const { data: flatUrlData } = supabase.storage.from("copertine").getPublicUrl(flatPath);
+    flatUrl = flatUrlData.publicUrl;
+  }
 
   const { data: urlData } = supabase.storage.from("copertine").getPublicUrl(storagePath);
   // ?v=teca segnala al frontend che la teca è già baked → disabilita l'overlay CSS
