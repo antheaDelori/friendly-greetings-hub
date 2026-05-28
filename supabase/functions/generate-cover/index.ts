@@ -55,11 +55,11 @@ const SPINE_SOURCE_W  = 40;
 // Reflection source: quanti px dal fondo del cover flat usiamo per i riflessi
 const REFL_SOURCE_H   = 80;
 
-// Logo: centered on cover face, LOGO_BOTTOM_PAD px above face bottom
-const LOGO_W        = 220;
-const LOGO_BOTTOM_PAD = 38;
-const FACE_CENTER_X = Math.round((FACE[0].x + FACE[1].x) / 2);          // ~580
-const FACE_BOTTOM_Y = Math.round((FACE[2].y + FACE[3].y) / 2);          // ~1274
+// Logo: in basso a sinistra della faccia del libro
+const LOGO_W          = 190;   // larghezza nel canvas teca (1024px)
+const LOGO_BOTTOM_PAD = 42;    // px sopra il fondo della faccia
+const LOGO_LEFT_PAD   = 14;    // px dal bordo sinistro della faccia
+const FACE_BOTTOM_Y   = Math.round((FACE[2].y + FACE[3].y) / 2);        // ~1274
 
 // Final output size (2:3 ratio, matches teca proportions)
 const OUT_W = 512;
@@ -294,6 +294,37 @@ function fillGradientReflection(
   }
 }
 
+// ── Logo blend: luminanza × vignetta circolare ───────────────────────────────
+// Rende trasparente il nero di sfondo e sfuma i bordi del logo con gradiente
+// circolare. Il nero puro (luminanza=0) → alpha=0; l'oro → quasi opaco.
+// vignetteStart: raggio (0-1) oltre il quale inizia la sfumatura.
+function applyLogoBlend(img: Image, vignetteStart = 0.58): void {
+  const w = img.width, h = img.height;
+  const bmp = img.bitmap;
+  const cx = w / 2, cy = h / 2;
+  const maxR = Math.sqrt(cx * cx + cy * cy);
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const oi = 4 * (y * w + x);
+      const r = bmp[oi], g = bmp[oi + 1], b = bmp[oi + 2];
+
+      // Luminanza percepita (0=nero, 1=bianco/oro)
+      const lum = (r * 0.299 + g * 0.587 + b * 0.114) / 255;
+      // Boost mid-tones: oro (~lum 0.55) resta ben visibile
+      const lumAlpha = Math.min(1, lum * 2.2);
+
+      // Vignetta circolare: piena dentro vignetteStart, sfuma a 0 al bordo
+      const dist = Math.sqrt((x - cx) ** 2 + (y - cy) ** 2) / maxR;
+      const vigAlpha = dist < vignetteStart
+        ? 1.0
+        : Math.max(0, 1 - (dist - vignetteStart) / (1 - vignetteStart));
+
+      bmp[oi + 3] = Math.round(255 * lumAlpha * vigAlpha);
+    }
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
@@ -496,10 +527,11 @@ Deno.serve(async (req) => {
       0.40,
     );
 
-    // 3f. Logo centrato sulla faccia del libro, LOGO_BOTTOM_PAD px sopra il fondo
+    // 3f. Logo in basso a sinistra della faccia, blend luminanza+vignetta circolare
     const logoH = Math.round((logoImg.height / logoImg.width) * LOGO_W);
     logoImg.resize(LOGO_W, logoH);
-    const logoX = FACE_CENTER_X - Math.round(LOGO_W / 2);
+    applyLogoBlend(logoImg);
+    const logoX = FACE[3].x + LOGO_LEFT_PAD;          // bordo sx faccia + padding
     const logoY = FACE_BOTTOM_Y - logoH - LOGO_BOTTOM_PAD;
     canvas.composite(logoImg, logoX, logoY);
 
