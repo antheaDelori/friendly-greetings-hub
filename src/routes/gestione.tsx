@@ -857,6 +857,7 @@ function GestionePage() {
       setFileEpub(null);
       setOpenSection(0);
       setSaveFlash(true);
+      window.scrollTo({ top: 0, behavior: "smooth" });
       setTimeout(() => setSaveFlash(false), 4000);
       await loadBooks(userId);
     } catch (err) {
