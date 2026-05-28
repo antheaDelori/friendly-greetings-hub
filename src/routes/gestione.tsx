@@ -656,7 +656,7 @@ function GestionePage() {
       const url = URL.createObjectURL(file);
       img.onload = () => {
         URL.revokeObjectURL(url);
-        const TARGET_W = 486, TARGET_H = 940, MAX_BYTES = 500_000;
+        const TARGET_W = 486, TARGET_H = 940, MAX_BYTES = 800_000;
         const canvas = document.createElement("canvas");
         canvas.width = TARGET_W;
         canvas.height = TARGET_H;
