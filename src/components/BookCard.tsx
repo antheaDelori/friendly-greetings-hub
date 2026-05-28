@@ -1,6 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import type { Book } from "@/data/books";
+import tecaIntera from "@/assets/teca-intera.webp";
+import tecaRotta  from "@/assets/teca-rotta.webp";
 
 type LibreriaStato = "da_leggere" | "in_lettura" | "letto";
 
@@ -11,9 +13,9 @@ const genreColor: Record<string, string> = {
   articolo: "text-bone border-bone/40",
 };
 
-// Teche sistema — overlay PNG trasparenti
-const TECA_INTERA = "https://fgdekayammkldwkxqutd.supabase.co/storage/v1/object/public/copertine/brand/teca%20intera.png";
-const TECA_ROTTA  = "https://fgdekayammkldwkxqutd.supabase.co/storage/v1/object/public/copertine/brand/teca%20rotta.png";
+// Teche sistema — overlay WebP bundlati con Vercel (zero egress Supabase)
+const TECA_INTERA = tecaIntera;
+const TECA_ROTTA  = tecaRotta;
 
 export function BookCard({ book, compact = false, libreriaStato = null, onLibreriaChange, isLoggedIn = false }: {
   book: Book;
