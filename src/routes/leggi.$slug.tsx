@@ -28,7 +28,7 @@ export const Route = createFileRoute("/leggi/$slug")({
     // Poi cerca su Supabase
     const { data } = await supabase
       .from("books")
-      .select("id, slug, titolo, descrizione, estratto, genere, anno, letture, copertina_url, file_url, epub_url, author_name, author_id, cestinato, voti_cestino, recuperato")
+      .select("id, slug, titolo, descrizione, estratto, genere, anno, letture, copertina_url, copertina_flat_url, file_url, epub_url, author_name, author_id, cestinato, voti_cestino, recuperato")
       .eq("slug", params.slug)
       .or("disponibile.eq.true,cestinato.eq.true")
       .maybeSingle();
@@ -66,7 +66,7 @@ export const Route = createFileRoute("/leggi/$slug")({
       year: data.anno ?? new Date().getFullYear(),
       reads: data.letture,
       rating: 0,
-      cover: data.copertina_url ?? logo,
+      cover: data.copertina_flat_url ?? data.copertina_url ?? logo,
       tagline: data.descrizione?.slice(0, 140) ?? "",
       description: data.descrizione ?? "",
       chapters,
