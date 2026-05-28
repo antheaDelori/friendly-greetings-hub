@@ -849,6 +849,8 @@ function GestionePage() {
       setExistingLastraUrl(lastra_url);
       setExistingFileUrl(file_url);
       setExistingEpubUrl(epub_url);
+      // Aggiorna il dettaglio immediatamente senza aspettare loadBooks
+      if (selected) setSelected({ ...selected, copertina_url } as typeof selected);
       setCopertina(null);
       setLastra(null);
       setFilePdf(null);
