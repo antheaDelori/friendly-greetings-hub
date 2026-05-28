@@ -220,10 +220,13 @@ function GestionePage() {
   const [lastra, setLastra] = useState<File | null>(null);
   const [filePdf, setFilePdf] = useState<File | null>(null);
   const [existingCopertinaUrl, setExistingCopertinaUrl] = useState<string | null>(null);
+  const [existingFlatUrl, setExistingFlatUrl] = useState<string | null>(null);
+  const [existingRottaUrl, setExistingRottaUrl] = useState<string | null>(null);
   const [existingLastraUrl, setExistingLastraUrl] = useState<string | null>(null);
   const [existingFileUrl, setExistingFileUrl] = useState<string | null>(null);
   const [fileEpub, setFileEpub] = useState<File | null>(null);
   const [existingEpubUrl, setExistingEpubUrl] = useState<string | null>(null);
+  const [savingMaterialiStep, setSavingMaterialiStep] = useState<"uploading" | "baking" | "saving" | null>(null);
 
   // Generazione automatica documenti da .docx (PDF + ePub in un click)
   const [docxFile, setDocxFile] = useState<File | null>(null);
@@ -488,6 +491,8 @@ function GestionePage() {
     setFilePdf(null);
     setFileEpub(null);
     setExistingCopertinaUrl(b.copertina_url);
+    setExistingFlatUrl((b as unknown as Record<string, string | null>).copertina_flat_url ?? null);
+    setExistingRottaUrl((b as unknown as Record<string, string | null>).copertina_rotta_url ?? null);
     setExistingLastraUrl(b.lastra_url);
     setExistingFileUrl(b.file_url);
     setExistingEpubUrl(b.epub_url);
@@ -815,15 +820,38 @@ function GestionePage() {
   const handleSaveMateriali = async () => {
     if (!editingId || !userId) return;
     setSavingMateriali(true);
+    setSavingMaterialiStep(null);
     setSaveMaterialiError(null);
     try {
       let copertina_url: string | null = existingCopertinaUrl;
+      let copertina_flat_url: string | null = existingFlatUrl;
+      let copertina_rotta_url: string | null = existingRottaUrl;
       let lastra_url: string | null = existingLastraUrl;
       let file_url: string | null = existingFileUrl;
       let epub_url: string | null = existingEpubUrl;
 
       if (copertina) {
-        copertina_url = await uploadFile(copertina, "copertine", `${userId}/${editingId}-cover.jpg`);
+        // Step 1: upload flat
+        setSavingMaterialiStep("uploading");
+        const flatPath = `manual-flat/${userId}/${editingId}/${Date.now()}.jpg`;
+        copertina_flat_url = await uploadFile(copertina, "copertine", flatPath);
+
+        // Step 2: bake teca prospettica via Edge Function
+        setSavingMaterialiStep("baking");
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) throw new Error("Sessione scaduta — rieffettua il login.");
+        const bakeRes = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-cover`,
+          {
+            method: "POST",
+            headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "bakeCover", book_id: editingId, flat_url: copertina_flat_url }),
+          },
+        );
+        const bakeData = await bakeRes.json();
+        if (!bakeRes.ok) throw new Error(bakeData.error ?? "Errore nella lavorazione della teca. Riprova.");
+        copertina_url = bakeData.cover_url;           // include ?v=teca
+        copertina_rotta_url = bakeData.rotta_url ?? copertina_rotta_url;
       }
       if (lastra) {
         lastra_url = await uploadFile(lastra, "copertine", `${userId}/${editingId}-lastra.jpg`);
@@ -836,8 +864,11 @@ function GestionePage() {
         epub_url = await uploadFile(fileEpub, "libri", `${userId}/${editingId}-epub.epub`);
       }
 
+      setSavingMaterialiStep("saving");
       const { error } = await supabase.from("books").update({
         copertina_url,
+        copertina_flat_url,
+        copertina_rotta_url,
         lastra_url,
         file_url,
         epub_url,
@@ -846,6 +877,8 @@ function GestionePage() {
       if (error) { setSaveMaterialiError(error.message); return; }
 
       setExistingCopertinaUrl(copertina_url);
+      setExistingFlatUrl(copertina_flat_url);
+      setExistingRottaUrl(copertina_rotta_url);
       setExistingLastraUrl(lastra_url);
       setExistingFileUrl(file_url);
       setExistingEpubUrl(epub_url);
@@ -866,6 +899,7 @@ function GestionePage() {
       );
     } finally {
       setSavingMateriali(false);
+      setSavingMaterialiStep(null);
     }
   };
 
@@ -1776,7 +1810,11 @@ function GestionePage() {
                           <p className="font-mono text-[11px] text-magenta border border-magenta/30 bg-magenta/5 px-4 py-3 mb-3">⚠ {saveMaterialiError}</p>
                         )}
                         <HudButton variant="primary" onClick={handleSaveMateriali} disabled={savingMateriali}>
-                          {savingMateriali ? "▸ Salvataggio..." : "▸ Salva copertina"}
+                          {savingMateriali
+                            ? savingMaterialiStep === "uploading" ? "▸ Caricamento immagine..."
+                            : savingMaterialiStep === "baking"    ? "▸ Elaborazione teca..."
+                            : "▸ Salvataggio..."
+                            : "▸ Salva copertina"}
                         </HudButton>
                       </div>
                     )}

@@ -312,6 +312,46 @@ function applyLogoBlend(img: Image, threshold = 45, softness = 90, maxAlpha = 21
   }
 }
 
+// ── Pipeline condivisa: warp + teca + spine + riflessi → JPEG bytes ──────────
+// Usata sia per copertine AI che per upload manuali.
+// NON modifica flatCover (warpToFace crea un nuovo canvas).
+async function applyBaking(
+  flatCover: Image,
+  tecaImg: Image,
+  tecaRottaImg: Image,
+): Promise<{ tecaBytes: Uint8Array; rottaBytes: Uint8Array }> {
+  const cW = flatCover.width, cH = flatCover.height;
+  const spineW = Math.min(SPINE_SOURCE_W, cW);
+  const spineQuad = [
+    { x: 0, y: 0 }, { x: spineW - 1, y: 0 },
+    { x: spineW - 1, y: cH - 1 }, { x: 0, y: cH - 1 },
+  ];
+
+  const canvas = warpToFace(flatCover);
+  const canvasRotta = new Image(TECA_W, TECA_H);
+  canvasRotta.bitmap.set(canvas.bitmap);
+
+  canvas.composite(tecaImg, 0, 0);
+  canvasRotta.composite(tecaRottaImg, 0, 0);
+
+  warpRegion(flatCover, spineQuad, SPINE, canvas, 0.45);
+  warpRegion(flatCover, spineQuad, SPINE, canvasRotta, 0.45);
+
+  fillGradientReflection(flatCover, 0, cH - REFL_SOURCE_H, spineW, REFL_SOURCE_H, SPINE_REFL, canvas, 0.30);
+  fillGradientReflection(flatCover, 0, cH - REFL_SOURCE_H, spineW, REFL_SOURCE_H, SPINE_REFL, canvasRotta, 0.30);
+  fillGradientReflection(flatCover, 0, cH - REFL_SOURCE_H, cW, REFL_SOURCE_H, COVER_REFL, canvas, 0.40);
+  fillGradientReflection(flatCover, 0, cH - REFL_SOURCE_H, cW, REFL_SOURCE_H, COVER_REFL, canvasRotta, 0.40);
+
+  canvas.resize(OUT_W, OUT_H);
+  canvasRotta.resize(OUT_W, OUT_H);
+
+  const [tecaBytes, rottaBytes] = await Promise.all([
+    canvas.encodeJPEG(85),
+    canvasRotta.encodeJPEG(85),
+  ]);
+  return { tecaBytes, rottaBytes };
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
@@ -385,6 +425,42 @@ Deno.serve(async (req) => {
     });
     if (!res.ok) return json({ error: await res.text() }, 502);
     return json({ success: true });
+  }
+
+  // ── BAKE COVER (upload manuale → teca prospettica) ───────────────────────
+  if (action === "bakeCover") {
+    const { book_id, flat_url } = body;
+    if (!book_id || !flat_url) return json({ error: "book_id e flat_url richiesti" }, 400);
+
+    // Fetch copertina flat + teche in parallelo
+    const [coverRaw, tecaImg, tecaRottaImg] = await Promise.all([
+      fetch(flat_url).then(r => r.arrayBuffer()).then(ab => new Uint8Array(ab)),
+      fetch(TECA_URL).then(r => r.arrayBuffer()).then(ab => Image.decode(new Uint8Array(ab))),
+      fetch(TECA_ROTTA_URL).then(r => r.arrayBuffer()).then(ab => Image.decode(new Uint8Array(ab))),
+    ]);
+
+    const flatCover = await Image.decode(coverRaw);
+    const { tecaBytes, rottaBytes } = await applyBaking(flatCover, tecaImg, tecaRottaImg);
+
+    const ts = Date.now();
+    const tecaPath  = `manual-baked/${user.id}/${book_id}/${ts}.jpg`;
+    const rottaPath = `manual-rotta/${user.id}/${book_id}/${ts}.jpg`;
+
+    const [tecaResult, rottaResult] = await Promise.all([
+      supabase.storage.from("copertine").upload(tecaPath, tecaBytes, { contentType: "image/jpeg", upsert: true }),
+      supabase.storage.from("copertine").upload(rottaPath, rottaBytes, { contentType: "image/jpeg", upsert: true }),
+    ]) as [{ error: { message: string } | null }, { error: { message: string } | null }];
+
+    if (tecaResult.error) return json({ error: tecaResult.error.message }, 500);
+
+    const { data: tecaUrlData } = supabase.storage.from("copertine").getPublicUrl(tecaPath);
+    const { data: rottaUrlData } = supabase.storage.from("copertine").getPublicUrl(rottaPath);
+
+    // ?v=teca segnala al frontend che la teca è già baked → nessun overlay CSS
+    const coverUrl = `${tecaUrlData.publicUrl}?v=teca`;
+    const rottaUrl = rottaResult.error ? null : rottaUrlData.publicUrl;
+
+    return json({ cover_url: coverUrl, rotta_url: rottaUrl });
   }
 
   // ── GENERATE COVER ────────────────────────────────────────────────────────
@@ -486,7 +562,7 @@ Deno.serve(async (req) => {
     return json({ error: "Nessun dato immagine nella risposta AI" }, 502);
   }
 
-  // 3. Perspective warp + teca composite + spine + riflessi + logo
+  // 3. Perspective warp + teca composite + spine + riflessi (pipeline condivisa)
   let finalBytes: Uint8Array;
   let flatBytesForUpload: Uint8Array | null = null;
   let rottaBytesForUpload: Uint8Array | null = null;
@@ -498,51 +574,15 @@ Deno.serve(async (req) => {
       fetch(TECA_ROTTA_URL).then(r => r.arrayBuffer()).then(ab => Image.decode(new Uint8Array(ab))),
     ]);
 
-    const cW = flatCover.width, cH = flatCover.height;
-    const spineW = Math.min(SPINE_SOURCE_W, cW);
-    const spineQuad = [
-      { x: 0, y: 0 }, { x: spineW - 1, y: 0 },
-      { x: spineW - 1, y: cH - 1 }, { x: 0, y: cH - 1 },
-    ];
+    // 3a–3h: warp + teca + spine + riflessi (via helper condiviso)
+    const { tecaBytes, rottaBytes } = await applyBaking(flatCover, tecaImg, tecaRottaImg);
 
-    // 3a. Warp copertina flat nella faccia della teca
-    const canvas = warpToFace(flatCover);
-
-    // 3b. Crea versione rotta copiando il bitmap warped prima di applicare le tecas
-    const canvasRotta = new Image(TECA_W, TECA_H);
-    canvasRotta.bitmap.set(canvas.bitmap);
-
-    // 3c. Teca overlay: intera su canvas, rotta su canvasRotta
-    //     (zona faccia trasparente → cover visibile;
-    //      zone spine/riflessi = rosse opaque → sovrascritte nei passi successivi)
-    canvas.composite(tecaImg, 0, 0);
-    canvasRotta.composite(tecaRottaImg, 0, 0);
-
-    // 3d. Spine: striscia sinistra del cover, scurita al 45%, warped nell'area spine
-    //     Disegnata DOPO la teca per sovrascrivere i pixel rossi placeholder
-    warpRegion(flatCover, spineQuad, SPINE, canvas, 0.45);
-    warpRegion(flatCover, spineQuad, SPINE, canvasRotta, 0.45);
-
-    // 3e. Riflesso spine: gradiente colore dal bordo sinistro del cover
-    fillGradientReflection(flatCover, 0, cH - REFL_SOURCE_H, spineW, REFL_SOURCE_H, SPINE_REFL, canvas, 0.30);
-    fillGradientReflection(flatCover, 0, cH - REFL_SOURCE_H, spineW, REFL_SOURCE_H, SPINE_REFL, canvasRotta, 0.30);
-
-    // 3f. Riflesso copertina: gradiente colore dal fondo del cover
-    fillGradientReflection(flatCover, 0, cH - REFL_SOURCE_H, cW, REFL_SOURCE_H, COVER_REFL, canvas, 0.40);
-    fillGradientReflection(flatCover, 0, cH - REFL_SOURCE_H, cW, REFL_SOURCE_H, COVER_REFL, canvasRotta, 0.40);
-
-    // 3g. Logo già integrato dall'AI nel flat cover — nessun compositing manuale
-
-    // 3h. Ridimensiona entrambi a OUT_W × OUT_H (512×768, ratio 2:3)
-    canvas.resize(OUT_W, OUT_H);
-    canvasRotta.resize(OUT_W, OUT_H);
-
-    // Prepara flat (riusa flatCover già in memoria — evita un secondo decode)
+    // Flat: ridimensiona e codifica (flatCover non modificato da applyBaking)
     flatCover.resize(OUT_W, OUT_H);
     flatBytesForUpload = await flatCover.encodeJPEG(85);
 
-    finalBytes = await canvas.encodeJPEG(85);
-    rottaBytesForUpload = await canvasRotta.encodeJPEG(85);
+    finalBytes = tecaBytes;
+    rottaBytesForUpload = rottaBytes;
     bakedTeca = true;
   } catch (_) {
     // Fallback: salva la copertina flat senza teca
