@@ -216,6 +216,7 @@ function GestionePage() {
   const [testoCompleto, setTestoCompleto] = useState("");
   const [tagStr, setTagStr] = useState("");
   const [copertina, setCopertina] = useState<File | null>(null);
+  const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(null);
   const [lastra, setLastra] = useState<File | null>(null);
   const [filePdf, setFilePdf] = useState<File | null>(null);
   const [existingCopertinaUrl, setExistingCopertinaUrl] = useState<string | null>(null);
@@ -262,6 +263,14 @@ function GestionePage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const cestinoSectionRef = useRef<HTMLDivElement>(null);
   const cestinoScrolled = useRef(false);
+
+  // Anteprima copertina: crea/revoca object URL al cambio file
+  useEffect(() => {
+    if (!copertina) { setCoverPreviewUrl(null); return; }
+    const url = URL.createObjectURL(copertina);
+    setCoverPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [copertina]);
 
   useEffect(() => {
     const init = async () => {
@@ -1698,21 +1707,41 @@ function GestionePage() {
                   <div>
                     <div className="font-mono text-[10px] tracking-widest text-cyan/70 uppercase mb-3">// copertina</div>
 
-                    {/* Anteprima copertina esistente */}
-                    {existingCopertinaUrl && (
-                      <div className="mb-4 flex items-start gap-4">
-                        <img src={existingCopertinaUrl} alt="Copertina attuale" className="w-20 h-28 object-cover ring-1 ring-cyan/40 flex-shrink-0" />
-                        <div className="font-mono text-[9px] text-bone/40 tracking-widest uppercase pt-1">copertina attuale</div>
+                    {/* Anteprima copertina: attuale + nuova affiancate */}
+                    {(existingCopertinaUrl || coverPreviewUrl) && (
+                      <div className="mb-4 flex items-start gap-6">
+                        {existingCopertinaUrl && (
+                          <div className="flex flex-col items-center gap-1">
+                            <img
+                              src={existingCopertinaUrl}
+                              alt="Copertina attuale"
+                              className={`w-20 h-28 object-cover ring-1 flex-shrink-0 transition-all duration-300 ${
+                                coverPreviewUrl ? "ring-bone/20 opacity-40 saturate-0" : "ring-cyan/40"
+                              }`}
+                            />
+                            <span className="font-mono text-[8px] text-bone/30 tracking-widest uppercase">attuale</span>
+                          </div>
+                        )}
+                        {coverPreviewUrl && (
+                          <div className="flex flex-col items-center gap-1">
+                            <img
+                              src={coverPreviewUrl}
+                              alt="Nuova copertina"
+                              className="w-20 h-28 object-cover ring-1 ring-cyan flex-shrink-0"
+                            />
+                            <span className="font-mono text-[8px] text-cyan tracking-widest uppercase">nuova ↑</span>
+                          </div>
+                        )}
                       </div>
                     )}
 
                     {/* Specifiche per copertina caricata manualmente */}
                     <div className="mb-3 font-mono text-[9px] tracking-widest text-bone/35 border border-cyan/10 px-3 py-2 inline-flex gap-3">
-                      <span>↳ 486 × 940 px</span>
+                      <span>↳ JPG o PNG</span>
                       <span className="text-bone/20">·</span>
-                      <span>JPG o PNG</span>
+                      <span>ridimensionata in automatico</span>
                       <span className="text-bone/20">·</span>
-                      <span>max 500 KB</span>
+                      <span>max 800 KB</span>
                     </div>
 
                     <div className="flex gap-3 flex-wrap">
