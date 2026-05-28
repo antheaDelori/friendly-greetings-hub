@@ -684,26 +684,30 @@ function GestionePage() {
       img.src = url;
     });
 
-  const uploadFile = async (file: File, bucket: string, path: string): Promise<string | null> => {
-    // Normalizza automaticamente le copertine caricate manualmente
+  const uploadFile = async (file: File, bucket: string, path: string): Promise<string> => {
+    // Normalizza automaticamente le copertine caricate manualmente (resize → JPEG ≤500KB)
     let toUpload: File | Blob = file;
-    if (bucket === "copertine" && file.type.startsWith("image/")) {
+    const isImage = bucket === "copertine" && file.type.startsWith("image/");
+    if (isImage) {
       try {
         toUpload = await resizeCover(file);
       } catch {
-        // fallback: carica il file originale
+        // fallback: carica il file originale se il resize fallisce
       }
     }
-    const { error } = await supabase.storage.from(bucket).upload(path, toUpload, {
+    // Usa sempre .jpg per le copertine (il resize converte in JPEG)
+    const finalPath = isImage ? path.replace(/\.[^.]+$/, ".jpg") : path;
+    const contentType = isImage ? "image/jpeg" : file.type || "application/octet-stream";
+    const { error } = await supabase.storage.from(bucket).upload(finalPath, toUpload, {
       upsert: true,
-      contentType: "image/jpeg",
+      contentType,
     });
-    if (error) return null;
+    if (error) throw new Error(error.message);
     if (bucket === "copertine") {
-      const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+      const { data } = supabase.storage.from(bucket).getPublicUrl(finalPath);
       return data.publicUrl;
     }
-    return path;
+    return finalPath;
   };
 
   const handleSave = async () => {
@@ -805,15 +809,13 @@ function GestionePage() {
       let epub_url: string | null = existingEpubUrl;
 
       if (copertina) {
-        const ext = copertina.name.split(".").pop();
-        copertina_url = await uploadFile(copertina, "copertine", `${userId}/${editingId}-cover.${ext}`);
+        copertina_url = await uploadFile(copertina, "copertine", `${userId}/${editingId}-cover.jpg`);
       }
       if (lastra) {
-        const ext = lastra.name.split(".").pop();
-        lastra_url = await uploadFile(lastra, "copertine", `${userId}/${editingId}-lastra.${ext}`);
+        lastra_url = await uploadFile(lastra, "copertine", `${userId}/${editingId}-lastra.jpg`);
       }
       if (filePdf) {
-        const ext = filePdf.name.split(".").pop();
+        const ext = filePdf.name.split(".").pop() ?? "pdf";
         file_url = await uploadFile(filePdf, "libri", `${userId}/${editingId}-file.${ext}`);
       }
       if (fileEpub) {
@@ -841,8 +843,10 @@ function GestionePage() {
       setSaveFlash(true);
       setTimeout(() => setSaveFlash(false), 4000);
       await loadBooks(userId);
-    } catch {
-      setSaveMaterialiError("Errore durante il salvataggio dei materiali.");
+    } catch (err) {
+      setSaveMaterialiError(
+        err instanceof Error ? `Errore: ${err.message}` : "Errore durante il caricamento. Riprova."
+      );
     } finally {
       setSavingMateriali(false);
     }
