@@ -401,10 +401,10 @@ Deno.serve(async (req) => {
     return json({ error: "limit_reached", used: count, limit: FREE_LIMIT }, 429);
   }
 
-  // 1. GPT-4o: trasforma la descrizione in un prompt visivo creativo
+  // 1. GPT-4o + fetch logo in parallelo
   let visualPrompt = prompt;
-  try {
-    const gptRes = await fetch("https://api.openai.com/v1/chat/completions", {
+  const [gptRes, logoRawAB] = await Promise.all([
+    fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -433,46 +433,66 @@ Deno.serve(async (req) => {
           },
         ],
       }),
-    });
+    }),
+    fetch(LOGO_URL).then(r => r.arrayBuffer()),
+  ]);
+
+  try {
     if (gptRes.ok) {
       const gptData = await gptRes.json();
       visualPrompt = gptData.choices?.[0]?.message?.content?.trim() ?? prompt;
     }
   } catch (_) { /* fallback: usa il prompt originale */ }
 
-  // 2. gpt-image-1: genera la copertina flat 1024×1536
-  const genRes = await fetch("https://api.openai.com/v1/images/generations", {
+  // 2. gpt-image-1/edits: genera la copertina flat con logo integrato dall'AI
+  const coverFormData = new FormData();
+  coverFormData.append("model", "gpt-image-1");
+  coverFormData.append(
+    "image[]",
+    new Blob([new Uint8Array(logoRawAB)], { type: "image/png" }),
+    "anthea-delori-logo.png",
+  );
+  coverFormData.append(
+    "prompt",
+    `High-end literary novel book cover. Photorealistic, sharp focus, cinematic photography style, NOT painted or illustrated. ` +
+    `COVER TEXT: title "${book_title ?? ""}" in large elegant serif typography, ` +
+    `author name "${author_name ?? ""}" in smaller font below the title. ` +
+    `PUBLISHER LOGO: the Anthea Delori Edizioni logo (provided as reference image) must appear in the bottom-left corner, ` +
+    `small (≈12% of cover width), naturally integrated — adapt its style to harmonize with the cover palette and mood. ` +
+    `VISUAL CONCEPT: ${visualPrompt}. ` +
+    `Full bleed image edge to edge. Dramatic cinematic lighting, rich color palette, professional composition.`,
+  );
+  coverFormData.append("size", "1024x1536");
+  coverFormData.append("quality", "high");
+  coverFormData.append("n", "1");
+
+  const genRes = await fetch("https://api.openai.com/v1/images/edits", {
     method: "POST",
-    headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "gpt-image-1",
-      prompt:
-        `High-end literary novel book cover. Photorealistic, sharp focus, cinematic photography style, NOT painted or illustrated. ` +
-        `COVER TEXT: title "${book_title ?? ""}" in large elegant typography, ` +
-        `author name "${author_name ?? ""}" in smaller font. ` +
-        `VISUAL CONCEPT: ${visualPrompt}. ` +
-        `Full bleed image edge to edge. No publisher logo or extra text. ` +
-        `Dramatic cinematic lighting, rich color palette, professional composition.`,
-      n: 1,
-      size: "1024x1536",
-      quality: "high",
-    }),
+    headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
+    body: coverFormData,
   });
   if (!genRes.ok) return json({ error: await genRes.text() }, 502);
 
-  const genData     = await genRes.json();
-  const cover_b64: string = genData.data[0].b64_json;
-  const coverRaw    = Uint8Array.from(atob(cover_b64), (c) => c.charCodeAt(0));
+  const genData = await genRes.json();
+  // edits può restituire url o b64_json a seconda della versione API
+  let coverRaw: Uint8Array;
+  if (genData.data[0].b64_json) {
+    coverRaw = Uint8Array.from(atob(genData.data[0].b64_json), (c) => c.charCodeAt(0));
+  } else if (genData.data[0].url) {
+    const imgRes = await fetch(genData.data[0].url);
+    coverRaw = new Uint8Array(await imgRes.arrayBuffer());
+  } else {
+    return json({ error: "Nessun dato immagine nella risposta AI" }, 502);
+  }
 
   // 3. Perspective warp + teca composite + spine + riflessi + logo
   let finalBytes: Uint8Array;
   let flatBytesForUpload: Uint8Array | null = null;
   let bakedTeca = false;
   try {
-    const [flatCover, tecaImg, logoImg] = await Promise.all([
+    const [flatCover, tecaImg] = await Promise.all([
       Image.decode(coverRaw),
       fetch(TECA_URL).then(r => r.arrayBuffer()).then(ab => Image.decode(new Uint8Array(ab))),
-      fetch(LOGO_URL).then(r => r.arrayBuffer()).then(ab => Image.decode(new Uint8Array(ab))),
     ]);
 
     const cW = flatCover.width, cH = flatCover.height;
@@ -513,13 +533,7 @@ Deno.serve(async (req) => {
       0.40,
     );
 
-    // 3f. Logo in basso a sinistra della faccia, blend luminanza+vignetta circolare
-    const logoH = Math.round((logoImg.height / logoImg.width) * LOGO_W);
-    logoImg.resize(LOGO_W, logoH);
-    applyLogoBlend(logoImg);
-    const logoX = FACE[3].x + LOGO_LEFT_PAD;          // bordo sx faccia + padding
-    const logoY = FACE_BOTTOM_Y - logoH - LOGO_BOTTOM_PAD;
-    canvas.composite(logoImg, logoX, logoY);
+    // 3f. Logo già integrato dall'AI nel flat cover — nessun compositing manuale
 
     // 3g. Ridimensiona a OUT_W × OUT_H (512×768, ratio 2:3)
     canvas.resize(OUT_W, OUT_H);
