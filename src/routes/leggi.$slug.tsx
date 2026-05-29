@@ -578,8 +578,8 @@ function ReadPage() {
               {hoveredTip ?? "·"}
             </span>
           </div>
-          {/* Pulsanti + controlli font + legende */}
-          <div className="flex flex-row flex-wrap lg:flex-col gap-2 lg:overflow-y-auto lg:overflow-x-hidden lg:overscroll-y-contain lg:flex-1 lg:min-h-0">
+          {/* Pulsanti + controlli font — max-h calibrato: nessun gap, scroll per utenti con PDF+Ebook */}
+          <div className="flex flex-row flex-wrap lg:flex-col gap-2 lg:overflow-y-auto lg:overflow-x-hidden lg:overscroll-y-contain lg:max-h-[calc(100vh_-_9rem_-_174px)]">
           {fileUrl && isLoggedIn && !isAnonymous ? (
             <button
               onClick={handleDownload}
