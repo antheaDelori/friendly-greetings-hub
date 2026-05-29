@@ -573,7 +573,7 @@ function ReadPage() {
         </aside>
 
         {/* Sidebar destra sticky: azioni + font — prima dell'article nel DOM così su mobile appare tra info e testo */}
-        <aside className="lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:col-start-3 lg:row-start-1 flex flex-row flex-wrap lg:flex-col gap-2">
+        <aside className="lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-7rem)] lg:col-start-3 lg:row-start-1 flex flex-row flex-wrap lg:flex-col gap-2">
           <SideTip label="scarica la versione PDF del libro">
             {fileUrl && isLoggedIn && !isAnonymous ? (
               <button
