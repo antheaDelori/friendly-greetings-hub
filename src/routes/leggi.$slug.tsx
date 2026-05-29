@@ -212,6 +212,22 @@ function getOrCreateVisitorId(userId?: string | null): string {
   return id;
 }
 
+// Tooltip che scivola a sinistra al hover — solo desktop
+function SideTip({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="relative group flex-1 lg:flex-none">
+      <div className="hidden lg:block absolute right-[calc(100%+0.6rem)] top-1/2 -translate-y-1/2 z-50
+                      whitespace-nowrap font-display text-[8px] tracking-widest uppercase
+                      border border-ink text-ink bg-paper px-2.5 py-1.5
+                      opacity-0 translate-x-2 group-hover:opacity-100 group-hover:translate-x-0
+                      transition-all duration-150 pointer-events-none">
+        {label}
+      </div>
+      {children}
+    </div>
+  );
+}
+
 function ReadPage() {
   const { book, fileUrl, epubUrl, donationUrl, isLoggedIn, isAnonymous, userId, allegati, isCestinato, votiCestino: initialVoti, recuperato, bookId, authorId, recensioni: inizialiRecensioni, authorBio } = Route.useLoaderData();
   const isAuthor = !!userId && !!authorId && userId === authorId;
@@ -558,134 +574,151 @@ function ReadPage() {
 
         {/* Sidebar destra sticky: azioni + font — prima dell'article nel DOM così su mobile appare tra info e testo */}
         <aside className="lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:col-start-3 lg:row-start-1 flex flex-row flex-wrap lg:flex-col gap-2">
-          {fileUrl && isLoggedIn && !isAnonymous ? (
-            <button
-              onClick={handleDownload}
-              disabled={downloading}
-              className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait"
-            >
-              <span className="text-sm leading-none">↓</span>
-              <span>{downloading ? "Apertura…" : "PDF"}</span>
-            </button>
-          ) : fileUrl && isLoggedIn && isAnonymous ? (
-            <Link
-              to="/auth/"
-              search={{ returnTo: `/leggi/${book.slug}` }}
-              className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors"
-              title="Registrati per scaricare il file"
-            >
-              <span className="text-sm leading-none">↓</span>
-              <span>Registrati</span>
-            </Link>
-          ) : fileUrl && !isLoggedIn ? (
-            <Link
-              to="/auth/"
-              search={{ returnTo: `/leggi/${book.slug}` }}
-              className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors"
-            >
-              <span className="text-sm leading-none">↓</span>
-              <span>PDF</span>
-            </Link>
-          ) : (
-            <span className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink/20 text-ink/30 px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase cursor-not-allowed">
-              <span className="text-sm leading-none">↓</span>
-              <span>N/D</span>
-            </span>
+          <SideTip label="Scarica la versione PDF del libro">
+            {fileUrl && isLoggedIn && !isAnonymous ? (
+              <button
+                onClick={handleDownload}
+                disabled={downloading}
+                className="w-full inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait"
+              >
+                <span className="text-sm leading-none">↓</span>
+                <span>{downloading ? "Apertura…" : "PDF"}</span>
+              </button>
+            ) : fileUrl && isLoggedIn && isAnonymous ? (
+              <Link
+                to="/auth/"
+                search={{ returnTo: `/leggi/${book.slug}` }}
+                className="w-full inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors"
+              >
+                <span className="text-sm leading-none">↓</span>
+                <span>Registrati</span>
+              </Link>
+            ) : fileUrl && !isLoggedIn ? (
+              <Link
+                to="/auth/"
+                search={{ returnTo: `/leggi/${book.slug}` }}
+                className="w-full inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors"
+              >
+                <span className="text-sm leading-none">↓</span>
+                <span>PDF</span>
+              </Link>
+            ) : (
+              <span className="w-full inline-flex flex-col items-center justify-center gap-1 border border-ink/20 text-ink/30 px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase cursor-not-allowed">
+                <span className="text-sm leading-none">↓</span>
+                <span>N/D</span>
+              </span>
+            )}
+          </SideTip>
+          {epubUrl && (
+            <SideTip label="Scarica la versione ePub del libro">
+              {isLoggedIn && !isAnonymous ? (
+                <button
+                  onClick={handleDownloadEpub}
+                  disabled={downloadingEpub}
+                  className="w-full inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait"
+                >
+                  <span className="text-sm leading-none">↓</span>
+                  <span>{downloadingEpub ? "Apertura…" : "E-Book"}</span>
+                </button>
+              ) : (
+                <Link
+                  to="/auth/"
+                  search={{ returnTo: `/leggi/${book.slug}` }}
+                  className="w-full inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors"
+                >
+                  <span className="text-sm leading-none">↓</span>
+                  <span>E-Book</span>
+                </Link>
+              )}
+            </SideTip>
           )}
-          {epubUrl && isLoggedIn && !isAnonymous ? (
-            <button
-              onClick={handleDownloadEpub}
-              disabled={downloadingEpub}
-              className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait"
-            >
-              <span className="text-sm leading-none">↓</span>
-              <span>{downloadingEpub ? "Apertura…" : "E-Book"}</span>
-            </button>
-          ) : epubUrl && (isAnonymous || !isLoggedIn) ? (
-            <Link
-              to="/auth/"
-              search={{ returnTo: `/leggi/${book.slug}` }}
-              className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors"
-            >
-              <span className="text-sm leading-none">↓</span>
-              <span>E-Book</span>
-            </Link>
-          ) : null}
           {/* Like — solo per libri Supabase (bookId non vuoto) */}
-          {bookId && (isLoggedIn && !isAnonymous ? (
-            <button
-              onClick={handleToggleLike}
-              className={`flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase transition-colors cursor-pointer ${
-                userHasLiked
-                  ? "border-blood bg-blood/10 text-blood hover:bg-blood hover:text-paper"
-                  : "border-ink text-ink hover:bg-ink hover:text-paper"
-              }`}
-            >
-              <span className="text-sm leading-none">{userHasLiked ? "♥" : "♡"}</span>
-              <span>Like</span>
-            </button>
-          ) : (
-            <Link
-              to="/auth/"
-              search={{ returnTo: `/leggi/${book.slug}` }}
-              className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors"
-            >
-              <span className="text-sm leading-none">♡</span>
-              <span>Like</span>
-            </Link>
-          ))}
+          {bookId && (
+            <SideTip label={userHasLiked ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti"}>
+              {isLoggedIn && !isAnonymous ? (
+                <button
+                  onClick={handleToggleLike}
+                  className={`w-full inline-flex flex-col items-center justify-center gap-1 border px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase transition-colors cursor-pointer ${
+                    userHasLiked
+                      ? "border-blood bg-blood/10 text-blood hover:bg-blood hover:text-paper"
+                      : "border-ink text-ink hover:bg-ink hover:text-paper"
+                  }`}
+                >
+                  <span className="text-sm leading-none">{userHasLiked ? "♥" : "♡"}</span>
+                  <span>Like</span>
+                </button>
+              ) : (
+                <Link
+                  to="/auth/"
+                  search={{ returnTo: `/leggi/${book.slug}` }}
+                  className="w-full inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors"
+                >
+                  <span className="text-sm leading-none">♡</span>
+                  <span>Like</span>
+                </Link>
+              )}
+            </SideTip>
+          )}
 
-          <button
-            onClick={() => recensioniRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
-            className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors cursor-pointer"
-          >
-            <span className="text-sm leading-none">★</span>
-            <span>Recensisci</span>
-          </button>
+          <SideTip label="Scrivi una recensione">
+            <button
+              onClick={() => recensioniRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+              className="w-full inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors cursor-pointer"
+            >
+              <span className="text-sm leading-none">★</span>
+              <span>Recensisci</span>
+            </button>
+          </SideTip>
 
           {/* Stampa PDF */}
-          <button
-            onClick={async () => {
-              if (pdfLoading) return;
-              setPdfLoading(true);
-              try { await generateBookPdf(book, authorBio); }
-              finally { setPdfLoading(false); }
-            }}
-            disabled={pdfLoading}
-            className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors cursor-pointer disabled:opacity-40"
-          >
-            <span className="text-sm leading-none">{pdfLoading ? "…" : "⎙"}</span>
-            <span>{pdfLoading ? "Genera" : "Stampa"}</span>
-          </button>
+          <SideTip label="Genera il PDF pronto per la stampa (A5)">
+            <button
+              onClick={async () => {
+                if (pdfLoading) return;
+                setPdfLoading(true);
+                try { await generateBookPdf(book, authorBio); }
+                finally { setPdfLoading(false); }
+              }}
+              disabled={pdfLoading}
+              className="w-full inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors cursor-pointer disabled:opacity-40"
+            >
+              <span className="text-sm leading-none">{pdfLoading ? "…" : "⎙"}</span>
+              <span>{pdfLoading ? "Genera" : "Stampa"}</span>
+            </button>
+          </SideTip>
 
           {donationUrl && (
-            <a
-              href={donationUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-blood text-blood px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-blood hover:text-paper transition-colors cursor-pointer"
-            >
-              <span className="text-sm leading-none">♥</span>
-              <span>Sostieni</span>
-            </a>
+            <SideTip label="Sostieni l'autore con una donazione">
+              <a
+                href={donationUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full inline-flex flex-col items-center justify-center gap-1 border border-blood text-blood px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-blood hover:text-paper transition-colors cursor-pointer"
+              >
+                <span className="text-sm leading-none">♥</span>
+                <span>Sostieni</span>
+              </a>
+            </SideTip>
           )}
 
           {/* Segna come letto — sempre visibile per utenti loggati */}
           {isLoggedIn && !isAnonymous && (
-            libreriaStato === "letto" ? (
-              <span className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink/30 text-ink/35 px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase cursor-default select-none">
-                <span className="text-sm leading-none">✓</span>
-                <span>Letto</span>
-              </span>
-            ) : (
-              <button
-                onClick={handleSegnaLetto}
-                className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors cursor-pointer"
-              >
-                <span className="text-sm leading-none">◈</span>
-                <span>Letto?</span>
-              </button>
-            )
+            <SideTip label={libreriaStato === "letto" ? "Hai già letto questo libro" : "Segna il libro come già letto"}>
+              {libreriaStato === "letto" ? (
+                <span className="w-full inline-flex flex-col items-center justify-center gap-1 border border-ink/30 text-ink/35 px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase cursor-default select-none">
+                  <span className="text-sm leading-none">✓</span>
+                  <span>Letto</span>
+                </span>
+              ) : (
+                <button
+                  onClick={handleSegnaLetto}
+                  className="w-full inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors cursor-pointer"
+                >
+                  <span className="text-sm leading-none">◈</span>
+                  <span>Letto?</span>
+                </button>
+              )}
+            </SideTip>
           )}
 
           <div className="w-full lg:mt-4 lg:border-t lg:border-ink/10 lg:pt-4">
