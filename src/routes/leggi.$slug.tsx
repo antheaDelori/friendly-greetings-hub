@@ -559,13 +559,15 @@ function ReadPage() {
         </aside>
 
         {/* Sidebar destra sticky: azioni + font — prima dell'article nel DOM così su mobile appare tra info e testo */}
-        <aside className="lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:col-start-3 lg:row-start-1 flex flex-row flex-wrap lg:flex-col gap-2">
-          {/* Area tooltip — mostra il testo del pulsante in hover, solo desktop */}
-          <div className="hidden lg:flex w-full items-center justify-center min-h-[2.5rem] mb-1">
-            <span className={`font-display text-[8px] tracking-widest uppercase text-center text-ink/50 transition-opacity duration-150 ${hoveredTip ? "opacity-100" : "opacity-0"}`}>
+        <aside className="lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-7rem)] lg:col-start-3 lg:row-start-1 flex flex-col">
+          {/* Area tooltip — fuori dal contenitore scrollabile, sempre visibile in cima */}
+          <div className="hidden lg:flex w-full items-center justify-center min-h-[2.5rem] mb-1 shrink-0">
+            <span className={`font-display text-[8px] tracking-widest uppercase text-center border border-magenta/40 text-magenta/70 px-2 py-1 transition-opacity duration-150 ${hoveredTip ? "opacity-100" : "opacity-0"}`}>
               {hoveredTip ?? "·"}
             </span>
           </div>
+          {/* Contenuto scrollabile: pulsanti + controlli font + legende */}
+          <div className="flex flex-row flex-wrap lg:flex-col gap-2 lg:overflow-y-auto lg:flex-1 lg:min-h-0">
           {fileUrl && isLoggedIn && !isAnonymous ? (
             <button
               onClick={handleDownload}
@@ -750,6 +752,7 @@ function ReadPage() {
               È un modo per tenere traccia di ciò che conosci già.
             </p>
           </div>
+          </div>{/* fine div scrollabile */}
         </aside>
 
         {/* Testo capitolo */}
