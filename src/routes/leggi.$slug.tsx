@@ -523,7 +523,7 @@ function ReadPage() {
 
         {/* Sidebar sinistra: wrapper esteso = containing block per sticky */}
         <div className="lg:col-start-1 lg:row-start-1 lg:self-stretch">
-        <aside className="lg:sticky lg:top-24 lg:h-[calc(100vh-7rem)] lg:overflow-hidden flex flex-col">
+        <aside className="lg:sticky lg:top-36 lg:h-[calc(100vh-9rem)] lg:overflow-clip flex flex-col">
           {/* Pulsante fisso — sempre visibile anche quando il contenuto scrolla */}
           <Link
             to="/catalogo"
@@ -533,7 +533,7 @@ function ReadPage() {
           </Link>
 
           {/* Contenuto scrollabile: copertina, meta, capitoli */}
-          <div className="lg:overflow-y-auto lg:overscroll-y-contain lg:min-h-0 flex-1">
+          <div className="lg:overflow-y-auto lg:overflow-x-hidden lg:overscroll-y-contain lg:min-h-0 flex-1">
           <img src={book.cover} alt="" className="w-full h-auto block ring-1 ring-ink/15 bg-ink/5" />
 
           <div className="mt-4">
@@ -571,7 +571,7 @@ function ReadPage() {
 
         {/* Sidebar destra: wrapper esteso = containing block per sticky */}
         <div className="lg:col-start-3 lg:row-start-1 lg:self-stretch">
-        <aside className="lg:sticky lg:top-24 lg:h-[calc(100vh-7rem)] lg:overflow-hidden flex flex-col">
+        <aside className="lg:sticky lg:top-36 lg:h-[calc(100vh-9rem)] lg:overflow-clip flex flex-col">
           {/* Area tooltip — fuori dal contenitore scrollabile, sempre visibile in cima */}
           <div className="hidden lg:flex w-full items-center justify-center min-h-[2.5rem] mb-1 shrink-0">
             <span className={`font-display text-[8px] tracking-widest uppercase text-center border border-magenta/40 text-magenta/70 px-2 py-1 transition-opacity duration-150 ${hoveredTip ? "opacity-100" : "opacity-0"}`}>
@@ -579,7 +579,7 @@ function ReadPage() {
             </span>
           </div>
           {/* Contenuto scrollabile: pulsanti + controlli font + legende */}
-          <div className="flex flex-row flex-wrap lg:flex-col gap-2 lg:overflow-y-auto lg:overscroll-y-contain lg:flex-1 lg:min-h-0">
+          <div className="flex flex-row flex-wrap lg:flex-col gap-2 lg:overflow-y-auto lg:overflow-x-hidden lg:overscroll-y-contain lg:flex-1 lg:min-h-0">
           {fileUrl && isLoggedIn && !isAnonymous ? (
             <button
               onClick={handleDownload}
