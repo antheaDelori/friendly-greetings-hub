@@ -523,7 +523,7 @@ function ReadPage() {
 
         {/* Sidebar sinistra: wrapper esteso = containing block per sticky */}
         <div className="lg:col-start-1 lg:row-start-1 lg:self-stretch">
-        <aside className="lg:sticky lg:top-36 lg:h-[calc(100vh-9rem)] lg:overflow-clip flex flex-col">
+        <aside className="lg:sticky lg:top-36 lg:h-full lg:max-h-[calc(100vh-9rem)] lg:overflow-clip flex flex-col">
           {/* Pulsante fisso — sempre visibile anche quando il contenuto scrolla */}
           <Link
             to="/catalogo"
@@ -571,7 +571,7 @@ function ReadPage() {
 
         {/* Sidebar destra: wrapper esteso = containing block per sticky */}
         <div className="lg:col-start-3 lg:row-start-1 lg:self-stretch">
-        <aside className="lg:sticky lg:top-36 lg:h-[calc(100vh-9rem)] lg:overflow-clip flex flex-col">
+        <aside className="lg:sticky lg:top-36 lg:h-full lg:max-h-[calc(100vh-9rem)] lg:overflow-clip flex flex-col">
           {/* Area tooltip — fuori dal contenitore scrollabile, sempre visibile in cima */}
           <div className="hidden lg:flex w-full items-center justify-center min-h-[2.5rem] mb-1 shrink-0">
             <span className={`font-display text-[8px] tracking-widest uppercase text-center border border-magenta/40 text-magenta/70 px-2 py-1 transition-opacity duration-150 ${hoveredTip ? "opacity-100" : "opacity-0"}`}>
@@ -744,27 +744,30 @@ function ReadPage() {
             </div>
           </div>
 
-          {/* Legenda segnalibro — solo desktop */}
-          <div className="w-full hidden lg:flex lg:flex-col mt-2 border-t border-ink/10 pt-4">
-            <div className="font-display tracking-[0.15em] text-[9px] text-ink/50 mb-2 uppercase">— segnalibro</div>
-            <p className="font-serif text-[11px] text-ink/50 leading-relaxed italic">
-              Clicca su un paragrafo del testo per salvare il punto di lettura.
-              Al prossimo accesso tornerai esattamente lì.
-            </p>
-            <p className="mt-2 font-serif text-[11px] text-ink/35 italic">
-              Clicca di nuovo per rimuoverlo.
-            </p>
-          </div>
-
-          {/* Legenda pulsante Letto — solo desktop */}
-          <div className="w-full hidden lg:flex lg:flex-col mt-2 border-t border-ink/10 pt-4">
-            <div className="font-display tracking-[0.15em] text-[9px] text-ink/50 mb-2 uppercase">— hai già letto?</div>
-            <p className="font-serif text-[11px] text-ink/50 leading-relaxed italic">
-              Puoi segnare un'opera come letta anche se non l'hai terminata qui.
-              È un modo per tenere traccia di ciò che conosci già.
-            </p>
-          </div>
           </div>{/* fine div scrollabile */}
+
+          {/* Legende fisse — sempre visibili in fondo alla sidebar, non scrollabili */}
+          <div className="hidden lg:flex lg:flex-col lg:shrink-0">
+            {/* Legenda segnalibro */}
+            <div className="w-full flex flex-col mt-2 border-t border-ink/10 pt-3">
+              <div className="font-display tracking-[0.15em] text-[9px] text-ink/50 mb-1.5 uppercase">— segnalibro</div>
+              <p className="font-serif text-[11px] text-ink/50 leading-relaxed italic">
+                Clicca su un paragrafo del testo per salvare il punto di lettura.
+                Al prossimo accesso tornerai esattamente lì.
+              </p>
+              <p className="mt-1.5 font-serif text-[11px] text-ink/35 italic">
+                Clicca di nuovo per rimuoverlo.
+              </p>
+            </div>
+            {/* Legenda pulsante Letto */}
+            <div className="w-full flex flex-col mt-2 border-t border-ink/10 pt-3">
+              <div className="font-display tracking-[0.15em] text-[9px] text-ink/50 mb-1.5 uppercase">— hai già letto?</div>
+              <p className="font-serif text-[11px] text-ink/50 leading-relaxed italic">
+                Puoi segnare un'opera come letta anche se non l'hai terminata qui.
+                È un modo per tenere traccia di ciò che conosci già.
+              </p>
+            </div>
+          </div>
         </aside>
         </div>{/* fine wrapper sidebar destra */}
 
