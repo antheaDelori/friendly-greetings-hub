@@ -521,8 +521,9 @@ function ReadPage() {
       {/* Lettore: 3 colonne su desktop */}
       <section className="mx-auto max-w-6xl w-full px-4 sm:px-6 lg:px-10 py-8 grid grid-cols-1 lg:grid-cols-[210px_1fr_130px] gap-6 lg:gap-8 flex-1 items-start">
 
-        {/* Sidebar sinistra: info libro + capitoli */}
-        <aside className="lg:sticky lg:top-24 lg:self-start lg:h-[calc(100vh-7rem)] lg:overflow-hidden lg:col-start-1 flex flex-col">
+        {/* Sidebar sinistra: wrapper esteso = containing block per sticky */}
+        <div className="lg:col-start-1 lg:row-start-1 lg:self-stretch">
+        <aside className="lg:sticky lg:top-24 lg:h-[calc(100vh-7rem)] lg:overflow-hidden flex flex-col">
           {/* Pulsante fisso — sempre visibile anche quando il contenuto scrolla */}
           <Link
             to="/catalogo"
@@ -566,9 +567,11 @@ function ReadPage() {
           )}
           </div>
         </aside>
+        </div>{/* fine wrapper sidebar sinistra */}
 
-        {/* Sidebar destra sticky: azioni + font — prima dell'article nel DOM così su mobile appare tra info e testo */}
-        <aside className="lg:sticky lg:top-24 lg:self-start lg:h-[calc(100vh-7rem)] lg:overflow-hidden lg:col-start-3 lg:row-start-1 flex flex-col">
+        {/* Sidebar destra: wrapper esteso = containing block per sticky */}
+        <div className="lg:col-start-3 lg:row-start-1 lg:self-stretch">
+        <aside className="lg:sticky lg:top-24 lg:h-[calc(100vh-7rem)] lg:overflow-hidden flex flex-col">
           {/* Area tooltip — fuori dal contenitore scrollabile, sempre visibile in cima */}
           <div className="hidden lg:flex w-full items-center justify-center min-h-[2.5rem] mb-1 shrink-0">
             <span className={`font-display text-[8px] tracking-widest uppercase text-center border border-magenta/40 text-magenta/70 px-2 py-1 transition-opacity duration-150 ${hoveredTip ? "opacity-100" : "opacity-0"}`}>
@@ -763,6 +766,7 @@ function ReadPage() {
           </div>
           </div>{/* fine div scrollabile */}
         </aside>
+        </div>{/* fine wrapper sidebar destra */}
 
         {/* Testo capitolo */}
         <article ref={articleRef} id="lettura" style={{ scrollMarginTop: "7rem" }} className="lg:col-start-2 lg:row-start-1">
