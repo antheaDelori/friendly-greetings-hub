@@ -574,7 +574,7 @@ function ReadPage() {
 
         {/* Sidebar destra sticky: azioni + font — prima dell'article nel DOM così su mobile appare tra info e testo */}
         <aside className="lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:col-start-3 lg:row-start-1 flex flex-row flex-wrap lg:flex-col gap-2">
-          <SideTip label="Scarica la versione PDF del libro">
+          <SideTip label="scarica la versione PDF del libro">
             {fileUrl && isLoggedIn && !isAnonymous ? (
               <button
                 onClick={handleDownload}
@@ -610,7 +610,7 @@ function ReadPage() {
             )}
           </SideTip>
           {epubUrl && (
-            <SideTip label="Scarica la versione ePub del libro">
+            <SideTip label="scarica la versione ebook del libro">
               {isLoggedIn && !isAnonymous ? (
                 <button
                   onClick={handleDownloadEpub}
@@ -634,7 +634,7 @@ function ReadPage() {
           )}
           {/* Like — solo per libri Supabase (bookId non vuoto) */}
           {bookId && (
-            <SideTip label={userHasLiked ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti"}>
+            <SideTip label="cosa ne pensi del libro?">
               {isLoggedIn && !isAnonymous ? (
                 <button
                   onClick={handleToggleLike}
@@ -660,7 +660,7 @@ function ReadPage() {
             </SideTip>
           )}
 
-          <SideTip label="Scrivi una recensione">
+          <SideTip label="ti va di lasciarmi le tue impressioni?">
             <button
               onClick={() => recensioniRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
               className="w-full inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors cursor-pointer"
@@ -671,7 +671,7 @@ function ReadPage() {
           </SideTip>
 
           {/* Stampa PDF */}
-          <SideTip label="Genera il PDF pronto per la stampa (A5)">
+          <SideTip label="vuoi stamparti un formato cartaceo da libro?">
             <button
               onClick={async () => {
                 if (pdfLoading) return;
@@ -688,7 +688,7 @@ function ReadPage() {
           </SideTip>
 
           {donationUrl && (
-            <SideTip label="Sostieni l'autore con una donazione">
+            <SideTip label="i soldi non ci seguono nell'aldilà">
               <a
                 href={donationUrl}
                 target="_blank"
