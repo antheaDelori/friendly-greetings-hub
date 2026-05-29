@@ -519,11 +519,11 @@ function ReadPage() {
       <SiteHeader />
 
       {/* Lettore: 3 colonne su desktop */}
-      <section className="mx-auto max-w-6xl w-full px-4 sm:px-6 lg:px-10 py-8 grid grid-cols-1 lg:grid-cols-[210px_1fr_130px] gap-6 lg:gap-8 flex-1">
+      <section className="mx-auto max-w-6xl w-full px-4 sm:px-6 lg:px-10 py-8 grid grid-cols-1 lg:grid-cols-[210px_1fr_130px] gap-6 lg:gap-8">
 
         {/* Sidebar sinistra: wrapper esteso = containing block per sticky */}
         <div className="lg:col-start-1 lg:row-start-1 lg:self-stretch">
-        <aside className="lg:sticky lg:top-36 lg:h-full lg:max-h-[calc(100vh-9rem)] lg:overflow-clip flex flex-col">
+        <aside className="lg:sticky lg:top-36 lg:h-[calc(100vh-9rem)] lg:overflow-clip flex flex-col">
           {/* Pulsante fisso — sempre visibile anche quando il contenuto scrolla */}
           <Link
             to="/catalogo"
@@ -532,8 +532,8 @@ function ReadPage() {
             ← Torna al catalogo
           </Link>
 
-          {/* Contenuto scrollabile: copertina, meta, capitoli */}
-          <div className="lg:overflow-y-auto lg:overflow-x-hidden lg:overscroll-y-contain lg:min-h-0 flex-1">
+          {/* Contenuto: copertina, meta, capitoli — clippati dall'aside, nessuno scroll intercettato */}
+          <div className="lg:overflow-x-hidden lg:min-h-0 flex-1">
           <img src={book.cover} alt="" className="w-full h-auto block ring-1 ring-ink/15 bg-ink/5" />
 
           <div className="mt-4">
@@ -571,7 +571,7 @@ function ReadPage() {
 
         {/* Sidebar destra: wrapper esteso = containing block per sticky */}
         <div className="lg:col-start-3 lg:row-start-1 lg:self-stretch">
-        <aside className="lg:sticky lg:top-36 lg:h-full lg:max-h-[calc(100vh-9rem)] lg:overflow-clip flex flex-col">
+        <aside className="lg:sticky lg:top-36 lg:h-[calc(100vh-9rem)] lg:overflow-clip flex flex-col">
           {/* Area tooltip — fuori dal contenitore scrollabile, sempre visibile in cima */}
           <div className="hidden lg:flex w-full items-center justify-center min-h-[2.5rem] mb-1 shrink-0">
             <span className={`font-display text-[8px] tracking-widest uppercase text-center border border-magenta/40 text-magenta/70 px-2 py-1 transition-opacity duration-150 ${hoveredTip ? "opacity-100" : "opacity-0"}`}>
