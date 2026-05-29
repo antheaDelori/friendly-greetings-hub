@@ -578,8 +578,8 @@ function ReadPage() {
               {hoveredTip ?? "·"}
             </span>
           </div>
-          {/* Contenuto scrollabile: pulsanti + controlli font + legende */}
-          <div className="flex flex-row flex-wrap lg:flex-col gap-2 lg:overflow-y-auto lg:overflow-x-hidden lg:overscroll-y-contain lg:flex-1 lg:min-h-0">
+          {/* Pulsanti + controlli font + legende — clippati dall'aside, nessuno scroll intercettato */}
+          <div className="flex flex-row flex-wrap lg:flex-col gap-2 lg:overflow-x-hidden lg:flex-1 lg:min-h-0">
           {fileUrl && isLoggedIn && !isAnonymous ? (
             <button
               onClick={handleDownload}
@@ -744,30 +744,27 @@ function ReadPage() {
             </div>
           </div>
 
-          </div>{/* fine div scrollabile */}
-
-          {/* Legende fisse — sempre visibili in fondo alla sidebar, non scrollabili */}
-          <div className="hidden lg:flex lg:flex-col lg:shrink-0">
-            {/* Legenda segnalibro */}
-            <div className="w-full flex flex-col mt-2 border-t border-ink/10 pt-3">
-              <div className="font-display tracking-[0.15em] text-[9px] text-ink/50 mb-1.5 uppercase">— segnalibro</div>
-              <p className="font-serif text-[11px] text-ink/50 leading-relaxed italic">
-                Clicca su un paragrafo del testo per salvare il punto di lettura.
-                Al prossimo accesso tornerai esattamente lì.
-              </p>
-              <p className="mt-1.5 font-serif text-[11px] text-ink/35 italic">
-                Clicca di nuovo per rimuoverlo.
-              </p>
-            </div>
-            {/* Legenda pulsante Letto */}
-            <div className="w-full flex flex-col mt-2 border-t border-ink/10 pt-3">
-              <div className="font-display tracking-[0.15em] text-[9px] text-ink/50 mb-1.5 uppercase">— hai già letto?</div>
-              <p className="font-serif text-[11px] text-ink/50 leading-relaxed italic">
-                Puoi segnare un'opera come letta anche se non l'hai terminata qui.
-                È un modo per tenere traccia di ciò che conosci già.
-              </p>
-            </div>
+          {/* Legenda segnalibro — solo desktop */}
+          <div className="w-full hidden lg:flex lg:flex-col mt-2 border-t border-ink/10 pt-3">
+            <div className="font-display tracking-[0.15em] text-[9px] text-ink/50 mb-1.5 uppercase">— segnalibro</div>
+            <p className="font-serif text-[11px] text-ink/50 leading-relaxed italic">
+              Clicca su un paragrafo del testo per salvare il punto di lettura.
+              Al prossimo accesso tornerai esattamente lì.
+            </p>
+            <p className="mt-1.5 font-serif text-[11px] text-ink/35 italic">
+              Clicca di nuovo per rimuoverlo.
+            </p>
           </div>
+
+          {/* Legenda pulsante Letto — solo desktop */}
+          <div className="w-full hidden lg:flex lg:flex-col mt-2 border-t border-ink/10 pt-3">
+            <div className="font-display tracking-[0.15em] text-[9px] text-ink/50 mb-1.5 uppercase">— hai già letto?</div>
+            <p className="font-serif text-[11px] text-ink/50 leading-relaxed italic">
+              Puoi segnare un'opera come letta anche se non l'hai terminata qui.
+              È un modo per tenere traccia di ciò che conosci già.
+            </p>
+          </div>
+          </div>{/* fine div sidebar destra */}
         </aside>
         </div>{/* fine wrapper sidebar destra */}
 
