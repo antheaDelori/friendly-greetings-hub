@@ -519,7 +519,7 @@ function ReadPage() {
       <SiteHeader />
 
       {/* Lettore: 3 colonne su desktop */}
-      <section className="mx-auto max-w-6xl w-full px-4 sm:px-6 lg:px-10 py-8 grid grid-cols-1 lg:grid-cols-[210px_1fr_130px] gap-6 lg:gap-8 flex-1 items-start">
+      <section className="mx-auto max-w-6xl w-full px-4 sm:px-6 lg:px-10 py-8 grid grid-cols-1 lg:grid-cols-[210px_1fr_130px] gap-6 lg:gap-8 flex-1">
 
         {/* Sidebar sinistra: wrapper esteso = containing block per sticky */}
         <div className="lg:col-start-1 lg:row-start-1 lg:self-stretch">
@@ -533,7 +533,7 @@ function ReadPage() {
           </Link>
 
           {/* Contenuto scrollabile: copertina, meta, capitoli */}
-          <div className="lg:overflow-y-auto lg:min-h-0 flex-1">
+          <div className="lg:overflow-y-auto lg:overscroll-y-contain lg:min-h-0 flex-1">
           <img src={book.cover} alt="" className="w-full h-auto block ring-1 ring-ink/15 bg-ink/5" />
 
           <div className="mt-4">
@@ -579,7 +579,7 @@ function ReadPage() {
             </span>
           </div>
           {/* Contenuto scrollabile: pulsanti + controlli font + legende */}
-          <div className="flex flex-row flex-wrap lg:flex-col gap-2 lg:overflow-y-auto lg:flex-1 lg:min-h-0">
+          <div className="flex flex-row flex-wrap lg:flex-col gap-2 lg:overflow-y-auto lg:overscroll-y-contain lg:flex-1 lg:min-h-0">
           {fileUrl && isLoggedIn && !isAnonymous ? (
             <button
               onClick={handleDownload}
@@ -769,7 +769,7 @@ function ReadPage() {
         </div>{/* fine wrapper sidebar destra */}
 
         {/* Testo capitolo */}
-        <article ref={articleRef} id="lettura" style={{ scrollMarginTop: "7rem" }} className="lg:col-start-2 lg:row-start-1">
+        <article ref={articleRef} id="lettura" style={{ scrollMarginTop: "7rem" }} className="lg:col-start-2 lg:row-start-1 lg:self-start">
           {resumeBanner && (
             <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border border-blood/30 bg-blood/5 px-4 py-3">
               <p className="font-serif italic text-sm text-ink/70">
