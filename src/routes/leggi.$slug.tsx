@@ -744,27 +744,23 @@ function ReadPage() {
             </div>
           </div>
 
-          {/* Legenda segnalibro — solo desktop */}
-          <div className="w-full hidden lg:flex lg:flex-col mt-2 border-t border-ink/10 pt-3">
-            <div className="font-display tracking-[0.15em] text-[9px] text-ink/50 mb-1.5 uppercase">— segnalibro</div>
-            <p className="font-serif text-[11px] text-ink/50 leading-relaxed italic">
-              Clicca su un paragrafo del testo per salvare il punto di lettura.
-              Al prossimo accesso tornerai esattamente lì.
-            </p>
-            <p className="mt-1.5 font-serif text-[11px] text-ink/35 italic">
-              Clicca di nuovo per rimuoverlo.
-            </p>
-          </div>
+          </div>{/* fine div pulsanti */}
 
-          {/* Legenda pulsante Letto — solo desktop */}
-          <div className="w-full hidden lg:flex lg:flex-col mt-2 border-t border-ink/10 pt-3">
-            <div className="font-display tracking-[0.15em] text-[9px] text-ink/50 mb-1.5 uppercase">— hai già letto?</div>
-            <p className="font-serif text-[11px] text-ink/50 leading-relaxed italic">
-              Puoi segnare un'opera come letta anche se non l'hai terminata qui.
-              È un modo per tenere traccia di ciò che conosci già.
-            </p>
+          {/* Legende compatte — shrink-0, sempre visibili indipendentemente dall'altezza del viewport */}
+          <div className="hidden lg:flex lg:flex-col shrink-0 mt-2 border-t border-ink/10 pt-2 gap-2">
+            <div>
+              <div className="font-display tracking-[0.12em] text-[8px] text-ink/40 uppercase mb-1">— segnalibro</div>
+              <p className="font-serif text-[10px] text-ink/45 leading-snug italic">
+                Clicca un paragrafo per salvare il punto. Clicca di nuovo per rimuoverlo.
+              </p>
+            </div>
+            <div>
+              <div className="font-display tracking-[0.12em] text-[8px] text-ink/40 uppercase mb-1">— già letto?</div>
+              <p className="font-serif text-[10px] text-ink/45 leading-snug italic">
+                Segna anche opere lette altrove.
+              </p>
+            </div>
           </div>
-          </div>{/* fine div sidebar destra */}
         </aside>
         </div>{/* fine wrapper sidebar destra */}
 
