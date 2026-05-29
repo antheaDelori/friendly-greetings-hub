@@ -2,7 +2,7 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { HudPanel, PageShell, HudButton } from "@/components/HudPanel";
-import { getBookBySlug } from "@/data/books";
+import { getBookBySlug, type Chapter } from "@/data/books";
 
 export const Route = createFileRoute("/community/$slug")({
   loader: ({ params }) => {
@@ -55,7 +55,7 @@ function BookCommunity() {
 
             <HudPanel label="commenti_per_capitolo" tone="cyan">
               <div className="space-y-4">
-                {book.chapters.map((c, i) => (
+                {book.chapters.map((c: Chapter, i: number) => (
                   <div key={c.id} className="border border-cyan/15 p-4 hover:border-cyan/40 transition-colors">
                     <div className="font-mono text-[10px] tracking-widest text-cyan/70 uppercase">// cap.{String(i+1).padStart(2,"0")}</div>
                     <div className="mt-1 font-display text-bone">{c.title}</div>

@@ -16,6 +16,15 @@ type RecensioneItem = {
   created_at: string;
 };
 
+type AllegatoItem = {
+  id: string;
+  titolo: string;
+  descrizione: string | null;
+  file_url: string;
+  tipo: string;
+  ordine: number;
+};
+
 export const Route = createFileRoute("/leggi/$slug")({
   loader: async ({ params }) => {
     // Prima cerca nei libri statici
@@ -253,7 +262,7 @@ function ReadPage() {
       }
     } else {
       setHasVoted(true);
-      setVoti(prev => prev + 1);
+      setVoti((prev: number) => prev + 1);
     }
     setVoteLoading(false);
   };
@@ -1002,7 +1011,7 @@ function ReadPage() {
             <div className="mt-16">
               <div className="font-display tracking-[0.25em] text-xs text-blood mb-4">— materiali extra</div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {allegati.map(a => (
+                {allegati.map((a: AllegatoItem) => (
                   <div key={a.id} className="border border-ink/20 bg-card p-4 flex gap-4 items-start">
                     {a.tipo === "immagine" ? (
                       <>
