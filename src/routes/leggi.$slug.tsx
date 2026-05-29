@@ -519,7 +519,7 @@ function ReadPage() {
       <SiteHeader />
 
       {/* Lettore: 3 colonne su desktop */}
-      <section className="mx-auto max-w-6xl w-full px-4 sm:px-6 lg:px-10 py-8 grid grid-cols-1 lg:grid-cols-[210px_1fr_130px] gap-6 lg:gap-8">
+      <section className="mx-auto max-w-6xl w-full px-4 sm:px-6 lg:px-10 py-8 grid grid-cols-1 lg:grid-cols-[210px_1fr_130px] gap-6 lg:gap-8 flex-1">
 
         {/* Sidebar sinistra: wrapper esteso = containing block per sticky */}
         <div className="lg:col-start-1 lg:row-start-1 lg:self-stretch">
@@ -532,8 +532,8 @@ function ReadPage() {
             ← Torna al catalogo
           </Link>
 
-          {/* Contenuto: copertina, meta, capitoli — clippati dall'aside, nessuno scroll intercettato */}
-          <div className="lg:overflow-x-hidden lg:min-h-0 flex-1">
+          {/* Contenuto scrollabile: copertina, meta, capitoli */}
+          <div className="lg:overflow-y-auto lg:overflow-x-hidden lg:overscroll-y-contain lg:min-h-0 flex-1">
           <img src={book.cover} alt="" className="w-full h-auto block ring-1 ring-ink/15 bg-ink/5" />
 
           <div className="mt-4">
@@ -578,8 +578,8 @@ function ReadPage() {
               {hoveredTip ?? "·"}
             </span>
           </div>
-          {/* Pulsanti + controlli font + legende — clippati dall'aside, nessuno scroll intercettato */}
-          <div className="flex flex-row flex-wrap lg:flex-col gap-2 lg:overflow-x-hidden lg:flex-1 lg:min-h-0">
+          {/* Pulsanti + controlli font + legende */}
+          <div className="flex flex-row flex-wrap lg:flex-col gap-2 lg:overflow-y-auto lg:overflow-x-hidden lg:overscroll-y-contain lg:flex-1 lg:min-h-0">
           {fileUrl && isLoggedIn && !isAnonymous ? (
             <button
               onClick={handleDownload}
