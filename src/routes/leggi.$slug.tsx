@@ -578,8 +578,8 @@ function ReadPage() {
               {hoveredTip ?? "·"}
             </span>
           </div>
-          {/* Pulsanti — max-h calibrato: tooltip(44) + font-ctrl(65) + legende(130) = 239px fissi */}
-          <div className="flex flex-row flex-wrap lg:flex-col gap-2 lg:overflow-y-auto lg:overflow-x-hidden lg:overscroll-y-contain lg:max-h-[calc(100vh_-_9rem_-_239px)]">
+          {/* Pulsanti — flex-nowrap su lg evita il wrap in colonna, overflow-y-auto gestisce lo scroll */}
+          <div className="flex flex-row flex-wrap lg:flex-col lg:flex-nowrap gap-2 lg:overflow-y-auto lg:overflow-x-hidden lg:overscroll-y-contain lg:max-h-[calc(100vh_-_9rem_-_239px)]">
           {fileUrl && isLoggedIn && !isAnonymous ? (
             <button
               onClick={handleDownload}
