@@ -930,6 +930,14 @@ function GestionePage() {
       let epub_url: string | null = existingEpubUrl;
 
       if (copertina) {
+        // Cancella i vecchi file copertina prima di caricare i nuovi
+        const oldCoverPaths = [existingCopertinaUrl, existingFlatUrl, existingRottaUrl]
+          .map(storagePathFromUrl)
+          .filter((p): p is string => !!p && !p.startsWith("brand/"));
+        if (oldCoverPaths.length > 0) {
+          await supabase.storage.from("copertine").remove(oldCoverPaths);
+        }
+
         // Step 1: upload flat
         setSavingMaterialiStep("uploading");
         const flatPath = `manual-flat/${userId}/${editingId}/${Date.now()}.jpg`;
@@ -1002,11 +1010,28 @@ function GestionePage() {
     }
   };
 
+  // Estrae il path relativo nel bucket da un URL pubblico Supabase Storage
+  const storagePathFromUrl = (url: string | null): string | null => {
+    if (!url) return null;
+    const marker = `/storage/v1/object/public/copertine/`;
+    const idx = url.indexOf(marker);
+    if (idx === -1) return null;
+    return decodeURIComponent(url.slice(idx + marker.length).split("?")[0]);
+  };
+
   const handleSaveAiCover = async (url: string) => {
     if (!editingId || !userId) return;
     setSavingAiCover(true);
     setSaveAiCoverError(null);
     try {
+      // Cancella i vecchi file dalla Storage prima di salvare i nuovi
+      const oldPaths = [existingCopertinaUrl, existingFlatUrl, existingRottaUrl]
+        .map(storagePathFromUrl)
+        .filter((p): p is string => !!p && !p.startsWith("brand/"));
+      if (oldPaths.length > 0) {
+        await supabase.storage.from("copertine").remove(oldPaths);
+      }
+
       const { error } = await supabase.from("books").update({
         copertina_url: url,
         copertina_flat_url: aiGeneratedFlatUrl ?? null,
@@ -1014,6 +1039,8 @@ function GestionePage() {
       }).eq("id", editingId);
       if (error) { setSaveAiCoverError(error.message); return; }
       setExistingCopertinaUrl(url);
+      setExistingFlatUrl(aiGeneratedFlatUrl ?? null);
+      setExistingRottaUrl(aiGeneratedRottaUrl ?? null);
       setAiGeneratedUrl(null);
       setAiGeneratedFlatUrl(null);
       setAiGeneratedRottaUrl(null);
