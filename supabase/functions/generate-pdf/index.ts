@@ -35,6 +35,19 @@ async function pollJob(jobId: string, maxAttempts = 40): Promise<any> {
   throw new Error("Timeout: conversione troppo lenta (>2 min)");
 }
 
+// Conta le pagine di un PDF cercando /Count N nel dizionario radice delle pagine.
+// Il valore massimo trovato corrisponde sempre al totale del documento.
+function countPdfPages(bytes: Uint8Array): number | null {
+  try {
+    const text = new TextDecoder("latin1").decode(bytes);
+    const matches = [...text.matchAll(/\/Count\s+(\d+)/g)];
+    if (!matches.length) return null;
+    return Math.max(...matches.map(m => parseInt(m[1], 10)));
+  } catch {
+    return null;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
 
@@ -162,7 +175,15 @@ Deno.serve(async (req) => {
 
   // Aggiorna books: file_url per pdf, epub_url per epub
   const updateField = format === "epub" ? "epub_url" : "file_url";
-  await supabase.from("books").update({ [updateField]: storagePath }).eq("id", book_id);
+  const updateData: Record<string, unknown> = { [updateField]: storagePath };
+
+  // Per i PDF: conta le pagine e salva in cover_numero_pagine
+  if (format === "pdf") {
+    const pageCount = countPdfPages(fileBytes);
+    if (pageCount !== null) updateData.cover_numero_pagine = pageCount;
+  }
+
+  await supabase.from("books").update(updateData).eq("id", book_id);
 
   // Registra il tentativo
   await supabase.from("book_conversions").insert({

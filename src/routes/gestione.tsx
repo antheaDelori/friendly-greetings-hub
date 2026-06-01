@@ -2216,13 +2216,25 @@ function GestionePage() {
                     </div>
                     <div>
                       <label className={labelClass}>Numero di pagine</label>
-                      <input type="number" min={1} max={9999} value={coverNumeroPagine}
-                        onChange={e => setCoverNumeroPagine(e.target.value)}
-                        placeholder="es. 240"
-                        className={inputClass} />
-                      <p className="mt-1 font-mono text-[9px] text-bone/30 tracking-widest">
-                        Usato per calcolare la larghezza della spina
-                      </p>
+                      {existingFileUrl ? (
+                        <>
+                          <div className={inputClass + " flex items-center justify-between bg-void/20 border-cyan/20 cursor-default select-none"}>
+                            <span className="text-bone/70">{coverNumeroPagine || "—"}</span>
+                            <span className="font-mono text-[9px] tracking-widest text-cyan/50 uppercase">dal PDF</span>
+                          </div>
+                          <p className="mt-1 font-mono text-[9px] text-bone/30 tracking-widest">
+                            Aggiornato automaticamente ad ogni rigenera PDF
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <div className={inputClass + " border-amber/40 bg-amber/5 py-3 px-4"}>
+                            <p className="font-mono text-[10px] tracking-widest text-amber uppercase">
+                              ⚠ Genera prima il PDF (sezione 04) — il numero di pagine verrà calcolato automaticamente
+                            </p>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
 
