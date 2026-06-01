@@ -578,8 +578,8 @@ function ReadPage() {
               {hoveredTip ?? "·"}
             </span>
           </div>
-          {/* Pulsanti + controlli font — max-h calibrato: nessun gap, scroll per utenti con PDF+Ebook */}
-          <div className="flex flex-row flex-wrap lg:flex-col gap-2 lg:overflow-y-auto lg:overflow-x-hidden lg:overscroll-y-contain lg:max-h-[calc(100vh_-_9rem_-_174px)]">
+          {/* Pulsanti — max-h calibrato: tooltip(44) + font-ctrl(65) + legende(130) = 239px fissi */}
+          <div className="flex flex-row flex-wrap lg:flex-col gap-2 lg:overflow-y-auto lg:overflow-x-hidden lg:overscroll-y-contain lg:max-h-[calc(100vh_-_9rem_-_239px)]">
           {fileUrl && isLoggedIn && !isAnonymous ? (
             <button
               onClick={handleDownload}
@@ -735,16 +735,17 @@ function ReadPage() {
             )
           )}
 
-          <div className="w-full lg:mt-4 lg:border-t lg:border-ink/10 lg:pt-4">
-            <div className="hidden lg:block font-display tracking-[0.15em] text-[9px] text-ink/50 mb-2 uppercase">— testo</div>
+          </div>{/* fine div pulsanti */}
+
+          {/* Controlli font — shrink-0, sempre visibili sopra le legende */}
+          <div className="hidden lg:block shrink-0 mt-2 border-t border-ink/10 pt-3">
+            <div className="font-display tracking-[0.15em] text-[9px] text-ink/50 mb-2 uppercase">— testo</div>
             <div className="flex w-full">
               <button onClick={() => setFontScale((s) => Math.max(0.85, s - 0.1))} className="flex-1 font-serif text-sm border border-ink/20 py-2 hover:border-ink text-center cursor-pointer">A−</button>
               <button onClick={() => setFontScale(1)} className="flex-1 font-serif text-sm border-t border-b border-ink/20 py-2 hover:border-ink text-center cursor-pointer">A</button>
               <button onClick={() => setFontScale((s) => Math.min(1.4, s + 0.1))} className="flex-1 font-serif text-lg border border-ink/20 py-2 hover:border-ink text-center cursor-pointer">A+</button>
             </div>
           </div>
-
-          </div>{/* fine div pulsanti */}
 
           {/* Legende compatte — shrink-0, sempre visibili indipendentemente dall'altezza del viewport */}
           <div className="hidden lg:flex lg:flex-col shrink-0 mt-2 border-t border-ink/10 pt-2 gap-2">
