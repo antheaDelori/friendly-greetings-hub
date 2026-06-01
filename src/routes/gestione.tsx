@@ -2361,12 +2361,12 @@ function GestionePage() {
                       {savingCoverStampa ? "▸ Salvataggio..." : "▸ Salva testi"}
                     </HudButton>
                     <HudButton variant="primary" onClick={handleGenerateCoverStampa}
-                      disabled={generatingCoverStampa || savingCoverStampa || !existingFlatUrl}>
+                      disabled={generatingCoverStampa || savingCoverStampa || (!existingFlatUrl && !existingCopertinaUrl)}>
                       {generatingCoverStampa ? "◈ Generazione in corso..." : "◈ Genera copertina da stampa"}
                     </HudButton>
                   </div>
 
-                  {!existingFlatUrl && (
+                  {!existingFlatUrl && !existingCopertinaUrl && (
                     <p className="font-mono text-[9px] tracking-widest text-magenta/60 uppercase">
                       ✗ Prima carica o genera la copertina fronte (sezione 03)
                     </p>
