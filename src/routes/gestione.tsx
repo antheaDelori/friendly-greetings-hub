@@ -264,6 +264,8 @@ function GestionePage() {
   const [saveAiCoverError, setSaveAiCoverError] = useState<string | null>(null);
   const [saveFlash, setSaveFlash] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [cleaningUp, setCleaningUp] = useState(false);
+  const [cleanupResult, setCleanupResult] = useState<{ deleted: number; total_in_bucket: number; errors: string[] } | null>(null);
   const cestinoSectionRef = useRef<HTMLDivElement>(null);
   const cestinoScrolled = useRef(false);
 
@@ -1010,6 +1012,25 @@ function GestionePage() {
     }
   };
 
+  // Pulizia storage: elimina tutti i file copertine non referenziati nel DB
+  const handleCleanupCovers = async () => {
+    setCleaningUp(true); setCleanupResult(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cleanup-covers`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session?.access_token}` },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      setCleanupResult(data);
+    } catch (e) {
+      setCleanupResult({ deleted: 0, total_in_bucket: 0, errors: [e instanceof Error ? e.message : "Errore"] });
+    } finally {
+      setCleaningUp(false);
+    }
+  };
+
   // Estrae il path relativo nel bucket da un URL pubblico Supabase Storage
   const storagePathFromUrl = (url: string | null): string | null => {
     if (!url) return null;
@@ -1283,6 +1304,25 @@ function GestionePage() {
     <div className="min-h-screen flex flex-col">
       <SiteHeader />
       <PageShell code="// MODULE/WORK_MGMT" title="Gestione opere" subtitle="Scrivi, modifica, pubblica. Tutto da qui.">
+
+        {/* Pannello admin — visibile solo ad Anthea */}
+        {isAdmin && (
+          <div className="mb-6 border border-amber/30 bg-amber/5 p-4 flex items-center gap-4 flex-wrap">
+            <span className="font-mono text-[10px] tracking-[0.25em] text-amber uppercase">◈ Admin</span>
+            <HudButton variant="ghost" onClick={handleCleanupCovers} disabled={cleaningUp}>
+              {cleaningUp ? "▸ Pulizia in corso..." : "▸ Elimina copertine inutilizzate"}
+            </HudButton>
+            {cleanupResult && (
+              <span className={`font-mono text-[10px] tracking-widest uppercase ${cleanupResult.errors.length ? "text-magenta" : "text-cyan"}`}>
+                {cleanupResult.errors.length
+                  ? `✗ ${cleanupResult.errors[0]}`
+                  : `✓ ${cleanupResult.deleted} file eliminati (${cleanupResult.total_in_bucket} totali nel bucket)`
+                }
+              </span>
+            )}
+          </div>
+        )}
+
         <div className="grid lg:grid-cols-[280px_1fr] gap-6">
 
           {/* Lista opere */}
