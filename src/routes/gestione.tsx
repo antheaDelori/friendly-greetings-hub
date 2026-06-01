@@ -144,7 +144,7 @@ function GestionePage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmMode, setConfirmMode] = useState<"archivia" | "cestino" | null>(null);
-  const [openSection, setOpenSection] = useState<0 | 1 | 2 | 3 | 4>(1);
+  const [openSection, setOpenSection] = useState<0 | 1 | 2 | 3 | 4 | 5>(1);
   const [savingMateriali, setSavingMateriali] = useState(false);
   const [saveMaterialiError, setSaveMaterialiError] = useState<string | null>(null);
   const [authorName, setAuthorName] = useState("");
@@ -267,6 +267,25 @@ function GestionePage() {
   const cestinoSectionRef = useRef<HTMLDivElement>(null);
   const cestinoScrolled = useRef(false);
 
+  // Copertina da stampa
+  const [coverFormato, setCoverFormato] = useState("a5");
+  const [coverNumeroPagine, setCoverNumeroPagine] = useState("");
+  const [coverQuartaTesto, setCoverQuartaTesto] = useState("");
+  const [coverAlettaSxTesto, setCoverAlettaSxTesto] = useState("");
+  const [coverAlettaDxTesto, setCoverAlettaDxTesto] = useState("");
+  const [coverFotoAutore, setCoverFotoAutore] = useState<File | null>(null);
+  const [existingCoverFotoAutoreUrl, setExistingCoverFotoAutoreUrl] = useState<string | null>(null);
+  const [coverHasIsbn, setCoverHasIsbn] = useState(false);
+  const [coverIsbn, setCoverIsbn] = useState("");
+  const [coverPrezzo, setCoverPrezzo] = useState("");
+  const [existingCoverStampaUrl, setExistingCoverStampaUrl] = useState<string | null>(null);
+  const [existingCoverStampaBleedUrl, setExistingCoverStampaBleedUrl] = useState<string | null>(null);
+  const [savingCoverStampa, setSavingCoverStampa] = useState(false);
+  const [coverStampaError, setCoverStampaError] = useState<string | null>(null);
+  const [generatingCoverStampa, setGeneratingCoverStampa] = useState(false);
+  const [coverStampaGenOk, setCoverStampaGenOk] = useState(false);
+  const coverFotoAutoreRef = useRef<HTMLInputElement>(null);
+
   // Anteprima copertina: crea/revoca object URL al cambio file
   useEffect(() => {
     if (!copertina) { setCoverPreviewUrl(null); return; }
@@ -329,6 +348,11 @@ function GestionePage() {
     setEditingId(null); setConfirmMode(null);
     setExistingCopertinaUrl(null); setExistingLastraUrl(null); setExistingFileUrl(null);
     setCollanaId("");
+    setCoverFormato("a5"); setCoverNumeroPagine(""); setCoverQuartaTesto("");
+    setCoverAlettaSxTesto(""); setCoverAlettaDxTesto(""); setCoverIsbn("");
+    setCoverHasIsbn(false); setCoverPrezzo(""); setCoverFotoAutore(null);
+    setExistingCoverFotoAutoreUrl(null); setExistingCoverStampaUrl(null);
+    setExistingCoverStampaBleedUrl(null); setCoverStampaGenOk(false); setCoverStampaError(null);
   };
 
   const resetCollanaForm = () => {
@@ -502,6 +526,23 @@ function GestionePage() {
     setDocGenEpubOk(false);
     setDocGenError(null);
     setCollanaId(b.collana_id ?? "");
+    // Copertina da stampa
+    const bcs = b as unknown as Record<string, string | number | null>;
+    setCoverFormato((bcs.cover_formato as string) ?? "a5");
+    setCoverNumeroPagine(bcs.cover_numero_pagine ? String(bcs.cover_numero_pagine) : "");
+    setCoverQuartaTesto((bcs.cover_quarta_testo as string) ?? "");
+    setCoverAlettaSxTesto((bcs.cover_aletta_sx_testo as string) ?? "");
+    setCoverAlettaDxTesto((bcs.cover_aletta_dx_testo as string) ?? "");
+    const existingIsbn = (bcs.cover_isbn as string) ?? "";
+    setCoverIsbn(existingIsbn);
+    setCoverHasIsbn(!!existingIsbn);
+    setCoverPrezzo((bcs.cover_prezzo as string) ?? "");
+    setExistingCoverFotoAutoreUrl((bcs.cover_foto_autore_url as string) ?? null);
+    setExistingCoverStampaUrl((bcs.cover_stampa_url as string) ?? null);
+    setExistingCoverStampaBleedUrl((bcs.cover_stampa_bleed_url as string) ?? null);
+    setCoverFotoAutore(null);
+    setCoverStampaGenOk(false);
+    setCoverStampaError(null);
     // Carica contatori conversioni
     supabase.from("book_conversions").select("id", { count: "exact", head: true })
       .eq("book_id", b.id).eq("format", "pdf")
@@ -659,6 +700,64 @@ function GestionePage() {
       setDocGenError(e instanceof Error ? e.message : "Errore di connessione. Riprova.");
     } finally {
       setDocGenerating(false);
+    }
+  };
+
+  // Salva i testi e le impostazioni della copertina da stampa
+  const handleSaveCoverStampa = async () => {
+    if (!editingId || !userId) return;
+    setSavingCoverStampa(true); setCoverStampaError(null);
+    try {
+      let fotoUrl = existingCoverFotoAutoreUrl;
+      if (coverFotoAutore) {
+        const ext = coverFotoAutore.name.split(".").pop() ?? "jpg";
+        const path = `${userId}/${editingId}-foto-autore.${ext}`;
+        const { error: upErr } = await supabase.storage.from("copertine").upload(path, coverFotoAutore, { upsert: true });
+        if (!upErr) {
+          const { data: urlData } = supabase.storage.from("copertine").getPublicUrl(path);
+          fotoUrl = urlData.publicUrl;
+          setExistingCoverFotoAutoreUrl(fotoUrl);
+          setCoverFotoAutore(null);
+        }
+      }
+      const { error } = await supabase.from("books").update({
+        cover_formato: coverFormato,
+        cover_numero_pagine: coverNumeroPagine ? parseInt(coverNumeroPagine) : null,
+        cover_quarta_testo: coverQuartaTesto.trim() || null,
+        cover_aletta_sx_testo: coverAlettaSxTesto.trim() || null,
+        cover_aletta_dx_testo: coverAlettaDxTesto.trim() || null,
+        cover_foto_autore_url: fotoUrl,
+        cover_isbn: coverHasIsbn ? (coverIsbn.trim() || null) : null,
+        cover_prezzo: coverPrezzo.trim() || null,
+      }).eq("id", editingId);
+      if (error) { setCoverStampaError(error.message); return; }
+      await loadBooks(userId);
+    } finally {
+      setSavingCoverStampa(false);
+    }
+  };
+
+  // Genera la copertina da stampa (chiama l'EF generate-full-cover)
+  const handleGenerateCoverStampa = async () => {
+    if (!editingId || !userId) return;
+    setGeneratingCoverStampa(true); setCoverStampaError(null); setCoverStampaGenOk(false);
+    try {
+      await handleSaveCoverStampa();
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-full-cover`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ book_id: editingId, formato: coverFormato }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setCoverStampaError(data.error ?? "Errore generazione copertina"); return; }
+      setExistingCoverStampaUrl(data.stampa_url ?? null);
+      setExistingCoverStampaBleedUrl(data.stampa_bleed_url ?? null);
+      if (data.numero_pagine) setCoverNumeroPagine(String(data.numero_pagine));
+      setCoverStampaGenOk(true);
+      await loadBooks(userId);
+    } finally {
+      setGeneratingCoverStampa(false);
     }
   };
 
@@ -2005,6 +2104,221 @@ function GestionePage() {
                         </p>
                       )}
                       {docGenError && <p className="font-mono text-[10px] tracking-wide text-magenta uppercase">✗ {docGenError}</p>}
+                    </div>
+                  )}
+
+                </div>
+              )}
+
+              {/* ── SEZIONE 05: Copertina da stampa ── */}
+              <button type="button" onClick={() => editingId && setOpenSection(openSection === 5 ? 0 : 5)} disabled={!editingId}
+                className={`w-full flex items-center gap-3 px-5 py-4 border transition-all ${
+                  !editingId ? "border-cyan/10 cursor-not-allowed" :
+                  openSection === 5 ? "border-cyan bg-cyan/5 cursor-pointer" : "border-cyan/30 hover:border-cyan cursor-pointer"
+                }`}>
+                <span className={`font-mono text-[11px] w-7 h-7 border flex items-center justify-center flex-shrink-0 ${
+                  !editingId ? "border-cyan/15 text-bone/20" :
+                  openSection === 5 ? "border-cyan text-cyan" : "border-cyan/40 text-bone/50"
+                }`}>05</span>
+                <div className="flex-1 text-left">
+                  <div className={`font-mono text-[11px] tracking-[0.3em] uppercase ${
+                    !editingId ? "text-bone/20" : openSection === 5 ? "text-cyan" : "text-bone/70"
+                  }`}>Copertina da stampa</div>
+                  <div className={`font-mono text-[9px] tracking-widest mt-0.5 ${!editingId ? "text-bone/15" : "text-bone/40"}`}>
+                    {editingId ? "fronte · spina · retro · alette" : "— salva prima i metadati —"}
+                  </div>
+                </div>
+                <span className={`font-mono text-[9px] tracking-widest uppercase ${
+                  !editingId ? "text-bone/20" : openSection === 5 ? "text-cyan" : "text-bone/40"
+                }`}>{!editingId ? "⊗" : openSection === 5 ? "▲" : "▼"}</span>
+              </button>
+              {openSection === 5 && editingId && (
+                <div className="border border-cyan/20 border-t-0 p-5 space-y-6">
+
+                  {/* Formato e numero pagine */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className={labelClass}>Formato di stampa</label>
+                      <select value={coverFormato} onChange={e => setCoverFormato(e.target.value)}
+                        className={inputClass + " cursor-pointer"}>
+                        <option value="a5">A5 — 148×210mm</option>
+                        <option value="15x21">15×21cm</option>
+                        <option value="17x24">17×24cm</option>
+                        <option value="tascabile">Tascabile — 105×148mm</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className={labelClass}>Numero di pagine</label>
+                      <input type="number" min={1} max={9999} value={coverNumeroPagine}
+                        onChange={e => setCoverNumeroPagine(e.target.value)}
+                        placeholder="es. 240"
+                        className={inputClass} />
+                      <p className="mt-1 font-mono text-[9px] text-bone/30 tracking-widest">
+                        Usato per calcolare la larghezza della spina
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Preview schematica layout */}
+                  <div>
+                    <div className={labelClass + " mb-2"}>Anteprima layout (schematica)</div>
+                    <div className="flex h-28 gap-0 font-mono text-[8px] tracking-widest uppercase overflow-hidden">
+                      {/* Aletta sx */}
+                      <div className="flex-[0.6] border border-cyan/20 bg-void/40 flex flex-col items-center justify-center gap-1 text-bone/30 min-w-0">
+                        <span className="rotate-90 whitespace-nowrap">aletta ant.</span>
+                        {coverAlettaSxTesto && <span className="text-cyan/40">✓</span>}
+                      </div>
+                      {/* Retro */}
+                      <div className="flex-1 border border-cyan/30 bg-void/60 flex flex-col items-center justify-center gap-1 text-bone/40">
+                        <span>retro</span>
+                        {coverQuartaTesto && <span className="text-cyan/60 text-[7px]">✓ testo</span>}
+                        {coverHasIsbn
+                          ? <span className="text-amber/50 text-[7px]">isbn</span>
+                          : <span className="text-bone/20 text-[7px]">logo</span>
+                        }
+                      </div>
+                      {/* Spina */}
+                      <div className="border-y border-cyan/20 bg-cyan/5 flex items-center justify-center text-cyan/30"
+                        style={{ width: coverNumeroPagine
+                          ? `${Math.max(8, Math.round((parseInt(coverNumeroPagine) * 0.052 + 2) / (coverFormato === "tascabile" ? 105 : coverFormato === "17x24" ? 170 : 148) * 60))}px`
+                          : "10px"
+                        }}>
+                      </div>
+                      {/* Fronte */}
+                      <div className="flex-1 border border-magenta/30 bg-void/60 relative overflow-hidden">
+                        {existingFlatUrl
+                          ? <img src={existingFlatUrl} alt="" className="w-full h-full object-cover opacity-60" />
+                          : <div className="w-full h-full flex items-center justify-center font-mono text-[8px] text-bone/30 uppercase tracking-widest">fronte</div>
+                        }
+                      </div>
+                      {/* Aletta dx */}
+                      <div className="flex-[0.6] border border-cyan/20 bg-void/40 flex flex-col items-center justify-center gap-1 text-bone/30 min-w-0">
+                        <span className="rotate-90 whitespace-nowrap">aletta post.</span>
+                        {coverAlettaDxTesto && <span className="text-cyan/40">✓</span>}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Testi sezioni */}
+                  <div className="space-y-4">
+                    <div>
+                      <label className={labelClass}>Aletta anteriore <span className="text-bone/30 normal-case">(si piega dentro la copertina)</span></label>
+                      <textarea value={coverAlettaSxTesto} onChange={e => setCoverAlettaSxTesto(e.target.value)}
+                        placeholder="Biografia dell'autore, nota sull'opera..."
+                        rows={4}
+                        className={inputClass + " resize-y font-serif"} />
+                    </div>
+
+                    <div>
+                      <label className={labelClass}>Quarta di copertina <span className="text-bone/30 normal-case">(retro)</span></label>
+                      <textarea value={coverQuartaTesto} onChange={e => setCoverQuartaTesto(e.target.value)}
+                        placeholder="Descrizione del libro, citazioni, testo di presentazione..."
+                        rows={5}
+                        className={inputClass + " resize-y font-serif"} />
+                    </div>
+
+                    <div>
+                      <label className={labelClass}>Aletta posteriore <span className="text-bone/30 normal-case">(si piega dentro il retro)</span></label>
+                      <textarea value={coverAlettaDxTesto} onChange={e => setCoverAlettaDxTesto(e.target.value)}
+                        placeholder="Collana, altri titoli, note..."
+                        rows={3}
+                        className={inputClass + " resize-y font-serif"} />
+                    </div>
+                  </div>
+
+                  {/* Foto autore */}
+                  <div>
+                    <label className={labelClass}>Foto autore <span className="text-bone/30 normal-case">(opzionale — per l'aletta)</span></label>
+                    <div className="mt-2 flex items-center gap-3 flex-wrap">
+                      {existingCoverFotoAutoreUrl && (
+                        <img src={existingCoverFotoAutoreUrl} alt="" className="w-12 h-12 object-cover rounded-full ring-1 ring-cyan/30" />
+                      )}
+                      <input ref={coverFotoAutoreRef} type="file" accept="image/*"
+                        onChange={e => setCoverFotoAutore(e.target.files?.[0] ?? null)}
+                        className="hidden" />
+                      <button type="button" onClick={() => coverFotoAutoreRef.current?.click()}
+                        className="border border-cyan/40 px-4 py-2 font-mono text-[10px] uppercase tracking-widest hover:border-cyan hover:text-cyan transition-all text-bone/60 cursor-pointer">
+                        {coverFotoAutore ? `✓ ${coverFotoAutore.name}` : existingCoverFotoAutoreUrl ? "✓ caricata (sostituisci)" : "▸ Scegli foto"}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* ISBN / logo */}
+                  <div className="space-y-3">
+                    <label className={labelClass}>ISBN</label>
+                    <div className="flex items-center gap-3">
+                      <button type="button"
+                        onClick={() => setCoverHasIsbn(!coverHasIsbn)}
+                        className={`w-10 h-5 border transition-all relative flex-shrink-0 ${coverHasIsbn ? "border-cyan bg-cyan/20" : "border-cyan/30"}`}>
+                        <span className={`absolute top-0.5 w-3.5 h-3.5 bg-current transition-all ${coverHasIsbn ? "left-5 text-cyan" : "left-0.5 text-bone/30"}`} />
+                      </button>
+                      <span className="font-mono text-[10px] tracking-widest text-bone/50">
+                        {coverHasIsbn ? "Inserisco il codice ISBN" : "Usa logo Liberiamo come placeholder"}
+                      </span>
+                    </div>
+                    {coverHasIsbn && (
+                      <div>
+                        <input type="text" value={coverIsbn} onChange={e => setCoverIsbn(e.target.value)}
+                          placeholder="978-88-..."
+                          className={inputClass} />
+                        <p className="mt-1 font-mono text-[9px] text-bone/30 tracking-widest">
+                          L'ISBN va richiesto tramite AIE o un'agenzia (costo ~€35-50 per codice)
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Prezzo */}
+                  <div>
+                    <label className={labelClass}>Prezzo <span className="text-bone/30 normal-case">(opzionale — stampato sul retro)</span></label>
+                    <input type="text" value={coverPrezzo} onChange={e => setCoverPrezzo(e.target.value)}
+                      placeholder="€ 18,00"
+                      className={inputClass} />
+                  </div>
+
+                  {/* Azioni */}
+                  <div className="flex gap-3 flex-wrap pt-2">
+                    <HudButton variant="ghost" onClick={handleSaveCoverStampa} disabled={savingCoverStampa || generatingCoverStampa}>
+                      {savingCoverStampa ? "▸ Salvataggio..." : "▸ Salva testi"}
+                    </HudButton>
+                    <HudButton variant="primary" onClick={handleGenerateCoverStampa}
+                      disabled={generatingCoverStampa || savingCoverStampa || !existingFlatUrl}>
+                      {generatingCoverStampa ? "◈ Generazione in corso..." : "◈ Genera copertina da stampa"}
+                    </HudButton>
+                  </div>
+
+                  {!existingFlatUrl && (
+                    <p className="font-mono text-[9px] tracking-widest text-magenta/60 uppercase">
+                      ✗ Prima carica o genera la copertina fronte (sezione 03)
+                    </p>
+                  )}
+
+                  {coverStampaError && (
+                    <p className="font-mono text-[10px] tracking-wide text-magenta uppercase">✗ {coverStampaError}</p>
+                  )}
+
+                  {coverStampaGenOk && (
+                    <p className="font-mono text-[10px] tracking-wide text-cyan uppercase">✓ Copertina generata con successo</p>
+                  )}
+
+                  {/* Download */}
+                  {(existingCoverStampaUrl || existingCoverStampaBleedUrl) && (
+                    <div className="border border-cyan/20 bg-void/30 p-4 space-y-3">
+                      <div className={labelClass}>File generati</div>
+                      <div className="flex gap-3 flex-wrap">
+                        {existingCoverStampaUrl && (
+                          <a href={existingCoverStampaUrl} download target="_blank" rel="noreferrer"
+                            className="border border-cyan/40 px-4 py-2 font-mono text-[10px] uppercase tracking-widest hover:border-cyan hover:text-cyan transition-all text-bone/60">
+                            ▸ Scarica — versione pulita
+                          </a>
+                        )}
+                        {existingCoverStampaBleedUrl && (
+                          <a href={existingCoverStampaBleedUrl} download target="_blank" rel="noreferrer"
+                            className="border border-amber/40 px-4 py-2 font-mono text-[10px] uppercase tracking-widest hover:border-amber hover:text-amber transition-all text-bone/60">
+                            ▸ Scarica — con bleed e segni di taglio
+                          </a>
+                        )}
+                      </div>
                     </div>
                   )}
 
