@@ -2171,6 +2171,26 @@ function GestionePage() {
                         </p>
                       )}
                       {docGenError && <p className="font-mono text-[10px] tracking-wide text-magenta uppercase">✗ {docGenError}</p>}
+
+                      {/* Download — visibili quando i file esistono */}
+                      {(existingFileUrl || existingEpubUrl) && !docGenerating && (
+                        <div className="flex gap-3 flex-wrap pt-1">
+                          {existingFileUrl && (
+                            <a href={supabase.storage.from("libri").getPublicUrl(existingFileUrl).data.publicUrl}
+                               download="libro.pdf" target="_blank" rel="noreferrer"
+                               className="border border-cyan/40 px-4 py-2 font-mono text-[10px] uppercase tracking-widest hover:border-cyan hover:text-cyan transition-all text-bone/60">
+                              ▸ Scarica PDF
+                            </a>
+                          )}
+                          {existingEpubUrl && (
+                            <a href={supabase.storage.from("libri").getPublicUrl(existingEpubUrl).data.publicUrl}
+                               download="libro.epub" target="_blank" rel="noreferrer"
+                               className="border border-cyan/40 px-4 py-2 font-mono text-[10px] uppercase tracking-widest hover:border-cyan hover:text-cyan transition-all text-bone/60">
+                              ▸ Scarica E-Book (.epub)
+                            </a>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
 
