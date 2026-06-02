@@ -77,6 +77,47 @@ function vLine(img: Image, x: number, y: number, h: number, color: number, t = 1
   fillRect(img, x, y, t, h, color);
 }
 
+// Converte r,g,b,a in colore RRGGBBAA uint32
+function toColor(r: number, g: number, b: number, a = 255): number {
+  return (((r & 0xff) << 24) | ((g & 0xff) << 16) | ((b & 0xff) << 8) | (a & 0xff)) >>> 0;
+}
+
+// Campiona il colore medio dell'immagine (stride adattivo, ~1000 campioni)
+function sampleAvgColor(img: Image): { r: number; g: number; b: number; luma: number } {
+  const { bitmap, width, height } = img;
+  const stride = Math.max(1, Math.floor(Math.sqrt((width * height) / 1000)));
+  let rS = 0, gS = 0, bS = 0, n = 0;
+  for (let y = 0; y < height; y += stride) {
+    for (let x = 0; x < width; x += stride) {
+      const i = 4 * (y * width + x);
+      rS += bitmap[i]; gS += bitmap[i + 1]; bS += bitmap[i + 2];
+      n++;
+    }
+  }
+  if (n === 0) return { r: 245, g: 240, b: 232, luma: 0.95 };
+  const r = Math.round(rS / n), g = Math.round(gS / n), b = Math.round(bS / n);
+  return { r, g, b, luma: (0.299 * r + 0.587 * g + 0.114 * b) / 255 };
+}
+
+// Gradiente orizzontale in N bande (da colorA a sinistra a colorB a destra)
+function fillGradientH(
+  canvas: Image, x0: number, y0: number, w: number, h: number,
+  colorA: number, colorB: number, steps = 24,
+): void {
+  const rA = (colorA >>> 24) & 0xff, gA = (colorA >>> 16) & 0xff, bA = (colorA >>> 8) & 0xff;
+  const rB = (colorB >>> 24) & 0xff, gB = (colorB >>> 16) & 0xff, bB = (colorB >>> 8) & 0xff;
+  const bandW = Math.ceil(w / steps);
+  for (let i = 0; i < steps; i++) {
+    const t = steps > 1 ? i / (steps - 1) : 0;
+    const r = Math.round(rA + (rB - rA) * t);
+    const g = Math.round(gA + (gB - gA) * t);
+    const b_ = Math.round(bA + (bB - bA) * t);
+    const bx = x0 + i * bandW;
+    const bw = Math.min(bandW, x0 + w - bx);
+    if (bw > 0) fillRect(canvas, bx, y0, bw, h, toColor(r, g, b_));
+  }
+}
+
 // ── Scala l'immagine per coprire esattamente targetW×targetH (cover-fit) ──────
 // resize() e crop() modificano l'immagine in-place
 function scaleToCover(img: Image, targetW: number, targetH: number): void {
@@ -226,6 +267,31 @@ Deno.serve(async (req) => {
   const fontBytes: Uint8Array = Uint8Array.from(atob(FONT_B64), c => c.charCodeAt(0));
 
   const flatImg = await Image.decode(flatBytes);
+
+  // Campiona il colore medio della copertina fronte per adattare retro e alette
+  const avgColor = sampleAvgColor(flatImg);
+  const isDark = avgColor.luma < 0.5;
+
+  // Colore base per retro/alette: leggermente desaturato rispetto all'originale
+  const desat = 0.25;
+  const avg3 = (avgColor.r + avgColor.g + avgColor.b) / 3;
+  const baseR = Math.round(avgColor.r * (1 - desat) + avg3 * desat);
+  const baseG = Math.round(avgColor.g * (1 - desat) + avg3 * desat);
+  const baseB = Math.round(avgColor.b * (1 - desat) + avg3 * desat);
+
+  // Colore "esterno" (bordo lontano dalla spina): leggermente più scuro o più chiaro
+  const outerFactor = isDark ? 0.72 : 1.14;
+  const outerR = Math.min(255, Math.round(baseR * outerFactor));
+  const outerG = Math.min(255, Math.round(baseG * outerFactor));
+  const outerB = Math.min(255, Math.round(baseB * outerFactor));
+
+  const COLOR_BACK_BASE  = toColor(baseR,  baseG,  baseB);   // vicino alla spina
+  const COLOR_BACK_OUTER = toColor(outerR, outerG, outerB);  // bordo esterno
+  const COLOR_FLAP_BG    = toColor(outerR, outerG, outerB);  // alette: tono esterno
+  // Testo: chiaro su scuro, scuro su chiaro
+  const COLOR_BACK_TEXT  = isDark ? 0xE8E3D9FF : 0x1A1618FF;
+  const COLOR_BACK_RULE  = isDark ? 0xE8E3D940 : 0x1A161840;
+
   // Logo: imagescript non supporta WEBP nativamente — fallback silenzioso
   let logoImg: Image | null = null;
   if (logoBytes) {
@@ -238,7 +304,12 @@ Deno.serve(async (req) => {
 
   // ── Canvas principale ─────────────────────────────────────────────────────
   const canvas = new Image(canvasW, canvasH);
-  fillRect(canvas, 0, 0, canvasW, canvasH, COLOR_CREAM);
+  fillRect(canvas, 0, 0, canvasW, canvasH, COLOR_CREAM);  // base cream per aree non coperte
+  // Retro: gradiente dall'esterno (sinistra) verso la spina (destra)
+  fillGradientH(canvas, X_BACK, 0, coverW, canvasH, COLOR_BACK_OUTER, COLOR_BACK_BASE);
+  // Alette: tono piatto
+  fillRect(canvas, X_FLAP_SX, 0, flapPx, canvasH, COLOR_FLAP_BG);
+  fillRect(canvas, X_FLAP_DX, 0, flapPx, canvasH, COLOR_FLAP_BG);
 
   // ── FRONTE: scala la flat cover per coprire l'area ───────────────────────
   scaleToCover(flatImg, coverW, coverH);
@@ -297,18 +368,18 @@ Deno.serve(async (req) => {
 
   if (fontBytes && quarta) {
     await renderBlock(canvas, fontBytes, quarta,
-      X_BACK + padPx, padPx, backTextW, backFS, COLOR_INK);
+      X_BACK + padPx, padPx, backTextW, backFS, COLOR_BACK_TEXT);
   }
 
   // Riga separatrice in fondo al retro
   const bottomY = canvasH - px(22);
-  hLine(canvas, X_BACK + padPx, bottomY, backTextW, COLOR_RULE, 1);
+  hLine(canvas, X_BACK + padPx, bottomY, backTextW, COLOR_BACK_RULE, 1);
 
   // Prezzo (in basso a sinistra del retro)
   if (fontBytes && prezzo) {
     const prFS = Math.round(backFS * 0.9);
     try {
-      const prImg = await Image.renderText(fontBytes, prFS, prezzo, COLOR_INK);
+      const prImg = await Image.renderText(fontBytes, prFS, prezzo, COLOR_BACK_TEXT);
       canvas.composite(prImg, X_BACK + padPx, bottomY + px(4));
     } catch { /* ignora */ }
   }
@@ -317,7 +388,7 @@ Deno.serve(async (req) => {
   if (fontBytes && isbnText) {
     const isFS = Math.round(backFS * 0.85);
     try {
-      const isImg = await Image.renderText(fontBytes, isFS, `ISBN ${isbnText}`, COLOR_INK);
+      const isImg = await Image.renderText(fontBytes, isFS, `ISBN ${isbnText}`, COLOR_BACK_TEXT);
       const isX = X_BACK + coverW - padPx - isImg.width;
       canvas.composite(isImg, Math.max(X_BACK + padPx, isX), bottomY + px(4));
     } catch { /* ignora */ }
@@ -335,13 +406,13 @@ Deno.serve(async (req) => {
   const flapFS = Math.round(coverH * 0.020);
   if (fontBytes && alettaSx) {
     await renderBlock(canvas, fontBytes, alettaSx,
-      X_FLAP_SX + padPx, padPx, flapPx - padPx * 2, flapFS, COLOR_INK);
+      X_FLAP_SX + padPx, padPx, flapPx - padPx * 2, flapFS, COLOR_BACK_TEXT);
   }
 
   // ── ALETTA DESTRA ─────────────────────────────────────────────────────────
   if (fontBytes && alettaDx) {
     await renderBlock(canvas, fontBytes, alettaDx,
-      X_FLAP_DX + padPx, padPx, flapPx - padPx * 2, flapFS, COLOR_INK);
+      X_FLAP_DX + padPx, padPx, flapPx - padPx * 2, flapFS, COLOR_BACK_TEXT);
   }
 
   // ── Encode versione pulita ─────────────────────────────────────────────────
