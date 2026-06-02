@@ -5,7 +5,10 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ADMIN_EMAIL               = "antheadelori@live.it";
 const BUCKET                    = "copertine";
 
-const PROTECTED_PREFIXES = ["brand/"];
+// Protezione: la cartella "brand" e tutti i suoi file non vengono mai eliminati.
+// Il check usa path.startsWith(p) sul fullPath del file (non sul prefisso della cartella)
+// per evitare il bug "brand".startsWith("brand/") === false.
+const PROTECTED_PREFIXES = ["brand/", "brand"];
 
 function storagePath(url: string): string | null {
   const marker = `/storage/v1/object/public/${BUCKET}/`;
@@ -79,8 +82,11 @@ Deno.serve(async (req) => {
 
   await listFolder("");
 
-  // 3. File da eliminare = quelli non referenziati
-  const toDelete = allFiles.filter(path => !usedPaths.has(path));
+  // 3. File da eliminare = quelli non referenziati E non protetti
+  const toDelete = allFiles.filter(path =>
+    !usedPaths.has(path) &&
+    !PROTECTED_PREFIXES.some(p => path === p || path.startsWith(p.endsWith("/") ? p : p + "/"))
+  );
 
   // 4. Elimina in blocchi da 100
   let deleted = 0;
