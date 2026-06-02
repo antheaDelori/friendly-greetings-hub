@@ -77,19 +77,31 @@ export function CoverSpreadPreview({
   const textColor = isDark ? "rgba(232,227,217,0.90)" : "rgba(26,22,24,0.90)";
   const ruleColor = isDark ? "rgba(232,227,217,0.18)" : "rgba(26,22,24,0.18)";
 
-  // Geometria
+  // Geometria reale (usata per l'aspect-ratio del canvas)
   const fmt    = FORMATS[formato] ?? FORMATS.a5;
   const spineW = spineWidthMm(pagine || 200);
   const totalW = FLAP_MM + fmt.w + spineW + fmt.w + FLAP_MM;
 
-  // Percentuali larghezza per ogni pannello
-  const pct = (mm: number) => `${(mm / totalW * 100).toFixed(3)}%`;
+  // Nel preview le alette vengono rese più strette (65mm visivi invece di 90mm)
+  // per dare più respiro a retro e fronte — proporzionalità indicativa, non 1:1
+  const FLAP_PREVIEW = 65;
+  const previewW = FLAP_PREVIEW + fmt.w + spineW + fmt.w + FLAP_PREVIEW;
+  const pct = (mm: number) => `${(mm / previewW * 100).toFixed(3)}%`;
 
   const textBase: React.CSSProperties = {
     fontSize: "9px",
     lineHeight: 1.55,
     color: textColor,
     fontFamily: "Georgia, 'Times New Roman', serif",
+    overflowWrap: "break-word",
+    wordBreak: "break-word",
+  };
+
+  // Font più piccolo per le alette (meno spazio disponibile nel preview)
+  const flapText: React.CSSProperties = {
+    ...textBase,
+    fontSize: "7.5px",
+    lineHeight: 1.5,
   };
 
   const fade: React.CSSProperties = {
@@ -98,12 +110,12 @@ export function CoverSpreadPreview({
   };
 
   const labelMono: React.CSSProperties = {
-    fontSize: "7px",
+    fontSize: "6.5px",
     fontFamily: "monospace",
     letterSpacing: "0.12em",
     textTransform: "uppercase",
     opacity: 0.35,
-    marginBottom: "8%",
+    marginBottom: "6%",
     color: textColor,
   };
 
@@ -116,14 +128,14 @@ export function CoverSpreadPreview({
 
         {/* ── Aletta anteriore ─────────────────────────── */}
         <div style={{
-          width: pct(FLAP_MM), flexShrink: 0,
+          width: pct(FLAP_PREVIEW), flexShrink: 0,
           background: backOuter,
           borderRight: `1px solid ${ruleColor}`,
-          padding: "5% 7%",
+          padding: "5% 5%",
           overflow: "hidden",
         }}>
           <div style={labelMono}>aletta ant.</div>
-          <div style={{ ...textBase, ...fade }}>
+          <div style={{ ...flapText, ...fade }}>
             {alettaSx || <span style={{ opacity: 0.25 }}>—</span>}
           </div>
         </div>
@@ -138,7 +150,7 @@ export function CoverSpreadPreview({
           flexDirection: "column",
           justifyContent: "space-between",
         }}>
-          <div style={{ ...textBase, ...fade, flex: 1, overflow: "hidden" }}>
+          <div style={{ ...textBase, ...fade, flex: 1, overflow: "hidden", overflowWrap: "break-word", wordBreak: "break-word" }}>
             {quarta || <span style={{ opacity: 0.25, fontFamily: "monospace", fontSize: "7px", letterSpacing: "0.1em" }}>quarta di copertina</span>}
           </div>
           <div style={{
@@ -219,14 +231,14 @@ export function CoverSpreadPreview({
 
         {/* ── Aletta posteriore ────────────────────────── */}
         <div style={{
-          width: pct(FLAP_MM), flexShrink: 0,
+          width: pct(FLAP_PREVIEW), flexShrink: 0,
           background: backOuter,
           borderLeft: `1px solid ${ruleColor}`,
-          padding: "5% 7%",
+          padding: "5% 5%",
           overflow: "hidden",
         }}>
           <div style={labelMono}>aletta post.</div>
-          <div style={{ ...textBase, ...fade }}>
+          <div style={{ ...flapText, ...fade }}>
             {alettaDx || <span style={{ opacity: 0.25 }}>—</span>}
           </div>
         </div>

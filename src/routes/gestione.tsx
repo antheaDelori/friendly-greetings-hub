@@ -2284,27 +2284,6 @@ function GestionePage() {
                     </div>
                   </div>
 
-                  {/* Preview live copertina da stampa */}
-                  <div>
-                    <div className={labelClass + " mb-2"}>Anteprima copertina da stampa</div>
-                    <CoverSpreadPreview
-                      flatUrl={existingFlatUrl}
-                      titolo={titolo}
-                      autore={authorName}
-                      quarta={coverQuartaTesto}
-                      alettaSx={coverAlettaSxTesto}
-                      alettaDx={coverAlettaDxTesto}
-                      prezzo={coverPrezzo}
-                      isbn={coverIsbn}
-                      hasIsbn={coverHasIsbn}
-                      formato={coverFormato}
-                      pagine={coverNumeroPagine ? parseInt(coverNumeroPagine) : 200}
-                    />
-                    <p className="mt-1.5 font-mono text-[9px] text-bone/30 tracking-widest">
-                      ↳ L'anteprima si aggiorna mentre scrivi i testi — colori adattativi dalla copertina fronte
-                    </p>
-                  </div>
-
                   {/* Testi sezioni */}
                   <div className="space-y-4">
                     <div>
@@ -2380,6 +2359,27 @@ function GestionePage() {
                     <input type="text" value={coverPrezzo} onChange={e => setCoverPrezzo(e.target.value)}
                       placeholder="€ 18,00"
                       className={inputClass} />
+                  </div>
+
+                  {/* Preview live copertina da stampa */}
+                  <div>
+                    <div className={labelClass + " mb-2"}>Anteprima copertina da stampa</div>
+                    <CoverSpreadPreview
+                      flatUrl={existingFlatUrl}
+                      titolo={titolo}
+                      autore={authorName}
+                      quarta={coverQuartaTesto}
+                      alettaSx={coverAlettaSxTesto}
+                      alettaDx={coverAlettaDxTesto}
+                      prezzo={coverPrezzo}
+                      isbn={coverIsbn}
+                      hasIsbn={coverHasIsbn}
+                      formato={coverFormato}
+                      pagine={coverNumeroPagine ? parseInt(coverNumeroPagine) : 200}
+                    />
+                    <p className="mt-1.5 font-mono text-[9px] text-bone/30 tracking-widest">
+                      ↳ L'anteprima si aggiorna mentre scrivi i testi — colori adattativi dalla copertina fronte
+                    </p>
                   </div>
 
                   {/* Azioni */}
