@@ -176,17 +176,20 @@ async function renderBlock(
   fontSize: number,
   color: number,
   leading = 1.55,
+  maxH = Infinity,   // altezza massima — tronca le righe eccedenti
 ): Promise<number> {
   if (!text.trim()) return 0;
   const lines = wrapText(text, maxWidth, fontSize);
+  const lineH = Math.round(fontSize * leading);
   let curY = y;
   for (const line of lines) {
-    if (!line.trim()) { curY += Math.round(fontSize * leading); continue; }
+    if (curY - y + lineH > maxH) break;  // non sforare
+    if (!line.trim()) { curY += lineH; continue; }
     try {
       const textImg = await Image.renderText(font, fontSize, line, color);
       canvas.composite(textImg, x, curY);
     } catch { /* skip linea se renderText fallisce */ }
-    curY += Math.round(fontSize * leading);
+    curY += lineH;
   }
   return curY - y;
 }
@@ -338,13 +341,14 @@ Deno.serve(async (req) => {
     } catch { /* ignora */ }
   }
 
-  // Autore sotto il titolo
+  // Autore sotto il titolo (gap proporzionale alla larghezza del dorso)
   if (autore) {
     const af = Math.max(7, Math.round(sf * 0.75));
     try {
       const aImg = await Image.renderText(fontBytes, af, autore, COLOR_SPINE_TXT);
       const aRot = rotate90cw(aImg);
-      const ay = padPx + titleH + Math.round(sf * 0.6);
+      const spineGap = Math.max(Math.round(sf * 1.5), Math.round(spinePx * 0.18));
+      const ay = padPx + titleH + spineGap;
       canvas.composite(aRot, cx(aRot), ay);
     } catch { /* ignora */ }
   }
@@ -363,16 +367,29 @@ Deno.serve(async (req) => {
   }
 
   // ── RETRO ─────────────────────────────────────────────────────────────────
-  const backTextW = coverW - padPx * 2;
-  const backFS    = Math.round(coverH * 0.022);   // ~3.7mm font
+  // bottomY: posizione della riga separatrice / footer del retro
+  const bottomY    = canvasH - px(22);
+  const backTextW  = coverW - padPx * 2;
+  const backFS     = Math.round(coverH * 0.022);   // ~3.7mm font
+  const backTopMin = padPx * 3;                    // ~24mm margine superiore minimo
+  const backMaxH   = bottomY - backTopMin - padPx; // non tocca la riga separatrice
 
   if (fontBytes && quarta) {
+    // Calcola altezza totale del blocco testo per centrarlo nel terzo superiore
+    const lineH   = Math.round(backFS * 1.55);
+    const lines   = wrapText(quarta, backTextW, backFS);
+    const textH   = Math.min(lines.length * lineH, backMaxH);
+    // Zona disponibile per la centratura: dalla cima al 55% del retro
+    const zoneH   = Math.round(canvasH * 0.55) - backTopMin;
+    const offsetY = textH < zoneH ? Math.round((zoneH - textH) / 3) : 0;
+    const backY   = backTopMin + offsetY;
+
     await renderBlock(canvas, fontBytes, quarta,
-      X_BACK + padPx, padPx, backTextW, backFS, COLOR_BACK_TEXT);
+      X_BACK + padPx, backY, backTextW, backFS, COLOR_BACK_TEXT, 1.55, backMaxH);
   }
 
-  // Riga separatrice in fondo al retro
-  const bottomY = canvasH - px(22);
+  // Riga separatrice in fondo al retro (già definito sopra, non ridichiarare)
+  // const bottomY = canvasH - px(22);  ← spostato in cima alla sezione
   hLine(canvas, X_BACK + padPx, bottomY, backTextW, COLOR_BACK_RULE, 1);
 
   // Prezzo (in basso a sinistra del retro)

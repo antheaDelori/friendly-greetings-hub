@@ -37,7 +37,7 @@ export const Route = createFileRoute("/leggi/$slug")({
     // Poi cerca su Supabase
     const { data } = await supabase
       .from("books")
-      .select("id, slug, titolo, descrizione, estratto, genere, anno, letture, copertina_url, copertina_flat_url, file_url, epub_url, author_name, author_id, cestinato, voti_cestino, recuperato")
+      .select("id, slug, titolo, descrizione, estratto, genere, anno, letture, copertina_url, copertina_flat_url, file_url, epub_url, mobi_url, author_name, author_id, cestinato, voti_cestino, recuperato")
       .eq("slug", params.slug)
       .or("disponibile.eq.true,cestinato.eq.true")
       .maybeSingle();
@@ -127,6 +127,7 @@ export const Route = createFileRoute("/leggi/$slug")({
       book,
       fileUrl: data.file_url as string | null,
       epubUrl: data.epub_url as string | null,
+      mobiUrl: data.mobi_url as string | null,
       donationUrl,
       isLoggedIn: !!session,
       isAnonymous: session?.user?.is_anonymous ?? false,
@@ -223,7 +224,7 @@ function getOrCreateVisitorId(userId?: string | null): string {
 
 
 function ReadPage() {
-  const { book, fileUrl, epubUrl, donationUrl, isLoggedIn, isAnonymous, userId, allegati, isCestinato, votiCestino: initialVoti, recuperato, bookId, authorId, recensioni: inizialiRecensioni, authorBio } = Route.useLoaderData();
+  const { book, fileUrl, epubUrl, mobiUrl, donationUrl, isLoggedIn, isAnonymous, userId, allegati, isCestinato, votiCestino: initialVoti, recuperato, bookId, authorId, recensioni: inizialiRecensioni, authorBio } = Route.useLoaderData();
   const isAuthor = !!userId && !!authorId && userId === authorId;
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const router = useRouter();
@@ -320,6 +321,7 @@ function ReadPage() {
 
   const [downloading, setDownloading] = useState(false);
   const [downloadingEpub, setDownloadingEpub] = useState(false);
+  const [downloadingMobi, setDownloadingMobi] = useState(false);
 
   const [recensioni, setRecensioni] = useState<RecensioneItem[]>(inizialiRecensioni);
 
@@ -436,6 +438,33 @@ function ReadPage() {
       alert("Errore nel download. Riprova.");
     } finally {
       setDownloadingEpub(false);
+    }
+  };
+
+  const handleDownloadMobi = async () => {
+    if (!mobiUrl || downloadingMobi) return;
+    setDownloadingMobi(true);
+    try {
+      const match = mobiUrl.match(/\/storage\/v1\/object\/(?:public|authenticated)\/libri\/(.+?)(?:\?.*)?$/);
+      const path = match ? decodeURIComponent(match[1]) : mobiUrl.startsWith("http") ? null : mobiUrl;
+      if (!path) { window.open(mobiUrl, "_blank"); return; }
+      const { data: blob, error } = await supabase.storage.from("libri").download(path);
+      if (error || !blob) { alert(`Errore nel download: ${error?.message ?? "file non trovato"}`); return; }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = book.title.replace(/[^a-z0-9àèéìòù ]/gi, "").trim().replace(/\s+/g, "-").toLowerCase() + ".mobi";
+      a.target = "_blank";
+      a.rel = "noopener";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (e) {
+      console.error("Download mobi error:", e);
+      alert("Errore nel download. Riprova.");
+    } finally {
+      setDownloadingMobi(false);
     }
   };
 
@@ -623,7 +652,7 @@ function ReadPage() {
             <button
               onClick={handleDownloadEpub}
               disabled={downloadingEpub}
-              onMouseEnter={() => setHoveredTip("scarica la versione ebook del libro")}
+              onMouseEnter={() => setHoveredTip("scarica l'e-book (Kindle 2022+, Kobo, Apple Books)")}
               onMouseLeave={() => setHoveredTip(null)}
               className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait"
             >
@@ -634,7 +663,7 @@ function ReadPage() {
             <Link
               to="/auth/"
               search={{ returnTo: `/leggi/${book.slug}` }}
-              onMouseEnter={() => setHoveredTip("scarica la versione ebook del libro")}
+              onMouseEnter={() => setHoveredTip("scarica l'e-book (Kindle 2022+, Kobo, Apple Books)")}
               onMouseLeave={() => setHoveredTip(null)}
               className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors"
             >
@@ -642,6 +671,29 @@ function ReadPage() {
               <span>E-Book</span>
             </Link>
           ))}
+          {mobiUrl && (isLoggedIn && !isAnonymous ? (
+            <button
+              onClick={handleDownloadMobi}
+              disabled={downloadingMobi}
+              onMouseEnter={() => setHoveredTip("scarica per Kindle classico (fino al 2021)")}
+              onMouseLeave={() => setHoveredTip(null)}
+              className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait"
+            >
+              <span className="text-sm leading-none">↓</span>
+              <span>{downloadingMobi ? "Apertura…" : "Kindle"}</span>
+            </button>
+          ) : mobiUrl ? (
+            <Link
+              to="/auth/"
+              search={{ returnTo: `/leggi/${book.slug}` }}
+              onMouseEnter={() => setHoveredTip("scarica per Kindle classico (fino al 2021)")}
+              onMouseLeave={() => setHoveredTip(null)}
+              className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors"
+            >
+              <span className="text-sm leading-none">↓</span>
+              <span>Kindle</span>
+            </Link>
+          ) : null)}
           {/* Like — solo per libri Supabase (bookId non vuoto) */}
           {bookId && (isLoggedIn && !isAnonymous ? (
             <button
