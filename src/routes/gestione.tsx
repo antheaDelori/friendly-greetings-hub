@@ -2050,8 +2050,8 @@ function GestionePage() {
                             {aiError && <p className="font-mono text-[11px] text-magenta">{aiError}</p>}
                             {aiGeneratedUrl && (
                               <div className="flex gap-5 items-start pt-1">
-                                <button onClick={() => setAiModalUrl(aiGeneratedUrl)} className="flex-shrink-0 cursor-zoom-in group relative w-24 h-32">
-                                  <img src={aiGeneratedUrl} alt="Copertina generata" className="w-full h-full object-cover ring-1 ring-cyan/40 group-hover:ring-cyan transition-all" />
+                                <button onClick={() => setAiModalUrl(aiGeneratedFlatUrl ?? aiGeneratedUrl)} className="flex-shrink-0 cursor-zoom-in group relative w-24 h-32">
+                                  <img src={aiGeneratedFlatUrl ?? aiGeneratedUrl} alt="Copertina generata" className="w-full h-full object-cover ring-1 ring-cyan/40 group-hover:ring-cyan transition-all" />
                                   <span className="absolute inset-0 flex items-center justify-center bg-void/40 opacity-0 group-hover:opacity-100 transition-opacity font-mono text-[9px] text-cyan tracking-widest">⊕ ingrandisci</span>
                                 </button>
                                 <div className="space-y-2">
