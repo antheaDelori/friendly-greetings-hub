@@ -480,7 +480,7 @@ Deno.serve(async (req) => {
 
   // 1. GPT-4o + fetch logo in parallelo
   let visualPrompt = prompt;
-  const [gptRes, logoRawAB] = await Promise.all([
+  const [gptRes, logoFetchRes] = await Promise.all([
     fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
@@ -511,7 +511,7 @@ Deno.serve(async (req) => {
         ],
       }),
     }),
-    fetch(LOGO_URL).then(r => r.arrayBuffer()),
+    fetch(LOGO_URL).catch(() => null),
   ]);
 
   try {
@@ -521,21 +521,34 @@ Deno.serve(async (req) => {
     }
   } catch (_) { /* fallback: usa il prompt originale */ }
 
-  // 2. gpt-image-1/edits: genera la copertina flat con logo integrato dall'AI
+  // Logo opzionale: solo se il file esiste (PNG valido in Storage)
+  const logoBytes = logoFetchRes?.ok ? new Uint8Array(await logoFetchRes.arrayBuffer()) : null;
+  const hasLogo = !!logoBytes && logoBytes.length > 500; // >500 byte = file reale, non HTML 404
+
+  // 2. gpt-image-1: genera la copertina flat
+  //    Se il logo è disponibile → images/edits (logo come reference)
+  //    Se il logo non è disponibile → images/generations (solo prompt)
   const coverFormData = new FormData();
   coverFormData.append("model", "gpt-image-1");
-  coverFormData.append(
-    "image[]",
-    new Blob([new Uint8Array(logoRawAB)], { type: "image/png" }),
-    "anthea-delori-logo.png",
-  );
+
+  if (hasLogo) {
+    coverFormData.append(
+      "image[]",
+      new Blob([logoBytes!], { type: "image/png" }),
+      "anthea-delori-logo.png",
+    );
+  }
+
+  const logoInstruction = hasLogo
+    ? `PUBLISHER LOGO: the Anthea Delori Edizioni logo (provided as reference image) must appear in the bottom-left corner, small (≈12% of cover width), naturally integrated — adapt its style to harmonize with the cover palette and mood. `
+    : `PUBLISHER LOGO: add the text "AntheaDelori" in very small elegant serif font, bottom-left corner, subtle. `;
+
   coverFormData.append(
     "prompt",
     `High-end literary novel book cover. Photorealistic, sharp focus, cinematic photography style, NOT painted or illustrated. ` +
     `COVER TEXT: title "${book_title ?? ""}" in large elegant serif typography, ` +
     `author name "${author_name ?? ""}" in smaller font below the title. ` +
-    `PUBLISHER LOGO: the Anthea Delori Edizioni logo (provided as reference image) must appear in the bottom-left corner, ` +
-    `small (≈12% of cover width), naturally integrated — adapt its style to harmonize with the cover palette and mood. ` +
+    logoInstruction +
     `VISUAL CONCEPT: ${visualPrompt}. ` +
     `Full bleed image edge to edge. Dramatic cinematic lighting, rich color palette, professional composition.`,
   );
@@ -543,7 +556,11 @@ Deno.serve(async (req) => {
   coverFormData.append("quality", "high");
   coverFormData.append("n", "1");
 
-  const genRes = await fetch("https://api.openai.com/v1/images/edits", {
+  const apiEndpoint = hasLogo
+    ? "https://api.openai.com/v1/images/edits"
+    : "https://api.openai.com/v1/images/generations";
+
+  const genRes = await fetch(apiEndpoint, {
     method: "POST",
     headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
     body: coverFormData,
