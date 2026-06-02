@@ -64,6 +64,7 @@ type Book = {
   lastra_url: string | null;
   file_url: string | null;
   epub_url: string | null;
+  mobi_url: string | null;
   docx_url: string | null;
   disponibile: boolean;
   cestinato: boolean;
@@ -226,6 +227,7 @@ function GestionePage() {
   const [existingFileUrl, setExistingFileUrl] = useState<string | null>(null);
   const [fileEpub, setFileEpub] = useState<File | null>(null);
   const [existingEpubUrl, setExistingEpubUrl] = useState<string | null>(null);
+  const [existingMobiUrl, setExistingMobiUrl] = useState<string | null>(null);
   const [savingMaterialiStep, setSavingMaterialiStep] = useState<"uploading" | "baking" | "saving" | null>(null);
 
   // Generazione automatica documenti da .docx (PDF + ePub in un click)
@@ -234,10 +236,12 @@ function GestionePage() {
   const [docGenerating, setDocGenerating] = useState(false);
   const [docGenPdfOk, setDocGenPdfOk] = useState(false);
   const [docGenEpubOk, setDocGenEpubOk] = useState(false);
+  const [docGenMobiOk, setDocGenMobiOk] = useState(false);
   const [docGenError, setDocGenError] = useState<string | null>(null);
   const [docProgress, setDocProgress] = useState(0);
   const [pdfConvUsed, setPdfConvUsed] = useState(0);
   const [epubConvUsed, setEpubConvUsed] = useState(0);
+  const [mobiConvUsed, setMobiConvUsed] = useState(0);
 
   const copertRef = useRef<HTMLInputElement>(null);
   const lastraRef = useRef<HTMLInputElement>(null);
@@ -522,6 +526,7 @@ function GestionePage() {
     setExistingLastraUrl(b.lastra_url);
     setExistingFileUrl(b.file_url);
     setExistingEpubUrl(b.epub_url);
+    setExistingMobiUrl(b.mobi_url);
     setExistingDocxUrl(b.docx_url ?? null);
     setDocxFile(null);
     setDocGenPdfOk(false);
@@ -552,6 +557,9 @@ function GestionePage() {
     supabase.from("book_conversions").select("id", { count: "exact", head: true })
       .eq("book_id", b.id).eq("format", "epub")
       .then(({ count }) => setEpubConvUsed(count ?? 0));
+    supabase.from("book_conversions").select("id", { count: "exact", head: true })
+      .eq("book_id", b.id).eq("format", "mobi")
+      .then(({ count }) => setMobiConvUsed(count ?? 0));
     setEditingId(b.id);
     // reset AI cover state and load attempt count
     setAiGeneratedUrl(null);
@@ -666,6 +674,7 @@ function GestionePage() {
     setDocGenError(null);
     setDocGenPdfOk(false);
     setDocGenEpubOk(false);
+    setDocGenMobiOk(false);
     try {
       // 1. Carica il .docx se è nuovo
       if (docxFile) {
@@ -678,7 +687,7 @@ function GestionePage() {
       }
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-      const call = async (format: "pdf" | "epub") => {
+      const call = async (format: "pdf" | "epub" | "mobi") => {
         const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-pdf`, {
           method: "POST",
           headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
@@ -697,6 +706,12 @@ function GestionePage() {
         const { ok, data } = await call("epub");
         if (ok) { setExistingEpubUrl(data.file_path); setEpubConvUsed(data.used); setDocGenEpubOk(true); }
         else if (data.error !== "limit_reached") { setDocGenError(`ePub: ${data.error ?? "errore"}`); }
+      }
+      // 4. Genera MOBI per Kindle classico (se entro limite)
+      if (isAdmin || mobiConvUsed < 10) {
+        const { ok, data } = await call("mobi");
+        if (ok) { setExistingMobiUrl(data.file_path); setMobiConvUsed(data.used); setDocGenMobiOk(true); }
+        else if (data.error !== "limit_reached") { setDocGenError(`MOBI: ${data.error ?? "errore"}`); }
       }
     } catch (e) {
       setDocGenError(e instanceof Error ? e.message : "Errore di connessione. Riprova.");
@@ -2125,14 +2140,14 @@ function GestionePage() {
                 <div className="border border-cyan/20 border-t-0 p-5 space-y-5">
 
                   {/* Genera documenti da .docx */}
-                  {(isAdmin || pdfConvUsed < 10 || epubConvUsed < 10) && (
+                  {(isAdmin || pdfConvUsed < 10 || epubConvUsed < 10 || mobiConvUsed < 10) && (
                     <div className="border border-amber/50 bg-amber/5 p-5 space-y-4 relative">
                       <span className="absolute -top-px left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber/50 to-transparent" />
                       <div className="flex items-center justify-between flex-wrap gap-2">
-                        <div className="font-mono text-[11px] tracking-[0.3em] text-amber uppercase font-bold">◈ Genera PDF + E-Book dal manoscritto</div>
+                        <div className="font-mono text-[11px] tracking-[0.3em] text-amber uppercase font-bold">◈ Genera PDF + E-Book + Kindle dal manoscritto</div>
                         {isAdmin
                           ? <span className="font-mono text-[10px] tracking-widest uppercase text-amber border border-amber bg-amber/10 px-3 py-1 font-bold">∞ Accesso illimitato</span>
-                          : <span className="font-mono text-[10px] text-bone/50 border border-amber/30 px-2 py-0.5">{Math.max(pdfConvUsed, epubConvUsed)} / 10</span>
+                          : <span className="font-mono text-[10px] text-bone/50 border border-amber/30 px-2 py-0.5">{Math.max(pdfConvUsed, epubConvUsed, mobiConvUsed)} / 10</span>
                         }
                       </div>
                       <p className="font-serif italic text-bone/60 text-sm">
@@ -2141,20 +2156,20 @@ function GestionePage() {
                       </p>
                       <div className="flex items-center gap-3 flex-wrap">
                         <input ref={docxRef} type="file" accept=".docx"
-                          onChange={e => { setDocxFile(e.target.files?.[0] ?? null); setDocGenPdfOk(false); setDocGenEpubOk(false); setDocGenError(null); }}
+                          onChange={e => { setDocxFile(e.target.files?.[0] ?? null); setDocGenPdfOk(false); setDocGenEpubOk(false); setDocGenMobiOk(false); setDocGenError(null); }}
                           className="hidden" />
                         <button type="button" onClick={() => docxRef.current?.click()}
                           className="border border-amber/40 px-4 py-2 font-mono text-[10px] uppercase tracking-widest hover:border-amber hover:text-amber transition-all text-bone/60 cursor-pointer">
                           {docxFile ? `✓ ${docxFile.name}` : existingDocxUrl ? "✓ .docx caricato (sostituisci)" : "▸ Scegli .docx"}
                         </button>
                         <HudButton variant="ghost" onClick={handleGenerateDocs} disabled={docGenerating || (!docxFile && !existingDocxUrl)}>
-                          {docGenerating ? "▸ Generazione in corso..." : existingDocxUrl && !docxFile ? "◈ Rigenera PDF + E-Book" : "◈ Carica e genera PDF + E-Book"}
+                          {docGenerating ? "▸ Generazione in corso..." : existingDocxUrl && !docxFile ? "◈ Rigenera PDF + E-Book + Kindle" : "◈ Carica e genera PDF + E-Book + Kindle"}
                         </HudButton>
                       </div>
                       {docGenerating && (
                         <div className="flex items-center gap-3 flex-wrap">
                           <span className="font-mono text-[11px] tracking-widest text-amber uppercase animate-pulse">
-                            {!docGenPdfOk ? "◈ Generazione PDF..." : "◈ Generazione E-Book..."}
+                            {!docGenPdfOk ? "◈ Generazione PDF..." : !docGenEpubOk ? "◈ Generazione E-Book..." : "◈ Generazione MOBI (Kindle)..."}
                           </span>
                           <div className="flex gap-1">
                             {Array.from({ length: 10 }).map((_, i) => (
@@ -2163,30 +2178,40 @@ function GestionePage() {
                           </div>
                         </div>
                       )}
-                      {(docGenPdfOk || docGenEpubOk) && !docGenerating && (
+                      {(docGenPdfOk || docGenEpubOk || docGenMobiOk) && !docGenerating && (
                         <p className="font-mono text-[10px] tracking-wide text-cyan uppercase">
-                          {docGenPdfOk && "✓ PDF pronto"}
+                          {docGenPdfOk && "✓ PDF"}
                           {docGenPdfOk && docGenEpubOk && " · "}
-                          {docGenEpubOk && "✓ E-Book pronto"}
+                          {docGenEpubOk && "✓ E-Book"}
+                          {(docGenEpubOk || docGenPdfOk) && docGenMobiOk && " · "}
+                          {docGenMobiOk && "✓ Kindle"}
+                          {(docGenPdfOk || docGenEpubOk || docGenMobiOk) && " — pronti"}
                         </p>
                       )}
                       {docGenError && <p className="font-mono text-[10px] tracking-wide text-magenta uppercase">✗ {docGenError}</p>}
 
                       {/* Download — visibili quando i file esistono */}
-                      {(existingFileUrl || existingEpubUrl) && !docGenerating && (
+                      {(existingFileUrl || existingEpubUrl || existingMobiUrl) && !docGenerating && (
                         <div className="flex gap-3 flex-wrap pt-1">
                           {existingFileUrl && (
                             <a href={supabase.storage.from("libri").getPublicUrl(existingFileUrl).data.publicUrl}
                                download="libro.pdf" target="_blank" rel="noreferrer"
                                className="border border-cyan/40 px-4 py-2 font-mono text-[10px] uppercase tracking-widest hover:border-cyan hover:text-cyan transition-all text-bone/60">
-                              ▸ Scarica PDF
+                              ▸ PDF
                             </a>
                           )}
                           {existingEpubUrl && (
                             <a href={supabase.storage.from("libri").getPublicUrl(existingEpubUrl).data.publicUrl}
                                download="libro.epub" target="_blank" rel="noreferrer"
                                className="border border-cyan/40 px-4 py-2 font-mono text-[10px] uppercase tracking-widest hover:border-cyan hover:text-cyan transition-all text-bone/60">
-                              ▸ Scarica E-Book (.epub)
+                              ▸ E-Book (.epub) — Kindle 2022+, Kobo, Apple Books
+                            </a>
+                          )}
+                          {existingMobiUrl && (
+                            <a href={supabase.storage.from("libri").getPublicUrl(existingMobiUrl).data.publicUrl}
+                               download="libro.mobi" target="_blank" rel="noreferrer"
+                               className="border border-cyan/40 px-4 py-2 font-mono text-[10px] uppercase tracking-widest hover:border-cyan hover:text-cyan transition-all text-bone/60">
+                              ▸ Kindle classico (.mobi) — fino al 2021
                             </a>
                           )}
                         </div>

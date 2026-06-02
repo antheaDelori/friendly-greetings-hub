@@ -63,7 +63,9 @@ Deno.serve(async (req) => {
 
   const body = await req.json();
   const { book_id } = body;
-  const format: "pdf" | "epub" = body.format === "epub" ? "epub" : "pdf";
+  const format: "pdf" | "epub" | "mobi" =
+    body.format === "epub" ? "epub" :
+    body.format === "mobi" ? "mobi" : "pdf";
 
   if (!book_id) return json({ error: "book_id richiesto" }, 400);
 
@@ -100,9 +102,19 @@ Deno.serve(async (req) => {
     return json({ error: "Impossibile accedere al file .docx" }, 500);
   }
 
-  // Motore CloudConvert per il formato
-  const outputFormat = format; // "pdf" o "epub"
-  const engine = format === "epub" ? "calibre" : "libreoffice";
+  // Parametri CloudConvert per formato
+  // PDF → LibreOffice (alta fedeltà al layout Word)
+  // EPUB / MOBI → Calibre (ottimizzato per e-reader)
+  const engine = format === "pdf" ? "libreoffice" : "calibre";
+  const ext = format === "pdf" ? "pdf" : format === "epub" ? "epub" : "mobi";
+  const contentType =
+    format === "pdf"  ? "application/pdf" :
+    format === "epub" ? "application/epub+zip" :
+                        "application/x-mobipocket-ebook";
+  const updateField =
+    format === "pdf"  ? "file_url" :
+    format === "epub" ? "epub_url" :
+                        "mobi_url";
 
   // Sottometti job CloudConvert
   const jobRes = await fetch("https://api.cloudconvert.com/v2/jobs", {
@@ -121,7 +133,7 @@ Deno.serve(async (req) => {
         "convert-file": {
           operation: "convert",
           input: "import-docx",
-          output_format: outputFormat,
+          output_format: ext,
           engine,
         },
         "export-file": {
@@ -163,8 +175,6 @@ Deno.serve(async (req) => {
   const fileBytes = new Uint8Array(await fileRes.arrayBuffer());
 
   // Carica su Supabase Storage
-  const ext = format === "epub" ? "epub" : "pdf";
-  const contentType = format === "epub" ? "application/epub+zip" : "application/pdf";
   const storagePath = `${user.id}/${book_id}-generated.${ext}`;
 
   const { error: uploadErr } = await supabase.storage
@@ -173,8 +183,7 @@ Deno.serve(async (req) => {
 
   if (uploadErr) return json({ error: uploadErr.message }, 500);
 
-  // Aggiorna books: file_url per pdf, epub_url per epub
-  const updateField = format === "epub" ? "epub_url" : "file_url";
+  // Aggiorna books
   const updateData: Record<string, unknown> = { [updateField]: storagePath };
 
   // Per i PDF: conta le pagine e salva in cover_numero_pagine
