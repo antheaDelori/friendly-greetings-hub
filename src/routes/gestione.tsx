@@ -4,6 +4,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { HudPanel, PageShell, HudButton } from "@/components/HudPanel";
 import { RichTextEditor } from "@/components/RichTextEditor";
+import { CoverSpreadPreview } from "@/components/CoverSpreadPreview";
 import { supabase } from "@/lib/supabase";
 
 type Capitolo = {
@@ -2283,44 +2284,25 @@ function GestionePage() {
                     </div>
                   </div>
 
-                  {/* Preview schematica layout */}
+                  {/* Preview live copertina da stampa */}
                   <div>
-                    <div className={labelClass + " mb-2"}>Anteprima layout (schematica)</div>
-                    <div className="flex h-28 gap-0 font-mono text-[8px] tracking-widest uppercase overflow-hidden">
-                      {/* Aletta sx */}
-                      <div className="flex-[0.6] border border-cyan/20 bg-void/40 flex flex-col items-center justify-center gap-1 text-bone/30 min-w-0">
-                        <span className="rotate-90 whitespace-nowrap">aletta ant.</span>
-                        {coverAlettaSxTesto && <span className="text-cyan/40">✓</span>}
-                      </div>
-                      {/* Retro */}
-                      <div className="flex-1 border border-cyan/30 bg-void/60 flex flex-col items-center justify-center gap-1 text-bone/40">
-                        <span>retro</span>
-                        {coverQuartaTesto && <span className="text-cyan/60 text-[7px]">✓ testo</span>}
-                        {coverHasIsbn
-                          ? <span className="text-amber/50 text-[7px]">isbn</span>
-                          : <span className="text-bone/20 text-[7px]">logo</span>
-                        }
-                      </div>
-                      {/* Spina */}
-                      <div className="border-y border-cyan/20 bg-cyan/5 flex items-center justify-center text-cyan/30"
-                        style={{ width: coverNumeroPagine
-                          ? `${Math.max(8, Math.round((parseInt(coverNumeroPagine) * 0.052 + 2) / (coverFormato === "tascabile" ? 105 : coverFormato === "17x24" ? 170 : 148) * 60))}px`
-                          : "10px"
-                        }}>
-                      </div>
-                      {/* Fronte */}
-                      <div className="flex-1 border border-magenta/30 bg-void/60 relative overflow-hidden">
-                        {existingFlatUrl
-                          ? <img src={existingFlatUrl} alt="" className="w-full h-full object-cover opacity-60" />
-                          : <div className="w-full h-full flex items-center justify-center font-mono text-[8px] text-bone/30 uppercase tracking-widest">fronte</div>
-                        }
-                      </div>
-                      {/* Aletta dx */}
-                      <div className="flex-[0.6] border border-cyan/20 bg-void/40 flex flex-col items-center justify-center gap-1 text-bone/30 min-w-0">
-                        <span className="rotate-90 whitespace-nowrap">aletta post.</span>
-                        {coverAlettaDxTesto && <span className="text-cyan/40">✓</span>}
-                      </div>
-                    </div>
+                    <div className={labelClass + " mb-2"}>Anteprima copertina da stampa</div>
+                    <CoverSpreadPreview
+                      flatUrl={existingFlatUrl}
+                      titolo={titolo}
+                      autore={authorName}
+                      quarta={coverQuartaTesto}
+                      alettaSx={coverAlettaSxTesto}
+                      alettaDx={coverAlettaDxTesto}
+                      prezzo={coverPrezzo}
+                      isbn={coverIsbn}
+                      hasIsbn={coverHasIsbn}
+                      formato={coverFormato}
+                      pagine={coverNumeroPagine ? parseInt(coverNumeroPagine) : 200}
+                    />
+                    <p className="mt-1.5 font-mono text-[9px] text-bone/30 tracking-widest">
+                      ↳ L'anteprima si aggiorna mentre scrivi i testi — colori adattativi dalla copertina fronte
+                    </p>
                   </div>
 
                   {/* Testi sezioni */}

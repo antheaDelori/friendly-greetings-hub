@@ -82,6 +82,26 @@ function toColor(r: number, g: number, b: number, a = 255): number {
   return (((r & 0xff) << 24) | ((g & 0xff) << 16) | ((b & 0xff) << 8) | (a & 0xff)) >>> 0;
 }
 
+// Campiona il colore medio di una regione orizzontale dell'immagine
+// xFrac0..xFrac1 = frazioni [0,1] della larghezza
+function sampleRegionColor(img: Image, xFrac0: number, xFrac1: number): { r: number; g: number; b: number } {
+  const { bitmap, width, height } = img;
+  const x0 = Math.round(width * xFrac0);
+  const x1 = Math.round(width * xFrac1);
+  const stride = Math.max(1, Math.floor(height / 60));
+  let rS = 0, gS = 0, bS = 0, n = 0;
+  for (let y = 0; y < height; y += stride) {
+    for (let x = x0; x < x1; x++) {
+      const i = 4 * (y * width + x);
+      rS += bitmap[i]; gS += bitmap[i + 1]; bS += bitmap[i + 2];
+      n++;
+    }
+  }
+  return n > 0
+    ? { r: Math.round(rS / n), g: Math.round(gS / n), b: Math.round(bS / n) }
+    : { r: 20, g: 18, b: 24 };
+}
+
 // Campiona il colore medio dell'immagine (stride adattivo, ~1000 campioni)
 function sampleAvgColor(img: Image): { r: number; g: number; b: number; luma: number } {
   const { bitmap, width, height } = img;
@@ -275,6 +295,11 @@ Deno.serve(async (req) => {
   const avgColor = sampleAvgColor(flatImg);
   const isDark = avgColor.luma < 0.5;
 
+  // Campiona il bordo sinistro della copertina (il lato adiacente alla spina)
+  // Per immagini quadrate (gpt-image-1 1024×1024) scalate su A5 portrait, il ritaglio
+  // orizzontale è ~15–25% per lato → camponiamo la fascia 10–35% per coprire il bordo reale
+  const frontEdge = sampleRegionColor(flatImg, 0.10, 0.35);
+
   // Colore base per retro/alette: leggermente desaturato rispetto all'originale
   const desat = 0.25;
   const avg3 = (avgColor.r + avgColor.g + avgColor.b) / 3;
@@ -294,6 +319,8 @@ Deno.serve(async (req) => {
   // Testo: chiaro su scuro, scuro su chiaro
   const COLOR_BACK_TEXT  = isDark ? 0xE8E3D9FF : 0x1A1618FF;
   const COLOR_BACK_RULE  = isDark ? 0xE8E3D940 : 0x1A161840;
+  // Spina: il lato destro riprende il colore del bordo sinistro della copertina fronte
+  const COLOR_SPINE_FRONT = toColor(frontEdge.r, frontEdge.g, frontEdge.b);
 
   // Logo: imagescript non supporta WEBP nativamente — fallback silenzioso
   let logoImg: Image | null = null;
@@ -324,17 +351,19 @@ Deno.serve(async (req) => {
   //   [gap]    AUTORE (ruotato 90°CW, font più piccolo)
   //            ...spazio vuoto...
   //   [bottom] LOGO AntheaDelori Edizioni (quadrato, larghezza = spinePx)
-  fillRect(canvas, X_SPINE, 0, spinePx, canvasH, COLOR_SPINE_BG);
+  // Spina: gradiente da retro (COLOR_BACK_BASE) → copertina fronte (COLOR_SPINE_FRONT)
+  // Entrambi i lati si "fondono" con il pannello adiacente senza stacchi cromatici
+  fillGradientH(canvas, X_SPINE, 0, spinePx, canvasH, COLOR_BACK_BASE, COLOR_SPINE_FRONT, 32);
 
-  // Font size: ~35% larghezza spina, clamped tra 8 e 18px
-  const sf = Math.max(8, Math.min(18, Math.round(spinePx * 0.35)));
+  // Font size proporzionale alla larghezza del dorso, clamped 9–32px
+  const sf = Math.max(9, Math.min(32, Math.round(spinePx * 0.38)));
   const cx = (img: Image) => X_SPINE + Math.max(0, Math.floor((spinePx - img.width) / 2));
 
   // Titolo in alto
   let titleH = 0;
   if (titolo) {
     try {
-      const tImg = await Image.renderText(fontBytes, sf, titolo.toUpperCase(), COLOR_SPINE_TXT);
+      const tImg = await Image.renderText(fontBytes, sf, titolo.toUpperCase(), COLOR_BACK_TEXT);
       const tRot = rotate90cw(tImg);
       canvas.composite(tRot, cx(tRot), padPx);
       titleH = tRot.height;
@@ -343,11 +372,11 @@ Deno.serve(async (req) => {
 
   // Autore sotto il titolo (gap proporzionale alla larghezza del dorso)
   if (autore) {
-    const af = Math.max(7, Math.round(sf * 0.75));
+    const af = Math.max(8, Math.round(sf * 0.78));
     try {
-      const aImg = await Image.renderText(fontBytes, af, autore, COLOR_SPINE_TXT);
+      const aImg = await Image.renderText(fontBytes, af, autore, COLOR_BACK_TEXT);
       const aRot = rotate90cw(aImg);
-      const spineGap = Math.max(Math.round(sf * 1.5), Math.round(spinePx * 0.18));
+      const spineGap = Math.max(Math.round(sf * 2.5), Math.round(spinePx * 0.28));
       const ay = padPx + titleH + spineGap;
       canvas.composite(aRot, cx(aRot), ay);
     } catch { /* ignora */ }
