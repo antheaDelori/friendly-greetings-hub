@@ -2249,7 +2249,7 @@ function GestionePage() {
                           {docGenEpubOk && "✓ E-Book"}
                           {(docGenEpubOk || docGenPdfOk) && docGenMobiOk && " · "}
                           {docGenMobiOk && "✓ Kindle"}
-                          {(docGenPdfOk || docGenEpubOk || docGenMobiOk) && " — pronti"}
+                          {(docGenPdfOk || docGenEpubOk || docGenMobiOk) && " — pronti · scarica la versione che ti serve ↓"}
                         </p>
                       )}
                       {docGenError && <p className="font-mono text-[10px] tracking-wide text-magenta uppercase">✗ {docGenError}</p>}
