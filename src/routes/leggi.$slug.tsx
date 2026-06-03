@@ -123,6 +123,17 @@ export const Route = createFileRoute("/leggi/$slug")({
       userHasLiked = !!userLike;
     }
 
+    let userIsFollowing = false;
+    if (session?.user && !session.user.is_anonymous && data.author_id && session.user.email) {
+      const { data: followRow } = await supabase
+        .from("author_followers")
+        .select("id")
+        .eq("author_id", data.author_id)
+        .eq("email", session.user.email)
+        .maybeSingle();
+      userIsFollowing = !!followRow;
+    }
+
     return {
       book,
       fileUrl: data.file_url as string | null,
@@ -132,6 +143,7 @@ export const Route = createFileRoute("/leggi/$slug")({
       isLoggedIn: !!session,
       isAnonymous: session?.user?.is_anonymous ?? false,
       userId: session?.user?.id ?? null,
+      userEmail: session?.user?.email ?? null,
       allegati: (allegatiData ?? []) as { id: string; titolo: string; descrizione: string | null; file_url: string; tipo: string; ordine: number }[],
       isCestinato: (data.cestinato ?? false) as boolean,
       votiCestino: (data.voti_cestino ?? 0) as number,
@@ -141,6 +153,7 @@ export const Route = createFileRoute("/leggi/$slug")({
       recensioni: (recensioniData ?? []) as RecensioneItem[],
       likesCount: (likesCount ?? 0) as number,
       userHasLiked,
+      userIsFollowing,
       authorBio,
     };
   },
@@ -224,7 +237,7 @@ function getOrCreateVisitorId(userId?: string | null): string {
 
 
 function ReadPage() {
-  const { book, fileUrl, epubUrl, mobiUrl, donationUrl, isLoggedIn, isAnonymous, userId, allegati, isCestinato, votiCestino: initialVoti, recuperato, bookId, authorId, recensioni: inizialiRecensioni, authorBio } = Route.useLoaderData();
+  const { book, fileUrl, epubUrl, mobiUrl, donationUrl, isLoggedIn, isAnonymous, userId, userEmail, allegati, isCestinato, votiCestino: initialVoti, recuperato, bookId, authorId, recensioni: inizialiRecensioni, userIsFollowing: initFollowing, authorBio } = Route.useLoaderData();
   const isAuthor = !!userId && !!authorId && userId === authorId;
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const router = useRouter();
@@ -322,6 +335,10 @@ function ReadPage() {
   const [downloading, setDownloading] = useState(false);
   const [downloadingEpub, setDownloadingEpub] = useState(false);
   const [downloadingMobi, setDownloadingMobi] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(initFollowing ?? false);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [showFollowInput, setShowFollowInput] = useState(false);
+  const [followEmail, setFollowEmail] = useState("");
 
   const [recensioni, setRecensioni] = useState<RecensioneItem[]>(inizialiRecensioni);
 
@@ -466,6 +483,21 @@ function ReadPage() {
     } finally {
       setDownloadingMobi(false);
     }
+  };
+
+  const handleFollow = async (emailOverride?: string) => {
+    if (!authorId || followLoading || isFollowing) return;
+    const email = emailOverride ?? userEmail;
+    if (!email) return;
+    setFollowLoading(true);
+    try {
+      const { error } = await supabase.from("author_followers").upsert(
+        { author_id: authorId, email, source: emailOverride ? "reader_anon" : "reader" },
+        { onConflict: "author_id,email", ignoreDuplicates: true }
+      );
+      if (!error) { setIsFollowing(true); setShowFollowInput(false); setFollowEmail(""); }
+    } catch { /* ignora */ }
+    finally { setFollowLoading(false); }
   };
 
   // Carica il progresso dal database al mount
@@ -761,6 +793,59 @@ function ReadPage() {
               <span className="text-sm leading-none">♥</span>
               <span>Sostieni</span>
             </a>
+          )}
+
+          {/* Segui autore — visibile a tutti tranne all'autore stesso */}
+          {authorId && !isAuthor && (
+            isFollowing ? (
+              <span
+                onMouseEnter={() => setHoveredTip(`stai seguendo ${book.author}`)}
+                onMouseLeave={() => setHoveredTip(null)}
+                className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-cyan/50 text-cyan/60 px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase cursor-default select-none"
+              >
+                <span className="text-sm leading-none">◈</span>
+                <span>Segui ✓</span>
+              </span>
+            ) : isLoggedIn && !isAnonymous ? (
+              <button
+                onClick={() => handleFollow()}
+                disabled={followLoading}
+                onMouseEnter={() => setHoveredTip(`ricevi una notifica quando ${book.author} pubblica`)}
+                onMouseLeave={() => setHoveredTip(null)}
+                className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors cursor-pointer disabled:opacity-40"
+              >
+                <span className="text-sm leading-none">◈</span>
+                <span>{followLoading ? "…" : "Segui"}</span>
+              </button>
+            ) : showFollowInput ? (
+              <div className="flex-1 lg:flex-none flex flex-col gap-1 px-1 py-2">
+                <input
+                  type="email"
+                  value={followEmail}
+                  onChange={e => setFollowEmail(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handleFollow(followEmail)}
+                  placeholder="tua@email.com"
+                  className="w-full border border-ink/40 bg-transparent px-2 py-1 font-display text-[8px] text-ink placeholder:text-ink/30 focus:outline-none focus:border-ink"
+                />
+                <button
+                  onClick={() => handleFollow(followEmail)}
+                  disabled={followLoading || !followEmail.includes("@")}
+                  className="w-full border border-ink text-ink px-1 py-1 font-display tracking-[0.1em] text-[8px] uppercase hover:bg-ink hover:text-paper transition-colors disabled:opacity-40"
+                >
+                  {followLoading ? "…" : "Conferma"}
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowFollowInput(true)}
+                onMouseEnter={() => setHoveredTip(`ricevi una notifica quando ${book.author} pubblica`)}
+                onMouseLeave={() => setHoveredTip(null)}
+                className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors cursor-pointer"
+              >
+                <span className="text-sm leading-none">◈</span>
+                <span>Segui</span>
+              </button>
+            )
           )}
 
           {/* Segna come letto — sempre visibile per utenti loggati */}

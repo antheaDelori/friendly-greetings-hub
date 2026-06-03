@@ -293,6 +293,16 @@ function GestionePage() {
   const [coverStampaGenOk, setCoverStampaGenOk] = useState(false);
   const coverFotoAutoreRef = useRef<HTMLInputElement>(null);
 
+  // ── Follower / newsletter ─────────────────────────────────────────────────
+  const [followers, setFollowers] = useState<{ id: string; email: string; nome: string | null; source: string; created_at: string }[]>([]);
+  const [newFollowerEmail, setNewFollowerEmail] = useState("");
+  const [newFollowerNome, setNewFollowerNome] = useState("");
+  const [addingFollower, setAddingFollower] = useState(false);
+  const [sendingNewsletter, setSendingNewsletter] = useState(false);
+  const [newsletterBookId, setNewsletterBookId] = useState("");
+  const [newsletterMessage, setNewsletterMessage] = useState("");
+  const [newsletterResult, setNewsletterResult] = useState<{ sent: number } | { error: string } | null>(null);
+
   // Anteprima copertina: crea/revoca object URL al cambio file
   useEffect(() => {
     if (!copertina) { setCoverPreviewUrl(null); return; }
@@ -327,6 +337,7 @@ function GestionePage() {
 
       await loadBooks(user.id);
       await loadCollane(user.id);
+      await loadFollowers(user.id);
       setLoading(false);
     };
     init();
@@ -1091,6 +1102,45 @@ function GestionePage() {
     } finally {
       setSavingAiCover(false);
     }
+  };
+
+  const loadFollowers = async (uid: string) => {
+    const { data } = await supabase.from("author_followers").select("id, email, nome, source, created_at").eq("author_id", uid).order("created_at", { ascending: false });
+    setFollowers(data ?? []);
+  };
+
+  const handleAddFollower = async () => {
+    if (!userId || !newFollowerEmail.trim() || addingFollower) return;
+    setAddingFollower(true);
+    const { error } = await supabase.from("author_followers").upsert(
+      { author_id: userId, email: newFollowerEmail.trim().toLowerCase(), nome: newFollowerNome.trim() || null, source: "manual" },
+      { onConflict: "author_id,email", ignoreDuplicates: true }
+    );
+    if (!error) { setNewFollowerEmail(""); setNewFollowerNome(""); await loadFollowers(userId); }
+    setAddingFollower(false);
+  };
+
+  const handleRemoveFollower = async (id: string) => {
+    if (!userId) return;
+    await supabase.from("author_followers").delete().eq("id", id);
+    setFollowers(prev => prev.filter(f => f.id !== id));
+  };
+
+  const handleSendNewsletter = async () => {
+    if (!newsletterBookId || sendingNewsletter) return;
+    setSendingNewsletter(true); setNewsletterResult(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-newsletter`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ book_id: newsletterBookId, custom_message: newsletterMessage }),
+      });
+      const data = await res.json();
+      setNewsletterResult(data);
+    } catch (e) {
+      setNewsletterResult({ error: e instanceof Error ? e.message : "Errore" });
+    } finally { setSendingNewsletter(false); }
   };
 
   const handleElimina = async () => {
@@ -2741,6 +2791,93 @@ function GestionePage() {
           )}
 
         </div>
+
+        {/* ── I tuoi lettori ── */}
+        <HudPanel label="i tuoi lettori" code={`${followers.length}`} tone="amber" className="mt-6">
+          <div className="space-y-6">
+
+            {/* Lista follower */}
+            {followers.length === 0 ? (
+              <p className="font-mono text-[10px] text-bone/30 tracking-widest uppercase">
+                Nessun lettore iscritto ancora — condividi la tua pagina per far crescere la lista.
+              </p>
+            ) : (
+              <div className="space-y-1">
+                {followers.map(f => (
+                  <div key={f.id} className="flex items-center justify-between gap-3 py-1.5 border-b border-amber/10">
+                    <div>
+                      <span className="font-serif text-sm text-bone/80">{f.email}</span>
+                      {f.nome && <span className="ml-2 font-mono text-[9px] text-bone/40">{f.nome}</span>}
+                      <span className={`ml-2 font-mono text-[8px] uppercase tracking-widest ${f.source === "manual" ? "text-amber/40" : "text-cyan/40"}`}>
+                        {f.source === "manual" ? "manuale" : "lettore"}
+                      </span>
+                    </div>
+                    <button onClick={() => handleRemoveFollower(f.id)}
+                      className="font-mono text-[9px] text-bone/20 hover:text-magenta transition-colors cursor-pointer">
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Aggiungi manualmente */}
+            <div>
+              <div className="font-mono text-[10px] tracking-[0.25em] text-amber uppercase mb-3">◈ Aggiungi indirizzo</div>
+              <div className="flex gap-2 flex-wrap">
+                <input type="text" value={newFollowerNome} onChange={e => setNewFollowerNome(e.target.value)}
+                  placeholder="Nome (opzionale)"
+                  className="border border-amber/30 bg-void/40 px-3 py-2 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-amber transition-all text-sm w-40" />
+                <input type="email" value={newFollowerEmail} onChange={e => setNewFollowerEmail(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handleAddFollower()}
+                  placeholder="email@esempio.it"
+                  className="border border-amber/30 bg-void/40 px-3 py-2 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-amber transition-all text-sm flex-1 min-w-48" />
+                <HudButton variant="ghost" onClick={handleAddFollower} disabled={addingFollower || !newFollowerEmail.includes("@")}>
+                  {addingFollower ? "▸ Aggiunta..." : "▸ Aggiungi"}
+                </HudButton>
+              </div>
+            </div>
+
+            {/* Invia comunicazione */}
+            {followers.length > 0 && (
+              <div className="border-t border-amber/20 pt-5 space-y-3">
+                <div className="font-mono text-[10px] tracking-[0.25em] text-amber uppercase">◈ Invia comunicazione</div>
+                <div>
+                  <label className="font-mono text-[10px] tracking-[0.2em] text-bone/50 uppercase block mb-1">Opera da presentare</label>
+                  <select value={newsletterBookId} onChange={e => setNewsletterBookId(e.target.value)}
+                    className="w-full border border-amber/30 bg-void/40 px-3 py-2 font-serif text-bone focus:outline-none focus:border-amber transition-all text-sm">
+                    <option value="">— seleziona un libro —</option>
+                    {books.filter(b => b.disponibile).map(b => (
+                      <option key={b.id} value={b.id}>{b.titolo}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="font-mono text-[10px] tracking-[0.2em] text-bone/50 uppercase block mb-1">Messaggio personale <span className="normal-case text-bone/30">(opzionale)</span></label>
+                  <textarea value={newsletterMessage} onChange={e => setNewsletterMessage(e.target.value)}
+                    placeholder="Un pensiero diretto ai tuoi lettori..."
+                    rows={3}
+                    className="w-full border border-amber/30 bg-void/40 px-3 py-2 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-amber transition-all resize-y text-sm" />
+                </div>
+                <div className="flex items-center gap-4 flex-wrap">
+                  <HudButton variant="primary" onClick={handleSendNewsletter} disabled={sendingNewsletter || !newsletterBookId}>
+                    {sendingNewsletter ? "◈ Invio in corso..." : `◈ Invia a ${followers.length} letter${followers.length === 1 ? "e" : "i"}`}
+                  </HudButton>
+                  {newsletterResult && (
+                    <span className={`font-mono text-[10px] tracking-widest uppercase ${"error" in newsletterResult ? "text-magenta" : "text-cyan"}`}>
+                      {"error" in newsletterResult ? `✗ ${newsletterResult.error}` : `✓ Inviata a ${newsletterResult.sent} lettori`}
+                    </span>
+                  )}
+                </div>
+                <p className="font-mono text-[9px] text-bone/25 tracking-widest">
+                  ↳ L'email arriva anche a te in copia — tutti i lettori sono in BCC (non si vedono tra loro)
+                </p>
+              </div>
+            )}
+
+          </div>
+        </HudPanel>
+
       </PageShell>
       <SiteFooter />
 
