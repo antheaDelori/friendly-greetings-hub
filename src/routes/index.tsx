@@ -75,11 +75,37 @@ function Index() {
     const fetchAll = async () => {
       const ALL_GENRES: Genre[] = ["libro", "racconto", "saggio", "articolo", "novelle", "poesia"];
 
-      const { data } = await supabase
+      // Libri pubblici (gratuito)
+      const { data: publicData } = await supabase
         .from("books")
-        .select("slug, titolo, descrizione, genere, anno, letture, copertina_url, lastra_url, author_name")
+        .select("slug, titolo, descrizione, genere, anno, letture, copertina_url, lastra_url, author_name, accesso, created_at")
         .eq("disponibile", true)
+        .eq("accesso", "gratuito")
         .order("created_at", { ascending: false });
+
+      // Libri riservati/premium accessibili all'utente corrente
+      let privateData: typeof publicData = [];
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user && !user.is_anonymous && user.email) {
+        const { data: accessRows } = await supabase
+          .from("book_access_list")
+          .select("book_id")
+          .eq("email", user.email);
+        const authorizedIds = (accessRows ?? []).map((r: { book_id: string }) => r.book_id);
+        if (authorizedIds.length > 0) {
+          const { data: privBooks } = await supabase
+            .from("books")
+            .select("slug, titolo, descrizione, genere, anno, letture, copertina_url, lastra_url, author_name, accesso, created_at")
+            .eq("disponibile", true)
+            .in("id", authorizedIds)
+            .order("created_at", { ascending: false });
+          privateData = privBooks ?? [];
+        }
+      }
+
+      // Unisce e riordina per data
+      const data = [...(publicData ?? []), ...privateData]
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
       if (data && data.length > 0) {
         const dbBooks: Book[] = data.map(b => {
