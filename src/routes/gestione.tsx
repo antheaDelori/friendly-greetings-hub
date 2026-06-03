@@ -1107,7 +1107,9 @@ function GestionePage() {
   const downloadFromLibri = async (storagePath: string, filename: string) => {
     const { data: blob, error } = await supabase.storage.from("libri").download(storagePath);
     if (error || !blob) { alert(`Errore download: ${error?.message ?? "file non trovato"}`); return; }
-    const url = URL.createObjectURL(blob);
+    // octet-stream forza il download senza aprire il file nel browser
+    const forceBlob = new Blob([await blob.arrayBuffer()], { type: "application/octet-stream" });
+    const url = URL.createObjectURL(forceBlob);
     const a = document.createElement("a");
     a.href = url; a.download = filename;
     document.body.appendChild(a); a.click();
