@@ -244,7 +244,18 @@ Deno.serve(async (req) => {
   const alettaSx    = ((b.cover_aletta_sx_testo  as string | null) ?? "").trim();
   const alettaDx    = ((b.cover_aletta_dx_testo  as string | null) ?? "").trim();
   const isbnText    = (b.cover_isbn   as string | null);
-  const prezzo      = ((b.cover_prezzo as string | null) ?? "").trim();
+  const fotoAutoreUrl = (b.cover_foto_autore_url as string | null);
+
+  // Prezzo: auto-aggiunge "EUR " se nessun prefisso valuta, e ",00" se nessun decimale
+  const rawPrezzo = ((b.cover_prezzo as string | null) ?? "").trim();
+  let prezzo = rawPrezzo;
+  if (prezzo) {
+    const up = prezzo.toUpperCase();
+    const hasCurrency = up.startsWith("EUR") || up.startsWith("USD") || up.startsWith("GBP")
+      || up.startsWith("CHF") || up.startsWith("JPY") || /^[€$£¥₣]/.test(prezzo);
+    if (!hasCurrency) prezzo = "EUR " + prezzo;
+    if (!prezzo.includes(",") && !prezzo.includes(".")) prezzo = prezzo + ",00";
+  }
   const titolo      = (b.titolo       as string | null) ?? "";
   const autore      = (b.author_name  as string | null) ?? "";
   const pages       = (b.cover_numero_pagine as number | null) ?? 200;
@@ -272,18 +283,20 @@ Deno.serve(async (req) => {
   const X_FLAP_DX = flapPx + coverW + spinePx + coverW;
 
   // ── Fetch assets in parallelo ─────────────────────────────────────────────
-  const [flatRes, logoRes, antheaLogoRes] = await Promise.all([
+  const [flatRes, logoRes, antheaLogoRes, fotoAutoreRes] = await Promise.all([
     fetch(flatUrl),
     fetch(LIBERIAMO_LOGO_URL).catch(() => null),
     fetch(ANTHEA_SPINE_LOGO_URL).catch(() => null),
+    fotoAutoreUrl ? fetch(fotoAutoreUrl).catch(() => null) : Promise.resolve(null),
   ]);
 
   if (!flatRes.ok) return json({ error: `Impossibile scaricare la copertina: ${flatRes.status}` }, 500);
 
-  const [flatBytes, logoBytes, antheaLogoBytes] = await Promise.all([
+  const [flatBytes, logoBytes, antheaLogoBytes, fotoAutoreBytes] = await Promise.all([
     flatRes.arrayBuffer().then(ab => new Uint8Array(ab)),
     logoRes?.ok ? logoRes.arrayBuffer().then(ab => new Uint8Array(ab)) : Promise.resolve(null),
     antheaLogoRes?.ok ? antheaLogoRes.arrayBuffer().then(ab => new Uint8Array(ab)) : Promise.resolve(null),
+    fotoAutoreRes?.ok ? fotoAutoreRes.arrayBuffer().then(ab => new Uint8Array(ab)) : Promise.resolve(null),
   ]);
 
   // Font incorporato — sempre disponibile, nessuna dipendenza di rete
@@ -331,6 +344,10 @@ Deno.serve(async (req) => {
   if (antheaLogoBytes) {
     try { antheaLogoImg = await Image.decode(antheaLogoBytes); } catch { /* ignora */ }
   }
+  let fotoAutoreImg: Image | null = null;
+  if (fotoAutoreBytes) {
+    try { fotoAutoreImg = await Image.decode(fotoAutoreBytes); } catch { /* ignora */ }
+  }
 
   // ── Canvas principale ─────────────────────────────────────────────────────
   const canvas = new Image(canvasW, canvasH);
@@ -346,52 +363,51 @@ Deno.serve(async (req) => {
   canvas.composite(flatImg, X_FRONT, 0);
 
   // ── SPINA ─────────────────────────────────────────────────────────────────
-  // Layout (dall'alto verso il basso nel canvas):
-  //   [padPx]  TITOLO (ruotato 90°CW)
-  //   [gap]    AUTORE (ruotato 90°CW, font più piccolo)
-  //            ...spazio vuoto...
-  //   [bottom] LOGO AntheaDelori Edizioni (quadrato, larghezza = spinePx)
-  // Spina: gradiente da retro (COLOR_BACK_BASE) → copertina fronte (COLOR_SPINE_FRONT)
-  // Entrambi i lati si "fondono" con il pannello adiacente senza stacchi cromatici
+  // Layout: AUTORE in alto · TITOLO centrato nel mezzo · LOGO in basso
   fillGradientH(canvas, X_SPINE, 0, spinePx, canvasH, COLOR_BACK_BASE, COLOR_SPINE_FRONT, 32);
 
-  // Font size proporzionale alla larghezza del dorso, clamped 9–32px
-  const sf = Math.max(9, Math.min(32, Math.round(spinePx * 0.38)));
+  // Font size: ~75% larghezza dorso (dopo rotazione testo h ≈ sf*1.2, deve stare in spinePx)
+  const sf = Math.max(9, Math.min(32, Math.round(spinePx * 0.75)));
   const cx = (img: Image) => X_SPINE + Math.max(0, Math.floor((spinePx - img.width) / 2));
 
-  // Titolo in alto
-  let titleH = 0;
-  if (titolo) {
-    try {
-      const tImg = await Image.renderText(fontBytes, sf, titolo.toUpperCase(), COLOR_BACK_TEXT);
-      const tRot = rotate90cw(tImg);
-      canvas.composite(tRot, cx(tRot), padPx);
-      titleH = tRot.height;
-    } catch { /* ignora */ }
+  // Pre-calcola logo size per conoscere lo spazio disponibile prima di posizionare il titolo
+  let spineLw = 0, spineLh = 0;
+  if (antheaLogoImg) {
+    const maxLogoSide = spinePx - px(1);
+    const ls = Math.min(maxLogoSide / antheaLogoImg.width, maxLogoSide / antheaLogoImg.height);
+    spineLw = Math.max(1, Math.round(antheaLogoImg.width  * ls));
+    spineLh = Math.max(1, Math.round(antheaLogoImg.height * ls));
   }
 
-  // Autore sotto il titolo (gap proporzionale alla larghezza del dorso)
+  // AUTORE in cima
+  let authorH = 0;
   if (autore) {
     const af = Math.max(8, Math.round(sf * 0.78));
     try {
       const aImg = await Image.renderText(fontBytes, af, autore, COLOR_BACK_TEXT);
       const aRot = rotate90cw(aImg);
-      const spineGap = Math.max(Math.round(sf * 2.5), Math.round(spinePx * 0.28));
-      const ay = padPx + titleH + spineGap;
-      canvas.composite(aRot, cx(aRot), ay);
+      canvas.composite(aRot, cx(aRot), padPx);
+      authorH = aRot.height;
     } catch { /* ignora */ }
   }
 
-  // Logo AntheaDelori Edizioni in fondo alla spina
-  if (antheaLogoImg) {
-    // Scala il logo per adattarsi alla larghezza della spina (quadrato spinePx×spinePx max)
-    const maxLogoSide = spinePx - px(1);
-    const logoScale = Math.min(maxLogoSide / antheaLogoImg.width, maxLogoSide / antheaLogoImg.height);
-    const lw = Math.max(1, Math.round(antheaLogoImg.width  * logoScale));
-    const lh = Math.max(1, Math.round(antheaLogoImg.height * logoScale));
-    antheaLogoImg.resize(lw, lh);
-    const lx = X_SPINE + Math.floor((spinePx - lw) / 2);
-    const ly = canvasH - lh - Math.round(padPx / 2);
+  // TITOLO centrato nell'area tra autore e logo
+  if (titolo) {
+    try {
+      const tImg = await Image.renderText(fontBytes, sf, titolo.toUpperCase(), COLOR_BACK_TEXT);
+      const tRot = rotate90cw(tImg);
+      const topBound    = padPx + authorH + Math.round(sf * 2.0);
+      const bottomBound = canvasH - spineLh - Math.round(padPx / 2) - padPx;
+      const titleY = topBound + Math.max(0, Math.round((bottomBound - topBound - tRot.height) / 2));
+      canvas.composite(tRot, cx(tRot), Math.max(topBound, titleY));
+    } catch { /* ignora */ }
+  }
+
+  // LOGO AntheaDelori in fondo
+  if (antheaLogoImg && spineLw > 0) {
+    antheaLogoImg.resize(spineLw, spineLh);
+    const lx = X_SPINE + Math.floor((spinePx - spineLw) / 2);
+    const ly = canvasH - spineLh - Math.round(padPx / 2);
     canvas.composite(antheaLogoImg, lx, ly);
   }
 
@@ -439,8 +455,9 @@ Deno.serve(async (req) => {
       canvas.composite(isImg, Math.max(X_BACK + padPx, isX), bottomY + px(4));
     } catch { /* ignora */ }
   } else if (logoImg) {
-    const logoMaxH = px(16);
-    const logoScale = Math.min(1, logoMaxH / logoImg.height);
+    const logoMaxH = px(22);
+    const logoMaxW = Math.round(coverW * 0.30);  // max 30% larghezza copertina
+    const logoScale = Math.min(logoMaxH / logoImg.height, logoMaxW / logoImg.width);
     const logoW = Math.round(logoImg.width  * logoScale);
     const logoH = Math.round(logoImg.height * logoScale);
     logoImg.resize(logoW, logoH);
@@ -450,9 +467,24 @@ Deno.serve(async (req) => {
 
   // ── ALETTA SINISTRA ───────────────────────────────────────────────────────
   const flapFS = Math.round(coverH * 0.020);
+  let alettaSxTextY = padPx;
+
+  // Foto autore IN CIMA all'aletta (prima del testo), larghezza massima con margini
+  if (fotoAutoreImg) {
+    const maxFW = flapPx - padPx * 2;          // larghezza disponibile (con margini laterali)
+    const maxFH = px(52);                       // altezza massima ~52mm
+    const scale = Math.min(maxFW / fotoAutoreImg.width, maxFH / fotoAutoreImg.height);
+    const fw = Math.round(fotoAutoreImg.width  * scale);
+    const fh = Math.round(fotoAutoreImg.height * scale);
+    fotoAutoreImg.resize(fw, fh);
+    const fx = X_FLAP_SX + Math.floor((flapPx - fw) / 2);  // centrata orizzontalmente
+    canvas.composite(fotoAutoreImg, fx, padPx);
+    alettaSxTextY = padPx + fh + Math.round(padPx * 0.75);  // testo inizia sotto la foto
+  }
+
   if (fontBytes && alettaSx) {
     await renderBlock(canvas, fontBytes, alettaSx,
-      X_FLAP_SX + padPx, padPx, flapPx - padPx * 2, flapFS, COLOR_BACK_TEXT);
+      X_FLAP_SX + padPx, alettaSxTextY, flapPx - padPx * 2, flapFS, COLOR_BACK_TEXT);
   }
 
   // ── ALETTA DESTRA ─────────────────────────────────────────────────────────

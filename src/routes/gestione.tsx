@@ -285,6 +285,7 @@ function GestionePage() {
   const [coverHasIsbn, setCoverHasIsbn] = useState(false);
   const [coverIsbn, setCoverIsbn] = useState("");
   const [coverPrezzo, setCoverPrezzo] = useState("");
+  const [coverValuta, setCoverValuta] = useState("EUR");
   const [existingCoverStampaUrl, setExistingCoverStampaUrl] = useState<string | null>(null);
   const [existingCoverStampaBleedUrl, setExistingCoverStampaBleedUrl] = useState<string | null>(null);
   const [savingCoverStampa, setSavingCoverStampa] = useState(false);
@@ -555,7 +556,15 @@ function GestionePage() {
     const existingIsbn = (bcs.cover_isbn as string) ?? "";
     setCoverIsbn(existingIsbn);
     setCoverHasIsbn(!!existingIsbn);
-    setCoverPrezzo((bcs.cover_prezzo as string) ?? "");
+    const savedPrezzo = (bcs.cover_prezzo as string) ?? "";
+    const valutaMatch = savedPrezzo.match(/^(EUR|USD|GBP|CHF|JPY)\s*/i);
+    if (valutaMatch) {
+      setCoverValuta(valutaMatch[1].toUpperCase());
+      setCoverPrezzo(savedPrezzo.slice(valutaMatch[0].length));
+    } else {
+      setCoverValuta("EUR");
+      setCoverPrezzo(savedPrezzo);
+    }
     setExistingCoverFotoAutoreUrl((bcs.cover_foto_autore_url as string) ?? null);
     setExistingCoverStampaUrl((bcs.cover_stampa_url as string) ?? null);
     setExistingCoverStampaBleedUrl((bcs.cover_stampa_bleed_url as string) ?? null);
@@ -757,7 +766,7 @@ function GestionePage() {
         cover_aletta_dx_testo: coverAlettaDxTesto.trim() || null,
         cover_foto_autore_url: fotoUrl,
         cover_isbn: coverHasIsbn ? (coverIsbn.trim() || null) : null,
-        cover_prezzo: coverPrezzo.trim() || null,
+        cover_prezzo: coverPrezzo.trim() ? `${coverValuta} ${coverPrezzo.trim()}` : null,
       }).eq("id", editingId);
       if (error) { setCoverStampaError(error.message); return; }
       await loadBooks(userId);
@@ -2416,9 +2425,19 @@ function GestionePage() {
                   {/* Prezzo */}
                   <div>
                     <label className={labelClass}>Prezzo <span className="text-bone/30 normal-case">(opzionale — stampato sul retro)</span></label>
-                    <input type="text" value={coverPrezzo} onChange={e => setCoverPrezzo(e.target.value)}
-                      placeholder="€ 18,00"
-                      className={inputClass} />
+                    <div className="flex gap-2">
+                      <select value={coverValuta} onChange={e => setCoverValuta(e.target.value)}
+                        className={inputClass + " cursor-pointer w-28 flex-shrink-0"}>
+                        <option value="EUR">EUR €</option>
+                        <option value="USD">USD $</option>
+                        <option value="GBP">GBP £</option>
+                        <option value="CHF">CHF</option>
+                        <option value="JPY">JPY ¥</option>
+                      </select>
+                      <input type="text" value={coverPrezzo} onChange={e => setCoverPrezzo(e.target.value)}
+                        placeholder="12,00"
+                        className={inputClass + " flex-1"} />
+                    </div>
                   </div>
 
                   {/* Preview live copertina da stampa */}
