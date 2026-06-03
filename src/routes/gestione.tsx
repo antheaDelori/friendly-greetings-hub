@@ -1139,6 +1139,7 @@ function GestionePage() {
   const [newAccessEmail, setNewAccessEmail] = useState("");
   const [addingAccess, setAddingAccess] = useState(false);
   const [accessError, setAccessError] = useState<string | null>(null);
+  const [importingFrom, setImportingFrom] = useState(false);
 
   const handleAddFollower = async () => {
     if (!userId || !newFollowerEmail.trim() || addingFollower) return;
@@ -1176,6 +1177,21 @@ function GestionePage() {
   const handleRemoveAccess = async (id: string) => {
     await supabase.from("book_access_list").delete().eq("id", id);
     setAccessList(prev => prev.filter(a => a.id !== id));
+  };
+
+  const handleImportAccessList = async (sourceBookId: string) => {
+    if (!editingId || !sourceBookId) return;
+    setImportingFrom(true); setAccessError(null);
+    const { data: sourceEmails } = await supabase
+      .from("book_access_list").select("email").eq("book_id", sourceBookId);
+    if (sourceEmails && sourceEmails.length > 0) {
+      const rows = sourceEmails.map((r: { email: string }) => ({ book_id: editingId, email: r.email }));
+      const { error } = await supabase.from("book_access_list")
+        .upsert(rows, { onConflict: "book_id,email", ignoreDuplicates: true });
+      if (error) setAccessError(error.message);
+      else await loadAccessList(editingId);
+    }
+    setImportingFrom(false);
   };
 
   const handleRemoveFollower = async (id: string) => {
@@ -1756,21 +1772,35 @@ function GestionePage() {
                     {/* Lista accesso — visibile solo per riservato/premium */}
                     {(accesso === "riservato" || accesso === "premium") && editingId && (
                       <div className="mt-4 border border-magenta/20 bg-magenta/5 p-4 space-y-3">
-                        <div className="font-mono text-[10px] tracking-[0.25em] text-magenta uppercase">
-                          ◈ Chi può leggere questo libro
-                          <span className="ml-2 text-bone/30 normal-case font-sans">({accessList.length} autorizzati)</span>
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          <div className="font-mono text-[10px] tracking-[0.25em] text-magenta uppercase">
+                            ◈ Chi può leggere questo libro
+                            <span className="ml-2 text-bone/30 normal-case font-sans">({accessList.length} autorizzati)</span>
+                          </div>
+                          {/* Importa lista da altra opera */}
+                          {books.filter(b => b.id !== editingId && (b.accesso === "riservato" || b.accesso === "premium")).length > 0 && (
+                            <select
+                              defaultValue=""
+                              onChange={e => { if (e.target.value) { handleImportAccessList(e.target.value); e.target.value = ""; }}}
+                              disabled={importingFrom}
+                              className="border border-magenta/30 bg-void/40 px-2 py-1 font-mono text-[9px] text-magenta/70 uppercase tracking-widest focus:outline-none focus:border-magenta transition-all cursor-pointer">
+                              <option value="">▸ Importa da...</option>
+                              {books.filter(b => b.id !== editingId && (b.accesso === "riservato" || b.accesso === "premium")).map(b => (
+                                <option key={b.id} value={b.id}>{b.titolo}</option>
+                              ))}
+                            </select>
+                          )}
                         </div>
-                        <p className="font-mono text-[9px] text-bone/40 tracking-widest">
-                          Solo le email in questa lista possono accedere al contenuto. Gli altri vedono una schermata di accesso negato.
-                        </p>
 
                         {accessList.length > 0 && (
-                          <div className="space-y-1">
+                          <div className="space-y-0.5">
                             {accessList.map(a => (
-                              <div key={a.id} className="flex items-center justify-between gap-2 py-1 border-b border-magenta/10">
+                              <div key={a.id} className="flex items-center justify-between gap-3 py-1.5 border-b border-magenta/10">
                                 <span className="font-serif text-sm text-bone/80">{a.email}</span>
                                 <button onClick={() => handleRemoveAccess(a.id)}
-                                  className="font-mono text-[9px] text-bone/20 hover:text-magenta transition-colors cursor-pointer shrink-0">✕</button>
+                                  className="font-mono text-[10px] text-magenta/40 hover:text-magenta transition-colors cursor-pointer shrink-0 border border-magenta/20 hover:border-magenta px-2 py-0.5">
+                                  ✕ rimuovi
+                                </button>
                               </div>
                             ))}
                           </div>
