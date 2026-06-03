@@ -1104,6 +1104,17 @@ function GestionePage() {
     }
   };
 
+  const downloadFromLibri = async (storagePath: string, filename: string) => {
+    const { data: blob, error } = await supabase.storage.from("libri").download(storagePath);
+    if (error || !blob) { alert(`Errore download: ${error?.message ?? "file non trovato"}`); return; }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
   const loadFollowers = async (uid: string) => {
     const { data } = await supabase.from("author_followers").select("id, email, nome, source, created_at").eq("author_id", uid).order("created_at", { ascending: false });
     setFollowers(data ?? []);
@@ -2245,25 +2256,22 @@ function GestionePage() {
                       {(existingFileUrl || existingEpubUrl || existingMobiUrl) && !docGenerating && (
                         <div className="flex gap-3 flex-wrap pt-1">
                           {existingFileUrl && (
-                            <a href={supabase.storage.from("libri").getPublicUrl(existingFileUrl).data.publicUrl}
-                               download="libro.pdf" target="_blank" rel="noreferrer"
-                               className="border border-cyan/40 px-4 py-2 font-mono text-[10px] uppercase tracking-widest hover:border-cyan hover:text-cyan transition-all text-bone/60">
+                            <button onClick={() => downloadFromLibri(existingFileUrl, `${titolo || "libro"}.pdf`)}
+                               className="border border-cyan/40 px-4 py-2 font-mono text-[10px] uppercase tracking-widest hover:border-cyan hover:text-cyan transition-all text-bone/60 cursor-pointer">
                               ▸ PDF
-                            </a>
+                            </button>
                           )}
                           {existingEpubUrl && (
-                            <a href={supabase.storage.from("libri").getPublicUrl(existingEpubUrl).data.publicUrl}
-                               download="libro.epub" target="_blank" rel="noreferrer"
-                               className="border border-cyan/40 px-4 py-2 font-mono text-[10px] uppercase tracking-widest hover:border-cyan hover:text-cyan transition-all text-bone/60">
+                            <button onClick={() => downloadFromLibri(existingEpubUrl, `${titolo || "libro"}.epub`)}
+                               className="border border-cyan/40 px-4 py-2 font-mono text-[10px] uppercase tracking-widest hover:border-cyan hover:text-cyan transition-all text-bone/60 cursor-pointer">
                               ▸ E-Book (.epub) — Kindle 2022+, Kobo, Apple Books
-                            </a>
+                            </button>
                           )}
                           {existingMobiUrl && (
-                            <a href={supabase.storage.from("libri").getPublicUrl(existingMobiUrl).data.publicUrl}
-                               download="libro.mobi" target="_blank" rel="noreferrer"
-                               className="border border-cyan/40 px-4 py-2 font-mono text-[10px] uppercase tracking-widest hover:border-cyan hover:text-cyan transition-all text-bone/60">
+                            <button onClick={() => downloadFromLibri(existingMobiUrl, `${titolo || "libro"}.mobi`)}
+                               className="border border-cyan/40 px-4 py-2 font-mono text-[10px] uppercase tracking-widest hover:border-cyan hover:text-cyan transition-all text-bone/60 cursor-pointer">
                               ▸ Kindle classico (.mobi) — fino al 2021
-                            </a>
+                            </button>
                           )}
                         </div>
                       )}
