@@ -1131,14 +1131,21 @@ function GestionePage() {
     setFollowers(data ?? []);
   };
 
+  const [followerError, setFollowerError] = useState<string | null>(null);
+
   const handleAddFollower = async () => {
     if (!userId || !newFollowerEmail.trim() || addingFollower) return;
     setAddingFollower(true);
+    setFollowerError(null);
     const { error } = await supabase.from("author_followers").upsert(
       { author_id: userId, email: newFollowerEmail.trim().toLowerCase(), nome: newFollowerNome.trim() || null, source: "manual" },
       { onConflict: "author_id,email", ignoreDuplicates: true }
     );
-    if (!error) { setNewFollowerEmail(""); setNewFollowerNome(""); await loadFollowers(userId); }
+    if (error) {
+      setFollowerError(error.message);
+    } else {
+      setNewFollowerEmail(""); setNewFollowerNome(""); await loadFollowers(userId);
+    }
     setAddingFollower(false);
   };
 
@@ -2865,6 +2872,9 @@ function GestionePage() {
                   {addingFollower ? "▸ Aggiunta..." : "▸ Aggiungi"}
                 </HudButton>
               </div>
+              {followerError && (
+                <p className="mt-2 font-mono text-[10px] text-magenta tracking-widest">✗ {followerError}</p>
+              )}
             </div>
 
             {/* Invia comunicazione */}
