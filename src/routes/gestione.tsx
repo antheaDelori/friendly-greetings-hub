@@ -582,6 +582,7 @@ function GestionePage() {
       .eq("book_id", b.id).eq("format", "mobi")
       .then(({ count }) => setMobiConvUsed(count ?? 0));
     setEditingId(b.id);
+    loadAccessList(b.id);
     // reset AI cover state and load attempt count
     setAiGeneratedUrl(null);
     setAiError(null);
@@ -1133,6 +1134,12 @@ function GestionePage() {
 
   const [followerError, setFollowerError] = useState<string | null>(null);
 
+  // ── Lista accesso libro (riservato/premium) ───────────────────────────────
+  const [accessList, setAccessList] = useState<{ id: string; email: string; created_at: string }[]>([]);
+  const [newAccessEmail, setNewAccessEmail] = useState("");
+  const [addingAccess, setAddingAccess] = useState(false);
+  const [accessError, setAccessError] = useState<string | null>(null);
+
   const handleAddFollower = async () => {
     if (!userId || !newFollowerEmail.trim() || addingFollower) return;
     setAddingFollower(true);
@@ -1147,6 +1154,28 @@ function GestionePage() {
       setNewFollowerEmail(""); setNewFollowerNome(""); await loadFollowers(userId);
     }
     setAddingFollower(false);
+  };
+
+  const loadAccessList = async (bookId: string) => {
+    const { data } = await supabase.from("book_access_list").select("id, email, created_at").eq("book_id", bookId).order("created_at");
+    setAccessList(data ?? []);
+  };
+
+  const handleAddAccess = async () => {
+    if (!editingId || !newAccessEmail.trim() || addingAccess) return;
+    setAddingAccess(true); setAccessError(null);
+    const { error } = await supabase.from("book_access_list").upsert(
+      { book_id: editingId, email: newAccessEmail.trim().toLowerCase() },
+      { onConflict: "book_id,email", ignoreDuplicates: true }
+    );
+    if (error) { setAccessError(error.message); }
+    else { setNewAccessEmail(""); await loadAccessList(editingId); }
+    setAddingAccess(false);
+  };
+
+  const handleRemoveAccess = async (id: string) => {
+    await supabase.from("book_access_list").delete().eq("id", id);
+    setAccessList(prev => prev.filter(a => a.id !== id));
   };
 
   const handleRemoveFollower = async (id: string) => {
@@ -1723,6 +1752,43 @@ function GestionePage() {
                         </button>
                       ))}
                     </div>
+
+                    {/* Lista accesso — visibile solo per riservato/premium */}
+                    {(accesso === "riservato" || accesso === "premium") && editingId && (
+                      <div className="mt-4 border border-magenta/20 bg-magenta/5 p-4 space-y-3">
+                        <div className="font-mono text-[10px] tracking-[0.25em] text-magenta uppercase">
+                          ◈ Chi può leggere questo libro
+                          <span className="ml-2 text-bone/30 normal-case font-sans">({accessList.length} autorizzati)</span>
+                        </div>
+                        <p className="font-mono text-[9px] text-bone/40 tracking-widest">
+                          Solo le email in questa lista possono accedere al contenuto. Gli altri vedono una schermata di accesso negato.
+                        </p>
+
+                        {accessList.length > 0 && (
+                          <div className="space-y-1">
+                            {accessList.map(a => (
+                              <div key={a.id} className="flex items-center justify-between gap-2 py-1 border-b border-magenta/10">
+                                <span className="font-serif text-sm text-bone/80">{a.email}</span>
+                                <button onClick={() => handleRemoveAccess(a.id)}
+                                  className="font-mono text-[9px] text-bone/20 hover:text-magenta transition-colors cursor-pointer shrink-0">✕</button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="flex gap-2">
+                          <input type="email" value={newAccessEmail} onChange={e => setNewAccessEmail(e.target.value)}
+                            onKeyDown={e => e.key === "Enter" && handleAddAccess()}
+                            placeholder="email@esempio.it"
+                            className="flex-1 border border-magenta/30 bg-void/40 px-3 py-2 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-magenta transition-all text-sm" />
+                          <button onClick={handleAddAccess} disabled={addingAccess || !newAccessEmail.includes("@")}
+                            className="border border-magenta/40 px-4 py-2 font-mono text-[10px] uppercase tracking-widest text-magenta/70 hover:border-magenta hover:text-magenta transition-all disabled:opacity-40 cursor-pointer">
+                            {addingAccess ? "..." : "▸ Aggiungi"}
+                          </button>
+                        </div>
+                        {accessError && <p className="font-mono text-[9px] text-magenta">✗ {accessError}</p>}
+                      </div>
+                    )}
                   </div>
 
                   <div>

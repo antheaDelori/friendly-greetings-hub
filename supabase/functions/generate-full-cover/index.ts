@@ -366,8 +366,8 @@ Deno.serve(async (req) => {
   // Layout: AUTORE in alto · TITOLO centrato nel mezzo · LOGO in basso
   fillGradientH(canvas, X_SPINE, 0, spinePx, canvasH, COLOR_BACK_BASE, COLOR_SPINE_FRONT, 32);
 
-  // Font size: ~75% larghezza dorso (dopo rotazione testo h ≈ sf*1.2, deve stare in spinePx)
-  const sf = Math.max(9, Math.min(32, Math.round(spinePx * 0.75)));
+  // Font size: ~82% larghezza dorso — massimo fisico (dopo rotazione testo h ≈ sf*1.2 ≤ spinePx)
+  const sf = Math.max(9, Math.min(32, Math.round(spinePx * 0.82)));
   const cx = (img: Image) => X_SPINE + Math.max(0, Math.floor((spinePx - img.width) / 2));
 
   // Pre-calcola logo size per conoscere lo spazio disponibile prima di posizionare il titolo

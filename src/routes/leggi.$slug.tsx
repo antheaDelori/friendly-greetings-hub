@@ -37,7 +37,7 @@ export const Route = createFileRoute("/leggi/$slug")({
     // Poi cerca su Supabase
     const { data } = await supabase
       .from("books")
-      .select("id, slug, titolo, descrizione, estratto, genere, anno, letture, copertina_url, copertina_flat_url, file_url, epub_url, mobi_url, author_name, author_id, cestinato, voti_cestino, recuperato")
+      .select("id, slug, titolo, descrizione, estratto, genere, anno, letture, copertina_url, copertina_flat_url, file_url, epub_url, mobi_url, author_name, author_id, cestinato, voti_cestino, recuperato, accesso")
       .eq("slug", params.slug)
       .or("disponibile.eq.true,cestinato.eq.true")
       .maybeSingle();
@@ -123,6 +123,23 @@ export const Route = createFileRoute("/leggi/$slug")({
       userHasLiked = !!userLike;
     }
 
+    // Verifica accesso per libri riservati/premium
+    let hasAccess = true;
+    const bookAccesso = (data.accesso as string) ?? "gratuito";
+    if (bookAccesso === "riservato" || bookAccesso === "premium") {
+      if (!session?.user || session.user.is_anonymous || !session.user.email) {
+        hasAccess = false;
+      } else {
+        const { data: accessRow } = await supabase
+          .from("book_access_list")
+          .select("id")
+          .eq("book_id", data.id)
+          .eq("email", session.user.email)
+          .maybeSingle();
+        hasAccess = !!accessRow;
+      }
+    }
+
     let userIsFollowing = false;
     if (session?.user && !session.user.is_anonymous && data.author_id && session.user.email) {
       const { data: followRow } = await supabase
@@ -154,6 +171,8 @@ export const Route = createFileRoute("/leggi/$slug")({
       likesCount: (likesCount ?? 0) as number,
       userHasLiked,
       userIsFollowing,
+      hasAccess,
+      bookAccesso,
       authorBio,
     };
   },
@@ -237,7 +256,7 @@ function getOrCreateVisitorId(userId?: string | null): string {
 
 
 function ReadPage() {
-  const { book, fileUrl, epubUrl, mobiUrl, donationUrl, isLoggedIn, isAnonymous, userId, userEmail, allegati, isCestinato, votiCestino: initialVoti, recuperato, bookId, authorId, recensioni: inizialiRecensioni, userIsFollowing: initFollowing, authorBio } = Route.useLoaderData();
+  const { book, fileUrl, epubUrl, mobiUrl, donationUrl, isLoggedIn, isAnonymous, userId, userEmail, allegati, isCestinato, votiCestino: initialVoti, recuperato, bookId, authorId, recensioni: inizialiRecensioni, userIsFollowing: initFollowing, hasAccess, bookAccesso, authorBio } = Route.useLoaderData();
   const isAuthor = !!userId && !!authorId && userId === authorId;
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const router = useRouter();
@@ -1038,7 +1057,33 @@ function ReadPage() {
             </div>
           )}
 
-          {!isLoggedIn && !isCestinato ? (
+          {/* Wall accesso negato — libro riservato/premium senza autorizzazione */}
+          {(bookAccesso === "riservato" || bookAccesso === "premium") && !hasAccess ? (
+            <div className="py-20 text-center border-2 border-ink/10 flex flex-col items-center">
+              <div className="font-display text-6xl text-ink/15">◈</div>
+              <h2 className="mt-4 font-serif text-2xl text-ink">Contenuto riservato</h2>
+              <p className="mt-3 font-serif italic text-ink/60 max-w-sm">
+                {isLoggedIn && !isAnonymous
+                  ? "Il tuo account non è autorizzato a leggere questo libro. Contatta l'autore per richiedere l'accesso."
+                  : "Questo contenuto è accessibile solo su invito. Accedi con l'account associato all'invito ricevuto dall'autore."}
+              </p>
+              {(!isLoggedIn || isAnonymous) && (
+                <Link
+                  to="/auth/"
+                  search={{ returnTo: `/leggi/${book.slug}` }}
+                  className="mt-7 inline-block bg-ink text-paper px-7 py-3 font-display tracking-widest text-xs uppercase hover:bg-blood transition-colors"
+                >
+                  Accedi
+                </Link>
+              )}
+              <button
+                onClick={() => router.history.back()}
+                className="mt-4 font-display tracking-widest text-[10px] uppercase text-ink/40 hover:text-ink transition-colors"
+              >
+                ← Torna al catalogo
+              </button>
+            </div>
+          ) : !isLoggedIn && !isCestinato ? (
             <div className="py-20 text-center border-2 border-ink/10 flex flex-col items-center">
               <div className="font-display text-6xl text-ink/15">◈</div>
               <h2 className="mt-4 font-serif text-2xl text-ink">Contenuto riservato</h2>
