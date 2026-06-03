@@ -2425,9 +2425,9 @@ function GestionePage() {
                   {/* Prezzo */}
                   <div>
                     <label className={labelClass}>Prezzo <span className="text-bone/30 normal-case">(opzionale — stampato sul retro)</span></label>
-                    <div className="flex gap-2">
+                    <div className="mt-2 flex gap-2">
                       <select value={coverValuta} onChange={e => setCoverValuta(e.target.value)}
-                        className={inputClass + " cursor-pointer w-28 flex-shrink-0"}>
+                        className="w-28 flex-shrink-0 bg-void/40 border border-cyan/30 px-3 py-3 font-mono text-bone focus:outline-none focus:border-cyan transition-all cursor-pointer">
                         <option value="EUR">EUR €</option>
                         <option value="USD">USD $</option>
                         <option value="GBP">GBP £</option>
@@ -2436,7 +2436,7 @@ function GestionePage() {
                       </select>
                       <input type="text" value={coverPrezzo} onChange={e => setCoverPrezzo(e.target.value)}
                         placeholder="12,00"
-                        className={inputClass + " flex-1"} />
+                        className="flex-1 bg-void/40 border border-cyan/30 px-4 py-3 font-mono text-bone placeholder:text-bone/30 focus:outline-none focus:border-cyan focus:bg-void/60 transition-all" />
                     </div>
                   </div>
 
