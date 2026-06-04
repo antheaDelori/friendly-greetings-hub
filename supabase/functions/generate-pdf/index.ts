@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import JSZip from "https://esm.sh/jszip@3.10.1";
+import JSZip from "npm:jszip";
 
 const CLOUDCONVERT_API_KEY = Deno.env.get("CLOUDCONVERT_API_KEY")!;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -73,10 +73,10 @@ async function patchEpubMetadata(
       }
     }
 
-    // Patch autore
+    // Patch autore ([\s\S]*? gestisce attributi e contenuto multiriga)
     if (author) {
-      if (/<dc:creator[^>]*>/.test(opf)) {
-        opf = opf.replace(/<dc:creator[^>]*>[^<]*<\/dc:creator>/, `<dc:creator>${author}</dc:creator>`);
+      if (/<dc:creator[\s\S]*?<\/dc:creator>/.test(opf)) {
+        opf = opf.replace(/<dc:creator[\s\S]*?<\/dc:creator>/g, `<dc:creator>${author}</dc:creator>`);
       } else {
         opf = opf.replace("</metadata>", `  <dc:creator>${author}</dc:creator>\n  </metadata>`);
       }
