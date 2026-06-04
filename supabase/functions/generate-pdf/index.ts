@@ -64,6 +64,10 @@ async function patchEpubMetadata(
 
     let opf = await opfFile.async("string");
 
+    // DEBUG: mostra il blocco metadata nell'OPF
+    const metaBlock = opf.match(/<metadata[\s\S]*?<\/metadata>/)?.[0] ?? "NOT FOUND";
+    console.log("OPF metadata:", metaBlock.substring(0, 800));
+
     // Patch titolo
     if (title) {
       if (/<dc:title[^>]*>/.test(opf)) {
@@ -152,6 +156,20 @@ Deno.serve(async (req) => {
   if (bookErr || !book) return json({ error: "Opera non trovata" }, 404);
   if (book.author_id !== user.id) return json({ error: "Non autorizzato" }, 403);
   if (!book.docx_url) return json({ error: "Nessun file .docx caricato per questa opera" }, 400);
+
+  // Se author_name è vuoto, recuperalo dal profilo autore
+  let authorName: string | null = book.author_name ?? null;
+  if (!authorName && book.author_id) {
+    const { data: profile } = await supabase
+      .from("author_profiles")
+      .select("nome, cognome, pseudonimo")
+      .eq("id", book.author_id)
+      .maybeSingle();
+    if (profile) {
+      authorName = profile.pseudonimo || [profile.nome, profile.cognome].filter(Boolean).join(" ") || null;
+    }
+  }
+  console.log("epub patch params — title:", book.titolo, "author:", authorName, "cover:", book.copertina_flat_url);
 
   // Verifica limite conversioni per questo formato
   const isAdmin = user.email?.toLowerCase() === "antheadelori@live.it";
@@ -252,7 +270,7 @@ Deno.serve(async (req) => {
     fileBytes = await patchEpubMetadata(
       fileBytes,
       book.titolo ?? null,
-      book.author_name ?? null,
+      authorName,
       book.copertina_flat_url ?? null,
     );
   }
