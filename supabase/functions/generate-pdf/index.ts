@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { unzipSync, zipSync } from "https://esm.sh/fflate@0.8.2";
 
 const CLOUDCONVERT_API_KEY = Deno.env.get("CLOUDCONVERT_API_KEY")!;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -45,6 +46,63 @@ function countPdfPages(bytes: Uint8Array): number | null {
     return Math.max(...matches.map(m => parseInt(m[1], 10)));
   } catch {
     return null;
+  }
+}
+
+async function patchEpubMetadata(
+  epubBytes: Uint8Array,
+  title: string | null,
+  author: string | null,
+  coverUrl: string | null,
+): Promise<Uint8Array> {
+  try {
+    const files = unzipSync(epubBytes);
+
+    // Trova il file OPF
+    const opfKey = Object.keys(files).find(k => k.endsWith(".opf"));
+    if (!opfKey) return epubBytes;
+
+    let opf = new TextDecoder().decode(files[opfKey]);
+
+    // Patch titolo
+    if (title) {
+      opf = opf.replace(/<dc:title[^>]*>[^<]*<\/dc:title>/, `<dc:title>${title}</dc:title>`);
+    }
+
+    // Patch autore
+    if (author) {
+      opf = opf.replace(/<dc:creator[^>]*>[^<]*<\/dc:creator>/, `<dc:creator>${author}</dc:creator>`);
+      if (!opf.includes("<dc:creator")) {
+        opf = opf.replace("</metadata>", `  <dc:creator>${author}</dc:creator>\n  </metadata>`);
+      }
+    }
+
+    // Patch copertina: sostituisce l'immagine esistente o aggiunge una nuova
+    if (coverUrl) {
+      const coverRes = await fetch(coverUrl);
+      if (coverRes.ok) {
+        const coverBytes = new Uint8Array(await coverRes.arrayBuffer());
+        const coverKey = Object.keys(files).find(k =>
+          /cover\.(jpe?g|png)/i.test(k.split("/").pop() ?? "")
+        );
+        if (coverKey) {
+          files[coverKey] = coverBytes;
+        } else {
+          files["cover.jpg"] = coverBytes;
+          if (!opf.includes('id="cover-image"')) {
+            opf = opf.replace(
+              "</manifest>",
+              `  <item id="cover-image" href="cover.jpg" media-type="image/jpeg" properties="cover-image"/>\n  </manifest>`,
+            );
+          }
+        }
+      }
+    }
+
+    files[opfKey] = new TextEncoder().encode(opf);
+    return zipSync(files);
+  } catch {
+    return epubBytes;
   }
 }
 
@@ -135,12 +193,6 @@ Deno.serve(async (req) => {
           input: "import-docx",
           output_format: ext,
           engine,
-          ...(format !== "pdf" && {
-            input_format: "docx",
-            title: book.titolo ?? undefined,
-            author: book.author_name ?? undefined,
-            cover: book.copertina_flat_url ?? undefined,
-          }),
         },
         "export-file": {
           operation: "export/url",
@@ -178,7 +230,17 @@ Deno.serve(async (req) => {
   // Scarica il file
   const fileRes = await fetch(downloadUrl);
   if (!fileRes.ok) return json({ error: `Impossibile scaricare il ${format.toUpperCase()} da CloudConvert` }, 502);
-  const fileBytes = new Uint8Array(await fileRes.arrayBuffer());
+  let fileBytes = new Uint8Array(await fileRes.arrayBuffer());
+
+  // Patch metadati epub/mobi
+  if (format === "epub") {
+    fileBytes = await patchEpubMetadata(
+      fileBytes,
+      book.titolo ?? null,
+      book.author_name ?? null,
+      book.copertina_flat_url ?? null,
+    );
+  }
 
   // Carica su Supabase Storage
   const storagePath = `${user.id}/${book_id}-generated.${ext}`;
