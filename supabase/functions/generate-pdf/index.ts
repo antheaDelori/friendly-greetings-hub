@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
   // Verifica ownership e recupera docx_url
   const { data: book, error: bookErr } = await supabase
     .from("books")
-    .select("id, docx_url, author_id")
+    .select("id, docx_url, author_id, titolo, author_name, copertina_flat_url")
     .eq("id", book_id)
     .single();
 
@@ -135,6 +135,12 @@ Deno.serve(async (req) => {
           input: "import-docx",
           output_format: ext,
           engine,
+          ...(format !== "pdf" && {
+            input_format: "docx",
+            title: book.titolo ?? undefined,
+            author: book.author_name ?? undefined,
+            cover: book.copertina_flat_url ?? undefined,
+          }),
         },
         "export-file": {
           operation: "export/url",
