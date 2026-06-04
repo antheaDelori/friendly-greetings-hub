@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { unzipSync, zipSync } from "https://esm.sh/fflate@0.8.2";
+import JSZip from "https://esm.sh/jszip@3.10.1";
 
 const CLOUDCONVERT_API_KEY = Deno.env.get("CLOUDCONVERT_API_KEY")!;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -56,52 +56,67 @@ async function patchEpubMetadata(
   coverUrl: string | null,
 ): Promise<Uint8Array> {
   try {
-    const files = unzipSync(epubBytes);
+    const zip = await JSZip.loadAsync(epubBytes);
 
     // Trova il file OPF
-    const opfKey = Object.keys(files).find(k => k.endsWith(".opf"));
-    if (!opfKey) return epubBytes;
+    const opfFile = Object.values(zip.files).find(f => f.name.endsWith(".opf"));
+    if (!opfFile) return epubBytes;
 
-    let opf = new TextDecoder().decode(files[opfKey]);
+    let opf = await opfFile.async("string");
 
     // Patch titolo
     if (title) {
-      opf = opf.replace(/<dc:title[^>]*>[^<]*<\/dc:title>/, `<dc:title>${title}</dc:title>`);
+      if (/<dc:title[^>]*>/.test(opf)) {
+        opf = opf.replace(/<dc:title[^>]*>[^<]*<\/dc:title>/, `<dc:title>${title}</dc:title>`);
+      } else {
+        opf = opf.replace("</metadata>", `  <dc:title>${title}</dc:title>\n  </metadata>`);
+      }
     }
 
     // Patch autore
     if (author) {
-      opf = opf.replace(/<dc:creator[^>]*>[^<]*<\/dc:creator>/, `<dc:creator>${author}</dc:creator>`);
-      if (!opf.includes("<dc:creator")) {
+      if (/<dc:creator[^>]*>/.test(opf)) {
+        opf = opf.replace(/<dc:creator[^>]*>[^<]*<\/dc:creator>/, `<dc:creator>${author}</dc:creator>`);
+      } else {
         opf = opf.replace("</metadata>", `  <dc:creator>${author}</dc:creator>\n  </metadata>`);
       }
     }
 
-    // Patch copertina: sostituisce l'immagine esistente o aggiunge una nuova
+    // Patch copertina
     if (coverUrl) {
       const coverRes = await fetch(coverUrl);
       if (coverRes.ok) {
-        const coverBytes = new Uint8Array(await coverRes.arrayBuffer());
-        const coverKey = Object.keys(files).find(k =>
-          /cover\.(jpe?g|png)/i.test(k.split("/").pop() ?? "")
+        const coverBytes = await coverRes.arrayBuffer();
+        // Cerca file cover esistente
+        const coverFile = Object.values(zip.files).find(f =>
+          /cover\.(jpe?g|png)$/i.test(f.name.split("/").pop() ?? "")
         );
-        if (coverKey) {
-          files[coverKey] = coverBytes;
-        } else {
-          files["cover.jpg"] = coverBytes;
-          if (!opf.includes('id="cover-image"')) {
+        const coverPath = coverFile?.name ?? "cover.jpg";
+        zip.file(coverPath, coverBytes);
+        // Assicura che il manifest referenzi la copertina
+        if (!opf.includes('properties="cover-image"') && !opf.includes('name="cover"')) {
+          if (!opf.includes(coverPath.split("/").pop()!)) {
             opf = opf.replace(
               "</manifest>",
-              `  <item id="cover-image" href="cover.jpg" media-type="image/jpeg" properties="cover-image"/>\n  </manifest>`,
+              `  <item id="cover-image" href="${coverPath.split("/").pop()}" media-type="image/jpeg" properties="cover-image"/>\n  </manifest>`,
             );
           }
+          opf = opf.replace("</metadata>", `  <meta name="cover" content="cover-image"/>\n  </metadata>`);
         }
       }
     }
 
-    files[opfKey] = new TextEncoder().encode(opf);
-    return zipSync(files);
-  } catch {
+    zip.file(opfFile.name, opf);
+
+    // Ricostruisce epub con mimetype prima e non compresso (requisito spec epub)
+    const result = await zip.generateAsync({
+      type: "uint8array",
+      compression: "DEFLATE",
+      compressionOptions: { level: 6 },
+    });
+    return result;
+  } catch (e) {
+    console.error("patchEpubMetadata error:", e);
     return epubBytes;
   }
 }
