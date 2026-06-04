@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import JSZip from "npm:jszip";
+import { unzipSync, zipSync, strFromU8, strToU8 } from "https://esm.sh/fflate@0.8.2";
 
 const CLOUDCONVERT_API_KEY = Deno.env.get("CLOUDCONVERT_API_KEY")!;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -56,28 +56,22 @@ async function patchEpubMetadata(
   coverUrl: string | null,
 ): Promise<Uint8Array> {
   try {
-    const zip = await JSZip.loadAsync(epubBytes);
+    const files = unzipSync(epubBytes) as Record<string, Uint8Array>;
 
     // Trova il file OPF
-    const opfFile = Object.values(zip.files).find(f => f.name.endsWith(".opf"));
-    if (!opfFile) return epubBytes;
+    const opfKey = Object.keys(files).find(k => k.endsWith(".opf"));
+    if (!opfKey) { console.log("OPF not found"); return epubBytes; }
 
-    let opf = await opfFile.async("string");
-
-    // DEBUG: mostra il blocco metadata nell'OPF
-    const metaBlock = opf.match(/<metadata[\s\S]*?<\/metadata>/)?.[0] ?? "NOT FOUND";
-    console.log("OPF metadata:", metaBlock.substring(0, 800));
+    let opf = strFromU8(files[opfKey]);
+    console.log("epub patch params — title:", title, "author:", author);
+    console.log("OPF before patch (first 400):", opf.substring(0, 400));
 
     // Patch titolo
     if (title) {
-      if (/<dc:title[^>]*>/.test(opf)) {
-        opf = opf.replace(/<dc:title[^>]*>[^<]*<\/dc:title>/, `<dc:title>${title}</dc:title>`);
-      } else {
-        opf = opf.replace("</metadata>", `  <dc:title>${title}</dc:title>\n  </metadata>`);
-      }
+      opf = opf.replace(/<dc:title[\s\S]*?<\/dc:title>/, `<dc:title>${title}</dc:title>`);
     }
 
-    // Patch autore ([\s\S]*? gestisce attributi e contenuto multiriga)
+    // Patch autore
     if (author) {
       if (/<dc:creator[\s\S]*?<\/dc:creator>/.test(opf)) {
         opf = opf.replace(/<dc:creator[\s\S]*?<\/dc:creator>/g, `<dc:creator>${author}</dc:creator>`);
@@ -90,35 +84,36 @@ async function patchEpubMetadata(
     if (coverUrl) {
       const coverRes = await fetch(coverUrl);
       if (coverRes.ok) {
-        const coverBytes = await coverRes.arrayBuffer();
-        // Cerca file cover esistente
-        const coverFile = Object.values(zip.files).find(f =>
-          /cover\.(jpe?g|png)$/i.test(f.name.split("/").pop() ?? "")
-        );
-        const coverPath = coverFile?.name ?? "cover.jpg";
-        zip.file(coverPath, coverBytes);
-        // Assicura che il manifest referenzi la copertina
+        const coverBytes = new Uint8Array(await coverRes.arrayBuffer());
+        const coverKey = Object.keys(files).find(k =>
+          /cover\.(jpe?g|png)$/i.test(k.split("/").pop() ?? "")
+        ) ?? "cover.jpg";
+        files[coverKey] = coverBytes;
         if (!opf.includes('properties="cover-image"') && !opf.includes('name="cover"')) {
-          if (!opf.includes(coverPath.split("/").pop()!)) {
-            opf = opf.replace(
-              "</manifest>",
-              `  <item id="cover-image" href="${coverPath.split("/").pop()}" media-type="image/jpeg" properties="cover-image"/>\n  </manifest>`,
-            );
+          const coverName = coverKey.split("/").pop()!;
+          if (!opf.includes(coverName)) {
+            opf = opf.replace("</manifest>",
+              `  <item id="cover-image" href="${coverName}" media-type="image/jpeg" properties="cover-image"/>\n  </manifest>`);
           }
           opf = opf.replace("</metadata>", `  <meta name="cover" content="cover-image"/>\n  </metadata>`);
         }
       }
     }
 
-    zip.file(opfFile.name, opf);
+    console.log("OPF after patch (first 400):", opf.substring(0, 400));
+    files[opfKey] = strToU8(opf);
 
-    // Ricostruisce epub con mimetype prima e non compresso (requisito spec epub)
-    const result = await zip.generateAsync({
-      type: "uint8array",
-      compression: "DEFLATE",
-      compressionOptions: { level: 6 },
+    // Ricostruisce ZIP con mimetype primo e non compresso (requisito epub)
+    const mimetype = files["mimetype"];
+    const rest: Record<string, [Uint8Array, { level: number }]> = {};
+    for (const [k, v] of Object.entries(files)) {
+      if (k !== "mimetype") rest[k] = [v, { level: 6 }];
+    }
+    const zipped = zipSync({
+      ...(mimetype ? { mimetype: [mimetype, { level: 0 }] } : {}),
+      ...rest,
     });
-    return result;
+    return zipped;
   } catch (e) {
     console.error("patchEpubMetadata error:", e);
     return epubBytes;
