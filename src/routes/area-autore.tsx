@@ -549,7 +549,7 @@ function AreaAutorePage() {
                         title: bd.titolo,
                         author: bd.author_name ?? profile?.nome ?? "Autore",
                         authorSlug: "",
-                        genre: bd.genere as import("@/data/books").Genre,
+                        genere: bd.genere as import("@/data/books").Genre,
                         year: bd.anno ?? new Date().getFullYear(),
                         reads: b.letture,
                         rating: b.avgStelle,

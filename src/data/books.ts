@@ -12,7 +12,7 @@ export type Book = {
   title: string;
   author: string;
   authorSlug: string;
-  genre: Genre;
+  genere: Genre;
   year: number;
   reads: number;
   rating: number;
@@ -38,3 +38,5 @@ export const genres: { value: Genre; label: string; tooltip?: string }[] = [
   { value: "poesia", label: "Poesie" },
   { value: "fumetto", label: "Fumetti" },
 ];
+
+export const ALL_GENRES = genres.map(g => g.value) as Genre[];

@@ -152,7 +152,7 @@ function CommunityPage() {
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [reviewsList, setReviewsList] = useState<ReviewRow[] | null>(null);
-  const [activeAuthors, setActiveAuthors] = useState<{ name: string; genre: string }[]>([]);
+  const [activeAuthors, setActiveAuthors] = useState<{ name: string; genere: string }[]>([]);
 
   // undefined = still checking, null = not logged in
   const [userId, setUserId] = useState<string | null | undefined>(undefined);
@@ -184,7 +184,7 @@ function CommunityPage() {
         const unique = data
           .filter((b: { author_name: string }) => { if (seen.has(b.author_name)) return false; seen.add(b.author_name); return true; })
           .slice(0, 5)
-          .map((b: { author_name: string; genere: string }) => ({ name: b.author_name, genre: b.genere }));
+          .map((b: { author_name: string; genere: string }) => ({ name: b.author_name, genere: b.genere }));
         setActiveAuthors(unique);
       });
     supabase.auth.getSession().then(({ data }) => {
@@ -387,7 +387,7 @@ function CommunityPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="font-display text-sm text-bone truncate">{a.name}</div>
-                        <div className="font-mono text-[9px] tracking-widest text-bone/50 uppercase">▸ {a.genre}</div>
+                        <div className="font-mono text-[9px] tracking-widest text-bone/50 uppercase">▸ {a.genere}</div>
                       </div>
                       <button className="font-mono text-[10px] tracking-widest text-cyan border border-cyan/40 px-2 py-1 hover:bg-cyan hover:text-void transition-all uppercase">
                         +seg

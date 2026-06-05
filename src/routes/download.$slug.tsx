@@ -32,7 +32,7 @@ function DownloadPage() {
             <div className="mt-4 font-mono text-[9px] tracking-widest text-bone/50 uppercase space-y-1">
               <div>▸ AUTORE: <span className="text-cyan">{book.author}</span></div>
               <div>▸ ANNO: {book.year}</div>
-              <div>▸ GENERE: {book.genre}</div>
+              <div>▸ GENERE: {book.genere}</div>
               <div>▸ ID: {book.slug.slice(0,8).toUpperCase()}</div>
             </div>
           </HudPanel>

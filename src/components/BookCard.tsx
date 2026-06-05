@@ -100,8 +100,8 @@ export function BookCard({ book, compact = false, libreriaStato = null, onLibrer
           backgroundImage: "repeating-linear-gradient(0deg, transparent 0, transparent 2px, oklch(0.82 0.16 200 / 0.06) 2px, oklch(0.82 0.16 200 / 0.06) 3px)"
         }} />
 
-        <span className={`absolute top-3 left-3 ${genreColor[book.genre]} bg-void/70 backdrop-blur font-mono tracking-[0.2em] text-[9px] uppercase px-2 py-1 border z-10`}>
-          ◆ {book.genre}
+        <span className={`absolute top-3 left-3 ${genreColor[book.genere]} bg-void/70 backdrop-blur font-mono tracking-[0.2em] text-[9px] uppercase px-2 py-1 border z-10`}>
+          ◆ {book.genere}
         </span>
 
         <div className="absolute top-3 right-3 font-mono text-[9px] tracking-widest text-cyan/80 z-10">

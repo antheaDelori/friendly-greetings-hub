@@ -5,7 +5,7 @@ import { getCestinoTranslation } from "@/lib/cestinoI18n";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { BookCard } from "@/components/BookCard";
-import { type Book, type Genre } from "@/data/books";
+import { ALL_GENRES, type Book, type Genre } from "@/data/books";
 import { supabase } from "@/lib/supabase";
 import logo from "@/assets/liberiamo-hero.webp";
 import logoFallback from "@/assets/logo-liberiamo.jpg";
@@ -73,7 +73,6 @@ function Index() {
 
   useEffect(() => {
     const fetchAll = async () => {
-      const ALL_GENRES: Genre[] = ["libro", "racconto", "saggio", "articolo", "novelle", "poesia", "fumetto"];
 
       // Libri pubblici (gratuito)
       const { data: publicData } = await supabase
@@ -115,7 +114,7 @@ function Index() {
             title: b.titolo,
             author,
             authorSlug: author.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-"),
-            genre: (ALL_GENRES.includes(b.genere as Genre) ? b.genere : "libro") as Genre,
+            genere: (ALL_GENRES.includes(b.genere as Genre) ? b.genere : "libro") as Genre,
             year: b.anno ?? new Date().getFullYear(),
             reads: b.letture,
             rating: 0,

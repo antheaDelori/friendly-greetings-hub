@@ -73,7 +73,7 @@ export async function generateBookPdf(
   doc.setProperties({
     title: book.title,
     author: book.author,
-    subject: `${book.genre} — Liberiamo la mente`,
+    subject: `${book.genere} — Liberiamo la mente`,
     keywords: `liberiamo2076.com AntheaDelori-Edizioni`,
     creator: "AntheaDelori Edizioni — liberiamo2076.com",
   });
@@ -172,7 +172,7 @@ export async function generateBookPdf(
       "liberiamo2076.com",
       "",
       "Prima edizione digitale",
-      `Genere: ${book.genre}`,
+      `Genere: ${book.genere}`,
     ];
 
     let cy = PH - MB - copyrightLines.length * 5 - 10;

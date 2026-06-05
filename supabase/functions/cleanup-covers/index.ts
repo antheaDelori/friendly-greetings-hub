@@ -63,6 +63,14 @@ Deno.serve(async (req) => {
     }
   }
 
+  const { data: fumettoPagine } = await supabase.from("fumetti_pagine").select("image_url");
+  for (const fp of fumettoPagine ?? []) {
+    if (typeof fp.image_url === "string") {
+      const p = storagePath(fp.image_url);
+      if (p) usedPaths.add(p);
+    }
+  }
+
   // 2. Lista tutti i file nel bucket (ricorsiva)
   const allFiles: string[] = [];
 

@@ -64,7 +64,7 @@ async function patchEpubMetadata(
 
     let opf = strFromU8(files[opfKey]);
     console.log("epub patch params — title:", title, "author:", author);
-    console.log("OPF before patch (first 400):", opf.substring(0, 400));
+    console.log("OPF title/author before:", opf.match(/<dc:title[\s\S]*?<\/dc:title>/)?.[0], "|", opf.match(/<dc:creator[\s\S]*?<\/dc:creator>/)?.[0]);
 
     // Patch titolo
     if (title) {
@@ -100,7 +100,7 @@ async function patchEpubMetadata(
       }
     }
 
-    console.log("OPF after patch (first 400):", opf.substring(0, 400));
+    console.log("OPF title/author after:", opf.match(/<dc:title[\s\S]*?<\/dc:title>/)?.[0], "|", opf.match(/<dc:creator[\s\S]*?<\/dc:creator>/)?.[0]);
     files[opfKey] = strToU8(opf);
 
     // Ricostruisce ZIP con mimetype primo e non compresso (requisito epub)
@@ -164,7 +164,7 @@ Deno.serve(async (req) => {
       authorName = profile.pseudonimo || [profile.nome, profile.cognome].filter(Boolean).join(" ") || null;
     }
   }
-  console.log("epub patch params — title:", book.titolo, "author:", authorName, "cover:", book.copertina_flat_url);
+  console.log("epub patch params — format:", format, "title:", book.titolo, "author:", authorName);
 
   // Verifica limite conversioni per questo formato
   const isAdmin = user.email?.toLowerCase() === "antheadelori@live.it";

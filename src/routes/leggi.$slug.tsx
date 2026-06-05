@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { ComicViewer } from "@/components/ComicViewer";
-import { getBookBySlug, type Book, type Genre } from "@/data/books";
+import { getBookBySlug, ALL_GENRES, type Book, type Genre } from "@/data/books";
 import { supabase } from "@/lib/supabase";
 import logo from "@/assets/logo-liberiamo.jpg";
 import { generateBookPdf } from "@/lib/generateBookPdf";
@@ -71,9 +71,7 @@ export const Route = createFileRoute("/leggi/$slug")({
       title: data.titolo,
       author,
       authorSlug: author.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-"),
-      genre: (["libro", "racconto", "saggio", "articolo", "novelle", "poesia", "fumetto"].includes(data.genere)
-        ? data.genere
-        : "libro") as Genre,
+      genere: (ALL_GENRES.includes(data.genere as Genre) ? data.genere : "libro") as Genre,
       year: data.anno ?? new Date().getFullYear(),
       reads: data.letture,
       rating: 0,
@@ -653,7 +651,7 @@ function ReadPage() {
           <img src={book.cover} alt="" className="w-full h-auto block ring-1 ring-ink/15 bg-ink/5" />
 
           <div className="mt-4">
-            <div className="font-display tracking-[0.25em] text-[10px] text-blood uppercase">{book.genre} · {book.year}</div>
+            <div className="font-display tracking-[0.25em] text-[10px] text-blood uppercase">{book.genere} · {book.year}</div>
             <h1 className="mt-1 font-serif text-xl leading-tight text-ink">{book.title}</h1>
             <p className="font-serif italic text-sm text-ink/70 mt-0.5">di {book.author}</p>
             <p className="mt-3 font-serif text-sm text-ink/70 leading-relaxed line-clamp-4">{book.description}</p>
@@ -1140,7 +1138,7 @@ function ReadPage() {
                 ← Torna al catalogo
               </button>
             </div>
-          ) : book.genre === "fumetto" && fumettoPagine.length > 0 ? (
+          ) : book.genere === "fumetto" && fumettoPagine.length > 0 ? (
             <ComicViewer pagine={fumettoPagine} supabaseUrl={import.meta.env.VITE_SUPABASE_URL} formato={(book as any).fumetto_formato ?? "a4v"} />
           ) : chapter ? (
             <>

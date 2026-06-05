@@ -12,7 +12,6 @@ export function ComicViewer({ pagine, supabaseUrl, formato = "a4v" }: {
   const [zoomed, setZoomed] = useState(false);
 
   const total = pagine.length;
-  // Manga: direzione invertita (destra → sinistra)
   const isManga = formato === "manga";
   const isLandscape = formato === "a4h";
 
@@ -38,35 +37,48 @@ export function ComicViewer({ pagine, supabaseUrl, formato = "a4v" }: {
   );
 
   const page = pagine[current];
-  const imgUrl = page.image_url; // URL pubblico completo salvato nel DB
-
-  // Larghezza container: landscape usa tutta la larghezza disponibile
-  const containerClass = isLandscape
-    ? "relative w-full cursor-pointer"
-    : "relative w-full max-w-2xl cursor-pointer";
+  const imgUrl = page.image_url;
 
   return (
-    <div className={`flex flex-col items-center gap-6 py-8 select-none ${isLandscape ? "px-0" : ""}`}>
+    <div className="flex flex-col select-none py-4 px-2 gap-3">
 
-      {/* Formato badge + contatore */}
-      <div className="flex items-center gap-4">
-        <span className="font-mono text-[9px] tracking-widest text-ink/25 uppercase border border-ink/15 px-2 py-0.5">
-          {formato === "a4v" ? "A4 verticale" : formato === "a4h" ? "A4 orizzontale" : "Manga"}
-          {isManga && " · ←"}
-        </span>
-        <span className="font-mono text-[10px] tracking-[0.3em] text-ink/40 uppercase">
-          {current + 1} / {total}
-        </span>
+      {/* Barra di controllo superiore: sempre visibile */}
+      <div className="flex items-center justify-between gap-3 flex-shrink-0">
+        <button
+          onClick={isManga ? next : prev}
+          disabled={isManga ? current === total - 1 : current === 0}
+          className="font-mono text-[10px] uppercase tracking-widest border border-ink/20 px-4 py-2 text-ink/50 hover:border-ink/60 hover:text-ink/80 transition-colors disabled:opacity-20 disabled:cursor-not-allowed whitespace-nowrap"
+        >
+          {isManga ? "→ Prec" : "← Prec"}
+        </button>
+
+        <div className="flex flex-col items-center gap-1 min-w-0">
+          <span className="font-mono text-[9px] tracking-widest text-ink/25 uppercase border border-ink/15 px-2 py-0.5 whitespace-nowrap">
+            {formato === "a4v" ? "A4 verticale" : formato === "a4h" ? "A4 orizzontale" : "Manga"}
+            {isManga && " · ←"}
+          </span>
+          <span className="font-mono text-[10px] tracking-[0.3em] text-ink/40 uppercase">
+            {current + 1} / {total}
+          </span>
+        </div>
+
+        <button
+          onClick={isManga ? prev : next}
+          disabled={isManga ? current === 0 : current === total - 1}
+          className="font-mono text-[10px] uppercase tracking-widest border border-ink/20 px-4 py-2 text-ink/50 hover:border-ink/60 hover:text-ink/80 transition-colors disabled:opacity-20 disabled:cursor-not-allowed whitespace-nowrap"
+        >
+          {isManga ? "← Succ" : "Succ →"}
+        </button>
       </div>
 
-      {/* Immagine */}
+      {/* Immagine vincolata all'altezza disponibile */}
       <div
-        className={containerClass}
+        className={`flex justify-center ${isLandscape ? "w-full" : ""}`}
         onClick={e => {
+          if (zoomed) return;
           const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
           const x = e.clientX - rect.left;
           const clickRight = x > rect.width / 2;
-          // Manga: click destra = pagina precedente (direzione giapponese)
           if (isManga) { if (clickRight) prev(); else next(); }
           else { if (clickRight) next(); else prev(); }
         }}
@@ -74,42 +86,28 @@ export function ComicViewer({ pagine, supabaseUrl, formato = "a4v" }: {
         <img
           src={imgUrl}
           alt={`Pagina ${current + 1}`}
-          className={`w-full object-contain transition-all ${zoomed ? "cursor-zoom-out" : "cursor-pointer"}`}
+          className={`object-contain cursor-pointer transition-all ${isLandscape ? "w-full" : "max-w-2xl w-full"}`}
+          style={{
+            maxHeight: "calc(100dvh - 220px)",
+            ...(zoomed ? { transform: "scale(1.8)", transformOrigin: "center top", cursor: "zoom-out" } : {}),
+          }}
           onDoubleClick={() => setZoomed(z => !z)}
-          style={zoomed ? { transform: "scale(1.8)", transformOrigin: "center top" } : {}}
           draggable={false}
         />
       </div>
 
-      {/* Controlli */}
-      <div className="flex items-center gap-6 flex-wrap justify-center">
-        <button
-          onClick={isManga ? next : prev} disabled={isManga ? current === total - 1 : current === 0}
-          className="font-mono text-[10px] uppercase tracking-widest border border-ink/20 px-4 py-2 text-ink/50 hover:border-ink/60 hover:text-ink/80 transition-colors disabled:opacity-20 disabled:cursor-not-allowed"
-        >
-          {isManga ? "→ Precedente" : "← Precedente"}
-        </button>
-
-        {/* Miniature navigazione rapida */}
-        <div className="flex gap-1.5 max-w-xs overflow-x-auto">
-          {pagine.map((p, i) => (
-            <button
-              key={p.id}
-              onClick={() => setCurrent(i)}
-              className={`w-8 h-1.5 flex-shrink-0 transition-colors ${i === current ? "bg-ink/80" : "bg-ink/15 hover:bg-ink/40"}`}
-            />
-          ))}
-        </div>
-
-        <button
-          onClick={isManga ? prev : next} disabled={isManga ? current === 0 : current === total - 1}
-          className="font-mono text-[10px] uppercase tracking-widest border border-ink/20 px-4 py-2 text-ink/50 hover:border-ink/60 hover:text-ink/80 transition-colors disabled:opacity-20 disabled:cursor-not-allowed"
-        >
-          {isManga ? "← Successiva" : "Successiva →"}
-        </button>
+      {/* Miniature navigazione rapida */}
+      <div className="flex gap-1.5 justify-center overflow-x-auto flex-shrink-0 py-1">
+        {pagine.map((p, i) => (
+          <button
+            key={p.id}
+            onClick={() => setCurrent(i)}
+            className={`w-8 h-1.5 flex-shrink-0 transition-colors ${i === current ? "bg-ink/80" : "bg-ink/15 hover:bg-ink/40"}`}
+          />
+        ))}
       </div>
 
-      <p className="font-mono text-[9px] text-ink/25 tracking-widest text-center">
+      <p className="font-mono text-[9px] text-ink/25 tracking-widest text-center flex-shrink-0">
         click sinistra / destra per sfogliare · doppio click per zoom · ← → per tastiera
         {isManga && " · direzione manga →←"}
       </p>
