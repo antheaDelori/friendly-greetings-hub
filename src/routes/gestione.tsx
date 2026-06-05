@@ -304,6 +304,13 @@ function GestionePage() {
   const [newsletterMessage, setNewsletterMessage] = useState("");
   const [newsletterResult, setNewsletterResult] = useState<{ sent: number } | { error: string } | null>(null);
 
+  // Moderazione
+  const [flaggedReviews, setFlaggedReviews] = useState<{
+    id: string; nome_display: string | null; testo: string | null; stelle: number;
+    created_at: string; flagged: boolean; blocked: boolean; flag_reason: string | null;
+    books: { titolo: string; slug: string } | null;
+  }[]>([]);
+
   // Anteprima copertina: crea/revoca object URL al cambio file
   useEffect(() => {
     if (!copertina) { setCoverPreviewUrl(null); return; }
@@ -339,6 +346,7 @@ function GestionePage() {
       await loadBooks(user.id);
       await loadCollane(user.id);
       await loadFollowers(user.id);
+      await loadFlaggedReviews();
       setLoading(false);
     };
     init();
@@ -1130,6 +1138,25 @@ function GestionePage() {
   const loadFollowers = async (uid: string) => {
     const { data } = await supabase.from("author_followers").select("id, email, nome, source, created_at").eq("author_id", uid).order("created_at", { ascending: false });
     setFollowers(data ?? []);
+  };
+
+  const loadFlaggedReviews = async () => {
+    const { data } = await supabase
+      .from("recensioni")
+      .select("id, nome_display, testo, stelle, created_at, flagged, blocked, flag_reason, books(titolo, slug)")
+      .or("flagged.eq.true,blocked.eq.true")
+      .order("created_at", { ascending: false });
+    setFlaggedReviews((data ?? []) as typeof flaggedReviews);
+  };
+
+  const handleModerateReview = async (recensioneId: string, action: "block" | "unblock") => {
+    const { data: { session } } = await supabase.auth.getSession();
+    await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/moderate-content`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
+      body: JSON.stringify({ action, recensione_id: recensioneId }),
+    });
+    await loadFlaggedReviews();
   };
 
   const [followerError, setFollowerError] = useState<string | null>(null);
@@ -3011,6 +3038,58 @@ function GestionePage() {
             )}
 
           </div>
+        </HudPanel>
+
+        {/* ── Moderazione ── */}
+        <HudPanel className="mt-8">
+          <div className="font-display tracking-[0.25em] text-xs text-blood mb-6">— moderazione community</div>
+
+          {flaggedReviews.length === 0 ? (
+            <p className="font-mono text-[11px] text-ink/40 uppercase tracking-widest">Nessun contenuto segnalato o flaggato.</p>
+          ) : (
+            <div className="space-y-4">
+              {flaggedReviews.map(r => (
+                <div key={r.id} className={`border p-4 space-y-2 ${r.blocked ? "border-blood/40 bg-blood/5" : "border-cyan/20 bg-cyan/5"}`}>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-1 flex-1">
+                      <div className="flex items-center gap-3">
+                        <span className="font-mono text-[10px] uppercase tracking-widest text-ink/50">{r.nome_display ?? "Anonimo"}</span>
+                        <span className="font-mono text-[10px] text-ink/30">{new Date(r.created_at).toLocaleDateString("it-IT")}</span>
+                        {r.blocked && <span className="font-mono text-[9px] uppercase tracking-widest text-blood border border-blood/40 px-2 py-0.5">bloccata</span>}
+                        {r.flagged && !r.blocked && <span className="font-mono text-[9px] uppercase tracking-widest text-yellow-500 border border-yellow-500/40 px-2 py-0.5">flaggata</span>}
+                      </div>
+                      {r.books && (
+                        <p className="font-mono text-[10px] text-ink/40">Libro: {r.books.titolo}</p>
+                      )}
+                      {r.flag_reason && (
+                        <p className="font-mono text-[10px] text-ink/40">Motivo: {r.flag_reason}</p>
+                      )}
+                      {r.testo && (
+                        <p className="font-serif text-sm text-ink/70 italic mt-2">"{r.testo}"</p>
+                      )}
+                    </div>
+                    <div className="flex gap-2 shrink-0">
+                      {!r.blocked ? (
+                        <button
+                          onClick={() => handleModerateReview(r.id, "block")}
+                          className="font-mono text-[9px] uppercase tracking-widest border border-blood/50 text-blood px-3 py-1.5 hover:bg-blood/10 transition-colors"
+                        >
+                          Blocca
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleModerateReview(r.id, "unblock")}
+                          className="font-mono text-[9px] uppercase tracking-widest border border-cyan/30 text-cyan/70 px-3 py-1.5 hover:bg-cyan/10 transition-colors"
+                        >
+                          Ripristina
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </HudPanel>
 
       </PageShell>
