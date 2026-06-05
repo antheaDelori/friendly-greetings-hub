@@ -2,6 +2,7 @@ import { createFileRoute, Link, notFound, useRouter } from "@tanstack/react-rout
 import { useState, useEffect, useRef } from "react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
+import { ComicViewer } from "@/components/ComicViewer";
 import { getBookBySlug, type Book, type Genre } from "@/data/books";
 import { supabase } from "@/lib/supabase";
 import logo from "@/assets/logo-liberiamo.jpg";
@@ -87,6 +88,10 @@ export const Route = createFileRoute("/leggi/$slug")({
       .select("id, titolo, descrizione, file_url, tipo, ordine")
       .eq("book_id", data.id)
       .order("ordine");
+
+    const { data: fumettoPagineData } = data.genere === "fumetto"
+      ? await supabase.from("fumetti_pagine").select("id, ordine, image_url").eq("book_id", data.id).order("ordine")
+      : { data: [] };
 
     let donationUrl: string | null = null;
     let authorBio: string | null = null;
@@ -176,6 +181,7 @@ export const Route = createFileRoute("/leggi/$slug")({
       hasAccess,
       bookAccesso,
       authorBio,
+      fumettoPagine: (fumettoPagineData ?? []) as { id: string; ordine: number; image_url: string }[],
     };
   },
   head: ({ loaderData }) => ({
@@ -258,7 +264,7 @@ function getOrCreateVisitorId(userId?: string | null): string {
 
 
 function ReadPage() {
-  const { book, fileUrl, epubUrl, mobiUrl, donationUrl, isLoggedIn, isAnonymous, userId, userEmail, allegati, isCestinato, votiCestino: initialVoti, recuperato, bookId, authorId, recensioni: inizialiRecensioni, userIsFollowing: initFollowing, hasAccess, bookAccesso, authorBio } = Route.useLoaderData();
+  const { book, fileUrl, epubUrl, mobiUrl, donationUrl, isLoggedIn, isAnonymous, userId, userEmail, allegati, isCestinato, votiCestino: initialVoti, recuperato, bookId, authorId, recensioni: inizialiRecensioni, userIsFollowing: initFollowing, hasAccess, bookAccesso, authorBio, fumettoPagine } = Route.useLoaderData();
   const isAuthor = !!userId && !!authorId && userId === authorId;
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const router = useRouter();
@@ -1134,6 +1140,8 @@ function ReadPage() {
                 ← Torna al catalogo
               </button>
             </div>
+          ) : book.genere === "fumetto" && fumettoPagine.length > 0 ? (
+            <ComicViewer pagine={fumettoPagine} supabaseUrl={import.meta.env.VITE_SUPABASE_URL} />
           ) : chapter ? (
             <>
               <div className="flex items-center justify-between">

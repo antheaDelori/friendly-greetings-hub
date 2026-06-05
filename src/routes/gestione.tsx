@@ -78,7 +78,7 @@ type Book = {
   collana_id: string | null;
 };
 
-const GENERI = ["libro", "racconto", "saggio", "articolo", "novelle", "poesia"] as const;
+const GENERI = ["libro", "racconto", "saggio", "articolo", "novelle", "poesia", "fumetto"] as const;
 const GENERE_LABELS: Record<string, string> = {
   libro: "Libro", racconto: "Racconto", saggio: "Saggio", articolo: "Articolo",
   novelle: "Novelle", poesia: "Poesia",
@@ -304,6 +304,10 @@ function GestionePage() {
   const [newsletterMessage, setNewsletterMessage] = useState("");
   const [newsletterResult, setNewsletterResult] = useState<{ sent: number } | { error: string } | null>(null);
 
+  // Fumetti — pagine
+  const [fumettoPagine, setFumettoPagine] = useState<{ id: string; ordine: number; image_url: string }[]>([]);
+  const [fumettoUploading, setFumettoUploading] = useState(false);
+
   // Moderazione
   const [flaggedReviews, setFlaggedReviews] = useState<{
     id: string; nome_display: string | null; testo: string | null; stelle: number;
@@ -506,6 +510,8 @@ function GestionePage() {
     setShowForm(false);
     setEditingId(null);
     setConfirmMode(null);
+    if (b.genere === "fumetto") loadFumettoPagine(b.id);
+    else setFumettoPagine([]);
   };
 
   const openEditForm = (b: Book) => {
@@ -1147,6 +1153,34 @@ function GestionePage() {
       .or("flagged.eq.true,blocked.eq.true")
       .order("created_at", { ascending: false });
     setFlaggedReviews((data ?? []) as typeof flaggedReviews);
+  };
+
+  const loadFumettoPagine = async (bookId: string) => {
+    const { data } = await supabase.from("fumetti_pagine").select("id, ordine, image_url").eq("book_id", bookId).order("ordine");
+    setFumettoPagine(data ?? []);
+  };
+
+  const handleUploadPagine = async (files: FileList, bookId: string, userId: string) => {
+    setFumettoUploading(true);
+    const existing = fumettoPagine.length;
+    const uploads = Array.from(files).sort((a, b) => a.name.localeCompare(b.name));
+    for (let i = 0; i < uploads.length; i++) {
+      const file = uploads[i];
+      const path = `${userId}/${bookId}/pagine/${String(existing + i).padStart(4, "0")}-${file.name}`;
+      const { error } = await supabase.storage.from("libri").upload(path, file, { upsert: true });
+      if (!error) {
+        const { data: urlData } = supabase.storage.from("libri").getPublicUrl(path);
+        await supabase.from("fumetti_pagine").insert({ book_id: bookId, ordine: existing + i, image_url: path });
+      }
+    }
+    await loadFumettoPagine(bookId);
+    setFumettoUploading(false);
+  };
+
+  const handleDeletePagina = async (paginaId: string, imageUrl: string) => {
+    await supabase.storage.from("libri").remove([imageUrl]);
+    await supabase.from("fumetti_pagine").delete().eq("id", paginaId);
+    setFumettoPagine(prev => prev.filter(p => p.id !== paginaId));
   };
 
   const handleModerateReview = async (recensioneId: string, action: "block" | "unblock") => {
@@ -2419,6 +2453,51 @@ function GestionePage() {
                     </div>
                   )}
 
+                </div>
+              )}
+
+              {/* ── SEZIONE 04b: Pagine fumetto ── */}
+              {openSection === 4 && editingId && selected?.genere === "fumetto" && userId && (
+                <div className="border border-cyan/15 p-5 mt-2 space-y-4">
+                  <div className="font-mono text-[11px] tracking-[0.3em] text-amber uppercase font-bold">◈ Tavole del fumetto</div>
+                  <p className="font-mono text-[10px] text-bone/50">
+                    Carica le pagine in ordine. Formati: JPG, PNG, WEBP. Verranno mostrate al lettore nell'ordine di upload.
+                  </p>
+
+                  {/* Upload */}
+                  <label className="flex items-center gap-3 cursor-pointer border border-dashed border-cyan/30 p-4 hover:border-cyan/60 transition-colors">
+                    <span className="font-mono text-[10px] uppercase tracking-widest text-cyan/60">
+                      {fumettoUploading ? "▸ Caricamento..." : "◈ Aggiungi pagine"}
+                    </span>
+                    <input
+                      type="file" accept="image/*" multiple className="hidden"
+                      disabled={fumettoUploading}
+                      onChange={e => e.target.files && handleUploadPagine(e.target.files, editingId, userId)}
+                    />
+                  </label>
+
+                  {/* Griglia pagine */}
+                  {fumettoPagine.length > 0 && (
+                    <div className="grid grid-cols-4 gap-3">
+                      {fumettoPagine.map((p, i) => (
+                        <div key={p.id} className="relative group">
+                          <img
+                            src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/authenticated/libri/${p.image_url}`}
+                            alt={`Pagina ${i + 1}`}
+                            className="w-full aspect-[2/3] object-cover border border-cyan/15"
+                          />
+                          <div className="absolute top-1 left-1 font-mono text-[9px] bg-black/60 text-bone/60 px-1">{i + 1}</div>
+                          <button
+                            onClick={() => handleDeletePagina(p.id, p.image_url)}
+                            className="absolute top-1 right-1 hidden group-hover:flex bg-blood/80 text-bone text-[10px] px-1.5 py-0.5"
+                          >✕</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {fumettoPagine.length === 0 && !fumettoUploading && (
+                    <p className="font-mono text-[10px] text-bone/30">Nessuna pagina caricata.</p>
+                  )}
                 </div>
               )}
 
