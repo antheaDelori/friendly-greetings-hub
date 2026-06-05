@@ -81,7 +81,7 @@ type Book = {
 const GENERI = ["libro", "racconto", "saggio", "articolo", "novelle", "poesia", "fumetto"] as const;
 const GENERE_LABELS: Record<string, string> = {
   libro: "Libro", racconto: "Racconto", saggio: "Saggio", articolo: "Articolo",
-  novelle: "Novelle", poesia: "Poesia",
+  novelle: "Novelle", poesia: "Poesia", fumetto: "Fumetto",
 };
 const GENERE_TOOLTIP: Record<string, string> = {
   novelle: "Racconti brevi",

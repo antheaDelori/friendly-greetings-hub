@@ -261,6 +261,7 @@ function AreaAutorePage() {
                       { g: "articolo", label: "Articoli" },
                       { g: "novelle", label: "Novelle" },
                       { g: "poesia", label: "Poesie" },
+                      { g: "fumetto", label: "Fumetti" },
                     ] as { g: string; label: string; tooltip?: string }[]).map(({ g, label, tooltip }) => {
                       const n = bookStats.perGenere[g] ?? 0;
                       return (
