@@ -71,7 +71,7 @@ export const Route = createFileRoute("/leggi/$slug")({
       title: data.titolo,
       author,
       authorSlug: author.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-"),
-      genre: (["libro", "racconto", "saggio", "articolo"].includes(data.genere)
+      genre: (["libro", "racconto", "saggio", "articolo", "novelle", "poesia", "fumetto"].includes(data.genere)
         ? data.genere
         : "libro") as Genre,
       year: data.anno ?? new Date().getFullYear(),
@@ -1140,7 +1140,7 @@ function ReadPage() {
                 ← Torna al catalogo
               </button>
             </div>
-          ) : book.genere === "fumetto" && fumettoPagine.length > 0 ? (
+          ) : book.genre === "fumetto" && fumettoPagine.length > 0 ? (
             <ComicViewer pagine={fumettoPagine} supabaseUrl={import.meta.env.VITE_SUPABASE_URL} formato={(book as any).fumetto_formato ?? "a4v"} />
           ) : chapter ? (
             <>
