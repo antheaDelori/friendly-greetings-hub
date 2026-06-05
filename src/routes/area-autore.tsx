@@ -115,7 +115,9 @@ function AreaAutorePage() {
       const booksFull = booksFullRes.data ?? [];
       const bookIds = booksFull.map(b => b.id);
       if (bookIds.length > 0) {
-        const [recRes, likeRes, libRes, recentRecRes] = await Promise.all([
+        const slugMap = Object.fromEntries(booksFull.map(b => [b.slug, b.id]));
+        const slugs = booksFull.map(b => b.slug);
+        const [recRes, likeRes, libRes, recentRecRes, revRes, recentRevRes] = await Promise.all([
           supabase.from("recensioni").select("book_id, stelle").in("book_id", bookIds),
           supabase.from("likes").select("book_id").in("book_id", bookIds),
           supabase.from("libreria").select("book_id").in("book_id", bookIds),
@@ -125,24 +127,47 @@ function AreaAutorePage() {
             .not("testo", "is", null)
             .order("created_at", { ascending: false })
             .limit(8),
+          supabase.from("reviews").select("book_slug, rating").in("book_slug", slugs).eq("flagged", false).eq("blocked", false),
+          supabase.from("reviews")
+            .select("book_slug, user_display, rating, text, created_at")
+            .in("book_slug", slugs)
+            .not("text", "is", null)
+            .eq("flagged", false).eq("blocked", false)
+            .order("created_at", { ascending: false })
+            .limit(8),
         ]);
         const bookTitleMap = Object.fromEntries(booksFull.map(b => [b.id, b.titolo]));
         const engagement: BookEngagement[] = booksFull.map(b => {
           const bookRec = (recRes.data ?? []).filter(r => r.book_id === b.id);
-          const avg = bookRec.length > 0
-            ? bookRec.reduce((s: number, r: { stelle: number }) => s + r.stelle, 0) / bookRec.length
+          const bookRev = (revRes.data ?? []).filter((r: { book_slug: string }) => r.book_slug === b.slug);
+          const allRatings = [
+            ...bookRec.map((r: { stelle: number }) => r.stelle),
+            ...bookRev.map((r: { rating: number }) => r.rating),
+          ];
+          const avg = allRatings.length > 0
+            ? allRatings.reduce((s, v) => s + v, 0) / allRatings.length
             : 0;
           return {
             id: b.id, titolo: b.titolo, copertina_url: b.copertina_url, slug: b.slug,
-            letture: b.letture ?? 0, avgStelle: avg, numRecensioni: bookRec.length,
+            letture: b.letture ?? 0, avgStelle: avg, numRecensioni: bookRec.length + bookRev.length,
             numLikes: (likeRes.data ?? []).filter((l: { book_id: string }) => l.book_id === b.id).length,
             numLibreria: (libRes.data ?? []).filter((l: { book_id: string }) => l.book_id === b.id).length,
           };
         });
         setBookEngagement(engagement);
-        setRecentRecensioni((recentRecRes.data ?? []).map((r: { book_id: string; nome_display: string | null; stelle: number; testo: string | null; created_at: string }) => ({
-          ...r, bookTitolo: bookTitleMap[r.book_id] ?? "Opera",
-        })));
+        const fromRecensioni = (recentRecRes.data ?? []).map((r: { book_id: string; nome_display: string | null; stelle: number; testo: string | null; created_at: string }) => ({
+          book_id: r.book_id, nome_display: r.nome_display, stelle: r.stelle,
+          testo: r.testo, created_at: r.created_at, bookTitolo: bookTitleMap[r.book_id] ?? "Opera",
+        }));
+        const fromReviews = (recentRevRes.data ?? []).map((r: { book_slug: string; user_display: string | null; rating: number; text: string | null; created_at: string }) => ({
+          book_id: slugMap[r.book_slug] ?? "", nome_display: r.user_display, stelle: r.rating,
+          testo: r.text, created_at: r.created_at, bookTitolo: bookTitleMap[slugMap[r.book_slug]] ?? "Opera",
+        }));
+        setRecentRecensioni(
+          [...fromRecensioni, ...fromReviews]
+            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+            .slice(0, 8)
+        );
       }
 
       setLoading(false);
