@@ -17,8 +17,26 @@ function json(data: unknown, status = 200) {
   });
 }
 
+// Blacklist parole italiane offensive — primo livello di controllo
+const IT_BLACKLIST = [
+  "merda", "cazzo", "vaffanculo", "fanculo", "stronzo", "stronza", "coglione",
+  "cogliona", "bastardo", "bastarda", "puttana", "troia", "frocio", "negro",
+  "nègro", "ritardato", "mongoloide", "idiota", "imbecille", "deficiente",
+  "figlio di puttana", "vaffa", "porco dio", "porcodio", "mannaggia",
+];
+
+function checkBlacklist(text: string): boolean {
+  const lower = text.toLowerCase();
+  return IT_BLACKLIST.some(w => lower.includes(w));
+}
+
 // Chiama OpenAI Moderation API
 async function moderateText(text: string): Promise<{ flagged: boolean; score: number; blocked: boolean }> {
+  // Blacklist italiana — blocco immediato
+  if (checkBlacklist(text)) {
+    return { flagged: true, score: 1, blocked: true };
+  }
+
   const res = await fetch("https://api.openai.com/v1/moderations", {
     method: "POST",
     headers: {

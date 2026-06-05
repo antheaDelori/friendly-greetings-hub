@@ -383,7 +383,7 @@ function ReadPage() {
     }
   };
 
-  const [recStelle, setRecStelle] = useState(0);
+  const [recStelle, setRecStelle] = useState(1);
   const [recHover, setRecHover] = useState(0);
   const [recTesto, setRecTesto] = useState("");
   const [recSaving, setRecSaving] = useState(false);
