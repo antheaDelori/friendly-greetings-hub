@@ -208,6 +208,7 @@ function CommunityPage() {
     setSubmitError(null);
 
     // Moderazione testo
+    let isFlagged = false;
     const { data: { session } } = await supabase.auth.getSession();
     const modRes = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/moderate-content`, {
       method: "POST",
@@ -221,6 +222,7 @@ function CommunityPage() {
         setSubmitting(false);
         return;
       }
+      isFlagged = mod.flagged ?? false;
     }
 
     const displayName = userMeta.pseudonimo
@@ -235,6 +237,7 @@ function CommunityPage() {
       text: reviewText.trim(),
       rating,
       user_display: displayName,
+      flagged: isFlagged,
     });
 
     setSubmitting(false);

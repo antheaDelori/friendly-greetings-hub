@@ -399,6 +399,7 @@ function ReadPage() {
     setRecError(null);
     try {
       // Moderazione testo prima di salvare
+      let isFlagged = false;
       if (recTesto.trim()) {
         const { data: { session } } = await supabase.auth.getSession();
         const modRes = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/moderate-content`, {
@@ -412,12 +413,13 @@ function ReadPage() {
             setRecError("Il tuo commento contiene contenuto inappropriato e non può essere pubblicato.");
             return;
           }
+          isFlagged = mod.flagged ?? false;
         }
       }
       const { data: profile } = await supabase.from("profiles").select("nome, cognome, pseudonimo").eq("id", userId).maybeSingle();
       const nome_display = profile?.pseudonimo || [profile?.nome, profile?.cognome].filter(Boolean).join(" ") || "Lettore";
       const { data: inserted, error } = await supabase.from("recensioni")
-        .insert({ book_id: bookId, user_id: userId, nome_display, stelle: recStelle, testo: recTesto.trim() || null })
+        .insert({ book_id: bookId, user_id: userId, nome_display, stelle: recStelle, testo: recTesto.trim() || null, flagged: isFlagged, flag_reason: isFlagged ? "auto-moderazione" : null })
         .select("id, user_id, nome_display, stelle, testo, created_at")
         .single();
       if (error) { setRecError(error.code === "23505" ? "Hai già recensito questa opera." : error.message); return; }
