@@ -33,7 +33,7 @@ function relativeTime(ts: string): string {
   return `${Math.floor(hours / 24)}g fa`;
 }
 
-type BookResult = { slug: string; titolo: string; author_name: string };
+type BookResult = { id: string; slug: string; titolo: string; author_name: string };
 
 function BookSearchField({
   selected,
@@ -66,7 +66,7 @@ function BookSearchField({
     const timer = setTimeout(async () => {
       const { data } = await supabase
         .from("books")
-        .select("slug, titolo, author_name")
+        .select("id, slug, titolo, author_name")
         .or(`titolo.ilike.%${query}%,author_name.ilike.%${query}%`)
         .limit(6);
       setResults(data ?? []);
@@ -229,15 +229,15 @@ function CommunityPage() {
       || `${userMeta.nome ?? ""} ${userMeta.cognome ?? ""}`.trim()
       || "Lettore";
 
-    const { error } = await supabase.from("reviews").insert({
+    const { error } = await supabase.from("recensioni").insert({
       user_id: userId,
-      book_slug: selectedBook.slug,
-      book_title: selectedBook.titolo,
-      book_author: selectedBook.author_name,
-      text: reviewText.trim(),
-      rating,
-      user_display: displayName,
+      book_id: selectedBook.id,
+      nome_display: displayName,
+      stelle: rating,
+      testo: reviewText.trim(),
       flagged: isFlagged,
+      flag_reason: isFlagged ? "auto-moderazione" : null,
+      source: "community",
     });
 
     setSubmitting(false);

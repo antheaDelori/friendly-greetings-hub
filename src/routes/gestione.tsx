@@ -1141,32 +1141,12 @@ function GestionePage() {
   };
 
   const loadFlaggedReviews = async () => {
-    const { data: recData } = await supabase
+    const { data } = await supabase
       .from("recensioni")
       .select("id, nome_display, testo, stelle, created_at, flagged, blocked, flag_reason, books(titolo, slug)")
       .or("flagged.eq.true,blocked.eq.true")
       .order("created_at", { ascending: false });
-
-    const { data: revData } = await supabase
-      .from("reviews")
-      .select("id, user_display, text, rating, created_at, flagged, blocked, book_title, book_slug")
-      .or("flagged.eq.true,blocked.eq.true")
-      .order("created_at", { ascending: false });
-
-    const recensioni = (recData ?? []).map((r: any) => ({
-      id: r.id, nome_display: r.nome_display, testo: r.testo, stelle: r.stelle,
-      created_at: r.created_at, flagged: r.flagged, blocked: r.blocked,
-      flag_reason: r.flag_reason, books: r.books, source: "recensioni",
-    }));
-    const reviews = (revData ?? []).map((r: any) => ({
-      id: r.id, nome_display: r.user_display, testo: r.text, stelle: r.rating,
-      created_at: r.created_at, flagged: r.flagged, blocked: r.blocked,
-      flag_reason: null, books: { titolo: r.book_title, slug: r.book_slug }, source: "reviews",
-    }));
-
-    setFlaggedReviews([...recensioni, ...reviews].sort(
-      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    ) as typeof flaggedReviews);
+    setFlaggedReviews((data ?? []) as typeof flaggedReviews);
   };
 
   const handleModerateReview = async (recensioneId: string, action: "block" | "unblock") => {
