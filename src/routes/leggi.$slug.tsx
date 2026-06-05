@@ -39,7 +39,7 @@ export const Route = createFileRoute("/leggi/$slug")({
     // Poi cerca su Supabase
     const { data } = await supabase
       .from("books")
-      .select("id, slug, titolo, descrizione, estratto, genere, anno, letture, copertina_url, copertina_flat_url, file_url, epub_url, mobi_url, author_name, author_id, cestinato, voti_cestino, recuperato, accesso")
+      .select("id, slug, titolo, descrizione, estratto, genere, fumetto_formato, anno, letture, copertina_url, copertina_flat_url, file_url, epub_url, mobi_url, author_name, author_id, cestinato, voti_cestino, recuperato, accesso")
       .eq("slug", params.slug)
       .or("disponibile.eq.true,cestinato.eq.true")
       .maybeSingle();
@@ -1141,7 +1141,7 @@ function ReadPage() {
               </button>
             </div>
           ) : book.genere === "fumetto" && fumettoPagine.length > 0 ? (
-            <ComicViewer pagine={fumettoPagine} supabaseUrl={import.meta.env.VITE_SUPABASE_URL} />
+            <ComicViewer pagine={fumettoPagine} supabaseUrl={import.meta.env.VITE_SUPABASE_URL} formato={(book as any).fumetto_formato ?? "a4v"} />
           ) : chapter ? (
             <>
               <div className="flex items-center justify-between">

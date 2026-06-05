@@ -307,6 +307,7 @@ function GestionePage() {
   // Fumetti — pagine
   const [fumettoPagine, setFumettoPagine] = useState<{ id: string; ordine: number; image_url: string }[]>([]);
   const [fumettoUploading, setFumettoUploading] = useState(false);
+  const [fumettoFormato, setFumettoFormato] = useState<"a4v" | "a4h" | "manga">("a4v");
 
   // Moderazione
   const [flaggedReviews, setFlaggedReviews] = useState<{
@@ -518,6 +519,7 @@ function GestionePage() {
     setTitolo(b.titolo);
     setSottotitolo(b.sottotitolo ?? "");
     setGenere(b.genere);
+    setFumettoFormato((b as any).fumetto_formato ?? "a4v");
     setEdizione(b.edizione ?? "");
     setAnno(b.anno ? String(b.anno) : "");
     setLingua(b.lingua);
@@ -894,6 +896,7 @@ function GestionePage() {
           titolo: titolo.trim(),
           sottotitolo: sottotitolo.trim() || null,
           genere,
+          fumetto_formato: genere === "fumetto" ? fumettoFormato : null,
           tipo: tipo === ALTRO_TIPO ? (tipoAltro.trim() || null) : (tipo || null),
           target: target || null,
           isbn: isbn.trim() || null,
@@ -918,6 +921,7 @@ function GestionePage() {
           titolo: titolo.trim(),
           sottotitolo: sottotitolo.trim() || null,
           genere,
+          fumetto_formato: genere === "fumetto" ? fumettoFormato : null,
           tipo: tipo === ALTRO_TIPO ? (tipoAltro.trim() || null) : (tipo || null),
           target: target || null,
           isbn: isbn.trim() || null,
@@ -1816,6 +1820,26 @@ function GestionePage() {
                       <input value={isbn} onChange={e => setIsbn(e.target.value)} placeholder="978-88-..." className={inputClass} />
                     </div>
                   </div>
+
+                  {genere === "fumetto" && (
+                    <div>
+                      <span className={labelClass}>↳ Formato tavole</span>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {([
+                          { value: "a4v", label: "A4 verticale" },
+                          { value: "a4h", label: "A4 orizzontale" },
+                          { value: "manga", label: "Manga" },
+                        ] as const).map(f => (
+                          <button key={f.value} type="button" onClick={() => setFumettoFormato(f.value)}
+                            className={`border px-4 py-2 font-mono text-[10px] uppercase tracking-widest transition-all ${
+                              fumettoFormato === f.value ? "border-amber bg-amber/15 text-amber" : "border-cyan/30 text-bone/70 hover:border-cyan"
+                            }`}>
+                            {f.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   <div>
                     <span className={labelClass}>↳ Accesso</span>
