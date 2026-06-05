@@ -398,6 +398,22 @@ function ReadPage() {
     setRecSaving(true);
     setRecError(null);
     try {
+      // Moderazione testo prima di salvare
+      if (recTesto.trim()) {
+        const { data: { session } } = await supabase.auth.getSession();
+        const modRes = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/moderate-content`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
+          body: JSON.stringify({ action: "analyze", text: recTesto.trim() }),
+        });
+        if (modRes.ok) {
+          const mod = await modRes.json();
+          if (mod.blocked) {
+            setRecError("Il tuo commento contiene contenuto inappropriato e non può essere pubblicato.");
+            return;
+          }
+        }
+      }
       const { data: profile } = await supabase.from("profiles").select("nome, cognome, pseudonimo").eq("id", userId).maybeSingle();
       const nome_display = profile?.pseudonimo || [profile?.nome, profile?.cognome].filter(Boolean).join(" ") || "Lettore";
       const { data: inserted, error } = await supabase.from("recensioni")
@@ -411,6 +427,16 @@ function ReadPage() {
     } finally {
       setRecSaving(false);
     }
+  };
+
+  const handleSegnala = async (recensioneId: string) => {
+    if (!userId) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/moderate-content`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
+      body: JSON.stringify({ action: "report", recensione_id: recensioneId }),
+    });
   };
 
   const handleEliminaRecensione = async (id: string) => {
@@ -1368,6 +1394,14 @@ function ReadPage() {
                       </span>
                     </div>
                     {r.testo && <p className="font-serif italic text-sm text-ink/70 leading-relaxed">{r.testo}</p>}
+                    {isLoggedIn && r.user_id !== userId && (
+                      <button
+                        onClick={() => handleSegnala(r.id)}
+                        className="mt-1 font-mono text-[9px] tracking-widest uppercase text-ink/25 hover:text-blood/60 transition-colors"
+                      >
+                        ⚑ segnala
+                      </button>
+                    )}
                     <div className="border-b border-ink/8 pt-3" />
                   </div>
                 ))}
