@@ -14,6 +14,7 @@ type RecensioneItem = {
   stelle: number;
   testo: string | null;
   created_at: string;
+  recensioni_risposte?: { id: string; testo: string; created_at: string }[];
 };
 
 type AllegatoItem = {
@@ -101,8 +102,9 @@ export const Route = createFileRoute("/leggi/$slug")({
 
     const { data: recensioniData } = await supabase
       .from("recensioni")
-      .select("id, user_id, nome_display, stelle, testo, created_at")
+      .select("id, user_id, nome_display, stelle, testo, created_at, recensioni_risposte(id, testo, created_at)")
       .eq("book_id", data.id)
+      .eq("blocked", false)
       .order("created_at", { ascending: false });
 
     const { count: likesCount } = await supabase
@@ -1396,6 +1398,12 @@ function ReadPage() {
                       </span>
                     </div>
                     {r.testo && <p className="font-serif italic text-sm text-ink/70 leading-relaxed">{r.testo}</p>}
+                    {r.recensioni_risposte && r.recensioni_risposte.length > 0 && (
+                      <div className="mt-3 ml-4 pl-3 border-l-2 border-cyan/20">
+                        <p className="font-mono text-[9px] uppercase tracking-widest text-cyan/50 mb-1">↩ risposta dell'autore</p>
+                        <p className="font-serif text-sm text-ink/65 leading-relaxed">{r.recensioni_risposte[0].testo}</p>
+                      </div>
+                    )}
                     {isLoggedIn && r.user_id !== userId && (
                       <button
                         onClick={() => handleSegnala(r.id)}

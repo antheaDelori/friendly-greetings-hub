@@ -16,11 +16,12 @@ export const Route = createFileRoute("/community")({
 });
 
 type ReviewRow = {
-  user_display: string | null;
-  book_title: string | null;
-  text: string;
-  rating: number;
+  nome_display: string | null;
+  books: { titolo: string } | null;
+  testo: string | null;
+  stelle: number;
   created_at: string;
+  recensioni_risposte?: { testo: string; created_at: string }[];
 };
 
 function relativeTime(ts: string): string {
@@ -160,11 +161,12 @@ function CommunityPage() {
 
   const loadReviews = async () => {
     const { data } = await supabase
-      .from("reviews")
-      .select("user_display, book_title, text, rating, created_at")
+      .from("recensioni")
+      .select("nome_display, stelle, testo, created_at, books(titolo), recensioni_risposte(testo, created_at)")
+      .eq("blocked", false)
       .order("created_at", { ascending: false })
       .limit(10);
-    if (data) setReviewsList(data);
+    if (data) setReviewsList(data as ReviewRow[]);
   };
 
   useEffect(() => {
@@ -270,14 +272,20 @@ function CommunityPage() {
                     <div key={i} className="border-l-2 border-cyan/40 pl-4 hover:border-magenta transition-colors">
                       <div className="flex items-baseline justify-between gap-3 flex-wrap">
                         <div>
-                          <span className="font-mono text-cyan text-sm">@{r.user_display ?? "lettore"}</span>
-                          <span className="font-mono text-[10px] tracking-widest text-bone/40 uppercase ml-3">▸ {r.book_title ?? "—"}</span>
+                          <span className="font-mono text-cyan text-sm">@{r.nome_display ?? "lettore"}</span>
+                          <span className="font-mono text-[10px] tracking-widest text-bone/40 uppercase ml-3">▸ {r.books?.titolo ?? "—"}</span>
                         </div>
                         <div className="font-mono text-[10px] tracking-widest text-bone/40">
-                          {relativeTime(r.created_at)} · {"★".repeat(r.rating)}
+                          {relativeTime(r.created_at)} · {"★".repeat(r.stelle)}
                         </div>
                       </div>
-                      <p className="mt-2 font-serif italic text-bone/85 leading-relaxed">"{r.text}"</p>
+                      {r.testo && <p className="mt-2 font-serif italic text-bone/85 leading-relaxed">"{r.testo}"</p>}
+                      {r.recensioni_risposte && r.recensioni_risposte.length > 0 && (
+                        <div className="mt-2 ml-3 pl-3 border-l border-cyan/20">
+                          <p className="font-mono text-[9px] uppercase tracking-widest text-cyan/40 mb-1">↩ risposta dell'autore</p>
+                          <p className="font-serif text-sm text-bone/60 leading-relaxed">{r.recensioni_risposte[0].testo}</p>
+                        </div>
+                      )}
                     </div>
                   ))
                 ) : (

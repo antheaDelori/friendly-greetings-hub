@@ -47,6 +47,7 @@ type BookEngagement = {
 };
 
 type RecentRecensione = {
+  id: string;
   book_id: string;
   bookTitolo: string;
   nome_display: string | null;
@@ -75,6 +76,10 @@ function AreaAutorePage() {
   const [bookEngagement, setBookEngagement] = useState<BookEngagement[]>([]);
   const [recentRecensioni, setRecentRecensioni] = useState<RecentRecensione[]>([]);
   const [pdfLoadingId, setPdfLoadingId] = useState<string | null>(null);
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
+  const [replySaving, setReplySaving] = useState(false);
+  const [replyError, setReplyError] = useState<string | null>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -120,7 +125,7 @@ function AreaAutorePage() {
           supabase.from("likes").select("book_id").in("book_id", bookIds),
           supabase.from("libreria").select("book_id").in("book_id", bookIds),
           supabase.from("recensioni")
-            .select("book_id, nome_display, stelle, testo, created_at")
+            .select("id, book_id, nome_display, stelle, testo, created_at")
             .in("book_id", bookIds)
             .not("testo", "is", null)
             .eq("blocked", false)
@@ -141,7 +146,7 @@ function AreaAutorePage() {
           };
         });
         setBookEngagement(engagement);
-        setRecentRecensioni((recentRecRes.data ?? []).map((r: { book_id: string; nome_display: string | null; stelle: number; testo: string | null; created_at: string }) => ({
+        setRecentRecensioni((recentRecRes.data ?? []).map((r: { id: string; book_id: string; nome_display: string | null; stelle: number; testo: string | null; created_at: string }) => ({
           ...r, bookTitolo: bookTitleMap[r.book_id] ?? "Opera",
         })));
       }
@@ -156,6 +161,35 @@ function AreaAutorePage() {
 
   const formatDate = (iso: string) =>
     new Date(iso).toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+
+  const handleReply = async (recensioneId: string) => {
+    if (!replyText.trim() || replySaving) return;
+    setReplySaving(true);
+    setReplyError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const modRes = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/moderate-content`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ action: "analyze", text: replyText.trim() }),
+      }).catch(() => null);
+      if (modRes?.ok) {
+        const mod = await modRes.json();
+        if (mod.blocked) { setReplyError("Contenuto inappropriato."); return; }
+      }
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase.from("recensioni_risposte").insert({
+        recensione_id: recensioneId,
+        author_id: user!.id,
+        testo: replyText.trim(),
+      });
+      if (error) { setReplyError(error.message); return; }
+      setReplyingTo(null);
+      setReplyText("");
+    } finally {
+      setReplySaving(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -417,7 +451,7 @@ function AreaAutorePage() {
                             <span className="font-mono text-[9px] text-bone/40">{r.nome_display ?? "Lettore"}</span>
                           </div>
                         </div>
-                        <span className="font-mono text-[9px] text-bone/25 flex-shrink-0">
+                        <span className="font-mono text-[9px] text-bone/50 flex-shrink-0">
                           {new Date(r.created_at).toLocaleDateString("it-IT", { day: "2-digit", month: "short", year: "numeric" })}
                         </span>
                       </div>
@@ -425,6 +459,33 @@ function AreaAutorePage() {
                         <p className="font-serif italic text-sm text-bone/55 leading-relaxed line-clamp-3">
                           "{r.testo}"
                         </p>
+                      )}
+                      {replyingTo === r.id ? (
+                        <div className="mt-3 space-y-2">
+                          <textarea
+                            value={replyText}
+                            onChange={e => setReplyText(e.target.value)}
+                            placeholder="Scrivi la tua risposta..."
+                            className="w-full bg-bone/5 border border-cyan/20 text-bone/80 font-serif text-sm p-3 resize-none focus:outline-none focus:border-cyan/50"
+                            rows={3}
+                          />
+                          {replyError && <p className="font-mono text-[10px] text-blood">{replyError}</p>}
+                          <div className="flex gap-2">
+                            <button onClick={() => handleReply(r.id)} disabled={replySaving}
+                              className="font-mono text-[9px] uppercase tracking-widest border border-cyan/40 text-cyan/70 px-3 py-1.5 hover:bg-cyan/10 transition-colors disabled:opacity-50">
+                              {replySaving ? "◆ Invio..." : "◆ Pubblica risposta"}
+                            </button>
+                            <button onClick={() => { setReplyingTo(null); setReplyText(""); setReplyError(null); }}
+                              className="font-mono text-[9px] uppercase tracking-widest text-bone/30 px-3 py-1.5 hover:text-bone/60 transition-colors">
+                              Annulla
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button onClick={() => { setReplyingTo(r.id); setReplyText(""); setReplyError(null); }}
+                          className="mt-2 font-mono text-[9px] uppercase tracking-widest text-cyan/40 hover:text-cyan/70 transition-colors">
+                          ↩ rispondi
+                        </button>
                       )}
                     </div>
                   ))}
