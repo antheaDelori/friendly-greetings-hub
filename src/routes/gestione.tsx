@@ -1945,16 +1945,48 @@ function GestionePage() {
                 <div className="flex-1 text-left">
                   <div className={`font-mono text-[11px] tracking-[0.3em] uppercase ${
                     !editingId ? "text-bone/20" : openSection === 2 ? "text-cyan" : "text-bone/70"
-                  }`}>Capitoli</div>
+                  }`}>{genere === "fumetto" ? "Pagine" : "Capitoli"}</div>
                   <div className={`font-mono text-[9px] tracking-widest mt-0.5 ${!editingId ? "text-bone/15" : "text-bone/40"}`}>
-                    {editingId ? `${capitoli.length} capitoli · materiali extra` : "— salva prima i metadati —"}
+                    {editingId ? (genere === "fumetto" ? `${fumettoPagine.length} tavole caricate` : `${capitoli.length} capitoli · materiali extra`) : "— salva prima i metadati —"}
                   </div>
                 </div>
                 <span className={`font-mono text-[9px] tracking-widest uppercase ${
                   !editingId ? "text-bone/20" : openSection === 2 ? "text-cyan" : "text-bone/40"
                 }`}>{!editingId ? "⊗" : openSection === 2 ? "▲" : "▼"}</span>
               </button>
-              {openSection === 2 && editingId && selected && (
+              {openSection === 2 && editingId && selected && genere === "fumetto" && userId && (
+                <div className="border border-cyan/20 border-t-0 p-5 space-y-4">
+                  <div className="font-mono text-[11px] tracking-[0.3em] text-amber uppercase font-bold">◈ Tavole del fumetto</div>
+                  <p className="font-mono text-[10px] text-bone/50">
+                    Carica le pagine in ordine. Formati: JPG, PNG, WEBP. Verranno mostrate al lettore nell'ordine di upload.
+                  </p>
+                  <label className="flex items-center gap-3 cursor-pointer border border-dashed border-cyan/30 p-4 hover:border-cyan/60 transition-colors">
+                    <span className="font-mono text-[10px] uppercase tracking-widest text-cyan/60">
+                      {fumettoUploading ? "▸ Caricamento..." : "◈ Aggiungi pagine"}
+                    </span>
+                    <input type="file" accept="image/*" multiple className="hidden" disabled={fumettoUploading}
+                      onChange={e => e.target.files && handleUploadPagine(e.target.files, editingId, userId)} />
+                  </label>
+                  {fumettoPagine.length > 0 && (
+                    <div className="grid grid-cols-4 gap-3">
+                      {fumettoPagine.map((p, i) => (
+                        <div key={p.id} className="relative group">
+                          <img src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/authenticated/libri/${p.image_url}`}
+                            alt={`Pagina ${i + 1}`} className="w-full aspect-[2/3] object-cover border border-cyan/15" />
+                          <div className="absolute top-1 left-1 font-mono text-[9px] bg-black/60 text-bone/60 px-1">{i + 1}</div>
+                          <button onClick={() => handleDeletePagina(p.id, p.image_url)}
+                            className="absolute top-1 right-1 hidden group-hover:flex bg-blood/80 text-bone text-[10px] px-1.5 py-0.5">✕</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {fumettoPagine.length === 0 && !fumettoUploading && (
+                    <p className="font-mono text-[10px] text-bone/30">Nessuna pagina caricata.</p>
+                  )}
+                </div>
+              )}
+
+              {openSection === 2 && editingId && selected && genere !== "fumetto" && (
                 <div className="border border-cyan/20 border-t-0 p-5 space-y-4">
 
                   {/* Capitoli */}
@@ -2351,8 +2383,9 @@ function GestionePage() {
                 </div>
               )}
 
-              {/* ══════════ 04 — GENERA PDF ed E-BOOK ══════════ */}
+              {/* ══════════ 04 — GENERA PDF ed E-BOOK (solo non-fumetto) ══════════ */}
               <button type="button" onClick={() => editingId && setOpenSection(openSection === 4 ? 0 : 4)} disabled={!editingId}
+                style={{ display: genere === "fumetto" ? "none" : undefined }}
                 className={`w-full flex items-center gap-3 px-5 py-4 border transition-all ${
                   !editingId ? "border-cyan/10 cursor-not-allowed" :
                   openSection === 4 ? "border-cyan bg-cyan/5 cursor-pointer" : "border-cyan/30 hover:border-cyan cursor-pointer"
@@ -2373,7 +2406,7 @@ function GestionePage() {
                   !editingId ? "text-bone/20" : openSection === 4 ? "text-cyan" : "text-bone/40"
                 }`}>{!editingId ? "⊗" : openSection === 4 ? "▲" : "▼"}</span>
               </button>
-              {openSection === 4 && editingId && (
+              {openSection === 4 && editingId && genere !== "fumetto" && (
                 <div className="border border-cyan/20 border-t-0 p-5 space-y-5">
 
                   {/* Genera documenti da .docx */}
@@ -2456,53 +2489,9 @@ function GestionePage() {
                 </div>
               )}
 
-              {/* ── SEZIONE 04b: Pagine fumetto ── */}
-              {openSection === 4 && editingId && selected?.genere === "fumetto" && userId && (
-                <div className="border border-cyan/15 p-5 mt-2 space-y-4">
-                  <div className="font-mono text-[11px] tracking-[0.3em] text-amber uppercase font-bold">◈ Tavole del fumetto</div>
-                  <p className="font-mono text-[10px] text-bone/50">
-                    Carica le pagine in ordine. Formati: JPG, PNG, WEBP. Verranno mostrate al lettore nell'ordine di upload.
-                  </p>
-
-                  {/* Upload */}
-                  <label className="flex items-center gap-3 cursor-pointer border border-dashed border-cyan/30 p-4 hover:border-cyan/60 transition-colors">
-                    <span className="font-mono text-[10px] uppercase tracking-widest text-cyan/60">
-                      {fumettoUploading ? "▸ Caricamento..." : "◈ Aggiungi pagine"}
-                    </span>
-                    <input
-                      type="file" accept="image/*" multiple className="hidden"
-                      disabled={fumettoUploading}
-                      onChange={e => e.target.files && handleUploadPagine(e.target.files, editingId, userId)}
-                    />
-                  </label>
-
-                  {/* Griglia pagine */}
-                  {fumettoPagine.length > 0 && (
-                    <div className="grid grid-cols-4 gap-3">
-                      {fumettoPagine.map((p, i) => (
-                        <div key={p.id} className="relative group">
-                          <img
-                            src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/authenticated/libri/${p.image_url}`}
-                            alt={`Pagina ${i + 1}`}
-                            className="w-full aspect-[2/3] object-cover border border-cyan/15"
-                          />
-                          <div className="absolute top-1 left-1 font-mono text-[9px] bg-black/60 text-bone/60 px-1">{i + 1}</div>
-                          <button
-                            onClick={() => handleDeletePagina(p.id, p.image_url)}
-                            className="absolute top-1 right-1 hidden group-hover:flex bg-blood/80 text-bone text-[10px] px-1.5 py-0.5"
-                          >✕</button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {fumettoPagine.length === 0 && !fumettoUploading && (
-                    <p className="font-mono text-[10px] text-bone/30">Nessuna pagina caricata.</p>
-                  )}
-                </div>
-              )}
-
-              {/* ── SEZIONE 05: Copertina da stampa ── */}
+              {/* ── SEZIONE 05: Copertina da stampa (solo non-fumetto) ── */}
               <button type="button" onClick={() => editingId && setOpenSection(openSection === 5 ? 0 : 5)} disabled={!editingId}
+                style={{ display: genere === "fumetto" ? "none" : undefined }}
                 className={`w-full flex items-center gap-3 px-5 py-4 border transition-all ${
                   !editingId ? "border-cyan/10 cursor-not-allowed" :
                   openSection === 5 ? "border-cyan bg-cyan/5 cursor-pointer" : "border-cyan/30 hover:border-cyan cursor-pointer"
@@ -2523,7 +2512,7 @@ function GestionePage() {
                   !editingId ? "text-bone/20" : openSection === 5 ? "text-cyan" : "text-bone/40"
                 }`}>{!editingId ? "⊗" : openSection === 5 ? "▲" : "▼"}</span>
               </button>
-              {openSection === 5 && editingId && (
+              {openSection === 5 && editingId && genere !== "fumetto" && (
                 <div className="border border-cyan/20 border-t-0 p-5 space-y-6">
 
                   {/* Formato e numero pagine */}
