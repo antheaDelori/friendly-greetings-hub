@@ -52,14 +52,28 @@ export function ComicViewer({ pagine, supabaseUrl, formato = "a4v" }: {
           {isManga ? "→ Prec" : "← Prec"}
         </button>
 
-        <div className="flex flex-col items-center gap-1 min-w-0">
-          <span className="font-mono text-[9px] tracking-widest text-ink/25 uppercase border border-ink/15 px-2 py-0.5 whitespace-nowrap">
-            {formato === "a4v" ? "A4 verticale" : formato === "a4h" ? "A4 orizzontale" : "Manga"}
-            {isManga && " · ←"}
-          </span>
-          <span className="font-mono text-[10px] tracking-[0.3em] text-ink/40 uppercase">
-            {current + 1} / {total}
-          </span>
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="flex flex-col items-center gap-1">
+            <span className="font-mono text-[9px] tracking-widest text-ink/25 uppercase border border-ink/15 px-2 py-0.5 whitespace-nowrap">
+              {formato === "a4v" ? "A4 verticale" : formato === "a4h" ? "A4 orizzontale" : "Manga"}
+              {isManga && " · ←"}
+            </span>
+            <span className="font-mono text-[10px] tracking-[0.3em] text-ink/40 uppercase">
+              {current + 1} / {total}
+            </span>
+          </div>
+
+          {/* Icona info con tooltip */}
+          <div className="relative group">
+            <span className="font-mono text-[11px] text-ink/30 hover:text-ink/60 cursor-default select-none transition-colors">ⓘ</span>
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-50 w-64 bg-void border border-ink/20 px-3 py-2 shadow-lg">
+              <p className="font-mono text-[9px] tracking-wide text-ink/60 leading-relaxed">
+                Click sinistra / destra per sfogliare<br />
+                Doppio click per zoom<br />
+                ← → per tastiera{isManga && "\nDirezione manga →←"}
+              </p>
+            </div>
+          </div>
         </div>
 
         <button
@@ -107,10 +121,6 @@ export function ComicViewer({ pagine, supabaseUrl, formato = "a4v" }: {
         ))}
       </div>
 
-      <p className="font-mono text-[9px] text-ink/25 tracking-widest text-center flex-shrink-0">
-        click sinistra / destra per sfogliare · doppio click per zoom · ← → per tastiera
-        {isManga && " · direzione manga →←"}
-      </p>
     </div>
   );
 }

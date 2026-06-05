@@ -657,7 +657,7 @@ function ReadPage() {
             <p className="mt-3 font-serif text-sm text-ink/70 leading-relaxed line-clamp-4">{book.description}</p>
           </div>
 
-{hasChapters && (
+{hasChapters && book.genere !== "fumetto" && (
             <div className="mt-6 border-t border-ink/10 pt-5">
               <div className="font-display tracking-[0.2em] text-xs text-ink/50 mb-3">— capitoli</div>
               <ol className="space-y-1">
