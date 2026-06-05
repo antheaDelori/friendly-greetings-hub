@@ -1170,11 +1170,11 @@ function GestionePage() {
     const uploads = Array.from(files).sort((a, b) => a.name.localeCompare(b.name));
     for (let i = 0; i < uploads.length; i++) {
       const file = uploads[i];
-      const path = `${userId}/${bookId}/pagine/${String(existing + i).padStart(4, "0")}-${file.name}`;
-      const { error } = await supabase.storage.from("libri").upload(path, file, { upsert: true });
+      const path = `fumetti/${userId}/${bookId}/${String(existing + i).padStart(4, "0")}-${file.name}`;
+      const { error } = await supabase.storage.from("copertine").upload(path, file, { upsert: true });
       if (!error) {
-        const { data: urlData } = supabase.storage.from("libri").getPublicUrl(path);
-        await supabase.from("fumetti_pagine").insert({ book_id: bookId, ordine: existing + i, image_url: path });
+        const { data: urlData } = supabase.storage.from("copertine").getPublicUrl(path);
+        await supabase.from("fumetti_pagine").insert({ book_id: bookId, ordine: existing + i, image_url: urlData.publicUrl });
       }
     }
     await loadFumettoPagine(bookId);
@@ -1182,7 +1182,8 @@ function GestionePage() {
   };
 
   const handleDeletePagina = async (paginaId: string, imageUrl: string) => {
-    await supabase.storage.from("libri").remove([imageUrl]);
+    const path = imageUrl.split("/copertine/")[1];
+    if (path) await supabase.storage.from("copertine").remove([path]);
     await supabase.from("fumetti_pagine").delete().eq("id", paginaId);
     setFumettoPagine(prev => prev.filter(p => p.id !== paginaId));
   };
@@ -1995,7 +1996,7 @@ function GestionePage() {
                     <div className="grid grid-cols-4 gap-3">
                       {fumettoPagine.map((p, i) => (
                         <div key={p.id} className="relative group">
-                          <img src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/authenticated/libri/${p.image_url}`}
+                          <img src={p.image_url}
                             alt={`Pagina ${i + 1}`} className="w-full aspect-[2/3] object-cover border border-cyan/15" />
                           <div className="absolute top-1 left-1 font-mono text-[9px] bg-black/60 text-bone/60 px-1">{i + 1}</div>
                           <button onClick={() => handleDeletePagina(p.id, p.image_url)}

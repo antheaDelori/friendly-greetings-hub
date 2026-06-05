@@ -38,7 +38,7 @@ export function ComicViewer({ pagine, supabaseUrl, formato = "a4v" }: {
   );
 
   const page = pagine[current];
-  const imgUrl = `${supabaseUrl}/storage/v1/object/authenticated/libri/${page.image_url}`;
+  const imgUrl = page.image_url; // URL pubblico completo salvato nel DB
 
   // Larghezza container: landscape usa tutta la larghezza disponibile
   const containerClass = isLandscape
