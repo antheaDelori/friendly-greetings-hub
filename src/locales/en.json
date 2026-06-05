@@ -108,7 +108,8 @@
     "saggio": "Essays",
     "articolo": "Articles",
     "novelle": "Short stories",
-    "poesia": "Poetry"
+    "poesia": "Poetry",
+    "fumetto": "Comics"
   },
   "generiTag": {
     "libro": "Novel",
@@ -116,7 +117,8 @@
     "saggio": "Essay",
     "articolo": "Article",
     "novelle": "Short story",
-    "poesia": "Poetry"
+    "poesia": "Poetry",
+    "fumetto": "Comics"
   },
   "ui": {
     "operaSing": "work",
