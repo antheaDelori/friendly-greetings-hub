@@ -1,4 +1,4 @@
-export type Genre = "libro" | "racconto" | "saggio" | "articolo" | "novelle" | "poesia";
+export type Genre = "libro" | "racconto" | "saggio" | "articolo" | "novelle" | "poesia" | "fumetto";
 
 export type Chapter = {
   id: string;
@@ -36,4 +36,5 @@ export const genres: { value: Genre; label: string; tooltip?: string }[] = [
   { value: "articolo", label: "Articoli" },
   { value: "novelle", label: "Novelle" },
   { value: "poesia", label: "Poesie" },
+  { value: "fumetto", label: "Fumetti" },
 ];
