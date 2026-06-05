@@ -118,12 +118,17 @@ function buildEmailHtml(opts: {
 
   <!-- Footer -->
   <tr><td style="padding:20px 24px 28px 24px;text-align:center;">
-    <p style="margin:0;font-family:monospace;font-size:9px;letter-spacing:0.2em;
-      text-transform:uppercase;color:${textSub};opacity:0.6;">
-      Hai ricevuto questa email perché segui ${authorName} su Liberiamo la mente.<br>
-      Per rispondere scrivi a <a href="mailto:${authorEmail}" style="color:${gold};text-decoration:none;">${authorEmail}</a><br><br>
-      <a href="${SITE_URL}" style="color:${gold};text-decoration:none;opacity:0.7;">liberiamo2076.com</a>
+    <p style="margin:0 0 6px 0;font-family:Georgia,serif;font-size:11px;font-style:italic;
+      color:${textSub};opacity:0.6;white-space:nowrap;">
+      Hai ricevuto questa email perché segui ${authorName} su Liberiamo la mente.
     </p>
+    <p style="margin:0 0 10px 0;font-family:Georgia,serif;font-size:11px;font-style:italic;
+      color:${textSub};opacity:0.6;">
+      Per rispondere scrivi direttamente al seguente indirizzo:
+      <a href="mailto:${authorEmail}" style="color:${gold};text-decoration:none;">${authorEmail}</a>
+    </p>
+    <a href="${SITE_URL}" style="font-family:monospace;font-size:9px;letter-spacing:0.15em;
+      color:${gold};text-decoration:none;opacity:0.7;">liberiamo2076.com</a>
   </td></tr>
 
 </table>
