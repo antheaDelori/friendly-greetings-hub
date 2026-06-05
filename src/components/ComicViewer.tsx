@@ -36,7 +36,8 @@ export function ComicViewer({ pagine, supabaseUrl, formato = "a4v" }: {
     </div>
   );
 
-  const page = pagine[current];
+  const orderedPagine = isManga ? [...pagine].reverse() : pagine;
+  const page = orderedPagine[current];
   const imgUrl = page.image_url;
 
   return (
@@ -112,7 +113,7 @@ export function ComicViewer({ pagine, supabaseUrl, formato = "a4v" }: {
 
       {/* Miniature navigazione rapida */}
       <div className="flex gap-1.5 justify-center overflow-x-auto flex-shrink-0 py-1">
-        {pagine.map((p, i) => (
+        {orderedPagine.map((p, i) => (
           <button
             key={p.id}
             onClick={() => setCurrent(i)}
