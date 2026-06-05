@@ -145,7 +145,7 @@ function BookSearchField({
 function CommunityPage() {
   const [selectedBook, setSelectedBook] = useState<BookResult | null>(null);
   const [reviewText, setReviewText] = useState("");
-  const [rating, setRating] = useState(0);
+  const [rating, setRating] = useState(1);
   const [hoverRating, setHoverRating] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
@@ -206,6 +206,22 @@ function CommunityPage() {
     if (!selectedBook || !reviewText.trim() || rating === 0 || !userId) return;
     setSubmitting(true);
     setSubmitError(null);
+
+    // Moderazione testo
+    const { data: { session } } = await supabase.auth.getSession();
+    const modRes = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/moderate-content`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
+      body: JSON.stringify({ action: "analyze", text: reviewText.trim() }),
+    }).catch(() => null);
+    if (modRes?.ok) {
+      const mod = await modRes.json();
+      if (mod.blocked) {
+        setSubmitError("Il tuo commento contiene contenuto inappropriato e non può essere pubblicato.");
+        setSubmitting(false);
+        return;
+      }
+    }
 
     const displayName = userMeta.pseudonimo
       || `${userMeta.nome ?? ""} ${userMeta.cognome ?? ""}`.trim()
