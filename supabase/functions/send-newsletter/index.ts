@@ -21,6 +21,7 @@ function json(data: unknown, status = 200) {
 
 function buildEmailHtml(opts: {
   authorName: string;
+  authorEmail: string;
   bookTitle: string;
   bookSlug: string;
   bookSinossi: string;
@@ -28,17 +29,25 @@ function buildEmailHtml(opts: {
   coverUrl: string | null;
   customMessage: string;
 }): string {
-  const { authorName, bookTitle, bookSlug, bookSinossi, coverUrl, customMessage, bookAnno } = opts;
+  const { authorName, authorEmail, bookTitle, bookSlug, bookSinossi, coverUrl, customMessage, bookAnno } = opts;
   const bookUrl = `${SITE_URL}/leggi/${bookSlug}`;
   const anno = bookAnno ? ` · ${bookAnno}` : "";
 
+  // Tema chiaro
+  const bg       = "#f8f7f4";
+  const cardBg   = "#ffffff";
+  const gold     = "#8a6f2e";
+  const textMain = "#1a1814";
+  const textSub  = "#6b6258";
+  const divider  = "rgba(138,111,46,0.2)";
+
   const coverBlock = coverUrl
     ? `<img src="${coverUrl}" alt="Copertina ${bookTitle}"
-         style="display:block;max-width:180px;width:100%;margin:0 auto 24px auto;border-radius:3px;box-shadow:0 4px 24px rgba(0,0,0,0.35);" />`
+         style="display:block;max-width:180px;width:100%;margin:0 auto 24px auto;border-radius:3px;box-shadow:0 4px 20px rgba(0,0,0,0.12);" />`
     : "";
 
   const messageBlock = customMessage.trim()
-    ? `<p style="font-family:Georgia,'Times New Roman',serif;font-size:15px;line-height:1.7;color:#c9b97a;font-style:italic;margin:0 0 24px 0;padding:16px 20px;border-left:3px solid #c9b97a;">
+    ? `<p style="font-family:Georgia,'Times New Roman',serif;font-size:15px;line-height:1.7;color:${gold};font-style:italic;margin:0 0 24px 0;padding:16px 20px;border-left:3px solid ${gold};">
         ${customMessage.replace(/\n/g, "<br>")}
       </p>`
     : "";
@@ -47,28 +56,35 @@ function buildEmailHtml(opts: {
 <html lang="it">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Nuova pubblicazione: ${bookTitle}</title></head>
-<body style="margin:0;padding:0;background:#0d0c14;font-family:Georgia,'Times New Roman',serif;">
+<body style="margin:0;padding:0;background:${bg};font-family:Georgia,'Times New Roman',serif;">
 
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#0d0c14;padding:32px 16px;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:${bg};padding:32px 16px;">
 <tr><td align="center">
-<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:${cardBg};border-radius:4px;box-shadow:0 2px 16px rgba(0,0,0,0.07);">
 
   <!-- Header -->
-  <tr><td style="padding:0 0 32px 0;text-align:center;border-bottom:1px solid rgba(201,185,122,0.2);">
+  <tr><td style="padding:32px 24px;text-align:center;border-bottom:1px solid ${divider};">
     <img src="${ANTHEA_LOGO_URL}" alt="AntheaDelori Edizioni"
       style="height:60px;width:auto;display:inline-block;" />
     <p style="margin:12px 0 0 0;font-family:monospace;font-size:10px;letter-spacing:0.3em;
-      text-transform:uppercase;color:rgba(201,185,122,0.6);">Anthea Delori Edizioni</p>
+      text-transform:uppercase;color:${gold};">Anthea Delori Edizioni</p>
+  </td></tr>
+
+  <!-- Mittente -->
+  <tr><td style="padding:20px 24px 0 24px;text-align:center;">
+    <p style="margin:0;font-family:monospace;font-size:10px;letter-spacing:0.15em;
+      color:${textSub};">Una comunicazione di <strong style="color:${textMain};">${authorName}</strong>
+      · <a href="mailto:${authorEmail}" style="color:${gold};text-decoration:none;">${authorEmail}</a></p>
   </td></tr>
 
   <!-- Intro -->
-  <tr><td style="padding:40px 24px 24px 24px;text-align:center;">
+  <tr><td style="padding:28px 24px 24px 24px;text-align:center;">
     <p style="margin:0 0 8px 0;font-family:monospace;font-size:11px;letter-spacing:0.25em;
-      text-transform:uppercase;color:rgba(201,185,122,0.5);">nuova pubblicazione</p>
+      text-transform:uppercase;color:${gold};opacity:0.7;">nuova pubblicazione</p>
     <h1 style="margin:0 0 8px 0;font-family:Georgia,serif;font-size:32px;font-weight:normal;
-      color:#e8e3d9;letter-spacing:0.05em;">${bookTitle}</h1>
+      color:${textMain};letter-spacing:0.05em;">${bookTitle}</h1>
     <p style="margin:0;font-family:monospace;font-size:12px;letter-spacing:0.15em;
-      color:rgba(232,227,217,0.5);text-transform:uppercase;">${authorName}${anno}</p>
+      color:${textSub};text-transform:uppercase;">${authorName}${anno}</p>
   </td></tr>
 
   <!-- Cover -->
@@ -82,31 +98,31 @@ function buildEmailHtml(opts: {
   <!-- Sinossi -->
   <tr><td style="padding:0 24px 32px 24px;">
     <p style="margin:0 0 8px 0;font-family:monospace;font-size:9px;letter-spacing:0.25em;
-      text-transform:uppercase;color:rgba(201,185,122,0.4);">Il libro</p>
+      text-transform:uppercase;color:${gold};opacity:0.6;">Il libro</p>
     <p style="margin:0;font-family:Georgia,serif;font-size:15px;line-height:1.75;
-      color:rgba(232,227,217,0.80);">${bookSinossi.replace(/\n/g, "<br>")}</p>
+      color:${textSub};">${bookSinossi.replace(/\n/g, "<br>")}</p>
   </td></tr>
 
   <!-- CTA -->
   <tr><td style="padding:0 24px 40px 24px;text-align:center;">
     <a href="${bookUrl}"
       style="display:inline-block;padding:14px 36px;background:transparent;
-      border:1px solid #c9b97a;color:#c9b97a;font-family:monospace;font-size:11px;
+      border:1px solid ${gold};color:${gold};font-family:monospace;font-size:11px;
       letter-spacing:0.3em;text-transform:uppercase;text-decoration:none;">
       ▸ Leggi ora
     </a>
   </td></tr>
 
   <!-- Separator -->
-  <tr><td style="border-top:1px solid rgba(201,185,122,0.15);padding:24px 24px 0 24px;">
-  </td></tr>
+  <tr><td style="border-top:1px solid ${divider};"></td></tr>
 
   <!-- Footer -->
-  <tr><td style="padding:16px 24px 32px 24px;text-align:center;">
+  <tr><td style="padding:20px 24px 28px 24px;text-align:center;">
     <p style="margin:0;font-family:monospace;font-size:9px;letter-spacing:0.2em;
-      text-transform:uppercase;color:rgba(232,227,217,0.25);">
+      text-transform:uppercase;color:${textSub};opacity:0.6;">
       Hai ricevuto questa email perché segui ${authorName} su Liberiamo la mente.<br>
-      <a href="${SITE_URL}" style="color:rgba(201,185,122,0.4);text-decoration:none;">liberiamo2076.com</a>
+      Per rispondere scrivi a <a href="mailto:${authorEmail}" style="color:${gold};text-decoration:none;">${authorEmail}</a><br><br>
+      <a href="${SITE_URL}" style="color:${gold};text-decoration:none;opacity:0.7;">liberiamo2076.com</a>
     </p>
   </td></tr>
 
@@ -157,8 +173,12 @@ Deno.serve(async (req) => {
   const coverUrl = (b.copertina_flat_url as string | null) ?? (b.copertina_url as string | null);
   const sinossi  = ((b.descrizione as string | null) ?? "").trim() || "—";
 
+  const authorName  = (b.author_name as string) || "Autore";
+  const authorEmail = user.email!;
+
   const html = buildEmailHtml({
-    authorName:    (b.author_name  as string) || "Autore",
+    authorName,
+    authorEmail,
     bookTitle:     (b.titolo       as string) || "Nuova opera",
     bookSlug:      (b.slug         as string) || "",
     bookSinossi:   sinossi,
@@ -167,7 +187,7 @@ Deno.serve(async (req) => {
     customMessage: custom_message,
   });
 
-  // Invia via Resend — autore in TO, follower in BCC
+  // Invia via Resend — autore in TO, follower in BCC, reply_to all'autore
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -175,10 +195,11 @@ Deno.serve(async (req) => {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from:    FROM_EMAIL,
-      to:      [user.email!],
-      bcc:     followerEmails,
-      subject: `Nuova pubblicazione: ${b.titolo}`,
+      from:     FROM_EMAIL,
+      to:       [authorEmail],
+      bcc:      followerEmails,
+      reply_to: `${authorName} <${authorEmail}>`,
+      subject:  `Nuova pubblicazione: ${b.titolo}`,
       html,
     }),
   });
