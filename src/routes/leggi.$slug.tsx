@@ -180,6 +180,7 @@ export const Route = createFileRoute("/leggi/$slug")({
       bookAccesso,
       authorBio,
       fumettoPagine: (fumettoPagineData ?? []) as { id: string; ordine: number; image_url: string }[],
+      fumettoFormato: (data.fumetto_formato ?? "a4v") as "a4v" | "a4h" | "manga",
     };
   },
   head: ({ loaderData }) => ({
@@ -262,7 +263,7 @@ function getOrCreateVisitorId(userId?: string | null): string {
 
 
 function ReadPage() {
-  const { book, fileUrl, epubUrl, mobiUrl, donationUrl, isLoggedIn, isAnonymous, userId, userEmail, allegati, isCestinato, votiCestino: initialVoti, recuperato, bookId, authorId, recensioni: inizialiRecensioni, userIsFollowing: initFollowing, hasAccess, bookAccesso, authorBio, fumettoPagine } = Route.useLoaderData();
+  const { book, fileUrl, epubUrl, mobiUrl, donationUrl, isLoggedIn, isAnonymous, userId, userEmail, allegati, isCestinato, votiCestino: initialVoti, recuperato, bookId, authorId, recensioni: inizialiRecensioni, userIsFollowing: initFollowing, hasAccess, bookAccesso, authorBio, fumettoPagine, fumettoFormato } = Route.useLoaderData();
   const isAuthor = !!userId && !!authorId && userId === authorId;
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const router = useRouter();
@@ -1139,7 +1140,7 @@ function ReadPage() {
               </button>
             </div>
           ) : book.genere === "fumetto" && fumettoPagine.length > 0 ? (
-            <ComicViewer pagine={fumettoPagine} supabaseUrl={import.meta.env.VITE_SUPABASE_URL} formato={(book as any).fumetto_formato ?? "a4v"} />
+            <ComicViewer pagine={fumettoPagine} supabaseUrl={import.meta.env.VITE_SUPABASE_URL} formato={fumettoFormato} />
           ) : chapter ? (
             <>
               <div className="flex items-center justify-between">
