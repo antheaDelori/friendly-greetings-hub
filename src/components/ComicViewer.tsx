@@ -1,15 +1,17 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 type Pagina = { id: string; ordine: number; image_url: string };
 type Formato = "a4v" | "a4h" | "manga";
 
-export function ComicViewer({ pagine, supabaseUrl, formato = "a4v" }: {
+export function ComicViewer({ pagine, formato = "a4v" }: {
   pagine: Pagina[];
-  supabaseUrl: string;
   formato?: Formato;
 }) {
   const [current, setCurrent] = useState(0);
   const [zoomed, setZoomed] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [showHint, setShowHint] = useState(true);
+  const hintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const total = pagine.length;
   const isManga = formato === "manga";
@@ -18,17 +20,29 @@ export function ComicViewer({ pagine, supabaseUrl, formato = "a4v" }: {
   const prev = useCallback(() => setCurrent(c => Math.max(0, c - 1)), []);
   const next = useCallback(() => setCurrent(c => Math.min(total - 1, c + 1)), [total]);
 
+  const dismissHint = useCallback(() => {
+    setShowHint(false);
+    if (hintTimer.current) clearTimeout(hintTimer.current);
+  }, []);
+
+  useEffect(() => {
+    hintTimer.current = setTimeout(() => setShowHint(false), 3500);
+    return () => { if (hintTimer.current) clearTimeout(hintTimer.current); };
+  }, []);
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      if (showHint) dismissHint();
       if (e.key === "ArrowRight") isManga ? prev() : next();
       if (e.key === "ArrowLeft") isManga ? next() : prev();
       if (e.key === "ArrowDown") next();
       if (e.key === "ArrowUp") prev();
-      if (e.key === "Escape") setZoomed(false);
+      if (e.key === "Escape") { setZoomed(false); setFullscreen(false); }
+      if (e.key === "f" || e.key === "F") setFullscreen(f => !f);
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [next, prev, isManga]);
+  }, [next, prev, isManga, showHint, dismissHint]);
 
   if (total === 0) return (
     <div className="flex items-center justify-center py-20">
@@ -40,10 +54,16 @@ export function ComicViewer({ pagine, supabaseUrl, formato = "a4v" }: {
   const page = orderedPagine[current];
   const imgUrl = page.image_url;
 
-  return (
-    <div className="flex flex-col select-none py-4 px-2 gap-3">
+  const imgMaxHeight = fullscreen ? "calc(100dvh - 100px)" : "calc(100dvh - 220px)";
 
-      {/* Barra di controllo superiore: sempre visibile */}
+  const containerClass = fullscreen
+    ? "fixed inset-0 z-50 bg-void flex flex-col select-none px-4 py-3 gap-3"
+    : "flex flex-col select-none py-4 px-2 gap-3";
+
+  return (
+    <div className={containerClass}>
+
+      {/* Barra di controllo superiore */}
       <div className="flex items-center justify-between gap-3 flex-shrink-0">
         <button
           onClick={isManga ? next : prev}
@@ -66,30 +86,43 @@ export function ComicViewer({ pagine, supabaseUrl, formato = "a4v" }: {
 
           {/* Icona info con tooltip */}
           <div className="relative group">
-            <span className="font-mono text-[11px] text-ink/30 hover:text-ink/60 cursor-default select-none transition-colors">ⓘ</span>
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-50 w-64 bg-void border border-ink/20 px-3 py-2 shadow-lg">
-              <p className="font-mono text-[9px] tracking-wide text-ink/60 leading-relaxed">
+            <span className="font-mono text-[13px] text-ink/50 hover:text-ink/80 cursor-default select-none transition-colors">ⓘ</span>
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-50 w-64 bg-void border border-ink/30 px-3 py-2 shadow-lg">
+              <p className="font-mono text-[9px] tracking-wide text-ink/70 leading-relaxed">
                 Click sinistra / destra per sfogliare<br />
                 Doppio click per zoom<br />
-                ← → per tastiera{isManga && "\nDirezione manga →←"}
+                ← → per tastiera · F per fullscreen
+                {isManga && <><br />Direzione manga →←</>}
               </p>
             </div>
           </div>
         </div>
 
-        <button
-          onClick={isManga ? prev : next}
-          disabled={isManga ? current === 0 : current === total - 1}
-          className="font-mono text-[10px] uppercase tracking-widest border border-ink/20 px-4 py-2 text-ink/50 hover:border-ink/60 hover:text-ink/80 transition-colors disabled:opacity-20 disabled:cursor-not-allowed whitespace-nowrap"
-        >
-          {isManga ? "← Succ" : "Succ →"}
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Pulsante fullscreen */}
+          <button
+            onClick={() => setFullscreen(f => !f)}
+            title={fullscreen ? "Esci dal fullscreen" : "Fullscreen"}
+            className="font-mono text-[10px] uppercase tracking-widest border border-ink/20 px-3 py-2 text-ink/40 hover:border-ink/60 hover:text-ink/80 transition-colors"
+          >
+            {fullscreen ? "⊠" : "⊞"}
+          </button>
+
+          <button
+            onClick={isManga ? prev : next}
+            disabled={isManga ? current === 0 : current === total - 1}
+            className="font-mono text-[10px] uppercase tracking-widest border border-ink/20 px-4 py-2 text-ink/50 hover:border-ink/60 hover:text-ink/80 transition-colors disabled:opacity-20 disabled:cursor-not-allowed whitespace-nowrap"
+          >
+            {isManga ? "← Succ" : "Succ →"}
+          </button>
+        </div>
       </div>
 
-      {/* Immagine vincolata all'altezza disponibile */}
+      {/* Immagine con overlay hint al primo caricamento */}
       <div
-        className={`flex justify-center ${isLandscape ? "w-full" : ""}`}
+        className={`relative flex justify-center ${isLandscape || fullscreen ? "w-full flex-1 min-h-0" : ""}`}
         onClick={e => {
+          if (showHint) { dismissHint(); return; }
           if (zoomed) return;
           const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
           const x = e.clientX - rect.left;
@@ -101,14 +134,25 @@ export function ComicViewer({ pagine, supabaseUrl, formato = "a4v" }: {
         <img
           src={imgUrl}
           alt={`Pagina ${current + 1}`}
-          className={`object-contain cursor-pointer transition-all ${isLandscape ? "w-full" : "max-w-2xl w-full"}`}
+          className={`object-contain cursor-pointer transition-all ${isLandscape || fullscreen ? "w-full h-full" : "max-w-2xl w-full"}`}
           style={{
-            maxHeight: "calc(100dvh - 220px)",
+            maxHeight: imgMaxHeight,
             ...(zoomed ? { transform: "scale(1.8)", transformOrigin: "center top", cursor: "zoom-out" } : {}),
           }}
           onDoubleClick={() => setZoomed(z => !z)}
           draggable={false}
         />
+
+        {/* Overlay hint iniziale */}
+        {showHint && (
+          <div className="absolute inset-0 flex items-end justify-center pb-6 pointer-events-none">
+            <div className="bg-void/85 border border-ink/20 px-5 py-3 backdrop-blur-sm animate-pulse">
+              <p className="font-mono text-[10px] tracking-widest text-bone/80 uppercase text-center leading-relaxed">
+                ← → sfoglia · doppio click zoom · F fullscreen
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Miniature navigazione rapida */}

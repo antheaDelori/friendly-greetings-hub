@@ -1140,7 +1140,7 @@ function ReadPage() {
               </button>
             </div>
           ) : book.genere === "fumetto" && fumettoPagine.length > 0 ? (
-            <ComicViewer pagine={fumettoPagine} supabaseUrl={import.meta.env.VITE_SUPABASE_URL} formato={fumettoFormato} />
+            <ComicViewer pagine={fumettoPagine} formato={fumettoFormato} />
           ) : chapter ? (
             <>
               <div className="flex items-center justify-between">
