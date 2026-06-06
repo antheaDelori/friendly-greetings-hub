@@ -143,10 +143,10 @@ export function ComicViewer({ pagine, formato = "a4v" }: {
           draggable={false}
         />
 
-        {/* Overlay hint iniziale */}
-        {showHint && (
+        {/* Overlay hint iniziale — solo per formato verticale/manga, senza animazioni */}
+        {showHint && !isLandscape && (
           <div className="absolute inset-0 flex items-end justify-center pb-6 pointer-events-none">
-            <div className="bg-void/85 border border-ink/20 px-5 py-3 backdrop-blur-sm animate-pulse">
+            <div className="bg-void/85 border border-ink/20 px-5 py-3 backdrop-blur-sm">
               <p className="font-mono text-[10px] tracking-widest text-bone/80 uppercase text-center leading-relaxed">
                 ← → sfoglia · doppio click zoom · F fullscreen
               </p>
@@ -154,6 +154,16 @@ export function ComicViewer({ pagine, formato = "a4v" }: {
           </div>
         )}
       </div>
+
+      {/* Legenda statica per formato orizzontale — visibile nello spazio sotto l'immagine */}
+      {isLandscape && (
+        <div className="flex justify-center flex-shrink-0">
+          <p className="font-mono text-[9px] tracking-widest text-ink/40 uppercase text-center">
+            ← → sfoglia · doppio click zoom · F fullscreen
+            {isManga && " · direzione manga →←"}
+          </p>
+        </div>
+      )}
 
       {/* Miniature navigazione rapida */}
       <div className="flex gap-1.5 justify-center overflow-x-auto flex-shrink-0 py-1">
