@@ -54,7 +54,7 @@ export function ComicViewer({ pagine, formato = "a4v" }: {
   const page = orderedPagine[current];
   const imgUrl = page.image_url;
 
-  const imgMaxHeight = fullscreen ? "calc(100dvh - 100px)" : "calc(100dvh - 280px)";
+  const imgMaxHeight = fullscreen ? "calc(100dvh - 100px)" : "calc(100dvh - 250px)";
 
   const containerClass = fullscreen
     ? "fixed inset-0 z-50 bg-void flex flex-col select-none px-4 py-3 gap-3"
@@ -80,7 +80,7 @@ export function ComicViewer({ pagine, formato = "a4v" }: {
               {isManga && " · ←"}
             </span>
             <span className="font-mono text-[10px] tracking-[0.3em] text-ink/40 uppercase">
-              {current + 1} / {total}
+              {isManga ? `${total} / ${current + 1}` : `${current + 1} / ${total}`}
             </span>
           </div>
 
