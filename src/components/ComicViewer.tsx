@@ -54,11 +54,11 @@ export function ComicViewer({ pagine, formato = "a4v" }: {
   const page = orderedPagine[current];
   const imgUrl = page.image_url;
 
-  const imgMaxHeight = fullscreen ? "calc(100dvh - 100px)" : "calc(100dvh - 220px)";
+  const imgMaxHeight = fullscreen ? "calc(100dvh - 100px)" : "calc(100dvh - 280px)";
 
   const containerClass = fullscreen
     ? "fixed inset-0 z-50 bg-void flex flex-col select-none px-4 py-3 gap-3"
-    : "flex flex-col select-none py-4 px-2 gap-3";
+    : "flex flex-col select-none pt-0 pb-4 px-2 gap-3";
 
   return (
     <div className={containerClass}>
