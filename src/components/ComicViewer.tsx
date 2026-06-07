@@ -70,7 +70,7 @@ export function ComicViewer({ pagine, formato = "a4v" }: {
           disabled={isManga ? current === total - 1 : current === 0}
           className="font-mono text-[10px] uppercase tracking-widest border border-ink/20 px-4 py-2 text-ink/50 hover:border-ink/60 hover:text-ink/80 transition-colors disabled:opacity-20 disabled:cursor-not-allowed whitespace-nowrap"
         >
-          {isManga ? "→ Prec" : "← Prec"}
+          {isManga ? "← Succ" : "← Prec"}
         </button>
 
         <div className="flex items-center gap-3 min-w-0">
@@ -89,10 +89,9 @@ export function ComicViewer({ pagine, formato = "a4v" }: {
             <span className="font-mono text-[13px] text-ink/50 hover:text-ink/80 cursor-default select-none transition-colors">ⓘ</span>
             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-50 w-64 bg-void border border-ink/30 px-3 py-2 shadow-lg">
               <p className="font-mono text-[9px] tracking-wide text-ink/70 leading-relaxed">
-                Click sinistra / destra per sfogliare<br />
-                Doppio click per zoom<br />
-                ← → per tastiera · F per fullscreen
-                {isManga && <><br />Direzione manga →←</>}
+                {isManga ? "Click sinistro = pagina successiva" : "Click sinistro = pagina precedente"}<br />
+                {isManga ? "Click destro = pagina precedente" : "Click destro = pagina successiva"}<br />
+                Doppio click per zoom · F fullscreen
               </p>
             </div>
           </div>
@@ -113,7 +112,7 @@ export function ComicViewer({ pagine, formato = "a4v" }: {
             disabled={isManga ? current === 0 : current === total - 1}
             className="font-mono text-[10px] uppercase tracking-widest border border-ink/20 px-4 py-2 text-ink/50 hover:border-ink/60 hover:text-ink/80 transition-colors disabled:opacity-20 disabled:cursor-not-allowed whitespace-nowrap"
           >
-            {isManga ? "← Succ" : "Succ →"}
+            {isManga ? "Prec →" : "Succ →"}
           </button>
         </div>
       </div>
@@ -165,8 +164,8 @@ export function ComicViewer({ pagine, formato = "a4v" }: {
         </div>
       )}
 
-      {/* Miniature navigazione rapida */}
-      <div className="flex gap-1.5 justify-center overflow-x-auto flex-shrink-0 py-1">
+      {/* Miniature navigazione rapida — invertite per manga (cover a destra) */}
+      <div className={`flex gap-1.5 justify-center overflow-x-auto flex-shrink-0 py-1 ${isManga ? "flex-row-reverse" : ""}`}>
         {orderedPagine.map((p, i) => (
           <button
             key={p.id}
