@@ -929,7 +929,7 @@ function ReadPage() {
           </div>{/* fine div pulsanti */}
 
           {/* Controlli font — shrink-0, sempre visibili sopra le legende */}
-          <div className="hidden lg:block shrink-0 mt-2 border-t border-ink/10 pt-3">
+          <div className={`hidden lg:block shrink-0 mt-2 border-t border-ink/10 pt-3 ${book.genere === "fumetto" ? "opacity-30 pointer-events-none select-none" : ""}`}>
             <div className="font-display tracking-[0.15em] text-[9px] text-ink/50 mb-2 uppercase">— testo</div>
             <div className="flex w-full">
               <button onClick={() => setFontScale((s) => Math.max(0.85, s - 0.1))} className="flex-1 font-serif text-sm border border-ink/20 py-2 hover:border-ink text-center cursor-pointer">A−</button>
@@ -939,7 +939,7 @@ function ReadPage() {
           </div>
 
           {/* Legende compatte — shrink-0, sempre visibili indipendentemente dall'altezza del viewport */}
-          <div className="hidden lg:flex lg:flex-col shrink-0 mt-2 border-t border-ink/10 pt-2 gap-2">
+          <div className={`hidden lg:flex lg:flex-col shrink-0 mt-2 border-t border-ink/10 pt-2 gap-2 ${book.genere === "fumetto" ? "opacity-30 pointer-events-none select-none" : ""}`}>
             <div>
               <div className="font-display tracking-[0.12em] text-[8px] text-ink/40 uppercase mb-1">— segnalibro</div>
               <p className="font-serif text-[10px] text-ink/45 leading-snug italic">
