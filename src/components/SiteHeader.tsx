@@ -197,9 +197,9 @@ export function SiteHeader() {
                 <Link
                   to={isAuthor ? "/area-autore" : "/libreria"}
                   className="hidden sm:inline-flex font-mono tracking-widest text-[10px] uppercase text-cyan hover:text-magenta transition-colors px-3 py-2"
-                  title={isAuthor ? "Area riservata autore" : "La mia libreria"}
+                  title={displayName}
                 >
-                  [{displayName}]
+                  [area riservata]
                 </Link>
               )}
               <button
