@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import logo from "@/assets/liberiamo-hero.webp";
@@ -13,6 +13,8 @@ export function SiteHeader() {
   const [isAuthor, setIsAuthor] = useState(false);
   const [cestinoTooltip, setCestinoTooltip] = useState<string | null>(null);
   const { t } = useTranslation();
+  const { location } = useRouterState();
+  const isInReservedArea = location.pathname.startsWith("/area-autore") || location.pathname.startsWith("/libreria");
   const [autoriOpen, setAutoriOpen] = useState(false);
   const [autoriList, setAutoriList] = useState<AuthorEntry[]>([]);
   const [autoriLoaded, setAutoriLoaded] = useState(false);
@@ -197,9 +199,8 @@ export function SiteHeader() {
                 <Link
                   to={isAuthor ? "/area-autore" : "/libreria"}
                   className="hidden sm:inline-flex font-mono tracking-widest text-[10px] uppercase text-cyan hover:text-magenta transition-colors px-3 py-2"
-                  title={displayName}
                 >
-                  [area riservata]
+                  [{isInReservedArea ? displayName : "area riservata"}]
                 </Link>
               )}
               <button
