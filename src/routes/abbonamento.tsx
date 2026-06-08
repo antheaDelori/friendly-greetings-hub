@@ -23,7 +23,7 @@ function Abbonamento() {
           <div className="font-mono text-[10px] tracking-[0.3em] text-blood/70 uppercase mb-3">// abbonamento autori</div>
           <h1 className="font-display text-4xl text-ink leading-tight">Perché €12 all'anno</h1>
           <p className="mt-4 font-serif italic text-ink/60 text-lg leading-relaxed">
-            La lettura è gratuita. La pubblicazione no — e vogliamo spiegarti perché.
+            Leggere è un diritto ed è gratuito. Pubblicare ha un costo e vogliamo spiegarti il perché.
           </p>
         </div>
 
@@ -34,6 +34,20 @@ function Abbonamento() {
             <p className="font-serif text-ink/75 leading-relaxed">
               Ogni autore può pubblicare la sua prima opera senza pagare nulla. Vogliamo che tu possa vedere con i tuoi occhi come funziona la piattaforma, come appare il tuo libro, come reagiscono i lettori. Solo dopo — se vuoi continuare — entra in gioco l'abbonamento.
             </p>
+          </section>
+
+          <section>
+            <h2 className="font-display tracking-widest text-xs text-blood uppercase mb-4">— Cosa ottieni (gratis)</h2>
+            <ul className="space-y-2">
+              {[
+                "Download in PDF per i tuoi lettori",
+                "Donazioni dirette dai lettori senza intermediari",
+              ].map(v => (
+                <li key={v} className="flex items-start gap-2 font-serif text-sm text-ink/70">
+                  <span className="text-blood mt-0.5 shrink-0">◆</span>{v}
+                </li>
+              ))}
+            </ul>
           </section>
 
           <section>
@@ -64,15 +78,13 @@ function Abbonamento() {
           </section>
 
           <section>
-            <h2 className="font-display tracking-widest text-xs text-blood uppercase mb-4">— Cosa ottieni</h2>
+            <h2 className="font-display tracking-widest text-xs text-blood uppercase mb-4">— Vantaggi ulteriori</h2>
             <ul className="space-y-2">
               {[
-                "Pubblicazione illimitata di opere",
+                "Pubblicazioni illimitate",
                 "Generazione copertine con AI",
-                "Download in PDF, ePub e MOBI per i tuoi lettori",
-                "Area autore dedicata con statistiche",
+                "Area autore con statistiche",
                 "Newsletter diretta ai tuoi lettori",
-                "Donazioni dirette dai lettori senza intermediari",
               ].map(v => (
                 <li key={v} className="flex items-start gap-2 font-serif text-sm text-ink/70">
                   <span className="text-blood mt-0.5 shrink-0">◆</span>{v}
