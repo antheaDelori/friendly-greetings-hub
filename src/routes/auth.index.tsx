@@ -286,7 +286,20 @@ function AuthLanding() {
         {/* Autore */}
         <HudPanel label="opzione 02 — autore" tone="cyan">
           <h3 className="font-display text-2xl text-bone tracking-tight">Diventa autore</h3>
-          <ul className="mt-4 space-y-2">
+
+          <div className="mt-4 flex items-start gap-2 font-serif text-sm text-bone">
+            <span className="text-cyan mt-0.5 shrink-0">◆</span>
+            <span>
+              Prima opera gratuita — poi{" "}
+              <Link to="/abbonamento" className="text-cyan underline underline-offset-2 hover:text-cyan/70">
+                abbonamento annuo €12
+              </Link>
+            </span>
+          </div>
+
+          <div className="my-4 border-t border-cyan/40" />
+
+          <ul className="space-y-2">
             {[
               "Tutti i vantaggi del lettore",
               "Pubblica libri, racconti, saggi e poesie",
@@ -298,16 +311,8 @@ function AuthLanding() {
                 <span className="text-cyan mt-0.5 shrink-0">◆</span>{v}
               </li>
             ))}
-            <li className="flex items-start gap-2 font-serif text-sm text-bone/70">
-              <span className="text-cyan mt-0.5 shrink-0">◆</span>
-              <span>
-                Prima opera gratuita — poi{" "}
-                <Link to="/abbonamento" className="text-cyan underline underline-offset-2 hover:text-cyan/70">
-                  abbonamento annuo €12
-                </Link>
-              </span>
-            </li>
           </ul>
+
           <Link to="/auth/registrazione" className="mt-6 inline-block">
             <HudButton variant="primary">▸ {t("authLogin.opt01Btn")}</HudButton>
           </Link>
