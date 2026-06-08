@@ -247,6 +247,15 @@ function CommunityPage() {
       setSubmitError(error.message);
     } else {
       setSubmitSuccess(true);
+      supabase.functions.invoke("notify-review", {
+        body: {
+          book_id: selectedBook.id,
+          book_slug: selectedBook.slug,
+          book_titolo: selectedBook.titolo,
+          reviewer_name: displayName,
+          review_text: reviewText.trim(),
+        },
+      });
       setSelectedBook(null);
       setReviewText("");
       setRating(0);
