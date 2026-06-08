@@ -270,7 +270,7 @@ function CommunityPage() {
       }
     } else {
       setSubmitSuccess(true);
-      supabase.functions.invoke("notify-review", {
+      await supabase.functions.invoke("notify-review", {
         body: {
           book_id: selectedBook.id,
           book_slug: selectedBook.slug,
