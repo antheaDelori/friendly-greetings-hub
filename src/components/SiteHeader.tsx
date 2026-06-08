@@ -210,20 +210,12 @@ export function SiteHeader() {
               </button>
             </>
           ) : (
-            <>
-              <Link
-                to="/auth"
-                className="hidden sm:inline-flex font-mono tracking-widest text-[10px] uppercase text-bone/70 hover:text-cyan transition-colors px-3 py-2"
-              >
-                [{t("auth.accedi")}]
-              </Link>
-              <Link
-                to="/auth/registrazione"
-                className="relative inline-flex items-center gap-2 border border-cyan/60 bg-cyan/10 px-4 py-2 font-mono text-[10px] uppercase tracking-widest text-cyan hover:bg-cyan hover:text-void transition-all hud-frame-x"
-              >
-                ▸ {t("auth.registrati")}
-              </Link>
-            </>
+            <Link
+              to="/auth"
+              className="relative inline-flex items-center gap-2 border border-cyan/60 bg-cyan/10 px-4 py-2 font-mono text-[10px] uppercase tracking-widest text-cyan hover:bg-cyan hover:text-void transition-all hud-frame-x"
+            >
+              ▸ {t("auth.accedi")}
+            </Link>
           )}
         </div>
       </div>
