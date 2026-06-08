@@ -16,8 +16,9 @@ export const Route = createFileRoute("/community")({
 });
 
 type ReviewRow = {
+  id: string;
   nome_display: string | null;
-  books: { titolo: string } | null;
+  books: { titolo: string; author_id: string } | null;
   testo: string | null;
   stelle: number;
   created_at: string;
@@ -158,11 +159,29 @@ function CommunityPage() {
   const [userId, setUserId] = useState<string | null | undefined>(undefined);
   const [isRegistered, setIsRegistered] = useState(false);
   const [userMeta, setUserMeta] = useState<Record<string, string>>({});
+  const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
+  const [replySubmitting, setReplySubmitting] = useState<string | null>(null);
+
+  const handleReply = async (reviewId: string) => {
+    const testo = replyDrafts[reviewId]?.trim();
+    if (!testo || !userId) return;
+    setReplySubmitting(reviewId);
+    const { error } = await supabase.from("recensioni_risposte").insert({
+      recensione_id: reviewId,
+      author_id: userId,
+      testo,
+    });
+    setReplySubmitting(null);
+    if (!error) {
+      setReplyDrafts(d => ({ ...d, [reviewId]: "" }));
+      loadReviews();
+    }
+  };
 
   const loadReviews = async () => {
     const { data } = await supabase
       .from("recensioni")
-      .select("nome_display, stelle, testo, created_at, books(titolo), recensioni_risposte(testo, created_at)")
+      .select("id, nome_display, stelle, testo, created_at, books(titolo, author_id), recensioni_risposte(testo, created_at)")
       .eq("blocked", false)
       .order("created_at", { ascending: false })
       .limit(10);
@@ -293,10 +312,28 @@ function CommunityPage() {
                         </div>
                       </div>
                       {r.testo && <p className="mt-2 font-serif italic text-bone/85 leading-relaxed">"{r.testo}"</p>}
-                      {r.recensioni_risposte && r.recensioni_risposte.length > 0 && (
-                        <div className="mt-2 ml-3 pl-3 border-l border-cyan/20">
-                          <p className="font-mono text-[9px] uppercase tracking-widest text-cyan/40 mb-1">↩ risposta dell'autore</p>
-                          <p className="font-serif text-sm text-bone/60 leading-relaxed">{r.recensioni_risposte[0].testo}</p>
+                      {r.recensioni_risposte && r.recensioni_risposte.length > 0 ? (
+                        <div className="mt-3 ml-3 pl-3 border-l-2 border-magenta/30">
+                          <p className="font-mono text-[9px] uppercase tracking-widest text-magenta/50 mb-1">↩ risposta dell'autore</p>
+                          <p className="font-serif text-sm text-bone/70 leading-relaxed">{r.recensioni_risposte[0].testo}</p>
+                        </div>
+                      ) : r.books?.author_id === userId && (
+                        <div className="mt-3 ml-3 pl-3 border-l border-cyan/20">
+                          <p className="font-mono text-[9px] uppercase tracking-widest text-cyan/40 mb-2">↩ rispondi</p>
+                          <textarea
+                            value={replyDrafts[r.id] ?? ""}
+                            onChange={e => setReplyDrafts(d => ({ ...d, [r.id]: e.target.value }))}
+                            placeholder="Scrivi la tua risposta..."
+                            rows={3}
+                            className="w-full bg-void/40 border border-cyan/20 px-3 py-2 font-serif text-sm text-bone placeholder:text-bone/25 focus:outline-none focus:border-cyan/50 transition-colors resize-none"
+                          />
+                          <button
+                            onClick={() => handleReply(r.id)}
+                            disabled={!replyDrafts[r.id]?.trim() || replySubmitting === r.id}
+                            className="mt-2 font-mono text-[10px] uppercase tracking-widest border border-cyan/40 px-4 py-1.5 text-cyan hover:bg-cyan hover:text-void transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                          >
+                            {replySubmitting === r.id ? "◆ Invio..." : "◆ Pubblica risposta"}
+                          </button>
                         </div>
                       )}
                     </div>
