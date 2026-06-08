@@ -281,7 +281,7 @@ function CommunityPage() {
       });
       setSelectedBook(null);
       setReviewText("");
-      setRating(0);
+      setRating(1);
       loadReviews();
     }
   };
