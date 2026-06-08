@@ -244,7 +244,11 @@ function CommunityPage() {
 
     setSubmitting(false);
     if (error) {
-      setSubmitError(error.message);
+      if (error.code === "23505") {
+        setSubmitError("Hai già lasciato una recensione per questa opera.");
+      } else {
+        setSubmitError(error.message);
+      }
     } else {
       setSubmitSuccess(true);
       supabase.functions.invoke("notify-review", {
