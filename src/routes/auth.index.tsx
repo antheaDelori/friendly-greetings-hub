@@ -270,7 +270,7 @@ function AuthLanding() {
           <ul className="mt-4 space-y-2">
             {[
               "Segnalibro automatico — riprendi da dove hai smesso",
-              "Vota per recuperare i libri nel Cestino",
+              "Salva dal dimenticatoio le opere che meritano — vota nel Cestino",
               "Lascia recensioni nella community",
             ].map(v => (
               <li key={v} className="flex items-start gap-2 font-serif text-sm text-bone/70">
@@ -303,9 +303,9 @@ function AuthLanding() {
             {[
               "Tutti i vantaggi del lettore",
               "Pubblica libri, racconti, saggi e poesie",
+              "Il tuo libro, tra mani che lo cercavano",
               "Gestisci le tue opere con un'area dedicata",
               "Ricevi donazioni dirette dai lettori",
-              "L'opera non deve essere stata pubblicata da una casa editrice (salvo nullaosta)",
             ].map(v => (
               <li key={v} className="flex items-start gap-2 font-serif text-sm text-bone/70">
                 <span className="text-cyan mt-0.5 shrink-0">◆</span>{v}
