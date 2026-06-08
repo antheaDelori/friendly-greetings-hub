@@ -292,11 +292,21 @@ function AuthLanding() {
               "Pubblica libri, racconti, saggi e poesie",
               "Gestisci le tue opere con un'area dedicata",
               "Ricevi donazioni dirette dai lettori",
+              "L'opera non deve essere stata pubblicata da una casa editrice (salvo nullaosta)",
             ].map(v => (
               <li key={v} className="flex items-start gap-2 font-serif text-sm text-bone/70">
                 <span className="text-cyan mt-0.5 shrink-0">◆</span>{v}
               </li>
             ))}
+            <li className="flex items-start gap-2 font-serif text-sm text-bone/70">
+              <span className="text-cyan mt-0.5 shrink-0">◆</span>
+              <span>
+                Prima opera gratuita — poi{" "}
+                <Link to="/abbonamento" className="text-cyan underline underline-offset-2 hover:text-cyan/70">
+                  abbonamento annuo €12
+                </Link>
+              </span>
+            </li>
           </ul>
           <Link to="/auth/registrazione" className="mt-6 inline-block">
             <HudButton variant="primary">▸ {t("authLogin.opt01Btn")}</HudButton>
