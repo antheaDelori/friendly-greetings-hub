@@ -147,7 +147,7 @@ function Index() {
         <div className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full bg-cyan/15 blur-[120px] pointer-events-none" />
         <div className="absolute top-20 -right-40 w-[500px] h-[500px] rounded-full bg-magenta/10 blur-[120px] pointer-events-none" />
 
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10 py-10 md:py-16 grid lg:grid-cols-12 gap-10 items-start relative">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10 py-6 md:py-10 grid lg:grid-cols-12 gap-10 items-start relative">
           <div className="lg:col-span-7 fade-up">
             <div className="inline-flex items-center gap-3 border border-cyan/40 bg-cyan/5 px-3 py-1.5 font-mono tracking-[0.3em] text-[10px] text-cyan uppercase">
               <span className="h-1.5 w-1.5 bg-cyan rounded-full animate-pulse" />
@@ -187,7 +187,7 @@ function Index() {
               )}
             </div>
 
-            <dl className="mt-16 grid grid-cols-3 gap-4 max-w-2xl">
+            <dl className="mt-8 grid grid-cols-3 gap-4 max-w-2xl">
               {[
                 { k: "opere", v: totals.opere, label: t("home.opereLabel"), c: "text-cyan" },
                 { k: "autori", v: totals.autori, label: t("home.autoriLabel"), c: "text-magenta" },
