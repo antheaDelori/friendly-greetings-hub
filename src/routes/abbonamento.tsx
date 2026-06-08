@@ -40,7 +40,7 @@ function Abbonamento() {
             <h2 className="font-display tracking-widest text-xs text-blood uppercase mb-4">— Cosa ottieni (gratis)</h2>
             <ul className="space-y-2">
               {[
-                "Download in PDF per i tuoi lettori",
+                "Download in PDF, ePub e MOBI per i tuoi lettori",
                 "Donazioni dirette dai lettori senza intermediari",
               ].map(v => (
                 <li key={v} className="flex items-start gap-2 font-serif text-sm text-ink/70">
