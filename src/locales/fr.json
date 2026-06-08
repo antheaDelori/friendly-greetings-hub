@@ -14,7 +14,7 @@
     "nessun": "Aucun auteur"
   },
   "auth": {
-    "accedi": "connexion",
+    "accedi": "connexion / inscription",
     "registrati": "S'inscrire",
     "ospite": "invité",
     "esci": "Déconnexion"
