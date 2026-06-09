@@ -312,9 +312,8 @@ function LibroApertoPage() {
                   {openChapterId === chapter.id && (
                     <div className="border-t border-cyan/10 px-6 py-6">
                       {/* testo capitolo */}
-                      <div className="prose prose-invert prose-sm max-w-none text-bone/75 leading-relaxed whitespace-pre-wrap font-serif mb-10">
-                        {chapter.testo}
-                      </div>
+                      <div className="prose prose-invert prose-sm max-w-none text-bone/75 leading-relaxed font-serif mb-10"
+                        dangerouslySetInnerHTML={{ __html: chapter.testo }} />
 
                       {/* commenti approvati */}
                       <div className="border-t border-cyan/10 pt-6">
