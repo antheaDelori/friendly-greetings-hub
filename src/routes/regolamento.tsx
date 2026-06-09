@@ -31,6 +31,8 @@ function RegolamentoPage() {
               <li>▸ I diritti restano <span className="text-cyan">interamente all'autore</span>.</li>
               <li>▸ L'autore decide cosa rendere scaricabile (PDF, e-book) e cosa solo leggibile online.</li>
               <li>▸ Riproduzione vietata senza consenso esplicito.</li>
+              <li>▸ Le opere pubblicate devono essere <span className="text-cyan">inedite</span> — non cedute né in gestione a case editrici.</li>
+              <li>▸ Eccezioni ammesse solo con nullaosta scritto della casa editrice.</li>
             </ul>
           </HudPanel>
 
