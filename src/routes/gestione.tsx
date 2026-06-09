@@ -76,6 +76,7 @@ type Book = {
   downloads: number;
   created_at: string;
   collana_id: string | null;
+  status: string;
 };
 
 const GENERI = ["libro", "racconto", "saggio", "articolo", "novelle", "poesia", "fumetto"] as const;
@@ -209,6 +210,7 @@ function GestionePage() {
   const [anno, setAnno] = useState(String(new Date().getFullYear()));
   const [lingua, setLingua] = useState("it");
   const [accesso, setAccesso] = useState("gratuito");
+  const [isLibroAperto, setIsLibroAperto] = useState(false);
   const [tipo, setTipo] = useState("");
   const [tipoAltro, setTipoAltro] = useState("");
   const [target, setTarget] = useState("tutti");
@@ -373,7 +375,7 @@ function GestionePage() {
 
   const resetForm = () => {
     setTitolo(""); setSottotitolo(""); setGenere("libro"); setEdizione("");
-    setAnno(String(new Date().getFullYear())); setLingua("it"); setAccesso("gratuito");
+    setAnno(String(new Date().getFullYear())); setLingua("it"); setAccesso("gratuito"); setIsLibroAperto(false);
     setTipo(""); setTipoAltro(""); setTarget("tutti"); setIsbn("");
     setDescrizione(""); setEstratto(""); setTestoCompleto(""); setTagStr("");
     setCopertina(null); setLastra(null); setFilePdf(null); setSaveError(null);
@@ -524,6 +526,7 @@ function GestionePage() {
     setAnno(b.anno ? String(b.anno) : "");
     setLingua(b.lingua);
     setAccesso(b.accesso);
+    setIsLibroAperto(b.status === "open");
     if (b.tipo && (TIPI_SELEZIONABILI as readonly string[]).includes(b.tipo)) {
       setTipo(b.tipo);
       setTipoAltro("");
@@ -904,6 +907,7 @@ function GestionePage() {
           anno: anno ? parseInt(anno) : null,
           lingua,
           accesso,
+          status: isLibroAperto ? "open" : "published",
           descrizione: descrizione.trim() || null,
           estratto: estratto.trim() || null,
           tag: tagStr ? tagStr.split(",").map(t => t.trim()).filter(Boolean) : [],
@@ -929,6 +933,7 @@ function GestionePage() {
           anno: anno ? parseInt(anno) : null,
           lingua,
           accesso,
+          status: isLibroAperto ? "open" : "published",
           descrizione: descrizione.trim() || null,
           estratto: estratto.trim() || null,
           tag: tagStr ? tagStr.split(",").map(t => t.trim()).filter(Boolean) : [],
@@ -1853,6 +1858,27 @@ function GestionePage() {
                           {a}
                         </button>
                       ))}
+                    </div>
+
+                    {/* Toggle libro aperto */}
+                    <div className="mt-4">
+                      <button
+                        type="button"
+                        onClick={() => setIsLibroAperto(v => !v)}
+                        className={`flex items-center gap-3 border px-4 py-2 font-mono text-[10px] uppercase tracking-widest transition-all ${
+                          isLibroAperto ? "border-cyan bg-cyan/10 text-cyan" : "border-cyan/30 text-bone/50 hover:border-cyan/60"
+                        }`}
+                      >
+                        <span className={`w-3 h-3 border flex items-center justify-center ${isLibroAperto ? "border-cyan bg-cyan/30" : "border-bone/30"}`}>
+                          {isLibroAperto && <span className="text-cyan text-[8px]">✓</span>}
+                        </span>
+                        Libro Aperto — capitoli pubblicabili progressivamente
+                      </button>
+                      {isLibroAperto && (
+                        <p className="mt-2 font-mono text-[9px] text-bone/40 tracking-widest">
+                          I capitoli si aggiungono dall'Area Autore dopo aver salvato il libro. I lettori ricevono una notifica email ad ogni nuovo capitolo.
+                        </p>
+                      )}
                     </div>
 
                     {/* Lista accesso — visibile solo per riservato/premium */}

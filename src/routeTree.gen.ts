@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RegolamentoRouteImport } from './routes/regolamento'
+import { Route as LibriApertiRouteImport } from './routes/libri-aperti'
 import { Route as LibreriaRouteImport } from './routes/libreria'
 import { Route as GestioneRouteImport } from './routes/gestione'
 import { Route as DonazioniRouteImport } from './routes/donazioni'
@@ -19,8 +20,10 @@ import { Route as CatalogoRouteImport } from './routes/catalogo'
 import { Route as AutoriRouteImport } from './routes/autori'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AreaAutoreRouteImport } from './routes/area-autore'
+import { Route as AbbonamentoRouteImport } from './routes/abbonamento'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthIndexRouteImport } from './routes/auth.index'
+import { Route as LibriApertiSlugRouteImport } from './routes/libri-aperti.$slug'
 import { Route as LeggiSlugRouteImport } from './routes/leggi.$slug'
 import { Route as DownloadSlugRouteImport } from './routes/download.$slug'
 import { Route as CommunitySlugRouteImport } from './routes/community.$slug'
@@ -31,6 +34,11 @@ import { Route as AuthProfiloAutoreRouteImport } from './routes/auth.profilo-aut
 const RegolamentoRoute = RegolamentoRouteImport.update({
   id: '/regolamento',
   path: '/regolamento',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LibriApertiRoute = LibriApertiRouteImport.update({
+  id: '/libri-aperti',
+  path: '/libri-aperti',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LibreriaRoute = LibreriaRouteImport.update({
@@ -78,6 +86,11 @@ const AreaAutoreRoute = AreaAutoreRouteImport.update({
   path: '/area-autore',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AbbonamentoRoute = AbbonamentoRouteImport.update({
+  id: '/abbonamento',
+  path: '/abbonamento',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -87,6 +100,11 @@ const AuthIndexRoute = AuthIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AuthRoute,
+} as any)
+const LibriApertiSlugRoute = LibriApertiSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => LibriApertiRoute,
 } as any)
 const LeggiSlugRoute = LeggiSlugRouteImport.update({
   id: '/leggi/$slug',
@@ -121,6 +139,7 @@ const AuthProfiloAutoreRoute = AuthProfiloAutoreRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/abbonamento': typeof AbbonamentoRoute
   '/area-autore': typeof AreaAutoreRoute
   '/auth': typeof AuthRouteWithChildren
   '/autori': typeof AutoriRoute
@@ -130,6 +149,7 @@ export interface FileRoutesByFullPath {
   '/donazioni': typeof DonazioniRoute
   '/gestione': typeof GestioneRoute
   '/libreria': typeof LibreriaRoute
+  '/libri-aperti': typeof LibriApertiRouteWithChildren
   '/regolamento': typeof RegolamentoRoute
   '/auth/profilo-autore': typeof AuthProfiloAutoreRoute
   '/auth/registrazione': typeof AuthRegistrazioneRoute
@@ -137,10 +157,12 @@ export interface FileRoutesByFullPath {
   '/community/$slug': typeof CommunitySlugRoute
   '/download/$slug': typeof DownloadSlugRoute
   '/leggi/$slug': typeof LeggiSlugRoute
+  '/libri-aperti/$slug': typeof LibriApertiSlugRoute
   '/auth/': typeof AuthIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/abbonamento': typeof AbbonamentoRoute
   '/area-autore': typeof AreaAutoreRoute
   '/autori': typeof AutoriRoute
   '/catalogo': typeof CatalogoRoute
@@ -149,6 +171,7 @@ export interface FileRoutesByTo {
   '/donazioni': typeof DonazioniRoute
   '/gestione': typeof GestioneRoute
   '/libreria': typeof LibreriaRoute
+  '/libri-aperti': typeof LibriApertiRouteWithChildren
   '/regolamento': typeof RegolamentoRoute
   '/auth/profilo-autore': typeof AuthProfiloAutoreRoute
   '/auth/registrazione': typeof AuthRegistrazioneRoute
@@ -156,11 +179,13 @@ export interface FileRoutesByTo {
   '/community/$slug': typeof CommunitySlugRoute
   '/download/$slug': typeof DownloadSlugRoute
   '/leggi/$slug': typeof LeggiSlugRoute
+  '/libri-aperti/$slug': typeof LibriApertiSlugRoute
   '/auth': typeof AuthIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/abbonamento': typeof AbbonamentoRoute
   '/area-autore': typeof AreaAutoreRoute
   '/auth': typeof AuthRouteWithChildren
   '/autori': typeof AutoriRoute
@@ -170,6 +195,7 @@ export interface FileRoutesById {
   '/donazioni': typeof DonazioniRoute
   '/gestione': typeof GestioneRoute
   '/libreria': typeof LibreriaRoute
+  '/libri-aperti': typeof LibriApertiRouteWithChildren
   '/regolamento': typeof RegolamentoRoute
   '/auth/profilo-autore': typeof AuthProfiloAutoreRoute
   '/auth/registrazione': typeof AuthRegistrazioneRoute
@@ -177,12 +203,14 @@ export interface FileRoutesById {
   '/community/$slug': typeof CommunitySlugRoute
   '/download/$slug': typeof DownloadSlugRoute
   '/leggi/$slug': typeof LeggiSlugRoute
+  '/libri-aperti/$slug': typeof LibriApertiSlugRoute
   '/auth/': typeof AuthIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/abbonamento'
     | '/area-autore'
     | '/auth'
     | '/autori'
@@ -192,6 +220,7 @@ export interface FileRouteTypes {
     | '/donazioni'
     | '/gestione'
     | '/libreria'
+    | '/libri-aperti'
     | '/regolamento'
     | '/auth/profilo-autore'
     | '/auth/registrazione'
@@ -199,10 +228,12 @@ export interface FileRouteTypes {
     | '/community/$slug'
     | '/download/$slug'
     | '/leggi/$slug'
+    | '/libri-aperti/$slug'
     | '/auth/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/abbonamento'
     | '/area-autore'
     | '/autori'
     | '/catalogo'
@@ -211,6 +242,7 @@ export interface FileRouteTypes {
     | '/donazioni'
     | '/gestione'
     | '/libreria'
+    | '/libri-aperti'
     | '/regolamento'
     | '/auth/profilo-autore'
     | '/auth/registrazione'
@@ -218,10 +250,12 @@ export interface FileRouteTypes {
     | '/community/$slug'
     | '/download/$slug'
     | '/leggi/$slug'
+    | '/libri-aperti/$slug'
     | '/auth'
   id:
     | '__root__'
     | '/'
+    | '/abbonamento'
     | '/area-autore'
     | '/auth'
     | '/autori'
@@ -231,6 +265,7 @@ export interface FileRouteTypes {
     | '/donazioni'
     | '/gestione'
     | '/libreria'
+    | '/libri-aperti'
     | '/regolamento'
     | '/auth/profilo-autore'
     | '/auth/registrazione'
@@ -238,11 +273,13 @@ export interface FileRouteTypes {
     | '/community/$slug'
     | '/download/$slug'
     | '/leggi/$slug'
+    | '/libri-aperti/$slug'
     | '/auth/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AbbonamentoRoute: typeof AbbonamentoRoute
   AreaAutoreRoute: typeof AreaAutoreRoute
   AuthRoute: typeof AuthRouteWithChildren
   AutoriRoute: typeof AutoriRoute
@@ -252,6 +289,7 @@ export interface RootRouteChildren {
   DonazioniRoute: typeof DonazioniRoute
   GestioneRoute: typeof GestioneRoute
   LibreriaRoute: typeof LibreriaRoute
+  LibriApertiRoute: typeof LibriApertiRouteWithChildren
   RegolamentoRoute: typeof RegolamentoRoute
   CollaneSlugRoute: typeof CollaneSlugRoute
   DownloadSlugRoute: typeof DownloadSlugRoute
@@ -265,6 +303,13 @@ declare module '@tanstack/react-router' {
       path: '/regolamento'
       fullPath: '/regolamento'
       preLoaderRoute: typeof RegolamentoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/libri-aperti': {
+      id: '/libri-aperti'
+      path: '/libri-aperti'
+      fullPath: '/libri-aperti'
+      preLoaderRoute: typeof LibriApertiRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/libreria': {
@@ -330,6 +375,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AreaAutoreRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/abbonamento': {
+      id: '/abbonamento'
+      path: '/abbonamento'
+      fullPath: '/abbonamento'
+      preLoaderRoute: typeof AbbonamentoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -343,6 +395,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/auth/'
       preLoaderRoute: typeof AuthIndexRouteImport
       parentRoute: typeof AuthRoute
+    }
+    '/libri-aperti/$slug': {
+      id: '/libri-aperti/$slug'
+      path: '/$slug'
+      fullPath: '/libri-aperti/$slug'
+      preLoaderRoute: typeof LibriApertiSlugRouteImport
+      parentRoute: typeof LibriApertiRoute
     }
     '/leggi/$slug': {
       id: '/leggi/$slug'
@@ -415,8 +474,21 @@ const CommunityRouteWithChildren = CommunityRoute._addFileChildren(
   CommunityRouteChildren,
 )
 
+interface LibriApertiRouteChildren {
+  LibriApertiSlugRoute: typeof LibriApertiSlugRoute
+}
+
+const LibriApertiRouteChildren: LibriApertiRouteChildren = {
+  LibriApertiSlugRoute: LibriApertiSlugRoute,
+}
+
+const LibriApertiRouteWithChildren = LibriApertiRoute._addFileChildren(
+  LibriApertiRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AbbonamentoRoute: AbbonamentoRoute,
   AreaAutoreRoute: AreaAutoreRoute,
   AuthRoute: AuthRouteWithChildren,
   AutoriRoute: AutoriRoute,
@@ -426,6 +498,7 @@ const rootRouteChildren: RootRouteChildren = {
   DonazioniRoute: DonazioniRoute,
   GestioneRoute: GestioneRoute,
   LibreriaRoute: LibreriaRoute,
+  LibriApertiRoute: LibriApertiRouteWithChildren,
   RegolamentoRoute: RegolamentoRoute,
   CollaneSlugRoute: CollaneSlugRoute,
   DownloadSlugRoute: DownloadSlugRoute,

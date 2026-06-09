@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { HudPanel, PageShell, HudButton } from "@/components/HudPanel";
@@ -56,6 +57,29 @@ type RecentRecensione = {
   created_at: string;
 };
 
+type OpenBookItem = {
+  id: string;
+  slug: string;
+  titolo: string;
+  copertina_url: string | null;
+};
+
+type OpenChapter = {
+  id: string;
+  numero: number;
+  titolo: string;
+  published_at: string;
+};
+
+type PendingComment = {
+  id: string;
+  chapter_id: string;
+  chapter_titolo: string;
+  testo: string;
+  created_at: string;
+  commenter: string;
+};
+
 export const Route = createFileRoute("/area-autore")({
   head: () => ({
     meta: [
@@ -67,6 +91,7 @@ export const Route = createFileRoute("/area-autore")({
 });
 
 function AreaAutorePage() {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState<string | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -81,6 +106,20 @@ function AreaAutorePage() {
   const [replySaving, setReplySaving] = useState(false);
   const [replyError, setReplyError] = useState<string | null>(null);
 
+  // — Libri Aperti
+  const [openBooks, setOpenBooks] = useState<OpenBookItem[]>([]);
+  const [selectedOpenBook, setSelectedOpenBook] = useState<OpenBookItem | null>(null);
+  const [openChapters, setOpenChapters] = useState<OpenChapter[]>([]);
+  const [pendingComments, setPendingComments] = useState<PendingComment[]>([]);
+  const [newChapterTitolo, setNewChapterTitolo] = useState("");
+  const [newChapterTesto, setNewChapterTesto] = useState("");
+  const [publishingChapter, setPublishingChapter] = useState(false);
+  const [chapterPublishedMsg, setChapterPublishedMsg] = useState(false);
+  const [chapterError, setChapterError] = useState<string | null>(null);
+  const [closingBook, setClosingBook] = useState(false);
+  const [confirmCloseBook, setConfirmCloseBook] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+
   useEffect(() => {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -88,6 +127,7 @@ function AreaAutorePage() {
 
       setEmail(user.email ?? null);
       const uid = user.id;
+      setUserId(uid);
 
       const [profileRes, authorRes, booksRes, logsRes, booksFullRes] = await Promise.all([
         supabase.from("profiles").select("nome, cognome, pseudonimo, is_blocked, block_reason, created_at").eq("id", uid).single(),
@@ -151,10 +191,125 @@ function AreaAutorePage() {
         })));
       }
 
+      const { data: openBooksData } = await supabase
+        .from("books")
+        .select("id, slug, titolo, copertina_url")
+        .eq("author_id", uid)
+        .eq("status", "open")
+        .eq("disponibile", true)
+        .order("created_at", { ascending: false });
+      setOpenBooks(openBooksData ?? []);
+
       setLoading(false);
     };
     init();
   }, []);
+
+  const loadOpenBookData = async (book: OpenBookItem) => {
+    setSelectedOpenBook(book);
+    setNewChapterTitolo("");
+    setNewChapterTesto("");
+    setChapterError(null);
+    setChapterPublishedMsg(false);
+
+    const { data: chapters } = await supabase
+      .from("open_book_chapters")
+      .select("id, numero, titolo, published_at")
+      .eq("book_id", book.id)
+      .order("numero", { ascending: true });
+    setOpenChapters(chapters ?? []);
+
+    const { data: comments } = await supabase
+      .from("open_book_comments")
+      .select("id, chapter_id, testo, created_at, user_id")
+      .eq("approved", false)
+      .in("chapter_id", (chapters ?? []).map(c => c.id));
+
+    if (comments && comments.length > 0) {
+      const chapterMap = Object.fromEntries((chapters ?? []).map(c => [c.id, c.titolo]));
+      const pending: PendingComment[] = await Promise.all(
+        comments.map(async (c) => {
+          const { data: { user } } = await supabase.auth.admin.getUserById(c.user_id).catch(() => ({ data: { user: null } }));
+          const meta = user?.user_metadata ?? {};
+          return {
+            id: c.id,
+            chapter_id: c.chapter_id,
+            chapter_titolo: chapterMap[c.chapter_id] ?? "",
+            testo: c.testo,
+            created_at: c.created_at,
+            commenter: meta.pseudonimo || meta.nome || user?.email?.split("@")[0] || "Lettore",
+          };
+        })
+      );
+      setPendingComments(pending);
+    } else {
+      setPendingComments([]);
+    }
+  };
+
+  const handlePublishChapter = async () => {
+    if (!selectedOpenBook || !newChapterTitolo.trim() || !newChapterTesto.trim()) return;
+    setPublishingChapter(true);
+    setChapterError(null);
+
+    const nextNumero = openChapters.length + 1;
+    const { error } = await supabase.from("open_book_chapters").insert({
+      book_id: selectedOpenBook.id,
+      numero: nextNumero,
+      titolo: newChapterTitolo.trim(),
+      testo: newChapterTesto.trim(),
+    });
+
+    if (error) { setChapterError(t("libriAperti.erroreGenerico")); setPublishingChapter(false); return; }
+
+    await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/notify-new-chapter`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
+      body: JSON.stringify({
+        book_id: selectedOpenBook.id,
+        book_slug: selectedOpenBook.slug,
+        book_titolo: selectedOpenBook.titolo,
+        chapter_numero: nextNumero,
+        chapter_titolo: newChapterTitolo.trim(),
+      }),
+    });
+
+    await loadOpenBookData(selectedOpenBook);
+    setChapterPublishedMsg(true);
+    setTimeout(() => setChapterPublishedMsg(false), 4000);
+    setPublishingChapter(false);
+  };
+
+  const handleApproveComment = async (commentId: string) => {
+    await supabase.from("open_book_comments").update({ approved: true }).eq("id", commentId);
+    setPendingComments(prev => prev.filter(c => c.id !== commentId));
+  };
+
+  const handleRejectComment = async (commentId: string) => {
+    await supabase.from("open_book_comments").delete().eq("id", commentId);
+    setPendingComments(prev => prev.filter(c => c.id !== commentId));
+  };
+
+  const handleCloseBook = async () => {
+    if (!selectedOpenBook) return;
+    setClosingBook(true);
+    await supabase.from("books").update({ status: "published" }).eq("id", selectedOpenBook.id);
+
+    await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/notify-book-published`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
+      body: JSON.stringify({
+        book_id: selectedOpenBook.id,
+        book_slug: selectedOpenBook.slug,
+        book_titolo: selectedOpenBook.titolo,
+      }),
+    });
+
+    setOpenBooks(prev => prev.filter(b => b.id !== selectedOpenBook.id));
+    setSelectedOpenBook(null);
+    setConfirmCloseBook(false);
+    setClosingBook(false);
+  };
 
   const displayName = profile?.pseudonimo || profile?.nome || email?.split("@")[0] || "autore";
   const fullName = [profile?.nome, profile?.cognome].filter(Boolean).join(" ");
@@ -574,6 +729,160 @@ function AreaAutorePage() {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* ── SEZIONE LIBRI APERTI ─────────────────────────────────────── */}
+      {openBooks.length > 0 && (
+        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-10 py-12 border-t border-cyan/10">
+          <p className="font-mono text-[10px] tracking-[0.3em] text-cyan/50 uppercase mb-3">// libri_aperti</p>
+          <h2 className="font-display text-2xl text-bone mb-6">{t("libriAperti.titolo")}</h2>
+
+          {/* selettore libro */}
+          <div className="flex flex-wrap gap-3 mb-8">
+            {openBooks.map(b => (
+              <button
+                key={b.id}
+                onClick={() => loadOpenBookData(b)}
+                className={`font-mono text-[10px] tracking-widest uppercase px-4 py-2 border transition-colors ${
+                  selectedOpenBook?.id === b.id
+                    ? "border-cyan bg-cyan/10 text-cyan"
+                    : "border-cyan/30 text-bone/60 hover:border-cyan/60"
+                }`}
+              >
+                {b.titolo}
+              </button>
+            ))}
+          </div>
+
+          {selectedOpenBook && (
+            <div className="space-y-8">
+              {/* form nuovo capitolo */}
+              <div className="glass border border-cyan/15 p-6">
+                <p className="font-mono text-[10px] tracking-widest uppercase text-cyan/60 mb-4">{t("libriAperti.nuovoCapitolo")}</p>
+                <div className="space-y-3">
+                  <div>
+                    <label className="font-mono text-[9px] tracking-widest uppercase text-bone/40 block mb-1">
+                      {t("libriAperti.titoloCapitoloLabel")}
+                    </label>
+                    <input
+                      type="text"
+                      value={newChapterTitolo}
+                      onChange={e => setNewChapterTitolo(e.target.value)}
+                      placeholder={t("libriAperti.titoloCapitoloPlaceholder")}
+                      className="w-full bg-deep/40 border border-cyan/20 text-bone/80 text-sm font-serif px-4 py-2 focus:outline-none focus:border-cyan/50 placeholder:text-bone/25"
+                    />
+                  </div>
+                  <div>
+                    <textarea
+                      value={newChapterTesto}
+                      onChange={e => setNewChapterTesto(e.target.value)}
+                      placeholder={t("libriAperti.testoCapitoloPlaceholder")}
+                      rows={12}
+                      className="w-full bg-deep/40 border border-cyan/20 text-bone/80 text-sm font-serif px-4 py-3 resize-y focus:outline-none focus:border-cyan/50 placeholder:text-bone/25"
+                    />
+                  </div>
+                  {chapterError && <p className="font-mono text-[10px] text-red-400 uppercase tracking-widest">{chapterError}</p>}
+                  {chapterPublishedMsg && (
+                    <p className="font-mono text-[10px] text-cyan uppercase tracking-widest">{t("libriAperti.capitoloPubblicato")}</p>
+                  )}
+                  <button
+                    onClick={handlePublishChapter}
+                    disabled={publishingChapter || !newChapterTitolo.trim() || !newChapterTesto.trim()}
+                    className="font-mono text-[10px] tracking-widest uppercase px-5 py-2.5 border border-cyan/40 text-cyan hover:bg-cyan/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {publishingChapter ? t("libriAperti.pubblicazioneInCorso") : t("libriAperti.pubblicaCapitolo")}
+                  </button>
+                </div>
+              </div>
+
+              {/* lista capitoli pubblicati */}
+              {openChapters.length > 0 && (
+                <div className="glass border border-cyan/15 p-6">
+                  <p className="font-mono text-[10px] tracking-widest uppercase text-bone/40 mb-3">
+                    {openChapters.length} {openChapters.length === 1 ? t("libriAperti.capitoloSing") : t("libriAperti.capitoloPlur")}
+                  </p>
+                  <div className="space-y-2">
+                    {openChapters.map(c => (
+                      <div key={c.id} className="flex items-center justify-between py-2 border-b border-cyan/10 last:border-0">
+                        <span className="font-serif text-bone/70 text-sm">
+                          <span className="font-mono text-[9px] text-cyan/40 mr-2">{c.numero}.</span>
+                          {c.titolo}
+                        </span>
+                        <span className="font-mono text-[9px] text-bone/30">
+                          {new Date(c.published_at).toLocaleDateString("it-IT")}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* commenti in attesa */}
+              <div className="glass border border-cyan/15 p-6">
+                <p className="font-mono text-[10px] tracking-widest uppercase text-cyan/60 mb-4">{t("libriAperti.commentiInAttesaTitolo")}</p>
+                {pendingComments.length === 0 ? (
+                  <p className="font-mono text-[10px] tracking-widest text-bone/30 uppercase">{t("libriAperti.nessunCommentoInAttesa")}</p>
+                ) : (
+                  <div className="space-y-4">
+                    {pendingComments.map(c => (
+                      <div key={c.id} className="border border-cyan/10 p-4">
+                        <p className="font-mono text-[9px] tracking-widest text-cyan/40 uppercase mb-1">
+                          {c.commenter} · {t("libriAperti.suCapitolo")} {c.chapter_titolo}
+                        </p>
+                        <p className="text-bone/70 text-sm leading-relaxed mb-3">{c.testo}</p>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleApproveComment(c.id)}
+                            className="font-mono text-[9px] tracking-widest uppercase px-3 py-1.5 border border-cyan/40 text-cyan hover:bg-cyan/10 transition-colors"
+                          >
+                            {t("libriAperti.approva")}
+                          </button>
+                          <button
+                            onClick={() => handleRejectComment(c.id)}
+                            className="font-mono text-[9px] tracking-widest uppercase px-3 py-1.5 border border-red-400/30 text-red-400/70 hover:bg-red-400/10 transition-colors"
+                          >
+                            {t("libriAperti.rifiuta")}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* chiudi libro */}
+              <div className="glass border border-magenta/20 p-6">
+                {!confirmCloseBook ? (
+                  <button
+                    onClick={() => setConfirmCloseBook(true)}
+                    className="font-mono text-[10px] tracking-widest uppercase px-4 py-2 border border-magenta/40 text-magenta/70 hover:bg-magenta/10 transition-colors"
+                  >
+                    {t("libriAperti.chiudiLibro")}
+                  </button>
+                ) : (
+                  <div>
+                    <p className="font-mono text-[10px] tracking-widest text-bone/60 uppercase mb-4">{t("libriAperti.confermaChiudi")}</p>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={handleCloseBook}
+                        disabled={closingBook}
+                        className="font-mono text-[10px] tracking-widest uppercase px-4 py-2 border border-magenta/50 text-magenta hover:bg-magenta/10 transition-colors disabled:opacity-40"
+                      >
+                        {t("libriAperti.confermaChiudiSi")}
+                      </button>
+                      <button
+                        onClick={() => setConfirmCloseBook(false)}
+                        className="font-mono text-[10px] tracking-widest uppercase px-4 py-2 border border-cyan/20 text-bone/40 hover:border-cyan/40 transition-colors"
+                      >
+                        {t("libriAperti.confermaChiudiNo")}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

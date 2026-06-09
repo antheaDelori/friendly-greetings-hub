@@ -139,7 +139,7 @@ export const Route = createFileRoute("/leggi/$slug")({
           .from("book_access_list")
           .select("id")
           .eq("book_id", data.id)
-          .eq("email", session.user.email)
+          .eq("email", session.user.email.toLowerCase())
           .maybeSingle();
         hasAccess = !!accessRow;
       }

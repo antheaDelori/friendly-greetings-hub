@@ -127,7 +127,7 @@ function CatalogoPage() {
         const { data: accessRows } = await supabase
           .from("book_access_list")
           .select("book_id")
-          .eq("email", user.email);
+          .eq("email", user.email.toLowerCase());
         const authorizedIds = (accessRows ?? []).map((r: { book_id: string }) => r.book_id);
         if (authorizedIds.length > 0) {
           const { data: privBooks } = await supabase
