@@ -22,6 +22,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AreaAutoreRouteImport } from './routes/area-autore'
 import { Route as AbbonamentoRouteImport } from './routes/abbonamento'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LibriApertiIndexRouteImport } from './routes/libri-aperti.index'
 import { Route as AuthIndexRouteImport } from './routes/auth.index'
 import { Route as LibriApertiSlugRouteImport } from './routes/libri-aperti.$slug'
 import { Route as LeggiSlugRouteImport } from './routes/leggi.$slug'
@@ -96,6 +97,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LibriApertiIndexRoute = LibriApertiIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => LibriApertiRoute,
+} as any)
 const AuthIndexRoute = AuthIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -159,6 +165,7 @@ export interface FileRoutesByFullPath {
   '/leggi/$slug': typeof LeggiSlugRoute
   '/libri-aperti/$slug': typeof LibriApertiSlugRoute
   '/auth/': typeof AuthIndexRoute
+  '/libri-aperti/': typeof LibriApertiIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -171,7 +178,6 @@ export interface FileRoutesByTo {
   '/donazioni': typeof DonazioniRoute
   '/gestione': typeof GestioneRoute
   '/libreria': typeof LibreriaRoute
-  '/libri-aperti': typeof LibriApertiRouteWithChildren
   '/regolamento': typeof RegolamentoRoute
   '/auth/profilo-autore': typeof AuthProfiloAutoreRoute
   '/auth/registrazione': typeof AuthRegistrazioneRoute
@@ -181,6 +187,7 @@ export interface FileRoutesByTo {
   '/leggi/$slug': typeof LeggiSlugRoute
   '/libri-aperti/$slug': typeof LibriApertiSlugRoute
   '/auth': typeof AuthIndexRoute
+  '/libri-aperti': typeof LibriApertiIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -205,6 +212,7 @@ export interface FileRoutesById {
   '/leggi/$slug': typeof LeggiSlugRoute
   '/libri-aperti/$slug': typeof LibriApertiSlugRoute
   '/auth/': typeof AuthIndexRoute
+  '/libri-aperti/': typeof LibriApertiIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -230,6 +238,7 @@ export interface FileRouteTypes {
     | '/leggi/$slug'
     | '/libri-aperti/$slug'
     | '/auth/'
+    | '/libri-aperti/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -242,7 +251,6 @@ export interface FileRouteTypes {
     | '/donazioni'
     | '/gestione'
     | '/libreria'
-    | '/libri-aperti'
     | '/regolamento'
     | '/auth/profilo-autore'
     | '/auth/registrazione'
@@ -252,6 +260,7 @@ export interface FileRouteTypes {
     | '/leggi/$slug'
     | '/libri-aperti/$slug'
     | '/auth'
+    | '/libri-aperti'
   id:
     | '__root__'
     | '/'
@@ -275,6 +284,7 @@ export interface FileRouteTypes {
     | '/leggi/$slug'
     | '/libri-aperti/$slug'
     | '/auth/'
+    | '/libri-aperti/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -389,6 +399,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/libri-aperti/': {
+      id: '/libri-aperti/'
+      path: '/'
+      fullPath: '/libri-aperti/'
+      preLoaderRoute: typeof LibriApertiIndexRouteImport
+      parentRoute: typeof LibriApertiRoute
+    }
     '/auth/': {
       id: '/auth/'
       path: '/'
@@ -476,10 +493,12 @@ const CommunityRouteWithChildren = CommunityRoute._addFileChildren(
 
 interface LibriApertiRouteChildren {
   LibriApertiSlugRoute: typeof LibriApertiSlugRoute
+  LibriApertiIndexRoute: typeof LibriApertiIndexRoute
 }
 
 const LibriApertiRouteChildren: LibriApertiRouteChildren = {
   LibriApertiSlugRoute: LibriApertiSlugRoute,
+  LibriApertiIndexRoute: LibriApertiIndexRoute,
 }
 
 const LibriApertiRouteWithChildren = LibriApertiRoute._addFileChildren(
