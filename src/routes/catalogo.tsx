@@ -119,6 +119,7 @@ function CatalogoPage() {
         .select("id, slug, titolo, descrizione, genere, anno, letture, copertina_url, copertina_rotta_url, lastra_url, author_name, tag")
         .eq("disponibile", true)
         .eq("accesso", "gratuito")
+        .or("status.neq.open,status.is.null")
         .order("created_at", { ascending: false });
 
       const { data: { user } } = await supabase.auth.getUser();
@@ -135,6 +136,7 @@ function CatalogoPage() {
             .select("id, slug, titolo, descrizione, genere, anno, letture, copertina_url, copertina_rotta_url, lastra_url, author_name, tag")
             .eq("disponibile", true)
             .in("id", authorizedIds)
+            .or("status.neq.open,status.is.null")
             .order("created_at", { ascending: false });
           privateData = (privBooks ?? []) as DbBook[];
         }

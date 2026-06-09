@@ -1,4 +1,4 @@
-import { createFileRoute, Link, notFound, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, redirect, useRouter } from "@tanstack/react-router";
 import { useState, useEffect, useRef } from "react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -39,12 +39,13 @@ export const Route = createFileRoute("/leggi/$slug")({
     // Poi cerca su Supabase
     const { data } = await supabase
       .from("books")
-      .select("id, slug, titolo, descrizione, estratto, genere, fumetto_formato, anno, letture, copertina_url, copertina_flat_url, file_url, epub_url, mobi_url, author_name, author_id, cestinato, voti_cestino, recuperato, accesso")
+      .select("id, slug, titolo, descrizione, estratto, genere, fumetto_formato, anno, letture, copertina_url, copertina_flat_url, file_url, epub_url, mobi_url, author_name, author_id, cestinato, voti_cestino, recuperato, accesso, status")
       .eq("slug", params.slug)
       .or("disponibile.eq.true,cestinato.eq.true")
       .maybeSingle();
 
     if (!data) throw notFound();
+    if (data.status === "open") throw redirect({ to: "/libri-aperti/$slug", params: { slug: params.slug } });
 
     // Carica i capitoli dalla tabella capitoli
     const { data: capData } = await supabase
