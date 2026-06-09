@@ -1388,6 +1388,13 @@ function GestionePage() {
         }).select();
         if (error) throw error;
         if (!inserted || inserted.length === 0) throw new Error("Insert non ha restituito dati — possibile blocco RLS.");
+        if (selected.status === "open") {
+          fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/notify-new-chapter`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
+            body: JSON.stringify({ book_id: selected.id, book_slug: selected.slug, book_titolo: selected.titolo, chapter_numero: capOrdine, chapter_titolo: capTitolo.trim() }),
+          });
+        }
       }
       await reloadCapitoli(selected.id);
       setShowCapitoloForm(false);
