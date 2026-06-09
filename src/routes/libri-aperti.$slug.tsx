@@ -23,10 +23,10 @@ type Book = {
 
 type Chapter = {
   id: string;
-  numero: number;
+  ordine: number;
   titolo: string;
   testo: string;
-  published_at: string;
+  created_at: string | null;
 };
 
 type Comment = {
@@ -79,10 +79,10 @@ function LibroApertoPage() {
       setBook(bookData);
 
       const { data: chaptersData } = await supabase
-        .from("open_book_chapters")
-        .select("id, numero, titolo, testo, published_at")
+        .from("capitoli")
+        .select("id, ordine, titolo, testo, created_at")
         .eq("book_id", bookData.id)
-        .order("numero", { ascending: true });
+        .order("ordine", { ascending: true });
 
       setChapters(chaptersData ?? []);
 
@@ -299,12 +299,12 @@ function LibroApertoPage() {
                   >
                     <div>
                       <span className="font-mono text-[9px] tracking-widest text-cyan/50 uppercase mr-3">
-                        {t("libriAperti.capitoloSing")} {chapter.numero}
+                        {t("libriAperti.capitoloSing")} {chapter.ordine}
                       </span>
                       <span className="font-serif text-bone group-hover:text-cyan transition-colors">{chapter.titolo}</span>
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className="font-mono text-[9px] text-bone/30 hidden sm:inline">{formatDate(chapter.published_at)}</span>
+                      {chapter.created_at && <span className="font-mono text-[9px] text-bone/30 hidden sm:inline">{formatDate(chapter.created_at)}</span>}
                       <span className={`text-cyan/60 text-xs transition-transform duration-200 ${openChapterId === chapter.id ? "rotate-180" : ""}`}>▾</span>
                     </div>
                   </button>

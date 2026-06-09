@@ -47,7 +47,7 @@ function LibriApertiPage() {
       const booksWithCounts = await Promise.all(
         data.map(async (b) => {
           const { count } = await supabase
-            .from("open_book_chapters")
+            .from("capitoli")
             .select("id", { count: "exact", head: true })
             .eq("book_id", b.id);
           return { ...b, chapterCount: count ?? 0 };
