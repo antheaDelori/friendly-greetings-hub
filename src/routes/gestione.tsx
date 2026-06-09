@@ -624,6 +624,7 @@ function GestionePage() {
     setConfirmMode(null);
     setOpenSection(0);
     setShowForm(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleModifica = () => {
