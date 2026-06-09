@@ -622,7 +622,7 @@ function GestionePage() {
       });
     setSaveError(null);
     setConfirmMode(null);
-    setOpenSection(1);
+    setOpenSection(0);
     setShowForm(true);
   };
 
