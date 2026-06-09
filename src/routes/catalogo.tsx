@@ -114,12 +114,33 @@ function CatalogoPage() {
 
   useEffect(() => {
     const fetchBooks = async () => {
-      const { data } = await supabase
+      const { data: publicData } = await supabase
         .from("books")
         .select("id, slug, titolo, descrizione, genere, anno, letture, copertina_url, copertina_rotta_url, lastra_url, author_name, tag")
         .eq("disponibile", true)
+        .eq("accesso", "gratuito")
         .order("created_at", { ascending: false });
-      const raw = (data ?? []) as DbBook[];
+
+      const { data: { user } } = await supabase.auth.getUser();
+      let privateData: DbBook[] = [];
+      if (user && !user.is_anonymous && user.email) {
+        const { data: accessRows } = await supabase
+          .from("book_access_list")
+          .select("book_id")
+          .eq("email", user.email);
+        const authorizedIds = (accessRows ?? []).map((r: { book_id: string }) => r.book_id);
+        if (authorizedIds.length > 0) {
+          const { data: privBooks } = await supabase
+            .from("books")
+            .select("id, slug, titolo, descrizione, genere, anno, letture, copertina_url, copertina_rotta_url, lastra_url, author_name, tag")
+            .eq("disponibile", true)
+            .in("id", authorizedIds)
+            .order("created_at", { ascending: false });
+          privateData = (privBooks ?? []) as DbBook[];
+        }
+      }
+
+      const raw = [...(publicData ?? []), ...privateData] as DbBook[];
       setDbBooksRaw(raw);
       setDbBooks(raw.map(dbToBook));
       const tm: Record<string, string[]> = {};
