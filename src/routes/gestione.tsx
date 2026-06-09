@@ -1845,7 +1845,7 @@ function GestionePage() {
                   <div>
                     <span className={labelClass}>↳ Accesso</span>
                     <div className="mt-2 flex flex-wrap gap-2">
-                      {ACCESSI.map(a => (
+                      {ACCESSI.filter(a => a !== "premium").map(a => (
                         <button key={a} type="button" onClick={() => setAccesso(a)}
                           className={`border px-4 py-2 font-mono text-[10px] uppercase tracking-widest transition-all ${
                             accesso === a ? "border-magenta bg-magenta/15 text-magenta" : "border-cyan/30 text-bone/70 hover:border-cyan"
