@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as StatisticheRouteImport } from './routes/statistiche'
 import { Route as RegolamentoRouteImport } from './routes/regolamento'
 import { Route as LibriApertiRouteImport } from './routes/libri-aperti'
 import { Route as LibreriaRouteImport } from './routes/libreria'
@@ -20,6 +21,7 @@ import { Route as CatalogoRouteImport } from './routes/catalogo'
 import { Route as AutoriRouteImport } from './routes/autori'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AreaAutoreRouteImport } from './routes/area-autore'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AbbonamentoRouteImport } from './routes/abbonamento'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LibriApertiIndexRouteImport } from './routes/libri-aperti.index'
@@ -32,6 +34,11 @@ import { Route as CollaneSlugRouteImport } from './routes/collane.$slug'
 import { Route as AuthRegistrazioneRouteImport } from './routes/auth.registrazione'
 import { Route as AuthProfiloAutoreRouteImport } from './routes/auth.profilo-autore'
 
+const StatisticheRoute = StatisticheRouteImport.update({
+  id: '/statistiche',
+  path: '/statistiche',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RegolamentoRoute = RegolamentoRouteImport.update({
   id: '/regolamento',
   path: '/regolamento',
@@ -85,6 +92,11 @@ const AuthRoute = AuthRouteImport.update({
 const AreaAutoreRoute = AreaAutoreRouteImport.update({
   id: '/area-autore',
   path: '/area-autore',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AbbonamentoRoute = AbbonamentoRouteImport.update({
@@ -146,6 +158,7 @@ const AuthProfiloAutoreRoute = AuthProfiloAutoreRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/abbonamento': typeof AbbonamentoRoute
+  '/admin': typeof AdminRoute
   '/area-autore': typeof AreaAutoreRoute
   '/auth': typeof AuthRouteWithChildren
   '/autori': typeof AutoriRoute
@@ -157,6 +170,7 @@ export interface FileRoutesByFullPath {
   '/libreria': typeof LibreriaRoute
   '/libri-aperti': typeof LibriApertiRouteWithChildren
   '/regolamento': typeof RegolamentoRoute
+  '/statistiche': typeof StatisticheRoute
   '/auth/profilo-autore': typeof AuthProfiloAutoreRoute
   '/auth/registrazione': typeof AuthRegistrazioneRoute
   '/collane/$slug': typeof CollaneSlugRoute
@@ -170,6 +184,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/abbonamento': typeof AbbonamentoRoute
+  '/admin': typeof AdminRoute
   '/area-autore': typeof AreaAutoreRoute
   '/autori': typeof AutoriRoute
   '/catalogo': typeof CatalogoRoute
@@ -179,6 +194,7 @@ export interface FileRoutesByTo {
   '/gestione': typeof GestioneRoute
   '/libreria': typeof LibreriaRoute
   '/regolamento': typeof RegolamentoRoute
+  '/statistiche': typeof StatisticheRoute
   '/auth/profilo-autore': typeof AuthProfiloAutoreRoute
   '/auth/registrazione': typeof AuthRegistrazioneRoute
   '/collane/$slug': typeof CollaneSlugRoute
@@ -193,6 +209,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/abbonamento': typeof AbbonamentoRoute
+  '/admin': typeof AdminRoute
   '/area-autore': typeof AreaAutoreRoute
   '/auth': typeof AuthRouteWithChildren
   '/autori': typeof AutoriRoute
@@ -204,6 +221,7 @@ export interface FileRoutesById {
   '/libreria': typeof LibreriaRoute
   '/libri-aperti': typeof LibriApertiRouteWithChildren
   '/regolamento': typeof RegolamentoRoute
+  '/statistiche': typeof StatisticheRoute
   '/auth/profilo-autore': typeof AuthProfiloAutoreRoute
   '/auth/registrazione': typeof AuthRegistrazioneRoute
   '/collane/$slug': typeof CollaneSlugRoute
@@ -219,6 +237,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/abbonamento'
+    | '/admin'
     | '/area-autore'
     | '/auth'
     | '/autori'
@@ -230,6 +249,7 @@ export interface FileRouteTypes {
     | '/libreria'
     | '/libri-aperti'
     | '/regolamento'
+    | '/statistiche'
     | '/auth/profilo-autore'
     | '/auth/registrazione'
     | '/collane/$slug'
@@ -243,6 +263,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/abbonamento'
+    | '/admin'
     | '/area-autore'
     | '/autori'
     | '/catalogo'
@@ -252,6 +273,7 @@ export interface FileRouteTypes {
     | '/gestione'
     | '/libreria'
     | '/regolamento'
+    | '/statistiche'
     | '/auth/profilo-autore'
     | '/auth/registrazione'
     | '/collane/$slug'
@@ -265,6 +287,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/abbonamento'
+    | '/admin'
     | '/area-autore'
     | '/auth'
     | '/autori'
@@ -276,6 +299,7 @@ export interface FileRouteTypes {
     | '/libreria'
     | '/libri-aperti'
     | '/regolamento'
+    | '/statistiche'
     | '/auth/profilo-autore'
     | '/auth/registrazione'
     | '/collane/$slug'
@@ -290,6 +314,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AbbonamentoRoute: typeof AbbonamentoRoute
+  AdminRoute: typeof AdminRoute
   AreaAutoreRoute: typeof AreaAutoreRoute
   AuthRoute: typeof AuthRouteWithChildren
   AutoriRoute: typeof AutoriRoute
@@ -301,6 +326,7 @@ export interface RootRouteChildren {
   LibreriaRoute: typeof LibreriaRoute
   LibriApertiRoute: typeof LibriApertiRouteWithChildren
   RegolamentoRoute: typeof RegolamentoRoute
+  StatisticheRoute: typeof StatisticheRoute
   CollaneSlugRoute: typeof CollaneSlugRoute
   DownloadSlugRoute: typeof DownloadSlugRoute
   LeggiSlugRoute: typeof LeggiSlugRoute
@@ -308,6 +334,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/statistiche': {
+      id: '/statistiche'
+      path: '/statistiche'
+      fullPath: '/statistiche'
+      preLoaderRoute: typeof StatisticheRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/regolamento': {
       id: '/regolamento'
       path: '/regolamento'
@@ -383,6 +416,13 @@ declare module '@tanstack/react-router' {
       path: '/area-autore'
       fullPath: '/area-autore'
       preLoaderRoute: typeof AreaAutoreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/abbonamento': {
@@ -508,6 +548,7 @@ const LibriApertiRouteWithChildren = LibriApertiRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AbbonamentoRoute: AbbonamentoRoute,
+  AdminRoute: AdminRoute,
   AreaAutoreRoute: AreaAutoreRoute,
   AuthRoute: AuthRouteWithChildren,
   AutoriRoute: AutoriRoute,
@@ -519,6 +560,7 @@ const rootRouteChildren: RootRouteChildren = {
   LibreriaRoute: LibreriaRoute,
   LibriApertiRoute: LibriApertiRouteWithChildren,
   RegolamentoRoute: RegolamentoRoute,
+  StatisticheRoute: StatisticheRoute,
   CollaneSlugRoute: CollaneSlugRoute,
   DownloadSlugRoute: DownloadSlugRoute,
   LeggiSlugRoute: LeggiSlugRoute,

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
-type Pagina = { id: string; ordine: number; image_url: string };
-type Formato = "a4v" | "a4h" | "manga";
+type Pagina = { id: string; ordine: number; image_url: string; testo?: string | null };
+type Formato = "a4v" | "a4h" | "manga" | "illustrato";
 
 export function ComicViewer({ pagine, formato = "a4v" }: {
   pagine: Pagina[];
@@ -16,6 +16,7 @@ export function ComicViewer({ pagine, formato = "a4v" }: {
   const total = pagine.length;
   const isManga = formato === "manga";
   const isLandscape = formato === "a4h";
+  const isIllustrato = formato === "illustrato";
 
   const prev = useCallback(() => setCurrent(c => Math.max(0, c - 1)), []);
   const next = useCallback(() => setCurrent(c => Math.min(total - 1, c + 1)), [total]);
@@ -56,6 +57,48 @@ export function ComicViewer({ pagine, formato = "a4v" }: {
 
   const imgMaxHeight = fullscreen ? "calc(100dvh - 100px)" : "calc(100dvh - 250px)";
 
+  // Layout illustrato: due colonne testo + immagine
+  if (isIllustrato) {
+    return (
+      <div className="flex flex-col select-none pb-4 gap-4">
+        {/* Navigazione */}
+        <div className="flex items-center justify-between gap-3">
+          <button onClick={prev} disabled={current === 0}
+            className="font-mono text-[10px] uppercase tracking-widest border border-ink/20 px-4 py-2 text-ink/50 hover:border-ink/60 hover:text-ink/80 transition-colors disabled:opacity-20 disabled:cursor-not-allowed">
+            ← Prec
+          </button>
+          <span className="font-mono text-[10px] tracking-[0.3em] text-ink/40 uppercase">{current + 1} / {total}</span>
+          <button onClick={next} disabled={current === total - 1}
+            className="font-mono text-[10px] uppercase tracking-widest border border-ink/20 px-4 py-2 text-ink/50 hover:border-ink/60 hover:text-ink/80 transition-colors disabled:opacity-20 disabled:cursor-not-allowed">
+            Succ →
+          </button>
+        </div>
+
+        {/* Due colonne */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+          {/* Testo */}
+          <div className="font-serif text-ink/85 leading-relaxed text-base md:text-lg whitespace-pre-wrap order-2 md:order-1">
+            {page.testo || <span className="italic text-ink/30">Nessun testo per questa pagina.</span>}
+          </div>
+          {/* Immagine */}
+          <div className="order-1 md:order-2">
+            <img src={imgUrl} alt={`Pagina ${current + 1}`}
+              className="w-full object-contain border border-ink/10"
+              draggable={false} />
+          </div>
+        </div>
+
+        {/* Miniature */}
+        <div className="flex gap-1.5 justify-center overflow-x-auto py-1">
+          {orderedPagine.map((p, i) => (
+            <button key={p.id} onClick={() => setCurrent(i)}
+              className={`w-8 h-1.5 flex-shrink-0 transition-colors ${i === current ? "bg-ink/80" : "bg-ink/15 hover:bg-ink/40"}`} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   const containerClass = fullscreen
     ? "fixed inset-0 z-50 bg-void flex flex-col select-none px-4 py-3 gap-3"
     : "flex flex-col select-none pt-0 pb-4 px-2 gap-3";
@@ -76,7 +119,7 @@ export function ComicViewer({ pagine, formato = "a4v" }: {
         <div className="flex items-center gap-3 min-w-0">
           <div className="flex flex-col items-center gap-1">
             <span className="font-mono text-[9px] tracking-widest text-ink/25 uppercase border border-ink/15 px-2 py-0.5 whitespace-nowrap">
-              {formato === "a4v" ? "A4 verticale" : formato === "a4h" ? "A4 orizzontale" : "Manga"}
+              {formato === "a4v" ? "A4 verticale" : formato === "a4h" ? "A4 orizzontale" : formato === "manga" ? "Manga" : "Illustrato"}
               {isManga && " · ←"}
             </span>
             <span className="font-mono text-[10px] tracking-[0.3em] text-ink/40 uppercase">

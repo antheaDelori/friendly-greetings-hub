@@ -185,7 +185,7 @@ function CommunityPage() {
       .eq("blocked", false)
       .order("created_at", { ascending: false })
       .limit(10);
-    if (data) setReviewsList(data as ReviewRow[]);
+    if (data) setReviewsList(data as unknown as ReviewRow[]);
   };
 
   useEffect(() => {

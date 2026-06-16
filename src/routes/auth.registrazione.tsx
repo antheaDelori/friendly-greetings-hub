@@ -1,5 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,7 +8,10 @@ import { HudPanel, PageShell, HudButton } from "@/components/HudPanel";
 import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/auth/registrazione")({
-  validateSearch: z.object({ autore: z.coerce.boolean().optional() }),
+  validateSearch: z.object({
+    autore: z.coerce.boolean().optional(),
+    modifica: z.coerce.boolean().optional(),
+  }),
   head: () => ({
     meta: [
       { title: "Registrazione — Liberiamo la mente" },
@@ -18,7 +21,7 @@ export const Route = createFileRoute("/auth/registrazione")({
   component: RegistrazionePage,
 });
 
-const schema = z.object({
+const registraSchema = z.object({
   nome: z.string().min(2, "Inserisci il nome (min. 2 caratteri)"),
   cognome: z.string().min(2, "Inserisci il cognome (min. 2 caratteri)"),
   email: z.string().email("Email non valida"),
@@ -31,14 +34,32 @@ const schema = z.object({
   data_nascita: z.string().optional(),
   avatar_url: z.string().url("Inserisci un URL valido").optional().or(z.literal("")),
 }).refine((d) => d.email === d.email_conferma, {
-  message: "Le email non coincidono",
-  path: ["email_conferma"],
+  message: "Le email non coincidono", path: ["email_conferma"],
 }).refine((d) => d.password === d.password_conferma, {
-  message: "Le password non coincidono",
-  path: ["password_conferma"],
+  message: "Le password non coincidono", path: ["password_conferma"],
 });
 
-type FormData = z.infer<typeof schema>;
+const modificaSchema = z.object({
+  nome: z.string().min(2, "Inserisci il nome (min. 2 caratteri)"),
+  cognome: z.string().min(2, "Inserisci il cognome (min. 2 caratteri)"),
+  email: z.string().email("Email non valida"),
+  email_conferma: z.string().optional(),
+  password: z.string().min(8, "Password di almeno 8 caratteri").optional().or(z.literal("")),
+  password_conferma: z.string().optional(),
+  telefono: z.string().optional(),
+  pseudonimo: z.string().optional(),
+  indirizzo: z.string().optional(),
+  data_nascita: z.string().optional(),
+  avatar_url: z.string().url("Inserisci un URL valido").optional().or(z.literal("")),
+}).refine((d) => !d.password || d.password === d.password_conferma, {
+  message: "Le password non coincidono", path: ["password_conferma"],
+});
+
+type FormData = {
+  nome: string; cognome: string; email: string; email_conferma?: string;
+  password?: string; password_conferma?: string; telefono?: string;
+  pseudonimo?: string; indirizzo?: string; data_nascita?: string; avatar_url?: string;
+};
 
 function HudField({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
   return (
@@ -54,26 +75,50 @@ const inputClass = "mt-2 w-full bg-void/40 border border-cyan/30 px-4 py-3 font-
 
 function RegistrazionePage() {
   const { t, i18n } = useTranslation();
-  const { autore } = Route.useSearch();
+  const { autore, modifica } = Route.useSearch();
+  const navigate = useNavigate();
   const [serverError, setServerError] = useState<string | null>(null);
   const [emailInviata, setEmailInviata] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [aggiornato, setAggiornato] = useState(false);
+  const [originalEmail, setOriginalEmail] = useState("");
 
-  const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
-    resolver: zodResolver(schema),
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
+    resolver: zodResolver(modifica ? modificaSchema : registraSchema) as any,
   });
+
+  useEffect(() => {
+    if (!modifica) return;
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) { navigate({ to: "/auth" }); return; }
+      const m = user.user_metadata ?? {};
+      setOriginalEmail(user.email ?? "");
+      reset({
+        nome: m.nome ?? "",
+        cognome: m.cognome ?? "",
+        email: user.email ?? "",
+        pseudonimo: m.pseudonimo ?? "",
+        telefono: m.telefono ?? "",
+        data_nascita: m.data_nascita ?? "",
+        indirizzo: m.indirizzo ?? "",
+        avatar_url: m.avatar_url ?? "",
+        password: "",
+        password_conferma: "",
+      });
+    });
+  }, [modifica]);
 
   const onSubmit = async (data: FormData) => {
     setServerError(null);
     setLoading(true);
     try {
-      const timeout = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Timeout: riprova tra qualche minuto con la stessa email.")), 15000)
-      );
-      const result = await Promise.race([supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        options: {
+      if (modifica) {
+        if (data.email !== originalEmail && data.email_conferma !== data.email) {
+          setServerError("Le email non coincidono — conferma la nuova email.");
+          setLoading(false);
+          return;
+        }
+        const updatePayload: Parameters<typeof supabase.auth.updateUser>[0] = {
           data: {
             nome: data.nome,
             cognome: data.cognome,
@@ -82,22 +127,67 @@ function RegistrazionePage() {
             indirizzo: data.indirizzo ?? null,
             data_nascita: data.data_nascita ?? null,
             avatar_url: data.avatar_url || null,
-            lingua: i18n.language ?? "it",
           },
-        },
-      }), timeout]);
-      if (result.error) {
-        setServerError(result.error.message);
-        return;
+        };
+        if (data.email) updatePayload.email = data.email;
+        if (data.password) updatePayload.password = data.password;
+
+        const { error } = await supabase.auth.updateUser(updatePayload);
+        if (error) { setServerError(error.message); return; }
+
+        await supabase.from("profiles").update({
+          nome: data.nome,
+          cognome: data.cognome,
+          pseudonimo: data.pseudonimo ?? null,
+        }).eq("id", (await supabase.auth.getUser()).data.user!.id);
+
+        setAggiornato(true);
+      } else {
+        const timeout = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Timeout: riprova tra qualche minuto con la stessa email.")), 15000)
+        );
+        const result = await Promise.race([supabase.auth.signUp({
+          email: data.email!,
+          password: data.password!,
+          options: {
+            data: {
+              nome: data.nome,
+              cognome: data.cognome,
+              telefono: data.telefono ?? null,
+              pseudonimo: data.pseudonimo ?? null,
+              indirizzo: data.indirizzo ?? null,
+              data_nascita: data.data_nascita ?? null,
+              avatar_url: data.avatar_url || null,
+              lingua: i18n.language ?? "it",
+            },
+          },
+        }), timeout]);
+        if (result.error) { setServerError(result.error.message); return; }
+        setEmailInviata(data.email!);
       }
-      setEmailInviata(data.email);
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Errore di connessione. Riprova.";
-      setServerError(msg);
+      setServerError(e instanceof Error ? e.message : "Errore di connessione. Riprova.");
     } finally {
       setLoading(false);
     }
   };
+
+  if (aggiornato) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-void/90 backdrop-blur-sm px-4">
+        <div className="glass hud-frame max-w-lg w-full p-10 text-center fade-up">
+          <div className="font-mono text-[10px] tracking-[0.35em] text-cyan uppercase mb-6">// profilo_aggiornato</div>
+          <div className="font-display text-4xl text-bone">Profilo aggiornato.</div>
+          <p className="mt-4 font-serif italic text-bone/60">Le modifiche sono state salvate.</p>
+          <div className="mt-8 flex gap-3 justify-center">
+            <Link to="/libreria">
+              <HudButton variant="primary">▸ Torna alla libreria</HudButton>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (emailInviata) {
     return (
@@ -130,9 +220,7 @@ function RegistrazionePage() {
             </div>
           )}
           <div className="mt-6 border-t border-cyan/10 pt-6 space-y-2">
-            <p className="font-mono text-[10px] tracking-widest text-bone/40 uppercase">
-              Non trovi l'email? Cerca nello spam:
-            </p>
+            <p className="font-mono text-[10px] tracking-widest text-bone/40 uppercase">Non trovi l'email? Cerca nello spam:</p>
             <p className="font-mono text-[11px] text-cyan/70 border border-cyan/20 bg-cyan/5 px-4 py-2 inline-block">
               liberiamo2076.com — Attiva il tuo account
             </p>
@@ -143,11 +231,15 @@ function RegistrazionePage() {
   }
 
   return (
-    <PageShell code="// AUTH/REGISTER.form" title={t("registrazione.pageTitle")} subtitle={t("registrazione.pageSubtitle")}>
+    <PageShell
+      code={modifica ? "// AUTH/PROFILE.edit" : "// AUTH/REGISTER.form"}
+      title={modifica ? "Il tuo profilo" : t("registrazione.pageTitle")}
+      subtitle={modifica ? "Modifica i tuoi dati. I campi password sono opzionali — lasciali vuoti per non cambiarla." : t("registrazione.pageSubtitle")}
+    >
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="grid lg:grid-cols-[1fr_360px] gap-6">
 
-          <HudPanel label="dati_principali" code="REQ ★">
+          <HudPanel label="dati_principali" code={modifica ? "EDIT" : "REQ ★"}>
             <div className="space-y-5">
               <div className="grid sm:grid-cols-2 gap-5">
                 <HudField label={t("registrazione.fNome")} error={errors.nome?.message}>
@@ -159,16 +251,16 @@ function RegistrazionePage() {
               </div>
 
               <div className="border border-cyan/20 bg-cyan/5 p-5 space-y-5">
-                <div className="font-mono text-[10px] tracking-[0.3em] text-cyan uppercase">// conferma_credenziali</div>
+                <div className="font-mono text-[10px] tracking-[0.3em] text-cyan uppercase">// credenziali_accesso</div>
                 <div className="grid sm:grid-cols-2 gap-5">
                   <HudField label={t("registrazione.fEmail")} error={errors.email?.message}>
                     <input {...register("email")} type="email" placeholder={t("registrazione.phEmail")} className={inputClass} />
                   </HudField>
-                  <HudField label={t("registrazione.fEmailConferma")} error={errors.email_conferma?.message}>
-                    <input {...register("email_conferma")} type="email" placeholder={t("registrazione.phEmailConferma")} className={inputClass} />
+                  <HudField label={modifica ? "conferma nuova email" : t("registrazione.fEmailConferma")} error={errors.email_conferma?.message}>
+                    <input {...register("email_conferma")} type="email" placeholder={modifica ? "ripeti solo se la cambi" : t("registrazione.phEmailConferma")} className={inputClass} />
                   </HudField>
-                  <HudField label={t("registrazione.fPassword")} error={errors.password?.message}>
-                    <input {...register("password")} type="password" placeholder={t("registrazione.phPassword")} className={inputClass} />
+                  <HudField label={modifica ? "nuova password (opzionale)" : t("registrazione.fPassword")} error={errors.password?.message}>
+                    <input {...register("password")} type="password" placeholder={modifica ? "lascia vuoto per non cambiare" : t("registrazione.phPassword")} className={inputClass} />
                   </HudField>
                   <HudField label={t("registrazione.fPasswordConferma")} error={errors.password_conferma?.message}>
                     <input {...register("password_conferma")} type="password" placeholder={t("registrazione.phPasswordConferma")} className={inputClass} />
@@ -184,16 +276,25 @@ function RegistrazionePage() {
 
               <div className="flex flex-wrap gap-3 items-center pt-2">
                 <HudButton type="submit" variant="primary" disabled={loading}>
-                  {loading ? `▸ ${t("registrazione.invioLoading")}` : `▸ ${t("registrazione.invioBtn")}`}
+                  {loading
+                    ? "▸ Salvataggio..."
+                    : modifica
+                      ? "▸ Aggiorna profilo"
+                      : `▸ ${t("registrazione.invioBtn")}`
+                  }
                 </HudButton>
-                <Link to="/auth" className="font-mono text-[10px] tracking-widest uppercase text-bone/60 hover:text-cyan transition-colors">
+                <Link to={modifica ? "/libreria" : "/auth"} className="font-mono text-[10px] tracking-widest uppercase text-bone/60 hover:text-cyan transition-colors">
                   {t("registrazione.annulla")}
                 </Link>
               </div>
-              <div className="hud-divider mt-4" />
-              <p className="font-mono text-[10px] tracking-widest text-bone uppercase">
-                {t("registrazione.emailConfermaNote")}
-              </p>
+              {!modifica && (
+                <>
+                  <div className="hud-divider mt-4" />
+                  <p className="font-mono text-[10px] tracking-widest text-bone uppercase">
+                    {t("registrazione.emailConfermaNote")}
+                  </p>
+                </>
+              )}
             </div>
           </HudPanel>
 

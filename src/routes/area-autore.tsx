@@ -417,6 +417,7 @@ function AreaAutorePage() {
                       { g: "novelle", label: "Novelle" },
                       { g: "poesia", label: "Poesie" },
                       { g: "fumetto", label: "Fumetti" },
+                      { g: "illustrato", label: "Illustrati" },
                     ] as { g: string; label: string; tooltip?: string }[]).map(({ g, label, tooltip }) => {
                       const n = bookStats.perGenere[g] ?? 0;
                       return (
@@ -449,9 +450,14 @@ function AreaAutorePage() {
               )}
             </div>
             <div className="hud-divider my-5" />
-            <Link to="/gestione">
-              <HudButton variant="primary" className="w-full">▸ Gestisci opere</HudButton>
-            </Link>
+            <div className="flex flex-col gap-2">
+              <Link to="/gestione">
+                <HudButton variant="primary" className="w-full">▸ Gestisci opere</HudButton>
+              </Link>
+              <Link to="/statistiche">
+                <HudButton variant="ghost" className="w-full">◆ Statistiche dettagliate</HudButton>
+              </Link>
+            </div>
           </HudPanel>
 
           {/* Profilo autore */}

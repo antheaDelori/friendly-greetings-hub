@@ -37,11 +37,12 @@ function Abbonamento() {
           </section>
 
           <section>
-            <h2 className="font-display tracking-widest text-xs text-blood uppercase mb-4">— Cosa ottieni (gratis)</h2>
+            <h2 className="font-display tracking-widest text-xs text-blood uppercase mb-4">— Cosa ottieni</h2>
             <ul className="space-y-2">
               {[
                 "Download in PDF, ePub e MOBI per i tuoi lettori",
-                "Donazioni dirette dai lettori senza intermediari",
+                "Generazione copertina con AI",
+                "Area autore con statistiche di lettura",
               ].map(v => (
                 <li key={v} className="flex items-start gap-2 font-serif text-sm text-ink/70">
                   <span className="text-blood mt-0.5 shrink-0">◆</span>{v}
@@ -58,7 +59,7 @@ function Abbonamento() {
             <ul className="space-y-3">
               {[
                 { label: "Server e database", desc: "Ogni opera pubblicata occupa spazio: testo, copertina, file PDF e ePub. Il database che tiene traccia di lettori, recensioni e segnalibri gira su infrastruttura professionale che costa ogni mese, indipendentemente dal traffico." },
-                { label: "Generazione copertine con AI", desc: "Offriamo la possibilità di generare copertine professionali tramite intelligenza artificiale. Ogni generazione ha un costo reale: paghiamo i modelli di immagine per ogni copertina creata." },
+                { label: "Generazione copertina con AI", desc: "Offriamo la possibilità di generare una copertina professionale tramite intelligenza artificiale. Ogni generazione ha un costo reale: paghiamo i modelli di immagine per ogni copertina creata." },
                 { label: "Email e notifiche", desc: "Quando un lettore ti segue, quando qualcuno recensisce la tua opera, quando mandi una newsletter ai tuoi lettori — ogni messaggio ha un costo di infrastruttura." },
                 { label: "Conversione formati", desc: "Trasformare il tuo testo in PDF, ePub e MOBI compatibili con tutti i dispositivi richiede servizi specializzati che addebitiamo a consumo." },
               ].map(item => (
@@ -82,8 +83,7 @@ function Abbonamento() {
             <ul className="space-y-2">
               {[
                 "Pubblicazioni illimitate",
-                "Generazione copertine con AI",
-                "Area autore con statistiche",
+                "Donazioni dirette dai lettori senza intermediari",
                 "Newsletter diretta ai tuoi lettori",
               ].map(v => (
                 <li key={v} className="flex items-start gap-2 font-serif text-sm text-ink/70">

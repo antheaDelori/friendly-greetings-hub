@@ -39,6 +39,8 @@ const GENERI = [
   { value: "articolo",   label: "Articoli",   code: "SHELF_04" },
   { value: "novelle", label: "Novelle", code: "SHELF_05" },
   { value: "poesia",     label: "Poesie",     code: "SHELF_06" },
+  { value: "fumetto",   label: "Fumetti",    code: "SHELF_07" },
+  { value: "illustrato", label: "Illustrati", code: "SHELF_08" },
 ] as const;
 
 export const Route = createFileRoute("/libreria")({
@@ -154,6 +156,22 @@ function LibreriaPage() {
         code="// LA_MIA_LIBRERIA"
         title="La mia libreria"
         subtitle={loading ? "" : total === 0 ? "I tuoi scaffali personali." : `${total} ${total === 1 ? "opera" : "opere"} nei tuoi scaffali.`}
+        note={
+          <div className="space-y-1">
+            <p className="font-serif italic text-bone/45 text-base">
+              Hai bisogno di modificare le tue credenziali?{" "}
+              <Link to="/auth/registrazione" search={{ modifica: true }} className="text-cyan hover:text-cyan/80 underline underline-offset-2 transition-colors">
+                Aggiorna profilo
+              </Link>
+            </p>
+            <p className="font-serif italic text-bone/45 text-base">
+              Hai mai pensato di proporre qui una tua opera?{" "}
+              <Link to="/auth/profilo-autore" className="text-cyan hover:text-cyan/80 underline underline-offset-2 transition-colors">
+                Diventa autore
+              </Link>
+            </p>
+          </div>
+        }
       >
         {loading ? (
           <p className="font-mono text-cyan text-sm animate-pulse">▸ caricamento scaffali...</p>

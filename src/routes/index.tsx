@@ -15,7 +15,7 @@ const FEATURED_GENRES: Genre[] = ["libro", "racconto", "saggio", "poesia"];
 function pickFeatured(all: Book[]): Book[] {
   const byGenre: Partial<Record<Genre, Book[]>> = {};
   for (const b of all) {
-    (byGenre[b.genre] ??= []).push(b);
+    (byGenre[b.genere] ??= []).push(b);
   }
   const result: Book[] = [];
   let round = 0;

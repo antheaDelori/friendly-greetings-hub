@@ -88,8 +88,8 @@ export const Route = createFileRoute("/leggi/$slug")({
       .eq("book_id", data.id)
       .order("ordine");
 
-    const { data: fumettoPagineData } = data.genere === "fumetto"
-      ? await supabase.from("fumetti_pagine").select("id, ordine, image_url").eq("book_id", data.id).order("ordine")
+    const { data: fumettoPagineData } = (data.genere === "fumetto" || data.genere === "illustrato")
+      ? await supabase.from("fumetti_pagine").select("id, ordine, image_url, testo").eq("book_id", data.id).order("ordine")
       : { data: [] };
 
     let donationUrl: string | null = null;
@@ -180,8 +180,8 @@ export const Route = createFileRoute("/leggi/$slug")({
       hasAccess,
       bookAccesso,
       authorBio,
-      fumettoPagine: (fumettoPagineData ?? []) as { id: string; ordine: number; image_url: string }[],
-      fumettoFormato: (data.fumetto_formato ?? "a4v") as "a4v" | "a4h" | "manga",
+      fumettoPagine: (fumettoPagineData ?? []) as { id: string; ordine: number; image_url: string; testo?: string | null }[],
+      fumettoFormato: (data.fumetto_formato ?? "a4v") as "a4v" | "a4h" | "manga" | "illustrato",
     };
   },
   head: ({ loaderData }) => ({
@@ -729,12 +729,7 @@ function ReadPage() {
               <span className="text-sm leading-none">↓</span>
               <span>PDF</span>
             </Link>
-          ) : (
-            <span className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink/20 text-ink/30 px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase cursor-not-allowed">
-              <span className="text-sm leading-none">↓</span>
-              <span>N/D</span>
-            </span>
-          )}
+          ) : null}
           {epubUrl && (isLoggedIn && !isAnonymous ? (
             <button
               onClick={handleDownloadEpub}
@@ -1140,7 +1135,7 @@ function ReadPage() {
                 ← Torna al catalogo
               </button>
             </div>
-          ) : book.genere === "fumetto" && fumettoPagine.length > 0 ? (
+          ) : (book.genere === "fumetto" || book.genere === "illustrato") && fumettoPagine.length > 0 ? (
             <ComicViewer pagine={fumettoPagine} formato={fumettoFormato} />
           ) : chapter ? (
             <>

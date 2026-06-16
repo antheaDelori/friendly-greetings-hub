@@ -79,13 +79,14 @@ type Book = {
   status: string;
 };
 
-const GENERI = ["libro", "racconto", "saggio", "articolo", "novelle", "poesia", "fumetto"] as const;
+const GENERI = ["libro", "racconto", "saggio", "articolo", "novelle", "poesia", "fumetto", "illustrato"] as const;
 const GENERE_LABELS: Record<string, string> = {
   libro: "Libro", racconto: "Racconto", saggio: "Saggio", articolo: "Articolo",
-  novelle: "Novelle", poesia: "Poesia", fumetto: "Fumetto",
+  novelle: "Novelle", poesia: "Poesia", fumetto: "Fumetto", illustrato: "Illustrato",
 };
 const GENERE_TOOLTIP: Record<string, string> = {
   novelle: "Racconti brevi",
+  illustrato: "Cucina · Fotografia · Nature writing · Arte · Manualistica",
 };
 const ACCESSI = ["gratuito", "premium", "riservato"] as const;
 const TARGET = ["tutti", "bambini (0–8)", "ragazzi (9–12)", "adolescenti (13–17)", "adulti (18+)"] as const;
@@ -143,6 +144,8 @@ function GestionePage() {
   const [books, setBooks] = useState<Book[]>([]);
   const [selected, setSelected] = useState<Book | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [showAbbonatoGate, setShowAbbonatoGate] = useState(false);
+  const [maxOpere, setMaxOpere] = useState(1);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -151,6 +154,9 @@ function GestionePage() {
   const [savingMateriali, setSavingMateriali] = useState(false);
   const [saveMaterialiError, setSaveMaterialiError] = useState<string | null>(null);
   const [authorName, setAuthorName] = useState("");
+  const [paypalUrl, setPaypalUrl] = useState("");
+  const [savingPaypal, setSavingPaypal] = useState(false);
+  const [paypalSaved, setPaypalSaved] = useState(false);
 
   // Collane
   const [collane, setCollane] = useState<Collana[]>([]);
@@ -307,9 +313,13 @@ function GestionePage() {
   const [newsletterResult, setNewsletterResult] = useState<{ sent: number } | { error: string } | null>(null);
 
   // Fumetti — pagine
-  const [fumettoPagine, setFumettoPagine] = useState<{ id: string; ordine: number; image_url: string }[]>([]);
+  const [fumettoPagine, setFumettoPagine] = useState<{ id: string; ordine: number; image_url: string; testo?: string | null }[]>([]);
+  const [illustratoTexts, setIllustratoTexts] = useState<Record<string, string>>({});
   const [fumettoUploading, setFumettoUploading] = useState(false);
   const [fumettoFormato, setFumettoFormato] = useState<"a4v" | "a4h" | "manga">("a4v");
+  const [generatingIllustratoPdf, setGeneratingIllustratoPdf] = useState(false);
+  const [illustratoPdfOk, setIllustratoPdfOk] = useState(false);
+  const [illustratoPdfError, setIllustratoPdfError] = useState<string | null>(null);
 
   // Moderazione
   const [flaggedReviews, setFlaggedReviews] = useState<{
@@ -331,13 +341,22 @@ function GestionePage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { window.location.replace("/auth"); return; }
       setUserId(user.id);
-      setIsAdmin(user.email?.toLowerCase() === "antheadelori@live.it");
+      const adminEmail = user.email?.toLowerCase() === "antheadelori@live.it";
+      setIsAdmin(adminEmail);
 
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("pseudonimo, nome, cognome")
+        .select("pseudonimo, nome, cognome, max_opere, paypal_url, is_author")
         .eq("id", user.id)
         .single();
+
+      if (!adminEmail && !profileData?.is_author) {
+        window.location.replace("/auth/profilo-autore");
+        return;
+      }
+
+      setMaxOpere(adminEmail ? 999 : (profileData?.max_opere ?? 1));
+      setPaypalUrl(profileData?.paypal_url ?? "");
       const name =
         [profileData?.nome, profileData?.cognome].filter(Boolean).join(" ") ||
         profileData?.pseudonimo ||
@@ -353,7 +372,7 @@ function GestionePage() {
       await loadBooks(user.id);
       await loadCollane(user.id);
       await loadFollowers(user.id);
-      await loadFlaggedReviews();
+      await loadFlaggedReviews(user.id, adminEmail);
       setLoading(false);
     };
     init();
@@ -445,14 +464,29 @@ function GestionePage() {
   };
 
   const handleNewBook = () => {
+    if (books.length >= maxOpere) {
+      setShowAbbonatoGate(true);
+      setShowForm(false);
+      setSelected(null);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
     resetForm();
     if (filterGenere) setGenere(filterGenere);
     setSelected(null);
+    setShowAbbonatoGate(false);
     setOpenSection(1);
     setShowForm(true);
   };
 
   const handleNewBookInCollana = (cId: string) => {
+    if (books.length >= maxOpere) {
+      setShowAbbonatoGate(true);
+      setShowForm(false);
+      setSelected(null);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
     resetForm();
     setCollanaId(cId);
     setGenere("novelle");
@@ -460,6 +494,7 @@ function GestionePage() {
     setSelectedCollana(null);
     setShowCollanaForm(false);
     setShowCollanaList(false);
+    setShowAbbonatoGate(false);
     setOpenSection(1);
     setShowForm(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -513,7 +548,7 @@ function GestionePage() {
     setShowForm(false);
     setEditingId(null);
     setConfirmMode(null);
-    if (b.genere === "fumetto") loadFumettoPagine(b.id);
+    if (b.genere === "fumetto" || b.genere === "illustrato") loadFumettoPagine(b.id);
     else setFumettoPagine([]);
   };
 
@@ -900,7 +935,7 @@ function GestionePage() {
           titolo: titolo.trim(),
           sottotitolo: sottotitolo.trim() || null,
           genere,
-          fumetto_formato: genere === "fumetto" ? fumettoFormato : null,
+          fumetto_formato: genere === "fumetto" ? fumettoFormato : genere === "illustrato" ? "illustrato" : null,
           tipo: tipo === ALTRO_TIPO ? (tipoAltro.trim() || null) : (tipo || null),
           target: target || null,
           isbn: isbn.trim() || null,
@@ -926,7 +961,7 @@ function GestionePage() {
           titolo: titolo.trim(),
           sottotitolo: sottotitolo.trim() || null,
           genere,
-          fumetto_formato: genere === "fumetto" ? fumettoFormato : null,
+          fumetto_formato: genere === "fumetto" ? fumettoFormato : genere === "illustrato" ? "illustrato" : null,
           tipo: tipo === ALTRO_TIPO ? (tipoAltro.trim() || null) : (tipo || null),
           target: target || null,
           isbn: isbn.trim() || null,
@@ -965,6 +1000,7 @@ function GestionePage() {
         const { data: nb } = await supabase.from("books").select("*").eq("id", newBookId).single();
         if (nb) setSelected(nb as Book);
         setOpenSection(2);
+        window.scrollTo({ top: 0, behavior: "smooth" });
       } else if (editingId) {
         // Aggiornamento → chiudi tutti i box e lampeggia CHIUDI
         setOpenSection(0);
@@ -1156,18 +1192,28 @@ function GestionePage() {
     setFollowers(data ?? []);
   };
 
-  const loadFlaggedReviews = async () => {
-    const { data } = await supabase
+  const loadFlaggedReviews = async (uid: string, isAdminUser: boolean) => {
+    let query = supabase
       .from("recensioni")
       .select("id, nome_display, testo, stelle, created_at, flagged, blocked, flag_reason, books(titolo, slug)")
       .or("flagged.eq.true,blocked.eq.true")
       .order("created_at", { ascending: false });
-    setFlaggedReviews((data ?? []) as typeof flaggedReviews);
+
+    if (!isAdminUser) {
+      const { data: ownBooks } = await supabase.from("books").select("id").eq("author_id", uid);
+      query = query.in("book_id", (ownBooks ?? []).map(b => b.id));
+    }
+
+    const { data } = await query;
+    setFlaggedReviews((data ?? []) as unknown as typeof flaggedReviews);
   };
 
   const loadFumettoPagine = async (bookId: string) => {
-    const { data } = await supabase.from("fumetti_pagine").select("id, ordine, image_url").eq("book_id", bookId).order("ordine");
+    const { data } = await supabase.from("fumetti_pagine").select("id, ordine, image_url, testo").eq("book_id", bookId).order("ordine");
     setFumettoPagine(data ?? []);
+    const texts: Record<string, string> = {};
+    (data ?? []).forEach((p: any) => { texts[p.id] = p.testo ?? ""; });
+    setIllustratoTexts(texts);
   };
 
   const handleUploadPagine = async (files: FileList, bookId: string, userId: string) => {
@@ -1187,6 +1233,34 @@ function GestionePage() {
     setFumettoUploading(false);
   };
 
+  const handleSavePaginaTesto = async (paginaId: string, testo: string) => {
+    await supabase.from("fumetti_pagine").update({ testo: testo || null }).eq("id", paginaId);
+  };
+
+  const handleGenerateIllustratoPdf = async () => {
+    if (!editingId || !userId) return;
+    setGeneratingIllustratoPdf(true);
+    setIllustratoPdfOk(false);
+    setIllustratoPdfError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-illustrato-pdf`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ book_id: editingId }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setIllustratoPdfError(data.error ?? "Errore generazione PDF"); return; }
+      setIllustratoPdfOk(true);
+      setTimeout(() => setIllustratoPdfOk(false), 5000);
+      if (userId) await loadBooks(userId);
+    } catch {
+      setIllustratoPdfError("Errore di rete. Riprova.");
+    } finally {
+      setGeneratingIllustratoPdf(false);
+    }
+  };
+
   const handleDeletePagina = async (paginaId: string, imageUrl: string) => {
     const path = imageUrl.split("/copertine/")[1];
     if (path) await supabase.storage.from("copertine").remove([path]);
@@ -1201,7 +1275,7 @@ function GestionePage() {
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
       body: JSON.stringify({ action, recensione_id: recensioneId }),
     });
-    await loadFlaggedReviews();
+    if (userId) await loadFlaggedReviews(userId, isAdmin);
   };
 
   const [followerError, setFollowerError] = useState<string | null>(null);
@@ -1270,6 +1344,14 @@ function GestionePage() {
     if (!userId) return;
     await supabase.from("author_followers").delete().eq("id", id);
     setFollowers(prev => prev.filter(f => f.id !== id));
+  };
+
+  const handleSavePaypal = async () => {
+    if (!userId) return;
+    setSavingPaypal(true); setPaypalSaved(false);
+    await supabase.from("profiles").update({ paypal_url: paypalUrl || null }).eq("id", userId);
+    setSavingPaypal(false); setPaypalSaved(true);
+    setTimeout(() => setPaypalSaved(false), 3000);
   };
 
   const handleSendNewsletter = async () => {
@@ -1595,6 +1677,14 @@ function GestionePage() {
               })}
             </div>
 
+            <div className="mb-3 flex items-center justify-between">
+              <span className="font-mono text-[9px] tracking-widest text-bone/30 uppercase">
+                opere: {books.length} / {maxOpere >= 999 ? "∞" : maxOpere}
+              </span>
+              {books.length >= maxOpere && maxOpere < 999 && (
+                <span className="font-mono text-[9px] tracking-widest text-magenta uppercase">⊗ limite raggiunto</span>
+              )}
+            </div>
             <button
               onClick={handleNewBook}
               className="mb-4 w-full font-mono text-[10px] tracking-widest text-magenta uppercase border border-magenta/40 py-2 hover:bg-magenta/10 transition-colors"
@@ -1710,6 +1800,62 @@ function GestionePage() {
               </div>
             )}
           </HudPanel>
+
+          {/* ── GATE OPERE ── */}
+          {showAbbonatoGate && !showForm && (
+            <HudPanel label="accesso limitato" code="LOCK" tone="magenta">
+              <div className="space-y-5 py-2">
+                <div className="font-mono text-[10px] tracking-widest text-magenta/60 uppercase">
+                  // opere_pubblicate: {books.length} / {maxOpere >= 999 ? "∞" : maxOpere}
+                </div>
+
+                {maxOpere <= 1 ? (
+                  <>
+                    <p className="font-serif text-bone/70 leading-relaxed">
+                      La piattaforma è attualmente in fase di beta. Hai già pubblicato la tua prima opera gratuita.
+                    </p>
+                    <p className="font-serif text-bone/70 leading-relaxed">
+                      Per richiedere lo sblocco fino a <strong className="text-bone/90">5 opere</strong>, scrivi a{" "}
+                      <a href="mailto:antheadelori@live.it" className="text-cyan hover:underline">antheadelori@live.it</a>{" "}
+                      indicando il tuo nome e il titolo dell'opera che vuoi pubblicare.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-serif text-bone/70 leading-relaxed">
+                      Hai raggiunto il limite di <strong className="text-bone/90">{maxOpere} opere</strong> previsto per questa fase della beta.
+                    </p>
+                    <p className="font-serif text-bone/70 leading-relaxed">
+                      Per richiedere un ulteriore sblocco scrivi a{" "}
+                      <a href="mailto:antheadelori@live.it" className="text-cyan hover:underline">antheadelori@live.it</a>{" "}
+                      indicando il tuo nome e i titoli che vuoi aggiungere.
+                    </p>
+                  </>
+                )}
+
+                <div className="border-t border-magenta/20 pt-4">
+                  <p className="font-serif text-sm text-bone/50 leading-relaxed mb-3">
+                    Se vuoi contribuire al mantenimento e all'ampliamento della piattaforma, puoi lasciare una donazione libera.
+                  </p>
+                  <a
+                    href="https://paypal.me/antheaDelori"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 border border-magenta/50 bg-magenta/10 px-5 py-2.5 font-mono tracking-[0.2em] text-xs uppercase text-magenta hover:bg-magenta/20 transition-all"
+                  >
+                    ♥ Lascia una donazione
+                  </a>
+                </div>
+
+                <button
+                  onClick={() => setShowAbbonatoGate(false)}
+                  className="inline-flex items-center gap-2 border border-bone/20 px-5 py-2.5 font-mono tracking-[0.2em] text-xs uppercase text-bone/40 hover:border-bone/40 hover:text-bone/60 transition-all"
+                >
+                  ← Annulla
+                </button>
+              </div>
+            </HudPanel>
+          )}
 
           {/* ── FORM NUOVA / MODIFICA OPERA (ACCORDION) ── */}
           {showForm && (
@@ -2004,7 +2150,7 @@ function GestionePage() {
                     !editingId ? "text-bone/20" : openSection === 2 ? "text-cyan" : "text-bone/70"
                   }`}>{genere === "fumetto" ? "Pagine" : "Capitoli"}</div>
                   <div className={`font-mono text-[9px] tracking-widest mt-0.5 ${!editingId ? "text-bone/15" : "text-bone/40"}`}>
-                    {editingId ? (genere === "fumetto" ? `${fumettoPagine.length} tavole caricate` : `${capitoli.length} capitoli · materiali extra`) : "— salva prima i metadati —"}
+                    {editingId ? ((genere === "fumetto" || genere === "illustrato") ? `${fumettoPagine.length} pagine caricate` : `${capitoli.length} capitoli · materiali extra`) : "— salva prima i metadati —"}
                   </div>
                 </div>
                 <span className={`font-mono text-[9px] tracking-widest uppercase ${
@@ -2043,7 +2189,75 @@ function GestionePage() {
                 </div>
               )}
 
-              {openSection === 2 && editingId && selected && genere !== "fumetto" && (
+              {openSection === 2 && editingId && selected && genere === "illustrato" && userId && (
+                <div className="border border-cyan/20 border-t-0 p-5 space-y-4">
+                  <div className="font-mono text-[11px] tracking-[0.3em] text-amber uppercase font-bold">◈ Pagine illustrate</div>
+                  <p className="font-mono text-[10px] text-bone/50">
+                    Carica le immagini in ordine, poi aggiungi il testo per ciascuna pagina. Il lettore vedrà testo e immagine affiancati.
+                  </p>
+                  <label className="flex items-center gap-3 cursor-pointer border border-dashed border-cyan/30 p-4 hover:border-cyan/60 transition-colors">
+                    <span className="font-mono text-[10px] uppercase tracking-widest text-cyan/60">
+                      {fumettoUploading ? "▸ Caricamento..." : "◈ Aggiungi immagini"}
+                    </span>
+                    <input type="file" accept="image/*" multiple className="hidden" disabled={fumettoUploading}
+                      onChange={e => e.target.files && handleUploadPagine(e.target.files, editingId, userId)} />
+                  </label>
+                  {fumettoPagine.length > 0 && (
+                    <div className="space-y-4">
+                      {fumettoPagine.map((p, i) => (
+                        <div key={p.id} className="grid grid-cols-[160px_1fr] gap-4 border border-cyan/10 p-3">
+                          <div className="relative group flex-shrink-0">
+                            <img src={p.image_url} alt={`Pagina ${i + 1}`} className="w-full object-cover border border-cyan/15" />
+                            <div className="absolute top-1 left-1 font-mono text-[9px] bg-black/60 text-bone/60 px-1">{i + 1}</div>
+                            <button onClick={() => handleDeletePagina(p.id, p.image_url)}
+                              className="absolute top-1 right-1 hidden group-hover:flex bg-blood/80 text-bone text-[10px] px-1.5 py-0.5">✕</button>
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <span className="font-mono text-[9px] tracking-widest text-cyan/50 uppercase">↳ testo pagina {i + 1}</span>
+                            <textarea
+                              value={illustratoTexts[p.id] ?? ""}
+                              onChange={e => setIllustratoTexts(prev => ({ ...prev, [p.id]: e.target.value }))}
+                              onBlur={e => handleSavePaginaTesto(p.id, e.target.value)}
+                              placeholder="Scrivi qui il testo che apparirà accanto all'immagine..."
+                              rows={6}
+                              className="flex-1 bg-void/40 border border-cyan/20 px-3 py-2 font-serif text-sm text-bone placeholder:text-bone/25 focus:outline-none focus:border-cyan transition-all resize-y"
+                            />
+                            <span className="font-mono text-[8px] text-bone/25 tracking-widest">Salvataggio automatico quando esci dal campo</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {fumettoPagine.length === 0 && !fumettoUploading && (
+                    <p className="font-mono text-[10px] text-bone/30">Nessuna pagina caricata.</p>
+                  )}
+
+                  {fumettoPagine.length > 0 && (
+                    <div className="pt-2 border-t border-cyan/10 space-y-2">
+                      <div className="font-mono text-[10px] tracking-[0.3em] text-bone/50 uppercase">// genera PDF</div>
+                      <p className="font-mono text-[9px] text-bone/35">
+                        Genera il PDF dell'opera dalle pagine caricate. Pagina 1 bianca, poi testo e immagine alternati.
+                        Il conteggio pagine viene aggiornato automaticamente per la copertina da stampa.
+                      </p>
+                      {illustratoPdfError && (
+                        <p className="font-mono text-[10px] text-blood">↳ {illustratoPdfError}</p>
+                      )}
+                      {illustratoPdfOk && (
+                        <p className="font-mono text-[10px] text-cyan">✓ PDF generato con successo — disponibile per il download</p>
+                      )}
+                      <button
+                        onClick={handleGenerateIllustratoPdf}
+                        disabled={generatingIllustratoPdf}
+                        className="font-mono text-[10px] uppercase tracking-widest border border-amber/60 bg-amber/5 text-amber px-5 py-3 hover:bg-amber/15 transition-colors disabled:opacity-40 disabled:cursor-wait"
+                      >
+                        {generatingIllustratoPdf ? "▸ Generazione in corso..." : "◈ Genera PDF"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {openSection === 2 && editingId && selected && genere !== "fumetto" && genere !== "illustrato" && (
                 <div className="border border-cyan/20 border-t-0 p-5 space-y-4">
 
                   {/* Capitoli */}
@@ -3163,6 +3377,31 @@ function GestionePage() {
             )}
 
           </div>
+        </HudPanel>
+
+        {/* ── PayPal donazioni ── */}
+        <HudPanel label="link donazioni (opzionale)" tone="cyan" className="mt-6">
+          <p className="font-serif italic text-bone/60 text-sm leading-relaxed mb-4">
+            Inserisci il tuo link PayPal.me. I lettori potranno farti una donazione diretta dalla pagina donazioni della piattaforma.
+          </p>
+          <div className="flex gap-3 items-end flex-wrap">
+            <div className="flex-1 min-w-64">
+              <span className="font-mono text-[10px] tracking-[0.25em] text-cyan/70 uppercase">↳ paypal.me link</span>
+              <input
+                type="url"
+                value={paypalUrl}
+                onChange={e => setPaypalUrl(e.target.value)}
+                placeholder="https://paypal.me/tuonome"
+                className="mt-2 w-full bg-void/40 border border-cyan/30 px-4 py-2.5 font-mono text-sm text-bone placeholder:text-bone/30 focus:outline-none focus:border-cyan transition-all"
+              />
+            </div>
+            <HudButton variant="primary" onClick={handleSavePaypal} disabled={savingPaypal}>
+              {savingPaypal ? "▸ Salvataggio..." : "▸ Salva"}
+            </HudButton>
+          </div>
+          {paypalSaved && (
+            <p className="mt-2 font-mono text-[10px] tracking-widest text-cyan uppercase">✓ Salvato</p>
+          )}
         </HudPanel>
 
         {/* ── Moderazione ── */}

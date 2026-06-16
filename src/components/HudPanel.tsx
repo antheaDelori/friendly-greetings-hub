@@ -39,11 +39,13 @@ export function PageShell({
   subtitle,
   code,
   children,
+  note,
 }: {
   title: string;
   subtitle?: string;
   code?: string;
   children: ReactNode;
+  note?: ReactNode;
 }) {
   return (
     <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10 py-12 flex-1">
@@ -58,6 +60,7 @@ export function PageShell({
           {subtitle && (
             <p className="mt-3 font-serif text-xl text-bone/65 max-w-2xl italic">{subtitle}</p>
           )}
+          {note && <div className="mt-4">{note}</div>}
         </div>
         <div className="font-mono text-[10px] text-cyan/50 tracking-widest hidden md:block">
           <div>SESSION:LIVE</div>

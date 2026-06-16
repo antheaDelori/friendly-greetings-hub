@@ -27,6 +27,8 @@ function ProfiloAutorePage() {
   const [bio, setBio] = useState("");
   const [generi, setGeneri] = useState<string[]>([]);
   const [donationUrl, setDonationUrl] = useState("");
+  const [copyrightAccepted, setCopyrightAccepted] = useState(false);
+  const [copyrightAlreadySaved, setCopyrightAlreadySaved] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -35,19 +37,21 @@ function ProfiloAutorePage() {
         return;
       }
       setUserId(data.user.id);
-      supabase
-        .from("author_profiles")
-        .select("bio, generi, donation_url")
-        .eq("id", data.user.id)
-        .maybeSingle()
-        .then(({ data: profile }) => {
-          if (profile) {
-            setBio(profile.bio ?? "");
-            setGeneri(profile.generi ?? []);
-            setDonationUrl(profile.donation_url ?? "");
-          }
-          setLoading(false);
-        });
+      Promise.all([
+        supabase.from("author_profiles").select("bio, generi, donation_url").eq("id", data.user.id).maybeSingle(),
+        supabase.from("profiles").select("copyright_accepted_at").eq("id", data.user.id).single(),
+      ]).then(([{ data: profile }, { data: prof }]) => {
+        if (profile) {
+          setBio(profile.bio ?? "");
+          setGeneri(profile.generi ?? []);
+          setDonationUrl(profile.donation_url ?? "");
+        }
+        if (prof?.copyright_accepted_at) {
+          setCopyrightAccepted(true);
+          setCopyrightAlreadySaved(true);
+        }
+        setLoading(false);
+      });
     });
   }, []);
 
@@ -63,6 +67,15 @@ function ProfiloAutorePage() {
     const { error } = await supabase
       .from("author_profiles")
       .upsert({ id: userId, bio, generi, donation_url: donationUrl || null }, { onConflict: "id" });
+
+    if (!error) {
+      const profileUpdate: Record<string, unknown> = { is_author: true };
+      if (copyrightAccepted && !copyrightAlreadySaved) {
+        profileUpdate.copyright_accepted_at = new Date().toISOString();
+      }
+      await supabase.from("profiles").update(profileUpdate).eq("id", userId);
+      if (copyrightAccepted) setCopyrightAlreadySaved(true);
+    }
 
     setSaving(false);
     if (error) {
@@ -148,6 +161,32 @@ function ProfiloAutorePage() {
             </div>
           </HudPanel>
 
+          {/* Copyright */}
+          <HudPanel label="immagini e diritti" tone="cyan">
+            <p className="font-serif italic text-bone/80 leading-relaxed">
+              Le immagini che pubblichi su questa piattaforma — copertine, illustrazioni, fotografie —
+              devono essere di tua creazione o libere da diritti d'autore. Caricare immagini altrui
+              senza autorizzazione viola il lavoro di chi le ha create, e noi teniamo molto al rispetto
+              reciproco tra autori.
+            </p>
+            <label className="mt-5 flex items-start gap-3 cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={copyrightAccepted}
+                onChange={(e) => setCopyrightAccepted(e.target.checked)}
+                disabled={copyrightAlreadySaved}
+                className="mt-1 w-4 h-4 accent-cyan cursor-pointer disabled:cursor-default"
+              />
+              <span className="font-mono text-[11px] tracking-wide text-bone/70 group-hover:text-bone transition-colors leading-relaxed">
+                Confermo che le immagini che carico su Liberiamo sono di mia proprietà o liberamente
+                utilizzabili, e mi assumo la responsabilità dei contenuti visivi che pubblico.
+                {copyrightAlreadySaved && (
+                  <span className="ml-2 text-cyan/60">◈ dichiarazione registrata</span>
+                )}
+              </span>
+            </label>
+          </HudPanel>
+
           {/* Salva */}
           <HudPanel label="area riservata" tone="amber">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -164,7 +203,7 @@ function ProfiloAutorePage() {
                 )}
               </div>
               <div className="flex gap-3">
-                <HudButton variant="primary" onClick={handleSave} disabled={saving}>
+                <HudButton variant="primary" onClick={handleSave} disabled={saving || !copyrightAccepted}>
                   {saving ? `▸ ${t("profiloAutore.salvaLoading")}` : `▸ ${t("profiloAutore.salvaBtn")}`}
                 </HudButton>
                 <Link to="/area-autore">

@@ -1,4 +1,4 @@
-export type Genre = "libro" | "racconto" | "saggio" | "articolo" | "novelle" | "poesia" | "fumetto";
+export type Genre = "libro" | "racconto" | "saggio" | "articolo" | "novelle" | "poesia" | "fumetto" | "illustrato";
 
 export type Chapter = {
   id: string;
@@ -37,6 +37,7 @@ export const genres: { value: Genre; label: string; tooltip?: string }[] = [
   { value: "novelle", label: "Novelle" },
   { value: "poesia", label: "Poesie" },
   { value: "fumetto", label: "Fumetti" },
+  { value: "illustrato", label: "Illustrati", tooltip: "Cucina · Fotografia · Nature writing · Arte · Manualistica" },
 ];
 
 export const ALL_GENRES = genres.map(g => g.value) as Genre[];

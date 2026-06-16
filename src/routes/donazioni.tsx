@@ -5,42 +5,76 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { HudPanel, PageShell, HudButton } from "@/components/HudPanel";
 import { supabase } from "@/lib/supabase";
 
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+
 export const Route = createFileRoute("/donazioni")({
   head: () => ({
     meta: [
       { title: "Sostieni un autore — Liberiamo la mente" },
-      { name: "description", content: "Fai una donazione diretta a un autore della biblioteca olografica. Tagli da 5, 10, 15 € o importo libero." },
+      { name: "description", content: "Fai una donazione diretta a un autore della biblioteca olografica." },
     ],
   }),
   component: DonazioniPage,
 });
 
+type AuthorEntry = { name: string; id: string; paypal_url: string };
+
 function DonazioniPage() {
   const [amount, setAmount] = useState<number | "free">(10);
   const [free, setFree] = useState("");
-  const [authors, setAuthors] = useState<string[]>([]);
-  const [author, setAuthor] = useState("");
+  const [authors, setAuthors] = useState<AuthorEntry[]>([]);
+  const [authorIndex, setAuthorIndex] = useState(0);
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     supabase
       .from("books")
-      .select("author_name")
+      .select("author_name, author_id, profiles!author_id(max_opere, paypal_url)")
       .eq("disponibile", true)
       .not("author_name", "is", null)
       .then(({ data }) => {
         if (!data) return;
-        const unique = [...new Set(data.map((b: { author_name: string }) => b.author_name))];
+        const eligible = data.filter(
+          (b: any) => (b.profiles?.max_opere ?? 1) >= 2 && b.profiles?.paypal_url
+        );
+        const seen = new Set<string>();
+        const unique: AuthorEntry[] = [];
+        for (const b of eligible as any[]) {
+          if (!seen.has(b.author_id)) {
+            seen.add(b.author_id);
+            unique.push({ name: b.author_name, id: b.author_id, paypal_url: b.profiles.paypal_url });
+          }
+        }
         setAuthors(unique);
-        if (unique.length > 0) setAuthor(unique[0]);
       });
   }, []);
+
+  const selected = authors[authorIndex] ?? null;
+
+  const handleDona = async () => {
+    if (!selected || sending) return;
+    setSending(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      await fetch(`${SUPABASE_URL}/functions/v1/notify-donation`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
+        body: JSON.stringify({ author_id: selected.id, author_name: selected.name }),
+      });
+    } catch (_) { /* fire and forget */ }
+    window.open(selected.paypal_url, "_blank", "noopener");
+    setSending(false);
+  };
 
   const presets = [5, 10, 15];
 
   return (
     <div className="min-h-screen flex flex-col">
       <SiteHeader />
-      <PageShell code="// MODULE/DONATIONS" title="Sostieni un autore" subtitle="Niente piattaforma intermedia che si prende metà. Il 95% va direttamente a chi scrive.">
+      <PageShell code="// MODULE/DONATIONS" title="Sostieni un autore" subtitle="La donazione va direttamente all'autore. Noi registriamo solo che la transazione è partita.">
         <div className="grid lg:grid-cols-[1fr_320px] gap-6">
           <HudPanel label="trasferimento" tone="magenta">
             <div>
@@ -49,12 +83,12 @@ function DonazioniPage() {
                 <p className="mt-3 font-mono text-[10px] text-bone/40 tracking-widest uppercase animate-pulse">▸ caricamento...</p>
               ) : (
                 <select
-                  value={author}
-                  onChange={(e) => setAuthor(e.target.value)}
+                  value={authorIndex}
+                  onChange={(e) => setAuthorIndex(Number(e.target.value))}
                   className="mt-2 w-full bg-void/40 border border-cyan/30 px-4 py-3 font-mono text-bone focus:outline-none focus:border-cyan"
                 >
-                  {authors.map((a) => (
-                    <option key={a} value={a} className="bg-void">{a}</option>
+                  {authors.map((a, i) => (
+                    <option key={a.id} value={i} className="bg-void">{a.name}</option>
                   ))}
                 </select>
               )}
@@ -62,7 +96,7 @@ function DonazioniPage() {
 
             <div className="hud-divider my-6" />
 
-            <span className="font-mono text-[10px] tracking-[0.25em] text-cyan/70 uppercase">↳ importo</span>
+            <span className="font-mono text-[10px] tracking-[0.25em] text-cyan/70 uppercase">↳ importo indicativo</span>
             <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
               {presets.map((v) => (
                 <button
@@ -109,39 +143,52 @@ function DonazioniPage() {
 
             <div className="flex items-center justify-between gap-4 flex-wrap">
               <div>
-                <div className="font-mono text-[10px] tracking-widest text-bone/50 uppercase">// totale</div>
+                <div className="font-mono text-[10px] tracking-widest text-bone/50 uppercase">// importo indicativo</div>
                 <div className="font-display text-5xl text-magenta text-glow-magenta">
                   € {amount === "free" ? (free || "0") : amount}
                 </div>
               </div>
-              <HudButton variant="magenta" className="text-base" disabled={!author}>♥ Conferma donazione</HudButton>
+              <HudButton
+                variant="magenta"
+                className="text-base"
+                disabled={!selected || sending}
+                onClick={handleDona}
+              >
+                {sending ? "▸ Apertura PayPal..." : "♥ Dona ora"}
+              </HudButton>
             </div>
+
+            {!selected && authors.length === 0 && (
+              <p className="mt-4 font-mono text-[10px] text-bone/30 tracking-widest uppercase">
+                Nessun autore ha ancora abilitato le donazioni.
+              </p>
+            )}
           </HudPanel>
 
           <div className="space-y-4">
             <HudPanel label="destinatario" tone="cyan">
-              {author ? (
+              {selected ? (
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-cyan/40 to-magenta/30 ring-1 ring-cyan/40 flex items-center justify-center font-display text-bone">
-                    {author[0]}
+                  <div className="w-12 h-12 bg-gradient-to-br from-cyan/40 to-magenta/30 ring-1 ring-cyan/40 flex items-center justify-center font-display text-bone text-xl">
+                    {selected.name[0]}
                   </div>
                   <div>
-                    <div className="font-display text-bone">{author}</div>
-                    <div className="font-mono text-[9px] tracking-widest text-cyan/70 uppercase">▸ autore connesso</div>
+                    <div className="font-display text-bone">{selected.name}</div>
+                    <div className="font-mono text-[9px] tracking-widest text-cyan/70 uppercase">▸ donazione diretta via PayPal</div>
                   </div>
                 </div>
               ) : (
-                <p className="font-mono text-[10px] text-bone/40 tracking-widest uppercase">seleziona un autore</p>
+                <p className="font-mono text-[10px] text-bone/40 tracking-widest uppercase">nessun autore disponibile</p>
               )}
             </HudPanel>
 
             <HudPanel label="info" tone="amber">
               <p className="font-serif italic text-sm text-bone/75 leading-relaxed">
-                Le donazioni vengono trasferite mensilmente. Riceverai una ricevuta digitale firmata.
+                Cliccando "Dona ora" verrai reindirizzato al PayPal dell'autore. L'importo che inserisci qui è indicativo — potrai confermarlo direttamente su PayPal.
               </p>
               <div className="hud-divider my-4" />
               <p className="font-mono text-[10px] tracking-widest text-bone/50 uppercase">
-                ▸ pagamento sicuro · 95% all'autore · 5% costi tecnici
+                ▸ donazione diretta · nessun intermediario
               </p>
             </HudPanel>
           </div>

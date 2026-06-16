@@ -111,18 +111,25 @@ Deno.serve(async (req) => {
     return json({ reported: true });
   }
 
-  // ── Blocca una recensione (solo admin) ───────────────────────────
-  if (action === "block") {
-    if (user.email?.toLowerCase() !== ADMIN_EMAIL) return json({ error: "Non autorizzato" }, 403);
+  // ── Blocca/sblocca una recensione (admin, o autore dell'opera recensita) ──
+  if (action === "block" || action === "unblock") {
     const { recensione_id } = body;
-    await supabase.from("recensioni").update({ blocked: true }).eq("id", recensione_id);
-    return json({ blocked: true });
-  }
+    if (!recensione_id) return json({ error: "recensione_id richiesto" }, 400);
 
-  // ── Sblocca una recensione (solo admin) ──────────────────────────
-  if (action === "unblock") {
-    if (user.email?.toLowerCase() !== ADMIN_EMAIL) return json({ error: "Non autorizzato" }, 403);
-    const { recensione_id } = body;
+    if (user.email?.toLowerCase() !== ADMIN_EMAIL) {
+      const { data: recensione } = await supabase
+        .from("recensioni")
+        .select("books(author_id)")
+        .eq("id", recensione_id)
+        .single();
+      const authorId = (recensione?.books as { author_id?: string } | null)?.author_id;
+      if (authorId !== user.id) return json({ error: "Non autorizzato" }, 403);
+    }
+
+    if (action === "block") {
+      await supabase.from("recensioni").update({ blocked: true }).eq("id", recensione_id);
+      return json({ blocked: true });
+    }
     await supabase.from("recensioni").update({ blocked: false, flagged: false }).eq("id", recensione_id);
     return json({ unblocked: true });
   }
