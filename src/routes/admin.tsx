@@ -7,7 +7,7 @@ import {
   PieChart, Pie, Cell, Legend,
 } from "recharts";
 
-const ADMIN_EMAIL = "antheadelori@live.it";
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL as string;
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
 export const Route = createFileRoute("/admin")({

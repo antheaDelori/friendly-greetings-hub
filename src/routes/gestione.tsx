@@ -341,7 +341,7 @@ function GestionePage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { window.location.replace("/auth"); return; }
       setUserId(user.id);
-      const adminEmail = user.email?.toLowerCase() === "antheadelori@live.it";
+      const adminEmail = user.email?.toLowerCase() === (import.meta.env.VITE_ADMIN_EMAIL as string)?.toLowerCase();
       setIsAdmin(adminEmail);
 
       const { data: profileData } = await supabase
@@ -1816,7 +1816,7 @@ function GestionePage() {
                     </p>
                     <p className="font-serif text-bone/70 leading-relaxed">
                       Per richiedere lo sblocco fino a <strong className="text-bone/90">5 opere</strong>, scrivi a{" "}
-                      <a href="mailto:antheadelori@live.it" className="text-cyan hover:underline">antheadelori@live.it</a>{" "}
+                      <a href="mailto:info@liberiamo2076.com" className="text-cyan hover:underline">info@liberiamo2076.com</a>{" "}
                       indicando il tuo nome e il titolo dell'opera che vuoi pubblicare.
                     </p>
                   </>
@@ -1827,7 +1827,7 @@ function GestionePage() {
                     </p>
                     <p className="font-serif text-bone/70 leading-relaxed">
                       Per richiedere un ulteriore sblocco scrivi a{" "}
-                      <a href="mailto:antheadelori@live.it" className="text-cyan hover:underline">antheadelori@live.it</a>{" "}
+                      <a href="mailto:info@liberiamo2076.com" className="text-cyan hover:underline">info@liberiamo2076.com</a>{" "}
                       indicando il tuo nome e i titoli che vuoi aggiungere.
                     </p>
                   </>

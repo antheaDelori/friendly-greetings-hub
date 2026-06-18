@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const SUPABASE_URL              = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const ADMIN_EMAIL               = "antheadelori@live.it";
+const ADMIN_EMAIL               = Deno.env.get("ADMIN_EMAIL")!;
 const BUCKET                    = "copertine";
 
 // Protezione: la cartella "brand" e tutti i suoi file non vengono mai eliminati.
