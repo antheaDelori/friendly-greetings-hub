@@ -35,6 +35,7 @@ export function SiteFooter() {
             <li><Link to="/autori" className="text-bone/70 hover:text-cyan transition-colors">▸ {t("nav.autori")}</Link></li>
             <li><Link to="/community" className="text-bone/70 hover:text-cyan transition-colors">▸ {t("nav.community")}</Link></li>
             <li><Link to="/regolamento" className="text-bone/70 hover:text-cyan transition-colors">▸ {t("nav.regole")}</Link></li>
+            <li><Link to="/privacy" className="text-bone/70 hover:text-cyan transition-colors">▸ Privacy Policy</Link></li>
             <li><Link to="/donazioni" className="text-bone/70 hover:text-cyan transition-colors">▸ {t("nav.sostieni")}</Link></li>
             <li>
               <div className="group relative inline-block">

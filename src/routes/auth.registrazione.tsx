@@ -274,6 +274,17 @@ function RegistrazionePage() {
                 </p>
               )}
 
+              {!modifica && (
+                <div className="flex items-start gap-3 pt-2 pb-1">
+                  <input type="checkbox" id="privacy_consent" required className="mt-1 accent-cyan cursor-pointer" />
+                  <label htmlFor="privacy_consent" className="font-mono text-[10px] text-bone/60 leading-relaxed cursor-pointer">
+                    Ho letto e accetto la{" "}
+                    <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-cyan hover:underline">Privacy Policy</a>
+                    {" "}e il trattamento dei miei dati personali ai sensi del GDPR.
+                  </label>
+                </div>
+              )}
+
               <div className="flex flex-wrap gap-3 items-center pt-2">
                 <HudButton type="submit" variant="primary" disabled={loading}>
                   {loading

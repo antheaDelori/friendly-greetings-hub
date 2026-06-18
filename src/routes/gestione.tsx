@@ -2597,6 +2597,7 @@ function GestionePage() {
                                 <div className="space-y-2">
                                   <p className="font-mono text-[10px] text-cyan uppercase tracking-widest">Copertina generata</p>
                                   <p className="font-mono text-[9px] text-bone/40">Clicca l'immagine per vederla in grande</p>
+                                  <p className="font-mono text-[9px] text-bone/50 leading-relaxed">⚠ Immagine generata da intelligenza artificiale (AI). Ai sensi del Regolamento UE sull'IA (AI Act), questa copertina è prodotta automaticamente e potrebbe non essere tutelabile da copyright.</p>
                                   {saveAiCoverError && (
                                     <p className="font-mono text-[10px] text-magenta">⚠ {saveAiCoverError}</p>
                                   )}
