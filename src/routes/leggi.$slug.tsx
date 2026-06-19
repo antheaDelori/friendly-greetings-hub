@@ -182,6 +182,7 @@ export const Route = createFileRoute("/leggi/$slug")({
       authorBio,
       fumettoPagine: (fumettoPagineData ?? []) as { id: string; ordine: number; image_url: string; testo?: string | null }[],
       fumettoFormato: (data.fumetto_formato ?? "a4v") as "a4v" | "a4h" | "manga" | "illustrato",
+      estratto: (data.estratto ?? null) as string | null,
     };
   },
   head: ({ loaderData }) => {
@@ -278,10 +279,17 @@ function getOrCreateVisitorId(userId?: string | null): string {
 
 
 function ReadPage() {
-  const { book, fileUrl, epubUrl, mobiUrl, donationUrl, isLoggedIn, isAnonymous, userId, userEmail, allegati, isCestinato, votiCestino: initialVoti, recuperato, bookId, authorId, recensioni: inizialiRecensioni, userIsFollowing: initFollowing, hasAccess, bookAccesso, authorBio, fumettoPagine, fumettoFormato } = Route.useLoaderData();
+  const { book, fileUrl, epubUrl, mobiUrl, donationUrl, isLoggedIn, isAnonymous, userId, userEmail, allegati, isCestinato, votiCestino: initialVoti, recuperato, bookId, authorId, recensioni: inizialiRecensioni, userIsFollowing: initFollowing, hasAccess, bookAccesso, authorBio, fumettoPagine, fumettoFormato, estratto } = Route.useLoaderData();
   const isAuthor = !!userId && !!authorId && userId === authorId;
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [guestLoading, setGuestLoading] = useState(false);
   const router = useRouter();
+
+  const handleGuestLogin = async () => {
+    setGuestLoading(true);
+    await supabase.auth.signInAnonymously();
+    router.invalidate();
+  };
   const [currentIdx, setCurrentIdx] = useState(0);
   const [fontScale, setFontScale] = useState(1);
   const [resumeBanner, setResumeBanner] = useState(false);
@@ -1129,25 +1137,78 @@ function ReadPage() {
               </button>
             </div>
           ) : !isLoggedIn && !isCestinato ? (
-            <div className="py-20 text-center border-2 border-ink/10 flex flex-col items-center">
-              <div className="font-display text-6xl text-ink/15">◈</div>
-              <h2 className="mt-4 font-serif text-2xl text-ink">Contenuto riservato</h2>
-              <p className="mt-3 font-serif italic text-ink/60 max-w-sm">
-                L'estratto e i capitoli sono disponibili per i lettori registrati. L'accesso è gratuito.
-              </p>
-              <Link
-                to="/auth/"
-                search={{ returnTo: `/leggi/${book.slug}` }}
-                className="mt-7 inline-block bg-ink text-paper px-7 py-3 font-display tracking-widest text-xs uppercase hover:bg-blood transition-colors"
-              >
-                Accedi o registrati
-              </Link>
-              <button
-                onClick={() => router.history.back()}
-                className="mt-3 font-display tracking-widest text-[10px] uppercase text-ink/40 hover:text-ink transition-colors"
-              >
-                ← Torna al catalogo
-              </button>
+            <div>
+              {/* Estratto pubblico */}
+              {estratto && (
+                <div className="mb-10">
+                  <div className="font-display tracking-[0.25em] text-xs text-magenta mb-4">— estratto</div>
+                  <div className="font-serif text-ink/90 leading-[1.8] space-y-5 max-w-prose">
+                    {estratto.split(/\n\n+/).filter(Boolean).map((p, i) => (
+                      <p key={i} className={i === 0 ? "first-letter:font-display first-letter:text-7xl first-letter:float-left first-letter:mr-3 first-letter:leading-none first-letter:text-blood" : ""}>
+                        {p}
+                      </p>
+                    ))}
+                  </div>
+                  <div className="mt-10 border-t border-ink/10" />
+                </div>
+              )}
+
+              {/* Invito ai tre ruoli */}
+              <div className="py-10">
+                <div className="font-display text-4xl text-ink/10 text-center mb-2">◈</div>
+                <h2 className="font-serif text-2xl text-ink text-center">
+                  {estratto ? "Vuoi continuare a leggere?" : "Scegli come entrare"}
+                </h2>
+                <p className="mt-2 font-serif italic text-ink/50 text-center text-sm max-w-sm mx-auto">
+                  L'accesso è sempre gratuito. Scegli il modo che preferisci.
+                </p>
+
+                <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto">
+                  {/* Esploratore */}
+                  <div className="border border-ink/10 p-5 flex flex-col">
+                    <div className="font-display text-xs tracking-[0.25em] text-amber-400/70 uppercase mb-2">Esploratore</div>
+                    <p className="font-serif text-xs text-ink/60 flex-1 mb-4">Entra subito senza registrarti. Leggi tutto, senza password.</p>
+                    <button
+                      onClick={handleGuestLogin}
+                      disabled={guestLoading}
+                      className="font-display tracking-widest text-[10px] uppercase border border-ink/20 text-ink/60 px-4 py-2 hover:border-ink/50 hover:text-ink transition-colors disabled:opacity-40"
+                    >
+                      {guestLoading ? "▸ Entro..." : "▸ Entra subito"}
+                    </button>
+                  </div>
+
+                  {/* Lettore */}
+                  <div className="border border-blood/30 p-5 flex flex-col">
+                    <div className="font-display text-xs tracking-[0.25em] text-blood uppercase mb-2">Lettore</div>
+                    <p className="font-serif text-xs text-ink/60 flex-1 mb-4">Registrazione minima. Segnalibro automatico, recensioni, opere salvate.</p>
+                    <Link
+                      to="/auth/registrazione"
+                      className="font-display tracking-widest text-[10px] uppercase border border-blood/40 text-blood px-4 py-2 text-center hover:bg-blood hover:text-paper transition-colors"
+                    >
+                      ▸ Registrati
+                    </Link>
+                  </div>
+
+                  {/* Autore */}
+                  <div className="border border-ink/10 p-5 flex flex-col">
+                    <div className="font-display text-xs tracking-[0.25em] text-ink/50 uppercase mb-2">Autore</div>
+                    <p className="font-serif text-xs text-ink/60 flex-1 mb-4">Come lettore, più la possibilità di pubblicare le tue opere.</p>
+                    <Link
+                      to="/auth/registrazione"
+                      className="font-display tracking-widest text-[10px] uppercase border border-ink/20 text-ink/60 px-4 py-2 text-center hover:border-ink/50 hover:text-ink transition-colors"
+                    >
+                      ▸ Registrati
+                    </Link>
+                  </div>
+                </div>
+
+                <p className="mt-6 text-center font-display tracking-widest text-[10px] uppercase text-ink/30">
+                  Hai già un account?{" "}
+                  <Link to="/auth/" search={{ returnTo: `/leggi/${book.slug}` }} className="text-ink/50 hover:text-ink underline transition-colors">
+                    Accedi
+                  </Link>
+                </p>
+              </div>
             </div>
           ) : (book.genere === "fumetto" || book.genere === "illustrato") && fumettoPagine.length > 0 ? (
             <ComicViewer pagine={fumettoPagine} formato={fumettoFormato} />
