@@ -317,6 +317,11 @@ function Index() {
               </li>
             ))}
           </ol>
+          <div className="mt-10 text-right border-t border-cyan/10 pt-8">
+            <p className="font-serif italic text-bone/40 text-lg">
+              In fondo, si scrive per lasciare una traccia.
+            </p>
+          </div>
         </div>
       </section>
 
