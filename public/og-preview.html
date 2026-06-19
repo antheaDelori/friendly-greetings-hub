@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>OG Image Preview — 1200×630</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Space+Grotesk:wght@300;400;700&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet"/>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #1a1a2e; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+
+  .card {
+    width: 1200px;
+    height: 630px;
+    background: #0a0a0f;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: stretch;
+    border: 1px solid rgba(0,210,255,0.15);
+  }
+
+  /* Scanlines */
+  .card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  /* Glow ambients */
+  .glow-cyan {
+    position: absolute;
+    top: -120px;
+    left: -80px;
+    width: 500px;
+    height: 500px;
+    border-radius: 50%;
+    background: rgba(0,210,255,0.12);
+    filter: blur(100px);
+    pointer-events: none;
+  }
+  .glow-magenta {
+    position: absolute;
+    bottom: -100px;
+    right: 200px;
+    width: 400px;
+    height: 400px;
+    border-radius: 50%;
+    background: rgba(224,64,251,0.08);
+    filter: blur(100px);
+    pointer-events: none;
+  }
+
+  /* Left content area */
+  .content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 52px 56px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .top-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.28em;
+    color: rgba(0,210,255,0.65);
+    text-transform: uppercase;
+  }
+
+  .middle {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 20px 0;
+  }
+
+  .title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 300;
+    font-size: 90px;
+    line-height: 0.88;
+    letter-spacing: -0.03em;
+    color: #f0ebe0;
+  }
+  .title .accent {
+    color: #e040fb;
+    text-shadow: 0 0 30px rgba(224,64,251,0.5);
+  }
+  .title .dot {
+    color: #00d2ff;
+    text-shadow: 0 0 20px rgba(0,210,255,0.6);
+  }
+
+  .divider {
+    width: 320px;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(0,210,255,0.4), transparent);
+    margin: 28px 0;
+  }
+
+  .tagline {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 22px;
+    color: rgba(240,235,224,0.55);
+    line-height: 1.5;
+    max-width: 520px;
+  }
+
+  .bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .read-or-perish {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: rgba(240,235,224,0.25);
+  }
+  .read-or-perish .or {
+    color: rgba(224,64,251,0.5);
+  }
+
+  .url {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    color: rgba(0,210,255,0.4);
+  }
+
+  /* Right image area */
+  .image-area {
+    width: 340px;
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 40px 40px 0;
+  }
+
+  .image-wrap {
+    position: relative;
+    width: 260px;
+    height: 260px;
+  }
+  .image-wrap::before {
+    content: '';
+    position: absolute;
+    inset: -20px;
+    border-radius: 50%;
+    background: rgba(0,210,255,0.18);
+    filter: blur(40px);
+  }
+  .image-wrap::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 1px solid rgba(0,210,255,0.25);
+  }
+  .image-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Vertical separator */
+  .separator {
+    width: 1px;
+    background: linear-gradient(180deg, transparent, rgba(0,210,255,0.2) 30%, rgba(0,210,255,0.2) 70%, transparent);
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 380px;
+    z-index: 3;
+  }
+
+  /* HUD corner decorations */
+  .corner {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    z-index: 5;
+  }
+  .corner-tl { top: 12px; left: 12px; border-top: 1px solid rgba(0,210,255,0.4); border-left: 1px solid rgba(0,210,255,0.4); }
+  .corner-tr { top: 12px; right: 12px; border-top: 1px solid rgba(0,210,255,0.4); border-right: 1px solid rgba(0,210,255,0.4); }
+  .corner-bl { bottom: 12px; left: 12px; border-bottom: 1px solid rgba(0,210,255,0.4); border-left: 1px solid rgba(0,210,255,0.4); }
+  .corner-br { bottom: 12px; right: 12px; border-bottom: 1px solid rgba(0,210,255,0.4); border-right: 1px solid rgba(0,210,255,0.4); }
+
+  /* Coordinate label */
+  .coord {
+    position: absolute;
+    bottom: 18px;
+    right: 52px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    color: rgba(0,210,255,0.25);
+    text-transform: uppercase;
+    z-index: 5;
+  }
+</style>
+</head>
+<body>
+
+<!--
+  ISTRUZIONI PER LO SCREENSHOT:
+  1. Apri questo file nel browser
+  2. DevTools → tasto ⋮ → More tools → Rendering → Frame Rendering Stats (OFF)
+  3. Oppure: DevTools → Console → right-click sul tag .card → Capture node screenshot
+     (questo genera automaticamente l'immagine alla risoluzione corretta)
+  4. In alternativa: ridimensiona la finestra a 1200×630 e usa un tool di screenshot
+  5. Salva come og-image.jpg nella cartella /public/
+-->
+
+<div class="card">
+  <div class="glow-cyan"></div>
+  <div class="glow-magenta"></div>
+
+  <div class="corner corner-tl"></div>
+  <div class="corner corner-tr"></div>
+  <div class="corner corner-bl"></div>
+  <div class="corner corner-br"></div>
+  <div class="separator"></div>
+
+  <div class="content">
+    <div class="top-tag">// biblioteca_olografica · anno_2076</div>
+
+    <div class="middle">
+      <div class="title">
+        LIBERIAMO<br/>
+        LA <span class="accent">MENTE</span><span class="dot">.</span>
+      </div>
+      <div class="divider"></div>
+      <div class="tagline">
+        In fondo, si scrive per lasciare una traccia.
+      </div>
+    </div>
+
+    <div class="bottom">
+      <div class="read-or-perish">READ <span class="or">OR</span> PERISH</div>
+      <div class="url">liberiamo2076.com</div>
+    </div>
+  </div>
+
+  <div class="image-area">
+    <div class="image-wrap">
+      <img src="/logo-liberiamo.jpg" alt="Liberiamo la mente"/>
+    </div>
+  </div>
+
+  <div class="coord">ARTIFACT_001 / EST.2076</div>
+</div>
+
+</body>
+</html>
