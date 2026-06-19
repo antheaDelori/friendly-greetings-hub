@@ -40,10 +40,8 @@
 
   .glow-cyan {
     position: absolute;
-    top: -120px;
-    left: -80px;
-    width: 500px;
-    height: 500px;
+    top: -120px; left: -80px;
+    width: 500px; height: 500px;
     border-radius: 50%;
     background: rgba(0,210,255,0.10);
     filter: blur(100px);
@@ -51,17 +49,15 @@
   }
   .glow-magenta {
     position: absolute;
-    bottom: -80px;
-    left: 200px;
-    width: 400px;
-    height: 400px;
+    bottom: -80px; left: 200px;
+    width: 400px; height: 400px;
     border-radius: 50%;
     background: rgba(224,64,251,0.08);
     filter: blur(100px);
     pointer-events: none;
   }
 
-  /* ─── SINISTRA: testo (invariata) ─── */
+  /* ─── SINISTRA ─── */
   .content {
     flex: 1;
     display: flex;
@@ -71,7 +67,6 @@
     position: relative;
     z-index: 2;
   }
-
   .top-tag {
     font-family: 'JetBrains Mono', monospace;
     font-size: 11px;
@@ -79,7 +74,6 @@
     color: rgba(0,210,255,0.65);
     text-transform: uppercase;
   }
-
   .middle {
     flex: 1;
     display: flex;
@@ -87,7 +81,6 @@
     justify-content: center;
     padding: 16px 0;
   }
-
   .title {
     font-family: 'Space Grotesk', sans-serif;
     font-weight: 300;
@@ -96,22 +89,13 @@
     letter-spacing: -0.03em;
     color: #f0ebe0;
   }
-  .title .accent {
-    color: #e040fb;
-    text-shadow: 0 0 40px rgba(224,64,251,0.6);
-  }
-  .title .dot {
-    color: #00d2ff;
-    text-shadow: 0 0 20px rgba(0,210,255,0.6);
-  }
-
+  .title .accent { color: #e040fb; text-shadow: 0 0 40px rgba(224,64,251,0.6); }
+  .title .dot    { color: #00d2ff; text-shadow: 0 0 20px rgba(0,210,255,0.6); }
   .divider {
-    width: 320px;
-    height: 1px;
+    width: 320px; height: 1px;
     background: linear-gradient(90deg, rgba(0,210,255,0.4), transparent);
     margin: 28px 0;
   }
-
   .tagline {
     font-family: 'Cormorant Garamond', serif;
     font-style: italic;
@@ -121,13 +105,11 @@
     line-height: 1.4;
     max-width: 480px;
   }
-
   .bottom {
     display: flex;
     align-items: center;
     justify-content: space-between;
   }
-
   .read-or-perish {
     font-family: 'Space Grotesk', sans-serif;
     font-weight: 700;
@@ -137,7 +119,6 @@
     color: rgba(240,235,224,0.22);
   }
   .read-or-perish .or { color: rgba(224,64,251,0.50); }
-
   .url {
     font-family: 'JetBrains Mono', monospace;
     font-size: 12px;
@@ -145,105 +126,107 @@
     color: rgba(0,210,255,0.45);
   }
 
-  /* ─── DESTRA: pannello combinato ─── */
+  /* ─── DESTRA ─── */
   .right-panel {
-    width: 370px;
+    width: 380px;
     flex-shrink: 0;
     border-left: 1px solid rgba(0,210,255,0.10);
     position: relative;
     z-index: 2;
     overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-between;
-    padding: 44px 32px 40px;
   }
 
-  /* Hero image come texture di sfondo */
-  .right-panel .rp-hero {
+  /* Hero image — texture atmosferica */
+  .rp-hero {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
-    object-position: center;
-    opacity: 0.18;
+    object-position: center top;
+    opacity: 0.30;
     display: block;
   }
 
-  /* Sfumatura sinistra per blend col testo */
+  /* Sfumatura sinistra: fonde il pannello col testo */
   .right-panel::before {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(90deg, #0a0a0f 0%, rgba(10,10,15,0.25) 45%, transparent 100%);
+    background: linear-gradient(
+      90deg,
+      #0a0a0f 0%,
+      rgba(10,10,15,0.55) 35%,
+      rgba(10,10,15,0.10) 100%
+    );
     z-index: 1;
     pointer-events: none;
   }
 
-  /* Logo in alto */
-  .rp-logo-wrap {
-    position: relative;
+  /* ◈ gigante al centro — subliminal brand mark */
+  .rp-ghost-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 200px;
+    color: rgba(0,210,255,0.045);
+    line-height: 1;
     z-index: 2;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex: 1;
+    pointer-events: none;
+    user-select: none;
   }
 
-  .rp-logo {
-    display: block;
-    width: 190px;
-    height: auto;
-    /* contrast(100): spinge tutto a puro bianco/nero → invert(1): bg bianco→nero, marks neri→bianchi */
-    filter: contrast(100) invert(1) opacity(0.80);
-  }
-
-  /* Badge 2076 in basso */
+  /* Badge in basso */
   .rp-badge {
-    position: relative;
-    z-index: 2;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 3;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
+    padding-bottom: 40px;
+    gap: 5px;
+  }
+
+  /* Separatore sopra badge */
+  .rp-sep {
+    width: 120px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0,210,255,0.3), transparent);
+    margin-bottom: 20px;
   }
 
   .rp-icon {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 26px;
-    color: rgba(0,210,255,0.55);
-    text-shadow: 0 0 20px rgba(0,210,255,0.4);
+    font-size: 28px;
+    color: rgba(0,210,255,0.60);
+    text-shadow: 0 0 24px rgba(0,210,255,0.45);
     line-height: 1;
   }
-
   .rp-label {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 8px;
-    letter-spacing: 0.3em;
-    color: rgba(0,210,255,0.40);
+    font-size: 9px;
+    letter-spacing: 0.32em;
+    color: rgba(0,210,255,0.38);
     text-transform: uppercase;
     white-space: nowrap;
   }
-
   .rp-year {
     font-family: 'Space Grotesk', sans-serif;
     font-weight: 700;
-    font-size: 56px;
+    font-size: 68px;
     color: rgba(0,210,255,0.22);
     letter-spacing: 0.06em;
     line-height: 1;
-    text-shadow: 0 0 50px rgba(0,210,255,0.18);
+    text-shadow: 0 0 60px rgba(0,210,255,0.20);
   }
 
   /* HUD corners */
-  .corner {
-    position: absolute;
-    width: 16px;
-    height: 16px;
-    z-index: 5;
-  }
+  .corner { position: absolute; width: 16px; height: 16px; z-index: 5; }
   .corner-tl { top: 12px; left: 12px; border-top: 1px solid rgba(0,210,255,0.35); border-left: 1px solid rgba(0,210,255,0.35); }
   .corner-tr { top: 12px; right: 12px; border-top: 1px solid rgba(0,210,255,0.35); border-right: 1px solid rgba(0,210,255,0.35); }
   .corner-bl { bottom: 12px; left: 12px; border-bottom: 1px solid rgba(0,210,255,0.35); border-left: 1px solid rgba(0,210,255,0.35); }
@@ -254,12 +237,10 @@
 
 <!--
   ISTRUZIONI PER LO SCREENSHOT:
-  1. Apri questo file su liberiamo2076.com/og-preview.html
-  2. Apri DevTools → Analisi pagina (Elements)
-  3. Seleziona <div class="card"> nel pannello HTML
-  4. Click destro → "Salva una schermata del nodo"
-  5. Rinomina il file scaricato in og-image.jpg
-  6. Mettilo in /public/ del progetto e fai commit + push
+  1. Apri liberiamo2076.com/og-preview.html
+  2. DevTools → Analisi pagina → seleziona <div class="card">
+  3. Tasto dx → "Salva una schermata del nodo"
+  4. Salva come og-image.jpg in /public/ → commit + push
 -->
 
 <div class="card">
@@ -271,39 +252,31 @@
   <div class="corner corner-bl"></div>
   <div class="corner corner-br"></div>
 
-  <!-- SINISTRA: testo (invariata) -->
+  <!-- SINISTRA: invariata -->
   <div class="content">
     <div class="top-tag">// biblioteca_olografica · anno_2076</div>
-
     <div class="middle">
       <div class="title">
         LIBERIAMO<br/>
         LA <span class="accent">MENTE</span><span class="dot">.</span>
       </div>
       <div class="divider"></div>
-      <div class="tagline">
-        In fondo, si scrive per lasciare una traccia.
-      </div>
+      <div class="tagline">In fondo, si scrive per lasciare una traccia.</div>
     </div>
-
     <div class="bottom">
       <div class="read-or-perish">READ <span class="or">OR</span> PERISH</div>
       <div class="url">liberiamo2076.com</div>
     </div>
   </div>
 
-  <!-- DESTRA: pannello combinato logo + badge -->
+  <!-- DESTRA: atmosfera pura -->
   <div class="right-panel">
-    <!-- hero come texture di sfondo a bassa opacità -->
     <img class="rp-hero" src="https://liberiamo2076.com/og-hero.webp" alt=""/>
 
-    <!-- logo centrato nella metà superiore -->
-    <div class="rp-logo-wrap">
-      <img class="rp-logo" src="https://liberiamo2076.com/logo-liberiamo.jpg" alt="Liberiamo la mente"/>
-    </div>
+    <div class="rp-ghost-icon">◈</div>
 
-    <!-- badge 2076 in basso -->
     <div class="rp-badge">
+      <div class="rp-sep"></div>
       <div class="rp-icon">◈</div>
       <div class="rp-label">biblioteca · holo</div>
       <div class="rp-year">2076</div>
@@ -311,6 +284,5 @@
   </div>
 
 </div>
-
 </body>
 </html>
