@@ -147,74 +147,59 @@
     color: rgba(0,210,255,0.4);
   }
 
-  /* Right decorative panel */
+  /* Right panel with hero image */
   .right-panel {
-    width: 320px;
+    width: 340px;
     position: relative;
     z-index: 2;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0;
-    border-left: 1px solid rgba(0,210,255,0.08);
-    padding: 40px 30px;
+    overflow: hidden;
+    flex-shrink: 0;
   }
 
-  .vertical-text {
-    writing-mode: vertical-rl;
-    text-orientation: mixed;
-    font-family: 'Space Grotesk', sans-serif;
-    font-weight: 700;
-    font-size: 88px;
-    letter-spacing: -0.04em;
-    color: rgba(240,235,224,0.04);
-    line-height: 1;
-    user-select: none;
-    white-space: nowrap;
+  .right-panel img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+    opacity: 0.75;
   }
 
-  .hud-lines {
+  /* Fade left edge into card background */
+  .right-panel::before {
+    content: '';
     position: absolute;
-    top: 0; bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 24px 0;
+    inset: 0;
+    background: linear-gradient(90deg, #0a0a0f 0%, rgba(10,10,15,0.2) 40%, transparent 100%);
+    z-index: 1;
     pointer-events: none;
   }
 
-  .hud-line {
-    width: 40px;
-    height: 1px;
-    background: rgba(0,210,255,0.2);
-  }
-
+  /* 2076 overlay badge */
   .badge {
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    bottom: 32px;
+    right: 24px;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 10px;
+    align-items: flex-end;
+    gap: 4px;
+    z-index: 2;
   }
 
   .badge-icon {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 52px;
-    color: rgba(0,210,255,0.15);
+    font-size: 28px;
+    color: rgba(0,210,255,0.5);
     line-height: 1;
+    text-shadow: 0 0 20px rgba(0,210,255,0.4);
   }
 
   .badge-label {
     font-family: 'JetBrains Mono', monospace;
     font-size: 9px;
-    letter-spacing: 0.35em;
-    color: rgba(0,210,255,0.25);
+    letter-spacing: 0.3em;
+    color: rgba(0,210,255,0.4);
     text-transform: uppercase;
     white-space: nowrap;
   }
@@ -222,9 +207,10 @@
   .badge-year {
     font-family: 'Space Grotesk', sans-serif;
     font-weight: 700;
-    font-size: 28px;
-    color: rgba(0,210,255,0.12);
-    letter-spacing: 0.1em;
+    font-size: 32px;
+    color: rgba(0,210,255,0.25);
+    letter-spacing: 0.05em;
+    line-height: 1;
   }
 
   /* HUD corner decorations */
@@ -294,7 +280,7 @@
   </div>
 
   <div class="right-panel">
-    <div class="vertical-text">2076</div>
+    <img src="/og-hero.webp" alt="Liberiamo la mente — biblioteca olografica"/>
     <div class="badge">
       <div class="badge-icon">◈</div>
       <div class="badge-label">biblioteca · holo</div>
