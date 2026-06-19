@@ -184,18 +184,32 @@ export const Route = createFileRoute("/leggi/$slug")({
       fumettoFormato: (data.fumetto_formato ?? "a4v") as "a4v" | "a4h" | "manga" | "illustrato",
     };
   },
-  head: ({ loaderData }) => ({
-    meta: loaderData
-      ? [
-          { title: `${loaderData.book.title} — ${loaderData.book.author} | Liberiamo la mente` },
-          { name: "description", content: loaderData.book.description },
-          { property: "og:title", content: `${loaderData.book.title} — ${loaderData.book.author}` },
-          { property: "og:description", content: loaderData.book.description },
-          { property: "og:image", content: loaderData.book.cover },
-          { property: "og:type", content: "book" },
-        ]
-      : [],
-  }),
+  head: ({ loaderData }) => {
+    if (!loaderData) return { meta: [] };
+    const { book } = loaderData;
+    const ogImage = book.cover?.startsWith("http")
+      ? book.cover
+      : "https://liberiamo2076.com/logo-liberiamo.jpg";
+    const ogDesc = (book.description ?? "").slice(0, 160);
+    const ogUrl = `https://liberiamo2076.com/leggi/${book.slug}`;
+    const ogTitle = `${book.title} — ${book.author}`;
+    return {
+      meta: [
+        { title: `${ogTitle} | Liberiamo la mente` },
+        { name: "description", content: ogDesc },
+        { property: "og:type", content: "book" },
+        { property: "og:site_name", content: "Liberiamo la mente" },
+        { property: "og:url", content: ogUrl },
+        { property: "og:title", content: ogTitle },
+        { property: "og:description", content: ogDesc },
+        { property: "og:image", content: ogImage },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: ogTitle },
+        { name: "twitter:description", content: ogDesc },
+        { name: "twitter:image", content: ogImage },
+      ],
+    };
+  },
   errorComponent: ReadError,
   notFoundComponent: ReadNotFound,
   component: ReadPage,
