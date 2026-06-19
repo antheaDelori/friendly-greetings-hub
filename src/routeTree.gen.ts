@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as StatisticheRouteImport } from './routes/statistiche'
 import { Route as RegolamentoRouteImport } from './routes/regolamento'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as LibriApertiRouteImport } from './routes/libri-aperti'
 import { Route as LibreriaRouteImport } from './routes/libreria'
 import { Route as GestioneRouteImport } from './routes/gestione'
@@ -42,6 +43,11 @@ const StatisticheRoute = StatisticheRouteImport.update({
 const RegolamentoRoute = RegolamentoRouteImport.update({
   id: '/regolamento',
   path: '/regolamento',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LibriApertiRoute = LibriApertiRouteImport.update({
@@ -169,6 +175,7 @@ export interface FileRoutesByFullPath {
   '/gestione': typeof GestioneRoute
   '/libreria': typeof LibreriaRoute
   '/libri-aperti': typeof LibriApertiRouteWithChildren
+  '/privacy': typeof PrivacyRoute
   '/regolamento': typeof RegolamentoRoute
   '/statistiche': typeof StatisticheRoute
   '/auth/profilo-autore': typeof AuthProfiloAutoreRoute
@@ -193,6 +200,7 @@ export interface FileRoutesByTo {
   '/donazioni': typeof DonazioniRoute
   '/gestione': typeof GestioneRoute
   '/libreria': typeof LibreriaRoute
+  '/privacy': typeof PrivacyRoute
   '/regolamento': typeof RegolamentoRoute
   '/statistiche': typeof StatisticheRoute
   '/auth/profilo-autore': typeof AuthProfiloAutoreRoute
@@ -220,6 +228,7 @@ export interface FileRoutesById {
   '/gestione': typeof GestioneRoute
   '/libreria': typeof LibreriaRoute
   '/libri-aperti': typeof LibriApertiRouteWithChildren
+  '/privacy': typeof PrivacyRoute
   '/regolamento': typeof RegolamentoRoute
   '/statistiche': typeof StatisticheRoute
   '/auth/profilo-autore': typeof AuthProfiloAutoreRoute
@@ -248,6 +257,7 @@ export interface FileRouteTypes {
     | '/gestione'
     | '/libreria'
     | '/libri-aperti'
+    | '/privacy'
     | '/regolamento'
     | '/statistiche'
     | '/auth/profilo-autore'
@@ -272,6 +282,7 @@ export interface FileRouteTypes {
     | '/donazioni'
     | '/gestione'
     | '/libreria'
+    | '/privacy'
     | '/regolamento'
     | '/statistiche'
     | '/auth/profilo-autore'
@@ -298,6 +309,7 @@ export interface FileRouteTypes {
     | '/gestione'
     | '/libreria'
     | '/libri-aperti'
+    | '/privacy'
     | '/regolamento'
     | '/statistiche'
     | '/auth/profilo-autore'
@@ -325,6 +337,7 @@ export interface RootRouteChildren {
   GestioneRoute: typeof GestioneRoute
   LibreriaRoute: typeof LibreriaRoute
   LibriApertiRoute: typeof LibriApertiRouteWithChildren
+  PrivacyRoute: typeof PrivacyRoute
   RegolamentoRoute: typeof RegolamentoRoute
   StatisticheRoute: typeof StatisticheRoute
   CollaneSlugRoute: typeof CollaneSlugRoute
@@ -346,6 +359,13 @@ declare module '@tanstack/react-router' {
       path: '/regolamento'
       fullPath: '/regolamento'
       preLoaderRoute: typeof RegolamentoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/libri-aperti': {
@@ -559,6 +579,7 @@ const rootRouteChildren: RootRouteChildren = {
   GestioneRoute: GestioneRoute,
   LibreriaRoute: LibreriaRoute,
   LibriApertiRoute: LibriApertiRouteWithChildren,
+  PrivacyRoute: PrivacyRoute,
   RegolamentoRoute: RegolamentoRoute,
   StatisticheRoute: StatisticheRoute,
   CollaneSlugRoute: CollaneSlugRoute,

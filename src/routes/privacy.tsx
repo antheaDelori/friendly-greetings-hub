@@ -52,11 +52,11 @@ function PrivacyPage() {
           </HudPanel>
 
           <HudPanel label="art. 04 — conservazione dei dati" code="§§ 04" tone="cyan">
-            <p className="font-serif text-bone/80 leading-relaxed">
-              I dati sono conservati per tutta la durata del rapporto contrattuale e per i successivi{" "}
-              <span className="text-cyan">10 anni</span> ai fini fiscali e legali, salvo diverso obbligo normativo.
-              I dati di log e attività sono conservati per un massimo di <span className="text-cyan">12 mesi</span>.
-            </p>
+            <ul className="space-y-3 font-serif text-bone/80 leading-relaxed">
+              <li>▸ <span className="text-cyan">Dati account</span>: conservati per tutta la durata del rapporto contrattuale e per i successivi <span className="text-cyan">10 anni</span> ai fini fiscali e legali, salvo diverso obbligo normativo.</li>
+              <li>▸ <span className="text-cyan">Log di attività</span> (accessi, download, recensioni): conservati per un massimo di <span className="text-cyan">12 mesi</span>.</li>
+              <li>▸ <span className="text-cyan">Log di moderazione</span> (segnalazioni, violazioni contestate): conservati per un massimo di <span className="text-cyan">24 mesi</span> ai fini di sicurezza e tutela legale della piattaforma. Hai il diritto di sapere se un tuo contenuto è stato segnalato e di contestare la decisione scrivendo a <a href="mailto:info@liberiamo2076.com" className="text-cyan hover:underline">info@liberiamo2076.com</a>.</li>
+            </ul>
           </HudPanel>
 
           <HudPanel label="art. 05 — condivisione con terze parti" code="§§ 05" tone="cyan">
