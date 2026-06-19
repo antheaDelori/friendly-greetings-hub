@@ -1154,20 +1154,23 @@ function ReadPage() {
               )}
 
               {/* Invito ai tre ruoli */}
-              <div className="py-10">
-                <div className="font-display text-4xl text-ink/10 text-center mb-2">◈</div>
+              <div className="py-12">
+                <div className="font-display text-4xl text-ink/10 text-center mb-4">◈</div>
                 <h2 className="font-serif text-2xl text-ink text-center">
-                  {estratto ? "Vuoi continuare a leggere?" : "Scegli come entrare"}
+                  {estratto ? "Sarei onorato se tu mi leggessi." : "Scegli come entrare."}
                 </h2>
-                <p className="mt-2 font-serif italic text-ink/50 text-center text-sm max-w-sm mx-auto">
-                  L'accesso è sempre gratuito. Scegli il modo che preferisci.
+                <p className="mt-5 font-serif text-ink/70 text-center text-base max-w-xs mx-auto tracking-wide">
+                  L'accesso è sempre gratuito.
+                </p>
+                <p className="mt-1 font-serif italic text-ink/40 text-center text-xs max-w-xs mx-auto">
+                  Scegli il modo che preferisci.
                 </p>
 
-                <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto">
+                <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto">
                   {/* Esploratore */}
                   <div className="border border-ink/10 p-5 flex flex-col">
                     <div className="font-display text-xs tracking-[0.25em] text-amber-400/70 uppercase mb-2">Esploratore</div>
-                    <p className="font-serif text-xs text-ink/60 flex-1 mb-4">Entra subito senza registrarti. Leggi tutto, senza password.</p>
+                    <p className="font-serif text-xs text-ink/60 flex-1 mb-4">Entra e lascia perdere le registrazioni. Leggi tutto, subito.</p>
                     <button
                       onClick={handleGuestLogin}
                       disabled={guestLoading}
@@ -1180,7 +1183,7 @@ function ReadPage() {
                   {/* Lettore */}
                   <div className="border border-blood/30 p-5 flex flex-col">
                     <div className="font-display text-xs tracking-[0.25em] text-blood uppercase mb-2">Lettore</div>
-                    <p className="font-serif text-xs text-ink/60 flex-1 mb-4">Registrazione minima. Segnalibro automatico, recensioni, opere salvate.</p>
+                    <p className="font-serif text-xs text-ink/60 flex-1 mb-4">Segnalibro automatico — riprendi da dove hai lasciato. Scrivi recensioni, segui gli autori.</p>
                     <Link
                       to="/auth/registrazione"
                       className="font-display tracking-widest text-[10px] uppercase border border-blood/40 text-blood px-4 py-2 text-center hover:bg-blood hover:text-paper transition-colors"
@@ -1192,7 +1195,7 @@ function ReadPage() {
                   {/* Autore */}
                   <div className="border border-ink/10 p-5 flex flex-col">
                     <div className="font-display text-xs tracking-[0.25em] text-ink/50 uppercase mb-2">Autore</div>
-                    <p className="font-serif text-xs text-ink/60 flex-1 mb-4">Come lettore, più la possibilità di pubblicare le tue opere.</p>
+                    <p className="font-serif text-xs text-ink/60 flex-1 mb-4">Hai qualcosa da dire? Pubblica le tue opere e mantieni tutti i tuoi diritti.</p>
                     <Link
                       to="/auth/registrazione"
                       className="font-display tracking-widest text-[10px] uppercase border border-ink/20 text-ink/60 px-4 py-2 text-center hover:border-ink/50 hover:text-ink transition-colors"
