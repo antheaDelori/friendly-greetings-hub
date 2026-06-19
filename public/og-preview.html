@@ -61,7 +61,7 @@
     pointer-events: none;
   }
 
-  /* ─── COL 1+2: testo ─── */
+  /* ─── SINISTRA: testo (invariata) ─── */
   .content {
     flex: 1;
     display: flex;
@@ -145,71 +145,96 @@
     color: rgba(0,210,255,0.45);
   }
 
-  /* ─── COL 3: logo ─── */
-  .logo-col {
-    width: 260px;
+  /* ─── DESTRA: pannello combinato ─── */
+  .right-panel {
+    width: 370px;
     flex-shrink: 0;
-    border-left: 1px solid rgba(0,210,255,0.08);
+    border-left: 1px solid rgba(0,210,255,0.10);
     position: relative;
     z-index: 2;
     overflow: hidden;
-  }
-
-  .logo-col img {
-    position: absolute;
-    inset: 24px;
-    width: calc(100% - 48px);
-    height: calc(100% - 48px);
-    object-fit: contain;
-    object-position: center;
-    display: block;
-    /* invert: bg bianco JPEG → nero (si fonde con #0a0a0f), marks scuri → chiari */
-    filter: invert(1) brightness(1.6) contrast(1.1);
-  }
-
-  /* ─── COL 4: anno ─── */
-  .year-col {
-    width: 160px;
-    flex-shrink: 0;
-    border-left: 1px solid rgba(0,210,255,0.08);
-    background: rgba(0,210,255,0.015);
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 16px;
-    position: relative;
-    z-index: 2;
-    padding: 32px 12px;
+    justify-content: space-between;
+    padding: 44px 32px 40px;
   }
 
-  .year-label {
+  /* Hero image come texture di sfondo */
+  .right-panel .rp-hero {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    opacity: 0.18;
+    display: block;
+  }
+
+  /* Sfumatura sinistra per blend col testo */
+  .right-panel::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, #0a0a0f 0%, rgba(10,10,15,0.25) 45%, transparent 100%);
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  /* Logo in alto */
+  .rp-logo-wrap {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+  }
+
+  .rp-logo {
+    display: block;
+    width: 190px;
+    height: auto;
+    /* contrast(100): spinge tutto a puro bianco/nero → invert(1): bg bianco→nero, marks neri→bianchi */
+    filter: contrast(100) invert(1) opacity(0.80);
+  }
+
+  /* Badge 2076 in basso */
+  .rp-badge {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .rp-icon {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 26px;
+    color: rgba(0,210,255,0.55);
+    text-shadow: 0 0 20px rgba(0,210,255,0.4);
+    line-height: 1;
+  }
+
+  .rp-label {
     font-family: 'JetBrains Mono', monospace;
     font-size: 8px;
-    letter-spacing: 0.28em;
+    letter-spacing: 0.3em;
     color: rgba(0,210,255,0.40);
     text-transform: uppercase;
-    text-align: center;
     white-space: nowrap;
   }
 
-  .year-icon {
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 36px;
-    color: rgba(0,210,255,0.55);
-    text-shadow: 0 0 24px rgba(0,210,255,0.40);
-    line-height: 1;
-  }
-
-  .year-number {
+  .rp-year {
     font-family: 'Space Grotesk', sans-serif;
     font-weight: 700;
-    font-size: 58px;
-    color: rgba(0,210,255,0.20);
-    letter-spacing: 0.04em;
+    font-size: 56px;
+    color: rgba(0,210,255,0.22);
+    letter-spacing: 0.06em;
     line-height: 1;
-    text-align: center;
-    text-shadow: 0 0 60px rgba(0,210,255,0.15);
+    text-shadow: 0 0 50px rgba(0,210,255,0.18);
   }
 
   /* HUD corners */
@@ -246,7 +271,7 @@
   <div class="corner corner-bl"></div>
   <div class="corner corner-br"></div>
 
-  <!-- Col 1+2: testo -->
+  <!-- SINISTRA: testo (invariata) -->
   <div class="content">
     <div class="top-tag">// biblioteca_olografica · anno_2076</div>
 
@@ -267,16 +292,22 @@
     </div>
   </div>
 
-  <!-- Col 3: logo -->
-  <div class="logo-col">
-    <img src="/logo-liberiamo.jpg" alt="Liberiamo la mente"/>
-  </div>
+  <!-- DESTRA: pannello combinato logo + badge -->
+  <div class="right-panel">
+    <!-- hero come texture di sfondo a bassa opacità -->
+    <img class="rp-hero" src="https://liberiamo2076.com/og-hero.webp" alt=""/>
 
-  <!-- Col 4: anno -->
-  <div class="year-col">
-    <div class="year-label">biblioteca · holo</div>
-    <div class="year-icon">◈</div>
-    <div class="year-number">2076</div>
+    <!-- logo centrato nella metà superiore -->
+    <div class="rp-logo-wrap">
+      <img class="rp-logo" src="https://liberiamo2076.com/logo-liberiamo.jpg" alt="Liberiamo la mente"/>
+    </div>
+
+    <!-- badge 2076 in basso -->
+    <div class="rp-badge">
+      <div class="rp-icon">◈</div>
+      <div class="rp-label">biblioteca · holo</div>
+      <div class="rp-year">2076</div>
+    </div>
   </div>
 
 </div>
