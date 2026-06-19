@@ -2104,11 +2104,19 @@ function GestionePage() {
                       className="mt-2 w-full min-h-24 bg-void/40 border border-cyan/30 px-4 py-3 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-cyan transition-all" />
                   </div>
 
-                  <div>
-                    <span className={labelClass}>↳ Estratto (anteprima pubblica)</span>
+                  <div className="border border-blood/40 bg-blood/5 p-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-mono text-[10px] tracking-[0.25em] text-blood uppercase">↳ Estratto ★ — anteprima pubblica</span>
+                    </div>
+                    <p className="font-serif text-xs text-bone/50 italic mb-3 leading-relaxed">
+                      Chi riceve un link diretto alla tua opera — da un messaggio, un post, un QR code — vede prima l'estratto, poi sceglie se registrarsi. Senza estratto, trova solo un invito a fare login. Scrivi almeno 3-5 righe: le prime del libro, o un brano che cattura.
+                    </p>
                     <textarea value={estratto} onChange={e => setEstratto(e.target.value)}
-                      placeholder="Le prime righe o un brano rappresentativo..."
-                      className="mt-2 w-full min-h-24 bg-void/40 border border-cyan/30 px-4 py-3 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-cyan transition-all" />
+                      placeholder="Le prime righe, o il brano che ti rappresenta di più..."
+                      className="w-full min-h-36 bg-void/40 border border-blood/30 px-4 py-3 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-blood transition-all" />
+                    {estratto.trim().length > 0 && (
+                      <p className="mt-1 font-mono text-[10px] text-bone/30 text-right">{estratto.trim().length} caratteri</p>
+                    )}
                   </div>
 
                   {collanaId && (
