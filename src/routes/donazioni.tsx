@@ -190,6 +190,10 @@ function DonazioniPage() {
               <p className="font-mono text-[10px] tracking-widest text-bone/50 uppercase">
                 ▸ donazione diretta · nessun intermediario
               </p>
+              <div className="hud-divider my-4" />
+              <p className="font-mono text-[9px] tracking-wide text-bone/40 leading-relaxed">
+                Privacy: registriamo solo che una donazione è stata avviata verso questo autore. Nessun dato personale del donatore viene salvato. Per maggiori informazioni consulta la <a href="/privacy" className="text-cyan/60 hover:text-cyan underline">Privacy Policy</a>.
+              </p>
             </HudPanel>
           </div>
         </div>

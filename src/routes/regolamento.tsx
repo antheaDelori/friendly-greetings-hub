@@ -55,6 +55,28 @@ function RegolamentoPage() {
           </HudPanel>
         </div>
 
+        <div className="grid md:grid-cols-2 gap-6 mt-6">
+          <HudPanel label="art. 04 — responsabilità contenuti" code="§§ 04" tone="cyan">
+            <h3 className="font-display text-2xl text-bone tracking-tight">Chi pubblica risponde</h3>
+            <ul className="mt-5 space-y-3 font-serif text-bone/80 leading-relaxed">
+              <li>▸ L'autore è <span className="text-cyan">unico responsabile</span> dei contenuti che pubblica, incluse opere, copertine e descrizioni.</li>
+              <li>▸ È vietato pubblicare contenuti che violino diritti di terzi, leggi vigenti o la dignità delle persone.</li>
+              <li>▸ Segnalazioni di violazione copyright (DMCA) vanno inviate a <a href="mailto:info@liberiamo2076.com" className="text-cyan hover:underline">info@liberiamo2076.com</a>. I contenuti segnalati vengono esaminati entro 72h e rimossi se la violazione è accertata.</li>
+              <li>▸ La piattaforma si riserva il diritto di rimuovere contenuti in violazione senza preavviso.</li>
+            </ul>
+          </HudPanel>
+
+          <HudPanel label="art. 05 — uso della piattaforma" code="§§ 05" tone="cyan">
+            <h3 className="font-display text-2xl text-bone tracking-tight">Solo umani, grazie</h3>
+            <ul className="mt-5 space-y-3 font-serif text-bone/80 leading-relaxed">
+              <li>▸ È vietato l'accesso tramite <span className="text-cyan">bot, crawler o script automatizzati</span> non autorizzati.</li>
+              <li>▸ Lo scraping sistematico di contenuti è vietato, anche a fini non commerciali.</li>
+              <li>▸ È vietato qualsiasi tentativo di compromettere la sicurezza o l'integrità della piattaforma.</li>
+              <li>▸ Violazioni di questo articolo comportano la sospensione immediata dell'account e possibile azione legale.</li>
+            </ul>
+          </HudPanel>
+        </div>
+
         <div className="mt-10 glass p-8 hud-frame-x">
           <div className="font-mono tracking-[0.3em] text-[10px] text-cyan uppercase">// nota_finale</div>
           <p className="mt-3 font-serif italic text-xl text-bone/80 max-w-3xl leading-relaxed">
