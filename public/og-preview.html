@@ -153,20 +153,18 @@
     position: relative;
     z-index: 2;
     overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
   }
 
   .logo-col img {
-    width: 100%;
-    height: 100%;
+    position: absolute;
+    inset: 24px;
+    width: calc(100% - 48px);
+    height: calc(100% - 48px);
     object-fit: contain;
     object-position: center;
     display: block;
-    /* brightness(0) → tutto nero, invert(1) → tutto bianco */
-    filter: brightness(0) invert(1) opacity(0.82);
+    /* invert: bg bianco JPEG → nero (si fonde con #0a0a0f), marks scuri → chiari */
+    filter: invert(1) brightness(1.6) contrast(1.1);
   }
 
   /* ─── COL 4: anno ─── */
