@@ -52,12 +52,12 @@
   }
   .glow-magenta {
     position: absolute;
-    bottom: -100px;
-    right: 200px;
-    width: 400px;
+    bottom: -80px;
+    right: -60px;
+    width: 500px;
     height: 400px;
     border-radius: 50%;
-    background: rgba(224,64,251,0.08);
+    background: rgba(224,64,251,0.10);
     filter: blur(100px);
     pointer-events: none;
   }
@@ -92,14 +92,14 @@
   .title {
     font-family: 'Space Grotesk', sans-serif;
     font-weight: 300;
-    font-size: 90px;
+    font-size: 96px;
     line-height: 0.88;
     letter-spacing: -0.03em;
     color: #f0ebe0;
   }
   .title .accent {
     color: #e040fb;
-    text-shadow: 0 0 30px rgba(224,64,251,0.5);
+    text-shadow: 0 0 40px rgba(224,64,251,0.6);
   }
   .title .dot {
     color: #00d2ff;
@@ -107,16 +107,16 @@
   }
 
   .divider {
-    width: 320px;
+    width: 340px;
     height: 1px;
     background: linear-gradient(90deg, rgba(0,210,255,0.4), transparent);
-    margin: 28px 0;
+    margin: 32px 0;
   }
 
   .tagline {
     font-family: 'Cormorant Garamond', serif;
     font-style: italic;
-    font-size: 22px;
+    font-size: 24px;
     color: rgba(240,235,224,0.55);
     line-height: 1.5;
     max-width: 520px;
@@ -131,13 +131,13 @@
   .read-or-perish {
     font-family: 'Space Grotesk', sans-serif;
     font-weight: 700;
-    font-size: 14px;
-    letter-spacing: 0.3em;
+    font-size: 13px;
+    letter-spacing: 0.35em;
     text-transform: uppercase;
-    color: rgba(240,235,224,0.25);
+    color: rgba(240,235,224,0.22);
   }
   .read-or-perish .or {
-    color: rgba(224,64,251,0.5);
+    color: rgba(224,64,251,0.45);
   }
 
   .url {
@@ -147,54 +147,84 @@
     color: rgba(0,210,255,0.4);
   }
 
-  /* Right image area */
-  .image-area {
-    width: 340px;
+  /* Right decorative panel */
+  .right-panel {
+    width: 320px;
     position: relative;
     z-index: 2;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 40px 40px 40px 0;
+    gap: 0;
+    border-left: 1px solid rgba(0,210,255,0.08);
+    padding: 40px 30px;
   }
 
-  .image-wrap {
-    position: relative;
-    width: 260px;
-    height: 260px;
-  }
-  .image-wrap::before {
-    content: '';
-    position: absolute;
-    inset: -20px;
-    border-radius: 50%;
-    background: rgba(0,210,255,0.18);
-    filter: blur(40px);
-  }
-  .image-wrap::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border: 1px solid rgba(0,210,255,0.25);
-  }
-  .image-wrap img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-    position: relative;
-    z-index: 1;
+  .vertical-text {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 88px;
+    letter-spacing: -0.04em;
+    color: rgba(240,235,224,0.04);
+    line-height: 1;
+    user-select: none;
+    white-space: nowrap;
   }
 
-  /* Vertical separator */
-  .separator {
-    width: 1px;
-    background: linear-gradient(180deg, transparent, rgba(0,210,255,0.2) 30%, rgba(0,210,255,0.2) 70%, transparent);
+  .hud-lines {
     position: absolute;
-    top: 0;
-    bottom: 0;
-    right: 380px;
-    z-index: 3;
+    top: 0; bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 24px 0;
+    pointer-events: none;
+  }
+
+  .hud-line {
+    width: 40px;
+    height: 1px;
+    background: rgba(0,210,255,0.2);
+  }
+
+  .badge {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .badge-icon {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 52px;
+    color: rgba(0,210,255,0.15);
+    line-height: 1;
+  }
+
+  .badge-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.35em;
+    color: rgba(0,210,255,0.25);
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .badge-year {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 28px;
+    color: rgba(0,210,255,0.12);
+    letter-spacing: 0.1em;
   }
 
   /* HUD corner decorations */
@@ -204,20 +234,19 @@
     height: 16px;
     z-index: 5;
   }
-  .corner-tl { top: 12px; left: 12px; border-top: 1px solid rgba(0,210,255,0.4); border-left: 1px solid rgba(0,210,255,0.4); }
-  .corner-tr { top: 12px; right: 12px; border-top: 1px solid rgba(0,210,255,0.4); border-right: 1px solid rgba(0,210,255,0.4); }
-  .corner-bl { bottom: 12px; left: 12px; border-bottom: 1px solid rgba(0,210,255,0.4); border-left: 1px solid rgba(0,210,255,0.4); }
-  .corner-br { bottom: 12px; right: 12px; border-bottom: 1px solid rgba(0,210,255,0.4); border-right: 1px solid rgba(0,210,255,0.4); }
+  .corner-tl { top: 12px; left: 12px; border-top: 1px solid rgba(0,210,255,0.35); border-left: 1px solid rgba(0,210,255,0.35); }
+  .corner-tr { top: 12px; right: 12px; border-top: 1px solid rgba(0,210,255,0.35); border-right: 1px solid rgba(0,210,255,0.35); }
+  .corner-bl { bottom: 12px; left: 12px; border-bottom: 1px solid rgba(0,210,255,0.35); border-left: 1px solid rgba(0,210,255,0.35); }
+  .corner-br { bottom: 12px; right: 12px; border-bottom: 1px solid rgba(0,210,255,0.35); border-right: 1px solid rgba(0,210,255,0.35); }
 
-  /* Coordinate label */
   .coord {
     position: absolute;
     bottom: 18px;
-    right: 52px;
+    right: 18px;
     font-family: 'JetBrains Mono', monospace;
     font-size: 9px;
     letter-spacing: 0.25em;
-    color: rgba(0,210,255,0.25);
+    color: rgba(0,210,255,0.2);
     text-transform: uppercase;
     z-index: 5;
   }
@@ -227,12 +256,12 @@
 
 <!--
   ISTRUZIONI PER LO SCREENSHOT:
-  1. Apri questo file nel browser
-  2. DevTools → tasto ⋮ → More tools → Rendering → Frame Rendering Stats (OFF)
-  3. Oppure: DevTools → Console → right-click sul tag .card → Capture node screenshot
-     (questo genera automaticamente l'immagine alla risoluzione corretta)
-  4. In alternativa: ridimensiona la finestra a 1200×630 e usa un tool di screenshot
-  5. Salva come og-image.jpg nella cartella /public/
+  1. Apri questo file su liberiamo2076.com/og-preview.html
+  2. Apri DevTools → Analisi pagina (Elements)
+  3. Seleziona <div class="card"> nel pannello HTML
+  4. Click destro → "Salva una schermata del nodo"
+  5. Rinomina il file scaricato in og-image.jpg
+  6. Mettilo in /public/ del progetto e fai commit + push
 -->
 
 <div class="card">
@@ -243,7 +272,6 @@
   <div class="corner corner-tr"></div>
   <div class="corner corner-bl"></div>
   <div class="corner corner-br"></div>
-  <div class="separator"></div>
 
   <div class="content">
     <div class="top-tag">// biblioteca_olografica · anno_2076</div>
@@ -265,13 +293,16 @@
     </div>
   </div>
 
-  <div class="image-area">
-    <div class="image-wrap">
-      <img src="/logo-liberiamo.jpg" alt="Liberiamo la mente"/>
+  <div class="right-panel">
+    <div class="vertical-text">2076</div>
+    <div class="badge">
+      <div class="badge-icon">◈</div>
+      <div class="badge-label">biblioteca · holo</div>
+      <div class="badge-year">2076</div>
     </div>
   </div>
 
-  <div class="coord">ARTIFACT_001 / EST.2076</div>
+  <div class="coord">EST.2076</div>
 </div>
 
 </body>
