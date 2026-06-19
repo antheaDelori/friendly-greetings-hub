@@ -118,7 +118,8 @@
     "saggio": "Essay",
     "articolo": "Artikel",
     "novelle": "Novelle",
-    "poesia": "Gedicht"
+    "poesia": "Gedicht",
+    "fumetto": "Comic"
   },
   "ui": {
     "operaSing": "Werk",
