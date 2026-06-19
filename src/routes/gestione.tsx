@@ -128,6 +128,18 @@ function generateSlug(title: string): string {
     .slice(0, 60);
 }
 
+async function uniqueSlug(table: string, base: string): Promise<string> {
+  const { data } = await supabase.from(table).select("id").eq("slug", base).maybeSingle();
+  if (!data) return base;
+  let n = 2;
+  while (true) {
+    const candidate = `${base}-${n}`;
+    const { data: d } = await supabase.from(table).select("id").eq("slug", candidate).maybeSingle();
+    if (!d) return candidate;
+    n++;
+  }
+}
+
 export const Route = createFileRoute("/gestione")({
   head: () => ({
     meta: [
@@ -435,7 +447,7 @@ function GestionePage() {
         if (error) { setCollanaError(error.message); return; }
         if (selectedCollana) setSelectedCollana({ ...selectedCollana, titolo: collanaTitolo.trim(), descrizione: collanaDescrizione.trim() || null, copertina_url });
       } else {
-        const slug = generateSlug(collanaTitolo) + "-" + Date.now().toString(36);
+        const slug = await uniqueSlug("collane", generateSlug(collanaTitolo));
         const { error } = await supabase.from("collane").insert({
           author_id: userId, slug, titolo: collanaTitolo.trim(),
           descrizione: collanaDescrizione.trim() || null, copertina_url,
@@ -953,7 +965,7 @@ function GestionePage() {
 
         if (error) { setSaveError(error.message); return; }
       } else {
-        const slug = generateSlug(titolo) + "-" + Date.now().toString(36);
+        const slug = await uniqueSlug("books", generateSlug(titolo));
 
         const { data: insertData, error } = await supabase.from("books").insert({
           author_id: userId,
