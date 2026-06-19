@@ -189,7 +189,7 @@ export const Route = createFileRoute("/leggi/$slug")({
     const { book } = loaderData;
     const ogImage = book.cover?.startsWith("http")
       ? book.cover
-      : "https://liberiamo2076.com/logo-liberiamo.jpg";
+      : "https://liberiamo2076.com/og-image.png";
     const ogDesc = (book.description ?? "").slice(0, 160);
     const ogUrl = `https://liberiamo2076.com/leggi/${book.slug}`;
     const ogTitle = `${book.title} — ${book.author}`;
