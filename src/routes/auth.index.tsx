@@ -115,21 +115,35 @@ function AuthLanding() {
             .limit(4);
 
           if (progressData && progressData.length > 0) {
-            // Per voci senza titolo cerca nella tabella books
-            const slugsWithoutTitle = progressData.filter((p: { book_title: string | null }) => !p.book_title).map((p: { book_slug: string }) => p.book_slug);
-            let dbTitles: Record<string, { titolo: string; author_name: string }> = {};
-            if (slugsWithoutTitle.length > 0) {
-              const { data: dbBooks } = await supabase.from("books").select("slug, titolo, author_name").in("slug", slugsWithoutTitle);
-              if (dbBooks) dbTitles = Object.fromEntries(dbBooks.map((b: { slug: string; titolo: string; author_name: string }) => [b.slug, b]));
+            // Valida tutti gli slug contro la tabella books (slug vecchi/rimossi vanno scartati)
+            const allSlugs = progressData.map((p: { book_slug: string }) => p.book_slug);
+            const { data: dbBooks } = await supabase.from("books").select("slug, titolo, author_name").in("slug", allSlugs);
+            const dbBookMap: Record<string, { titolo: string; author_name: string }> = Object.fromEntries(
+              (dbBooks ?? []).map((b: { slug: string; titolo: string; author_name: string }) => [b.slug, b])
+            );
+            const validSlugs = new Set(Object.keys(dbBookMap));
+
+            // Pulisci reading_progress e localStorage per slug non più esistenti
+            const invalidSlugs = allSlugs.filter((s: string) => !validSlugs.has(s));
+            if (invalidSlugs.length > 0) {
+              await supabase.from("reading_progress").delete().eq("user_id", userId).in("book_slug", invalidSlugs);
+              invalidSlugs.forEach((s: string) => {
+                localStorage.removeItem(`reading_pos_${s}`);
+                localStorage.removeItem(`bookmark_para_${s}`);
+              });
             }
-            const inProgress: ResumeBook[] = progressData.map((p: { book_slug: string; book_title: string | null; book_author: string | null }) => ({
+
+            const validProgress = progressData.filter((p: { book_slug: string }) => validSlugs.has(p.book_slug));
+            if (validProgress.length === 0) { window.location.replace("/"); return; }
+
+            const inProgress: ResumeBook[] = validProgress.map((p: { book_slug: string; book_title: string | null; book_author: string | null }) => ({
               slug: p.book_slug,
-              title: p.book_title || dbTitles[p.book_slug]?.titolo || p.book_slug,
-              author: p.book_author || dbTitles[p.book_slug]?.author_name || "",
+              title: p.book_title || dbBookMap[p.book_slug]?.titolo || p.book_slug,
+              author: p.book_author || dbBookMap[p.book_slug]?.author_name || "",
             }));
             setCurrentUserId(userId);
             setResumeBooks(inProgress);
-            setResumeTotal(count ?? progressData.length);
+            setResumeTotal(count ?? validProgress.length);
             setLoading(false);
             return;
           }
@@ -313,7 +327,7 @@ function AuthLanding() {
             ))}
           </ul>
 
-          <Link to="/auth/registrazione" className="mt-6 inline-block">
+          <Link to="/auth/registrazione" search={{ autore: true }} className="mt-6 inline-block">
             <HudButton variant="primary">▸ {t("authLogin.opt01Btn")}</HudButton>
           </Link>
         </HudPanel>

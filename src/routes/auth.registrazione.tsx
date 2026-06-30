@@ -150,6 +150,9 @@ function RegistrazionePage() {
           email: data.email!,
           password: data.password!,
           options: {
+            emailRedirectTo: autore
+              ? `${window.location.origin}/auth/profilo-autore`
+              : undefined,
             data: {
               nome: data.nome,
               cognome: data.cognome,
