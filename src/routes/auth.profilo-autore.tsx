@@ -60,6 +60,10 @@ function ProfiloAutorePage() {
 
   const handleSave = async () => {
     if (!userId) return;
+    if (!copyrightAccepted) {
+      setError(t("profiloAutore.errCopyright", "Devi accettare i termini sul copyright per completare il profilo autore."));
+      return;
+    }
     setSaving(true);
     setError(null);
     setSaved(false);
@@ -203,11 +207,11 @@ function ProfiloAutorePage() {
                 )}
               </div>
               <div className="flex gap-3">
-                <HudButton variant="primary" onClick={handleSave} disabled={saving || !copyrightAccepted}>
+                <HudButton variant="primary" onClick={handleSave} disabled={saving}>
                   {saving ? `▸ ${t("profiloAutore.salvaLoading")}` : `▸ ${t("profiloAutore.salvaBtn")}`}
                 </HudButton>
-                <Link to="/area-autore">
-                  <HudButton variant="magenta">◆ {t("profiloAutore.areaRiservata")}</HudButton>
+                <Link to="/area-autore" onClick={(e) => { if (!saved && !copyrightAlreadySaved) e.preventDefault(); }}>
+                  <HudButton variant="magenta" disabled={!saved && !copyrightAlreadySaved}>◆ {t("profiloAutore.areaRiservata")}</HudButton>
                 </Link>
               </div>
             </div>
