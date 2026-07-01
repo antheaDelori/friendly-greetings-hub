@@ -333,6 +333,10 @@ function ReadPage() {
   // Torna sempre in cima quando si apre il libro
   useEffect(() => { window.scrollTo({ top: 0, behavior: "instant" }); }, []);
 
+  useEffect(() => {
+    if (bookId) supabase.rpc("increment_reads", { p_book_id: bookId });
+  }, [bookId]);
+
   // Auto-aggiorna libreria: da_leggere → in_lettura all'apertura del libro
   useEffect(() => {
     if (!bookId) return;
@@ -500,6 +504,7 @@ function ReadPage() {
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 1000);
+      supabase.rpc("increment_downloads", { p_book_id: bookId });
     } catch (e) {
       console.error("Download error:", e);
       alert("Errore nel download. Riprova.");
@@ -527,6 +532,7 @@ function ReadPage() {
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 1000);
+      supabase.rpc("increment_downloads", { p_book_id: bookId });
     } catch (e) {
       console.error("Download epub error:", e);
       alert("Errore nel download. Riprova.");
@@ -554,6 +560,7 @@ function ReadPage() {
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 1000);
+      supabase.rpc("increment_downloads", { p_book_id: bookId });
     } catch (e) {
       console.error("Download mobi error:", e);
       alert("Errore nel download. Riprova.");
@@ -959,13 +966,13 @@ function ReadPage() {
           {/* Legende compatte — shrink-0, sempre visibili indipendentemente dall'altezza del viewport */}
           <div className={`hidden lg:flex lg:flex-col shrink-0 mt-2 border-t border-ink/10 pt-2 gap-2 ${book.genere === "fumetto" ? "opacity-30 pointer-events-none select-none" : ""}`}>
             <div>
-              <div className="font-display tracking-[0.12em] text-[8px] text-ink/40 uppercase mb-1">— segnalibro</div>
+              <div className="font-display tracking-[0.12em] text-[11px] text-ink/60 uppercase mb-1">— segnalibro</div>
               <p className="font-serif text-[10px] text-ink/45 leading-snug italic">
                 Clicca un paragrafo per salvare il punto. Clicca di nuovo per rimuoverlo.
               </p>
             </div>
             <div>
-              <div className="font-display tracking-[0.12em] text-[8px] text-ink/40 uppercase mb-1">— già letto?</div>
+              <div className="font-display tracking-[0.12em] text-[11px] text-ink/60 uppercase mb-1">— già letto?</div>
               <p className="font-serif text-[10px] text-ink/45 leading-snug italic">
                 Segna anche opere lette altrove.
               </p>
