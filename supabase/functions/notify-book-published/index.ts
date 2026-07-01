@@ -10,6 +10,60 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+// Etichetta "IL LIBRO" / "THE BOOK" dinamica per genere e lingua
+const TIPO_LABELS: Record<string, Record<string, string>> = {
+  it: {
+    libro:      "IL LIBRO",
+    articolo:   "L'ARTICOLO",
+    racconto:   "IL RACCONTO",
+    saggio:     "IL SAGGIO",
+    poesia:     "LA RACCOLTA POETICA",
+    novelle:    "LA NOVELLA",
+    fumetto:    "IL FUMETTO",
+    illustrato: "IL LIBRO ILLUSTRATO",
+  },
+  en: {
+    libro:      "THE BOOK",
+    articolo:   "THE ARTICLE",
+    racconto:   "THE SHORT STORY",
+    saggio:     "THE ESSAY",
+    poesia:     "THE POETRY COLLECTION",
+    novelle:    "THE NOVELLA",
+    fumetto:    "THE COMIC",
+    illustrato: "THE ILLUSTRATED BOOK",
+  },
+  fr: {
+    libro:      "LE LIVRE",
+    articolo:   "L'ARTICLE",
+    racconto:   "LA NOUVELLE",
+    saggio:     "L'ESSAI",
+    poesia:     "LE RECUEIL POÉTIQUE",
+    novelle:    "LA NOVELLE",
+    fumetto:    "LA BANDE DESSINÉE",
+    illustrato: "LE LIVRE ILLUSTRÉ",
+  },
+  de: {
+    libro:      "DAS BUCH",
+    articolo:   "DER ARTIKEL",
+    racconto:   "DIE KURZGESCHICHTE",
+    saggio:     "DER ESSAY",
+    poesia:     "DER GEDICHTBAND",
+    novelle:    "DIE NOVELLE",
+    fumetto:    "DER COMIC",
+    illustrato: "DAS BILDERBUCH",
+  },
+  es: {
+    libro:      "EL LIBRO",
+    articolo:   "EL ARTÍCULO",
+    racconto:   "EL CUENTO",
+    saggio:     "EL ENSAYO",
+    poesia:     "EL POEMARIO",
+    novelle:    "LA NOVELA CORTA",
+    fumetto:    "EL CÓMIC",
+    illustrato: "EL LIBRO ILUSTRADO",
+  },
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
@@ -21,6 +75,14 @@ Deno.serve(async (req) => {
   }
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+  // Recupera il genere del libro per etichetta dinamica
+  const { data: bookData } = await supabase
+    .from("books")
+    .select("genere")
+    .eq("id", book_id)
+    .maybeSingle();
+  const genere: string = bookData?.genere ?? "libro";
 
   const { data: subscriptions } = await supabase
     .from("open_book_subscriptions")
@@ -63,10 +125,16 @@ Deno.serve(async (req) => {
 
     if (!tpl) continue;
 
+    // Etichetta dinamica per genere e lingua del lettore
+    const tipoLabel = (TIPO_LABELS[lingua] ?? TIPO_LABELS["it"])[genere]
+      ?? TIPO_LABELS["it"][genere]
+      ?? "IL LIBRO";
+
     const html = tpl.corpo_html
       .replaceAll("{{LETTORE_NOME}}", lettoreNome)
       .replaceAll("{{LIBRO_TITOLO}}", book_titolo)
-      .replaceAll("{{LINK_LIBRO}}", linkLibro);
+      .replaceAll("{{LINK_LIBRO}}", linkLibro)
+      .replaceAll("{{TIPO_OPERA}}", tipoLabel);
 
     const oggetto = tpl.oggetto
       .replaceAll("{{LIBRO_TITOLO}}", book_titolo);
