@@ -46,16 +46,31 @@ export function RichTextEditor({ value, onChange, userId, bookId }: Props) {
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !editor || !userId || !bookId) return;
+    if (!file || !editor) return;
     setUploadingImage(true);
     setImageError(null);
     try {
-      const ext = file.name.split(".").pop() ?? "jpg";
-      const path = `${userId}/${bookId}/images/${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage.from("libri").upload(path, file, { upsert: true });
-      if (upErr) throw upErr;
-      const { data } = supabase.storage.from("libri").getPublicUrl(path);
-      editor.chain().focus().setImage({ src: data.publicUrl }).run();
+      let src: string | null = null;
+
+      if (userId && bookId) {
+        const ext = file.name.split(".").pop() ?? "jpg";
+        const path = `${userId}/${bookId}/images/${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("libri").upload(path, file, { upsert: true });
+        if (!upErr) {
+          const { data } = supabase.storage.from("libri").getPublicUrl(path);
+          src = data.publicUrl;
+        }
+      }
+
+      if (!src) {
+        src = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(file);
+        });
+      }
+
+      editor.chain().focus().setImage({ src }).run();
       onChange(editor.getHTML());
     } catch {
       setImageError("Errore caricamento immagine.");
