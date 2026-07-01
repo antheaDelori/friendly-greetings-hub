@@ -29,7 +29,6 @@ const ACCESSI = [
       "Scoprire autori e collane",
     ],
     nonPuoi: [
-      "Leggere le opere complete",
       "Salvare segnalibri o libreria",
       "Lasciare recensioni",
       "Seguire autori",
@@ -69,6 +68,7 @@ const ACCESSI = [
     badgeTone: "magenta",
     icon: "◆",
     tagline: "Pubblica. Connettiti. Rimani.",
+    primaOperaGratis: "La prima opera si pubblica gratuitamente, senza abbonamento. Prova, vedi come funziona, poi decidi.",
     description:
       "Tutto quello che ha il Lettore, più la possibilità di pubblicare le tue opere — libri, racconti, articoli, saggi, fumetti, illustrati. Crei la tua pagina autore, gestisci la tua lista lettori e invii newsletter dirette. Un euro al mese per tenere la piattaforma indipendente.",
     puoi: [
@@ -131,6 +131,14 @@ function GuidaPage() {
               <p className="font-serif italic text-bone/50 text-sm mb-5">{a.tagline}</p>
 
               <div className="hud-divider mb-5" />
+
+              {/* Banner prima opera gratis */}
+              {"primaOperaGratis" in a && (
+                <div className="border border-magenta/40 bg-magenta/5 px-4 py-3 mb-5">
+                  <div className="font-mono text-[8px] tracking-widest text-magenta/70 uppercase mb-1">★ Prima opera</div>
+                  <p className="font-serif text-bone/80 text-sm">{(a as any).primaOperaGratis}</p>
+                </div>
+              )}
 
               {/* Descrizione */}
               <p className="font-serif text-bone/70 text-sm leading-relaxed mb-6">
