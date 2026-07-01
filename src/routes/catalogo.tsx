@@ -11,7 +11,7 @@ import logo from "@/assets/logo-liberiamo.jpg";
 
 const searchSchema = z.object({
   q: z.string().default(""),
-  genre: z.enum(["", "libro", "racconto", "saggio", "articolo", "novelle", "poesia", "fumetto"]).default(""),
+  genre: z.enum(["", "libro", "racconto", "saggio", "articolo", "novelle", "poesia", "fumetto", "illustrato"]).default(""),
   sort: z.enum(["letti", "recenti", "anno", "rating"]).default("recenti"),
 });
 
@@ -28,6 +28,7 @@ type DbBook = {
   lastra_url: string | null;
   author_name: string | null;
   tag: string[] | null;
+  collana_id: string | null;
 };
 
 function dbToBook(b: DbBook): Book {
@@ -124,7 +125,7 @@ function CatalogoPage() {
     const fetchBooks = async () => {
       const { data: publicData } = await supabase
         .from("books")
-        .select("id, slug, titolo, descrizione, genere, anno, letture, copertina_url, copertina_rotta_url, lastra_url, author_name, tag")
+        .select("id, slug, titolo, descrizione, genere, anno, letture, copertina_url, copertina_rotta_url, lastra_url, author_name, tag, collana_id")
         .eq("disponibile", true)
         .eq("accesso", "gratuito")
         .or("status.neq.open,status.is.null")
@@ -141,7 +142,7 @@ function CatalogoPage() {
         if (authorizedIds.length > 0) {
           const { data: privBooks } = await supabase
             .from("books")
-            .select("id, slug, titolo, descrizione, genere, anno, letture, copertina_url, copertina_rotta_url, lastra_url, author_name, tag")
+            .select("id, slug, titolo, descrizione, genere, anno, letture, copertina_url, copertina_rotta_url, lastra_url, author_name, tag, collana_id")
             .eq("disponibile", true)
             .in("id", authorizedIds)
             .or("status.neq.open,status.is.null")
@@ -224,7 +225,8 @@ function CatalogoPage() {
         b.author.toLowerCase().includes(text) ||
         b.tagline.toLowerCase().includes(text) ||
         tags.some(t => t.toLowerCase().includes(text));
-      return matchesGenre && matchesQ;
+      const notInCollana = !dbBooksRaw.find(r => r.slug === b.slug)?.collana_id;
+      return matchesGenre && matchesQ && notInCollana;
     });
     if (sort === "recenti") return filtered;
     return [...filtered].sort((a, b) => {

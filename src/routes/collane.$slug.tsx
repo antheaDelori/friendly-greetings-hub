@@ -19,6 +19,8 @@ type Novella = {
   copertina_url: string | null;
   author_name: string | null;
   letture: number;
+  data_pubblicazione: string | null;
+  genere: string;
 };
 
 function CollanePage() {
@@ -42,10 +44,10 @@ function CollanePage() {
 
       const { data: booksData } = await supabase
         .from("books")
-        .select("slug, titolo, sottotitolo, descrizione, estratto, copertina_url, author_name, letture")
+        .select("slug, titolo, sottotitolo, descrizione, estratto, copertina_url, author_name, letture, data_pubblicazione, genere")
         .eq("collana_id", collanaData.id)
         .eq("disponibile", true)
-        .order("created_at", { ascending: true });
+        .order("data_pubblicazione", { ascending: true, nullsFirst: false });
 
       setNovelle(booksData ?? []);
       setLoading(false);
@@ -112,7 +114,7 @@ function CollanePage() {
                 </p>
               )}
               <p className="mt-4 font-mono text-[10px] tracking-widest text-bone/30 uppercase">
-                {novelle.length} {novelle.length === 1 ? t("collana.novellaSing") : t("collana.novellePlur")}
+                {novelle.length} {novelle.length === 1 ? t("ui.operaSing") : t("ui.operePlur")}
               </p>
             </div>
           </div>
@@ -147,7 +149,10 @@ function CollanePage() {
                     {/* Contenuto */}
                     <div className="flex-1 min-w-0">
                       <div className="font-mono text-[9px] tracking-[0.3em] text-cyan/50 uppercase mb-1">
-                        {String(i + 1).padStart(2, "0")} — {n.author_name ?? "Autore"}
+                        {n.genere === "articolo" && n.data_pubblicazione
+                          ? new Date(n.data_pubblicazione).toLocaleDateString("it-IT", { day: "2-digit", month: "long", year: "numeric" })
+                          : String(i + 1).padStart(2, "0")}
+                        {" — "}{n.author_name ?? "Autore"}
                       </div>
                       <Link to="/leggi/$slug" params={{ slug: n.slug }}>
                         <h2 className="font-display text-xl sm:text-2xl text-bone tracking-tight leading-snug hover:text-cyan transition-colors">
