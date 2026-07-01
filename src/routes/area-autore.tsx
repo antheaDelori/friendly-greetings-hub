@@ -398,6 +398,20 @@ function AreaAutorePage() {
           </div>
         </div>
 
+        {/* CTA principale */}
+        <div className="flex flex-col sm:flex-row gap-3 mb-8">
+          <Link to="/gestione" className="flex-1">
+            <HudButton variant="primary" className="w-full py-4 text-sm tracking-widest">
+              ▸ Gestisci opere
+            </HudButton>
+          </Link>
+          <Link to="/statistiche" className="flex-1">
+            <HudButton variant="ghost" className="w-full py-4 text-sm tracking-widest">
+              ◆ Statistiche dettagliate
+            </HudButton>
+          </Link>
+        </div>
+
         <div className="grid lg:grid-cols-3 gap-6">
 
           {/* Opere */}
