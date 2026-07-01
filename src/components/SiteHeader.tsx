@@ -187,7 +187,7 @@ export function SiteHeader() {
           <Link to="/community" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }}>{t("nav.community")}</Link>
           <Link to="/libri-aperti" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }}>{t("nav.libriAperti")}</Link>
           <Link to="/regolamento" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }}>{t("nav.regole")}</Link>
-          <Link to="/guida" className={`${linkBase} border border-magenta/50 px-3 py-1 text-magenta hover:text-magenta hover:border-magenta`} activeProps={{ className: "text-magenta border-magenta glow-magenta" }}>? {t("nav.guida")}</Link>
+          <Link to="/guida" className={`${linkBase} text-magenta/70 hover:text-magenta`} activeProps={{ className: "text-magenta" }}>? {t("nav.guida")}</Link>
         </nav>
 
         <div className="flex items-center gap-2">
