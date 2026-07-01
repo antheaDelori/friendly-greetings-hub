@@ -301,6 +301,13 @@ function GestionePage() {
       const mod = await import("mammoth");
       const mammoth = (mod as any).default ?? mod;
       const arrayBuffer = await file.arrayBuffer();
+      const toBase64 = (buffer: ArrayBuffer, contentType: string): Promise<string> =>
+        new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(new Blob([buffer], { type: contentType }));
+        });
+
       const convertImage = {
         convert: async (image: any) => {
           try {
@@ -309,13 +316,14 @@ function GestionePage() {
             if (userId && editingId) {
               const path = `${userId}/${editingId}/images/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
               const blob = new Blob([buffer], { type: image.contentType });
-              await supabase.storage.from("libri").upload(path, blob, { upsert: true });
-              const { data } = supabase.storage.from("libri").getPublicUrl(path);
-              return [{ tag: "img", attributes: { src: data.publicUrl } }];
+              const { error: upErr } = await supabase.storage.from("libri").upload(path, blob, { upsert: true });
+              if (!upErr) {
+                const { data } = supabase.storage.from("libri").getPublicUrl(path);
+                return [{ tag: "img", attributes: { src: data.publicUrl } }];
+              }
             }
-            // fallback base64
-            const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
-            return [{ tag: "img", attributes: { src: `data:${image.contentType};base64,${base64}` } }];
+            const dataUrl = await toBase64(buffer, image.contentType);
+            return [{ tag: "img", attributes: { src: dataUrl } }];
           } catch {
             return [];
           }
