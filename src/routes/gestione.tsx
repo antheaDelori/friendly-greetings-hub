@@ -3549,7 +3549,7 @@ function GestionePage() {
                 </div>
                 <div className="flex items-center gap-4 flex-wrap">
                   <HudButton variant="primary" onClick={handleSendNewsletter} disabled={sendingNewsletter || !newsletterBookId}>
-                    {sendingNewsletter ? "◈ Invio in corso..." : `◈ Invia a ${followers.length} letter${followers.length === 1 ? "e" : "i"}`}
+                    {sendingNewsletter ? "◈ Invio in corso..." : `◈ Invia a ${followers.length} lettor${followers.length === 1 ? "e" : "i"}`}
                   </HudButton>
                   {newsletterResult && (
                     <span className={`font-mono text-[10px] tracking-widest uppercase ${"error" in newsletterResult ? "text-magenta" : "text-cyan"}`}>
