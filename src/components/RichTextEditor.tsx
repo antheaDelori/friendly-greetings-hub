@@ -13,6 +13,25 @@ type Props = {
   bookId?: string;
 };
 
+const compressImage = (file: File, maxWidth = 1400, quality = 0.85): Promise<Blob> =>
+  new Promise((resolve, reject) => {
+    const img = new window.Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, maxWidth / img.width);
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) { reject(new Error("canvas")); return; }
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("blob")), "image/jpeg", quality);
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+
 export function RichTextEditor({ value, onChange, userId, bookId }: Props) {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -50,12 +69,12 @@ export function RichTextEditor({ value, onChange, userId, bookId }: Props) {
     setUploadingImage(true);
     setImageError(null);
     try {
+      const compressed = await compressImage(file);
       let src: string | null = null;
 
       if (userId && bookId) {
-        const ext = file.name.split(".").pop() ?? "jpg";
-        const path = `${userId}/${bookId}/images/${Date.now()}.${ext}`;
-        const { error: upErr } = await supabase.storage.from("libri").upload(path, file, { upsert: true });
+        const path = `${userId}/${bookId}/images/${Date.now()}.jpg`;
+        const { error: upErr } = await supabase.storage.from("libri").upload(path, compressed, { upsert: true, contentType: "image/jpeg" });
         if (!upErr) {
           const { data } = supabase.storage.from("libri").getPublicUrl(path);
           src = data.publicUrl;
@@ -66,7 +85,7 @@ export function RichTextEditor({ value, onChange, userId, bookId }: Props) {
         src = await new Promise<string>((resolve) => {
           const reader = new FileReader();
           reader.onloadend = () => resolve(reader.result as string);
-          reader.readAsDataURL(file);
+          reader.readAsDataURL(compressed);
         });
       }
 
