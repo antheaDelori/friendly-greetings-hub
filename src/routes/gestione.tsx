@@ -232,6 +232,13 @@ function GestionePage() {
   const [titolo, setTitolo] = useState("");
   const [sottotitolo, setSottotitolo] = useState("");
   const [genere, setGenere] = useState("libro");
+  const contenutoLabel = ["racconto", "articolo", "novelle"].includes(genere) ? "contenuto"
+    : genere === "poesia" ? "componimento"
+    : "capitolo";
+  const contenutoLabelPlur = ["racconto", "articolo", "novelle"].includes(genere) ? "Contenuti"
+    : genere === "poesia" ? "Componimenti"
+    : (genere === "fumetto" || genere === "illustrato") ? "Pagine"
+    : "Capitoli";
   const [edizione, setEdizione] = useState("");
   const [anno, setAnno] = useState(String(new Date().getFullYear()));
   const [lingua, setLingua] = useState("it");
@@ -2176,9 +2183,9 @@ function GestionePage() {
                 <div className="flex-1 text-left">
                   <div className={`font-mono text-[11px] tracking-[0.3em] uppercase ${
                     !editingId ? "text-bone/20" : openSection === 2 ? "text-cyan" : "text-bone/70"
-                  }`}>{genere === "fumetto" ? "Pagine" : "Capitoli"}</div>
+                  }`}>{(genere === "fumetto" || genere === "illustrato") ? "Pagine" : contenutoLabelPlur}</div>
                   <div className={`font-mono text-[9px] tracking-widest mt-0.5 ${!editingId ? "text-bone/15" : "text-bone/40"}`}>
-                    {editingId ? ((genere === "fumetto" || genere === "illustrato") ? `${fumettoPagine.length} pagine caricate` : `${capitoli.length} capitoli · materiali extra`) : "— salva prima i metadati —"}
+                    {editingId ? ((genere === "fumetto" || genere === "illustrato") ? `${fumettoPagine.length} pagine caricate` : `${capitoli.length} ${contenutoLabelPlur.toLowerCase()} · materiali extra`) : "— salva prima i metadati —"}
                   </div>
                 </div>
                 <span className={`font-mono text-[9px] tracking-widest uppercase ${
@@ -2288,9 +2295,9 @@ function GestionePage() {
               {openSection === 2 && editingId && selected && genere !== "fumetto" && genere !== "illustrato" && (
                 <div className="border border-cyan/20 border-t-0 p-5 space-y-4">
 
-                  {/* Capitoli */}
+                  {/* Contenuti */}
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-[10px] tracking-widest text-cyan/70 uppercase">// capitoli</span>
+                    <span className="font-mono text-[10px] tracking-widest text-cyan/70 uppercase">// {contenutoLabelPlur.toLowerCase()}</span>
                     {!showCapitoloForm && (
                       <button onClick={() => {
                         setEditingCapitoloId(null);
@@ -2301,13 +2308,13 @@ function GestionePage() {
                         setShowCapitoloForm(true);
                       }}
                         className="font-mono text-[10px] tracking-widest text-magenta uppercase hover:text-cyan transition-colors">
-                        + nuovo capitolo
+                        + nuovo {contenutoLabel}
                       </button>
                     )}
                   </div>
 
                   {capitoli.length === 0 && !showCapitoloForm && (
-                    <p className="font-serif italic text-bone/40 text-sm">Nessun capitolo aggiunto.</p>
+                    <p className="font-serif italic text-bone/40 text-sm">Nessun {contenutoLabel} aggiunto.</p>
                   )}
 
                   {capitoli.map((c) => (
@@ -2341,7 +2348,7 @@ function GestionePage() {
                   {showCapitoloForm && (
                     <div className="border border-cyan/20 bg-cyan/5 p-4 space-y-4 mt-2">
                       <div className="font-mono text-[9px] tracking-[0.3em] text-cyan/60 uppercase">
-                        // {editingCapitoloId ? "modifica capitolo" : "nuovo capitolo"}
+                        // {editingCapitoloId ? `modifica ${contenutoLabel}` : `nuovo ${contenutoLabel}`}
                       </div>
                       <div className="grid sm:grid-cols-4 gap-4">
                         <div>
@@ -2350,9 +2357,9 @@ function GestionePage() {
                             type="number" min={1} className={inputClass} />
                         </div>
                         <div className="sm:col-span-3">
-                          <span className={labelClass}>↳ Titolo capitolo</span>
+                          <span className={labelClass}>↳ Titolo {contenutoLabel}</span>
                           <input value={capTitolo} onChange={e => setCapTitolo(e.target.value)}
-                            placeholder="Es. Capitolo I — L'inizio" className={inputClass} />
+                            placeholder={`Es. ${contenutoLabel.charAt(0).toUpperCase() + contenutoLabel.slice(1)} I — L'inizio`} className={inputClass} />
                         </div>
                       </div>
                       <div>
@@ -2364,7 +2371,7 @@ function GestionePage() {
                       )}
                       <div className="flex gap-3">
                         <HudButton variant="primary" onClick={handleSaveCapitolo} disabled={savingCapitolo || !capTitolo.trim()}>
-                          {savingCapitolo ? "▸ Salvataggio..." : editingCapitoloId ? "▸ Aggiorna capitolo" : "▸ Salva capitolo"}
+                          {savingCapitolo ? "▸ Salvataggio..." : editingCapitoloId ? `▸ Aggiorna ${contenutoLabel}` : `▸ Salva ${contenutoLabel}`}
                         </HudButton>
                         <HudButton variant="ghost" onClick={() => { setShowCapitoloForm(false); setEditingCapitoloId(null); setCapError(null); }}>
                           annulla
