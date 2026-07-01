@@ -308,21 +308,44 @@ function GestionePage() {
           reader.readAsDataURL(new Blob([buffer], { type: contentType }));
         });
 
+      const compressBlob = (blob: Blob): Promise<Blob> =>
+        new Promise((resolve, reject) => {
+          const img = new window.Image();
+          const url = URL.createObjectURL(blob);
+          img.onload = () => {
+            URL.revokeObjectURL(url);
+            const scale = Math.min(1, 1400 / img.width);
+            const canvas = document.createElement("canvas");
+            canvas.width = Math.round(img.width * scale);
+            canvas.height = Math.round(img.height * scale);
+            const ctx = canvas.getContext("2d");
+            if (!ctx) { resolve(blob); return; }
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            canvas.toBlob((b) => b ? resolve(b) : resolve(blob), "image/jpeg", 0.85);
+          };
+          img.onerror = () => resolve(blob);
+          img.src = url;
+        });
+
       const convertImage = {
         convert: async (image: any) => {
           try {
             const buffer: ArrayBuffer = await image.read();
-            const ext = (image.contentType as string)?.split("/")[1] ?? "jpg";
+            const rawBlob = new Blob([buffer], { type: image.contentType });
+            const compressed = await compressBlob(rawBlob);
             if (userId && editingId) {
-              const path = `${userId}/${editingId}/images/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-              const blob = new Blob([buffer], { type: image.contentType });
-              const { error: upErr } = await supabase.storage.from("libri").upload(path, blob, { upsert: true });
+              const path = `${userId}/${editingId}/images/${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
+              const { error: upErr } = await supabase.storage.from("libri").upload(path, compressed, { upsert: true, contentType: "image/jpeg" });
               if (!upErr) {
                 const { data } = supabase.storage.from("libri").getPublicUrl(path);
                 return [{ tag: "img", attributes: { src: data.publicUrl } }];
               }
             }
-            const dataUrl = await toBase64(buffer, image.contentType);
+            const dataUrl = await new Promise<string>((res) => {
+              const reader = new FileReader();
+              reader.onloadend = () => res(reader.result as string);
+              reader.readAsDataURL(compressed);
+            });
             return [{ tag: "img", attributes: { src: dataUrl } }];
           } catch {
             return [];
