@@ -167,6 +167,7 @@ function GestionePage() {
   const [showForm, setShowForm] = useState(false);
   const [showAbbonatoGate, setShowAbbonatoGate] = useState(false);
   const [maxOpere, setMaxOpere] = useState(1);
+  const [maxArticoli, setMaxArticoli] = useState(5);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -493,7 +494,7 @@ function GestionePage() {
 
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("pseudonimo, nome, cognome, max_opere, paypal_url, is_author")
+        .select("pseudonimo, nome, cognome, max_opere, max_articoli, paypal_url, is_author")
         .eq("id", user.id)
         .single();
 
@@ -503,6 +504,7 @@ function GestionePage() {
       }
 
       setMaxOpere(adminEmail ? 999 : (profileData?.max_opere ?? 1));
+      setMaxArticoli(adminEmail ? 999 : (profileData?.max_articoli ?? 5));
       setPaypalUrl(profileData?.paypal_url ?? "");
       const name =
         [profileData?.nome, profileData?.cognome].filter(Boolean).join(" ") ||
@@ -611,7 +613,14 @@ function GestionePage() {
   };
 
   const handleNewBook = () => {
-    if (books.length >= maxOpere) {
+    const articoliCount = books.filter(b => b.genere === "articolo").length;
+    const altreOpereCount = books.filter(b => b.genere !== "articolo").length;
+    const articoliBlocked = articoliCount >= maxArticoli;
+    const altreBlocked = altreOpereCount >= maxOpere;
+    const blocked = filterGenere === "articolo" ? articoliBlocked
+      : filterGenere ? altreBlocked
+      : articoliBlocked && altreBlocked;
+    if (blocked) {
       setShowAbbonatoGate(true);
       setShowForm(false);
       setSelected(null);
@@ -627,7 +636,9 @@ function GestionePage() {
   };
 
   const handleNewBookInCollana = (cId: string) => {
-    if (books.length >= maxOpere) {
+    const articoliCount = books.filter(b => b.genere === "articolo").length;
+    const altreOpereCount = books.filter(b => b.genere !== "articolo").length;
+    if (articoliCount >= maxArticoli && altreOpereCount >= maxOpere) {
       setShowAbbonatoGate(true);
       setShowForm(false);
       setSelected(null);
@@ -1077,6 +1088,17 @@ function GestionePage() {
 
     try {
       let newBookId: string | null = null;
+
+      if (!editingId) {
+        const articoliCount = books.filter(b => b.genere === "articolo").length;
+        const altreOpereCount = books.filter(b => b.genere !== "articolo").length;
+        if (genere === "articolo" && articoliCount >= maxArticoli) {
+          setSaveError("Hai raggiunto il limite di articoli gratuiti."); setSaving(false); return;
+        }
+        if (genere !== "articolo" && altreOpereCount >= maxOpere) {
+          setSaveError("Hai raggiunto il limite di opere gratuite."); setSaving(false); return;
+        }
+      }
 
       if (editingId) {
         const { error } = await supabase.from("books").update({
@@ -1843,13 +1865,31 @@ function GestionePage() {
               })}
             </div>
 
-            <div className="mb-3 flex items-center justify-between">
-              <span className="font-mono text-[9px] tracking-widest text-bone/30 uppercase">
-                opere: {books.length} / {maxOpere >= 999 ? "∞" : maxOpere}
-              </span>
-              {books.length >= maxOpere && maxOpere < 999 && (
-                <span className="font-mono text-[9px] tracking-widest text-magenta uppercase">⊗ limite raggiunto</span>
-              )}
+            <div className="mb-3 space-y-0.5">
+              {(() => {
+                const articoliCount = books.filter(b => b.genere === "articolo").length;
+                const altreCount = books.filter(b => b.genere !== "articolo").length;
+                return (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-[9px] tracking-widest text-bone/30 uppercase">
+                        opere: {altreCount} / {maxOpere >= 999 ? "∞" : maxOpere}
+                      </span>
+                      {altreCount >= maxOpere && maxOpere < 999 && (
+                        <span className="font-mono text-[9px] tracking-widest text-magenta uppercase">⊗ limite</span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-[9px] tracking-widest text-bone/30 uppercase">
+                        articoli: {articoliCount} / {maxArticoli >= 999 ? "∞" : maxArticoli}
+                      </span>
+                      {articoliCount >= maxArticoli && maxArticoli < 999 && (
+                        <span className="font-mono text-[9px] tracking-widest text-magenta uppercase">⊗ limite</span>
+                      )}
+                    </div>
+                  </>
+                );
+              })()}
             </div>
             <button
               onClick={handleNewBook}
@@ -1971,8 +2011,9 @@ function GestionePage() {
           {showAbbonatoGate && !showForm && (
             <HudPanel label="accesso limitato" code="LOCK" tone="magenta">
               <div className="space-y-5 py-2">
-                <div className="font-mono text-[10px] tracking-widest text-magenta/60 uppercase">
-                  // opere_pubblicate: {books.length} / {maxOpere >= 999 ? "∞" : maxOpere}
+                <div className="font-mono text-[10px] tracking-widest text-magenta/60 uppercase space-y-0.5">
+                  <div>// opere: {books.filter(b => b.genere !== "articolo").length} / {maxOpere >= 999 ? "∞" : maxOpere}</div>
+                  <div>// articoli: {books.filter(b => b.genere === "articolo").length} / {maxArticoli >= 999 ? "∞" : maxArticoli}</div>
                 </div>
 
                 {maxOpere <= 1 ? (
