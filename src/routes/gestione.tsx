@@ -2381,13 +2381,20 @@ function GestionePage() {
                       {capError && (
                         <p className="font-mono text-[11px] text-magenta border border-magenta/30 bg-magenta/5 px-4 py-3">⚠ {capError}</p>
                       )}
-                      <div className="flex gap-3">
-                        <HudButton variant="primary" onClick={handleSaveCapitolo} disabled={savingCapitolo}>
-                          {savingCapitolo ? "▸ Salvataggio..." : editingCapitoloId ? `▸ Aggiorna ${contenutoLabel}` : `▸ Salva ${contenutoLabel}`}
-                        </HudButton>
-                        <HudButton variant="ghost" onClick={() => { setShowCapitoloForm(false); setEditingCapitoloId(null); setCapError(null); }}>
-                          annulla
-                        </HudButton>
+                      <div className="flex flex-col gap-2">
+                        <div className="flex gap-3">
+                          <HudButton variant="primary" onClick={handleSaveCapitolo} disabled={savingCapitolo || !capTitolo.trim() || !capTesto.trim()}>
+                            {savingCapitolo ? "▸ Salvataggio..." : editingCapitoloId ? `▸ Aggiorna ${contenutoLabel}` : `▸ Salva ${contenutoLabel}`}
+                          </HudButton>
+                          <HudButton variant="ghost" onClick={() => { setShowCapitoloForm(false); setEditingCapitoloId(null); setCapError(null); }}>
+                            annulla
+                          </HudButton>
+                        </div>
+                        {(!capTitolo.trim() || !capTesto.trim()) && (
+                          <p className="font-mono text-[10px] text-bone/40 tracking-wide">
+                            ⊗ {!capTitolo.trim() && !capTesto.trim() ? "Titolo e testo obbligatori" : !capTitolo.trim() ? "Titolo obbligatorio" : "Testo obbligatorio"}
+                          </p>
+                        )}
                       </div>
                     </div>
                   )}
