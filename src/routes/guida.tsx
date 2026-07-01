@@ -22,10 +22,10 @@ const ACCESSI = [
     icon: "◌",
     tagline: "Entra, guarda, poi decidi.",
     description:
-      "Non serve un account. Puoi sfogliare il catalogo, vedere le copertine, leggere le sinossi e gli estratti. È il modo più rapido per capire se la piattaforma fa per te.",
+      "Non serve un account. Puoi sfogliare il catalogo, leggere le opere complete, scoprire autori e collane. È il modo più rapido per capire se la piattaforma fa per te.",
     puoi: [
       "Sfogliare il catalogo completo",
-      "Leggere estratti e sinossi",
+      "Leggere le opere integrali",
       "Scoprire autori e collane",
     ],
     nonPuoi: [
@@ -68,7 +68,7 @@ const ACCESSI = [
     badgeTone: "magenta",
     icon: "◆",
     tagline: "Pubblica. Connettiti. Rimani.",
-    primaOperaGratis: "La prima opera si pubblica gratuitamente, senza abbonamento. Prova, vedi come funziona, poi decidi.",
+    primaOperaGratis: "1 opera gratuita (libri, racconti, saggi e simili). 5 articoli e 5 poesie gratuite. Prova, vedi come funziona, poi decidi.",
     description:
       "Tutto quello che ha il Lettore, più la possibilità di pubblicare le tue opere — libri, racconti, articoli, saggi, fumetti, illustrati. Crei la tua pagina autore, gestisci la tua lista lettori e invii newsletter dirette. Un euro al mese per tenere la piattaforma indipendente.",
     puoi: [
