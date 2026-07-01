@@ -77,6 +77,7 @@ type Book = {
   created_at: string;
   collana_id: string | null;
   status: string;
+  data_pubblicazione: string | null;
 };
 
 const GENERI = ["libro", "racconto", "saggio", "articolo", "novelle", "poesia", "fumetto", "illustrato"] as const;
@@ -241,6 +242,7 @@ function GestionePage() {
     : "Capitoli";
   const [edizione, setEdizione] = useState("");
   const [anno, setAnno] = useState(String(new Date().getFullYear()));
+  const [dataPubblicazione, setDataPubblicazione] = useState("");
   const [lingua, setLingua] = useState("it");
   const [accesso, setAccesso] = useState("gratuito");
   const [isLibroAperto, setIsLibroAperto] = useState(false);
@@ -539,7 +541,7 @@ function GestionePage() {
 
   const resetForm = () => {
     setTitolo(""); setSottotitolo(""); setGenere("libro"); setEdizione("");
-    setAnno(String(new Date().getFullYear())); setLingua("it"); setAccesso("gratuito"); setIsLibroAperto(false);
+    setAnno(String(new Date().getFullYear())); setDataPubblicazione(""); setLingua("it"); setAccesso("gratuito"); setIsLibroAperto(false);
     setTipo(""); setTipoAltro(""); setTarget("tutti"); setIsbn("");
     setDescrizione(""); setEstratto(""); setTestoCompleto(""); setTagStr("");
     setCopertina(null); setLastra(null); setFilePdf(null); setSaveError(null);
@@ -704,6 +706,7 @@ function GestionePage() {
     setFumettoFormato((b as any).fumetto_formato ?? "a4v");
     setEdizione(b.edizione ?? "");
     setAnno(b.anno ? String(b.anno) : "");
+    setDataPubblicazione(b.data_pubblicazione ?? "");
     setLingua(b.lingua);
     setAccesso(b.accesso);
     setIsLibroAperto(b.status === "open");
@@ -1085,7 +1088,10 @@ function GestionePage() {
           target: target || null,
           isbn: isbn.trim() || null,
           edizione: edizione.trim() || null,
-          anno: anno ? parseInt(anno) : null,
+          anno: genere === "articolo" && dataPubblicazione
+            ? new Date(dataPubblicazione).getFullYear()
+            : anno ? parseInt(anno) : null,
+          data_pubblicazione: genere === "articolo" ? (dataPubblicazione || null) : null,
           lingua,
           accesso,
           status: isLibroAperto ? "open" : "published",
@@ -1111,7 +1117,10 @@ function GestionePage() {
           target: target || null,
           isbn: isbn.trim() || null,
           edizione: edizione.trim() || null,
-          anno: anno ? parseInt(anno) : null,
+          anno: genere === "articolo" && dataPubblicazione
+            ? new Date(dataPubblicazione).getFullYear()
+            : anno ? parseInt(anno) : null,
+          data_pubblicazione: genere === "articolo" ? (dataPubblicazione || null) : null,
           lingua,
           accesso,
           status: isLibroAperto ? "open" : "published",
@@ -2123,8 +2132,17 @@ function GestionePage() {
                       <input value={edizione} onChange={e => setEdizione(e.target.value)} placeholder="Prima edizione" className={inputClass} />
                     </div>
                     <div>
-                      <span className={labelClass}>↳ Anno</span>
-                      <input value={anno} onChange={e => setAnno(e.target.value)} type="number" className={inputClass} />
+                      {genere === "articolo" ? (
+                        <>
+                          <span className={labelClass}>↳ Data pubblicazione</span>
+                          <input value={dataPubblicazione} onChange={e => setDataPubblicazione(e.target.value)} type="date" className={inputClass} />
+                        </>
+                      ) : (
+                        <>
+                          <span className={labelClass}>↳ Anno</span>
+                          <input value={anno} onChange={e => setAnno(e.target.value)} type="number" className={inputClass} />
+                        </>
+                      )}
                     </div>
                     <div>
                       <span className={labelClass}>↳ Lingua</span>

@@ -39,7 +39,7 @@ export const Route = createFileRoute("/leggi/$slug")({
     // Poi cerca su Supabase
     const { data } = await supabase
       .from("books")
-      .select("id, slug, titolo, descrizione, estratto, genere, fumetto_formato, anno, letture, copertina_url, copertina_flat_url, file_url, epub_url, mobi_url, author_name, author_id, cestinato, voti_cestino, recuperato, accesso, status")
+      .select("id, slug, titolo, descrizione, estratto, genere, fumetto_formato, anno, data_pubblicazione, letture, copertina_url, copertina_flat_url, file_url, epub_url, mobi_url, author_name, author_id, cestinato, voti_cestino, recuperato, accesso, status")
       .eq("slug", params.slug)
       .or("disponibile.eq.true,cestinato.eq.true")
       .maybeSingle();
@@ -183,6 +183,7 @@ export const Route = createFileRoute("/leggi/$slug")({
       fumettoPagine: (fumettoPagineData ?? []) as { id: string; ordine: number; image_url: string; testo?: string | null }[],
       fumettoFormato: (data.fumetto_formato ?? "a4v") as "a4v" | "a4h" | "manga" | "illustrato",
       estratto: (data.estratto ?? null) as string | null,
+      dataPubblicazione: (data.data_pubblicazione ?? null) as string | null,
     };
   },
   head: ({ loaderData }) => {
@@ -279,7 +280,7 @@ function getOrCreateVisitorId(userId?: string | null): string {
 
 
 function ReadPage() {
-  const { book, fileUrl, epubUrl, mobiUrl, donationUrl, isLoggedIn, isAnonymous, userId, userEmail, allegati, isCestinato, votiCestino: initialVoti, recuperato, bookId, authorId, recensioni: inizialiRecensioni, userIsFollowing: initFollowing, hasAccess, bookAccesso, authorBio, fumettoPagine, fumettoFormato, estratto } = Route.useLoaderData();
+  const { book, fileUrl, epubUrl, mobiUrl, donationUrl, isLoggedIn, isAnonymous, userId, userEmail, allegati, isCestinato, votiCestino: initialVoti, recuperato, bookId, authorId, recensioni: inizialiRecensioni, userIsFollowing: initFollowing, hasAccess, bookAccesso, authorBio, fumettoPagine, fumettoFormato, estratto, dataPubblicazione } = Route.useLoaderData();
   const isAuthor = !!userId && !!authorId && userId === authorId;
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [guestLoading, setGuestLoading] = useState(false);
@@ -682,7 +683,11 @@ function ReadPage() {
           <img src={book.cover} alt="" className="w-full h-auto block ring-1 ring-ink/15 bg-ink/5" />
 
           <div className="mt-4">
-            <div className="font-display tracking-[0.25em] text-[10px] text-blood uppercase">{book.genere} · {book.year}</div>
+            <div className="font-display tracking-[0.25em] text-[10px] text-blood uppercase">
+              {book.genere} · {book.genere === "articolo" && dataPubblicazione
+                ? new Date(dataPubblicazione).toLocaleDateString("it-IT", { day: "2-digit", month: "long", year: "numeric" })
+                : book.year}
+            </div>
             <h1 className="mt-1 font-serif text-xl leading-tight text-ink">{book.title}</h1>
             <p className="font-serif italic text-sm text-ink/70 mt-0.5">di {book.author}</p>
             <p className="mt-3 font-serif text-sm text-ink/70 leading-relaxed line-clamp-4">{book.description}</p>
