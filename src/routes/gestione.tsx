@@ -300,19 +300,28 @@ function GestionePage() {
     try {
       const mod = await import("mammoth");
       const mammoth = (mod as any).default ?? mod;
-      const options: any = { arrayBuffer: await file.arrayBuffer() };
-      if (userId && editingId) {
-        options.convertImage = mammoth.images.imgElement(async (image: any) => {
-          const buffer = await image.read();
-          const ext = image.contentType?.split("/")[1] ?? "jpg";
-          const path = `${userId}/${editingId}/images/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-          const blob = new Blob([buffer], { type: image.contentType });
-          await supabase.storage.from("libri").upload(path, blob, { upsert: true });
-          const { data } = supabase.storage.from("libri").getPublicUrl(path);
-          return { src: data.publicUrl };
-        });
-      }
-      const result = await mammoth.convertToHtml(options);
+      const arrayBuffer = await file.arrayBuffer();
+      const convertImage = {
+        convert: async (image: any) => {
+          try {
+            const buffer: ArrayBuffer = await image.read();
+            const ext = (image.contentType as string)?.split("/")[1] ?? "jpg";
+            if (userId && editingId) {
+              const path = `${userId}/${editingId}/images/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+              const blob = new Blob([buffer], { type: image.contentType });
+              await supabase.storage.from("libri").upload(path, blob, { upsert: true });
+              const { data } = supabase.storage.from("libri").getPublicUrl(path);
+              return [{ tag: "img", attributes: { src: data.publicUrl } }];
+            }
+            // fallback base64
+            const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+            return [{ tag: "img", attributes: { src: `data:${image.contentType};base64,${base64}` } }];
+          } catch {
+            return [];
+          }
+        },
+      };
+      const result = await mammoth.convertToHtml({ arrayBuffer, convertImage });
       if (!result?.value) throw new Error("File vuoto o non leggibile.");
       setCapTesto(result.value);
     } catch (err: any) {
