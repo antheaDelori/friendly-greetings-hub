@@ -285,6 +285,68 @@ function GestionePage() {
   const epubRef = useRef<HTMLInputElement>(null);
   const docxRef = useRef<HTMLInputElement>(null);
 
+  // Import testo capitolo
+  const importDocxRef = useRef<HTMLInputElement>(null);
+  const importTxtRef = useRef<HTMLInputElement>(null);
+  const importPdfRef = useRef<HTMLInputElement>(null);
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+
+  const handleImportDocx = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true); setImportError(null);
+    try {
+      const mod = await import("mammoth");
+      const mammoth = (mod as any).default ?? mod;
+      const result = await mammoth.convertToHtml({ arrayBuffer: await file.arrayBuffer() });
+      if (!result?.value) throw new Error("File vuoto o non leggibile.");
+      setCapTesto(result.value);
+    } catch (err: any) {
+      setImportError(err.message ?? "Errore conversione .docx.");
+    } finally {
+      setImporting(false); e.target.value = "";
+    }
+  };
+
+  const handleImportTxt = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true); setImportError(null);
+    try {
+      const text = await file.text();
+      const html = text.split(/\n\n+/).map(p => `<p>${p.replace(/\n/g, "<br>")}</p>`).join("");
+      setCapTesto(html);
+    } catch {
+      setImportError("Errore lettura file .txt.");
+    } finally {
+      setImporting(false); e.target.value = "";
+    }
+  };
+
+  const handleImportPdf = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true); setImportError(null);
+    try {
+      const pdfjsLib = await import("pdfjs-dist");
+      pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
+      const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+      let fullText = "";
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        fullText += content.items.map((item: any) => item.str).join(" ") + "\n\n";
+      }
+      const html = fullText.split(/\n\n+/).filter(p => p.trim()).map(p => `<p>${p.trim()}</p>`).join("");
+      setCapTesto(html);
+    } catch {
+      setImportError("Errore lettura PDF.");
+    } finally {
+      setImporting(false); e.target.value = "";
+    }
+  };
+
   // AI cover generation
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiGenerating, setAiGenerating] = useState(false);
@@ -2376,7 +2438,39 @@ function GestionePage() {
                       </div>
                       <div>
                         <span className={labelClass}>↳ Testo</span>
-                        <RichTextEditor value={capTesto} onChange={setCapTesto} />
+                        <div className="flex gap-3 items-start mt-2">
+                          <div className="flex-1 min-w-0">
+                            <RichTextEditor value={capTesto} onChange={setCapTesto} />
+                          </div>
+                          <div className="w-32 flex-shrink-0 flex flex-col gap-1.5 pt-0">
+                            <span className="font-mono text-[9px] tracking-widest text-cyan/50 uppercase">↳ importa file</span>
+                            <input ref={importDocxRef} type="file" accept=".docx" onChange={handleImportDocx} className="hidden" />
+                            <input ref={importTxtRef} type="file" accept=".txt" onChange={handleImportTxt} className="hidden" />
+                            <input ref={importPdfRef} type="file" accept=".pdf" onChange={handleImportPdf} className="hidden" />
+                            <button type="button" disabled={importing} onClick={() => importDocxRef.current?.click()}
+                              className="w-full font-mono text-[9px] tracking-widest uppercase border border-amber/40 text-amber/70 hover:border-amber hover:text-amber px-2 py-1.5 transition-colors disabled:opacity-40 text-left">
+                              ◈ DOC
+                            </button>
+                            <button type="button" disabled={importing} onClick={() => importTxtRef.current?.click()}
+                              className="w-full font-mono text-[9px] tracking-widest uppercase border border-amber/40 text-amber/70 hover:border-amber hover:text-amber px-2 py-1.5 transition-colors disabled:opacity-40 text-left">
+                              ◈ TXT
+                            </button>
+                            <button type="button" disabled={importing} onClick={() => importPdfRef.current?.click()}
+                              className="w-full font-mono text-[9px] tracking-widest uppercase border border-amber/40 text-amber/70 hover:border-amber hover:text-amber px-2 py-1.5 transition-colors disabled:opacity-40 text-left">
+                              ◈ PDF
+                            </button>
+                            <p className="font-mono text-[8px] text-bone/30 leading-tight">solo testo, niente formattazione</p>
+                            <div className="h-px bg-cyan/10 my-1" />
+                            <p className="font-mono text-[8px] text-bone/30 leading-tight">
+                              <span className="text-amber/50">Pages:</span> File → Esporta in → Word (.docx)
+                            </p>
+                            <p className="font-mono text-[8px] text-bone/30 leading-tight mt-1">
+                              <span className="text-amber/50">Altri:</span> copia e incolla il testo nell'editor
+                            </p>
+                            {importing && <p className="font-mono text-[8px] text-cyan animate-pulse">▸ importazione…</p>}
+                            {importError && <p className="font-mono text-[8px] text-magenta leading-tight">⚠ {importError}</p>}
+                          </div>
+                        </div>
                       </div>
                       {capError && (
                         <p className="font-mono text-[11px] text-magenta border border-magenta/30 bg-magenta/5 px-4 py-3">⚠ {capError}</p>
