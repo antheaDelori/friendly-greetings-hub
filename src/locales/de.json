@@ -7,7 +7,8 @@
     "libriAperti": "Offene Bücher",
     "regole": "Regeln",
     "libreria": "Meine Bibliothek",
-    "sostieni": "Unterstützen"
+    "sostieni": "Unterstützen",
+    "guida": "Hilfe"
   },
   "autoriDropdown": {
     "ricerca": "Autoren suchen",
@@ -112,7 +113,8 @@
     "articolo": "Artikel",
     "novelle": "Novellen",
     "poesia": "Gedichte",
-    "fumetto": "Comics"
+    "fumetto": "Comics",
+    "illustrato": "Illustriert"
   },
   "generiTag": {
     "libro": "Roman",
@@ -121,7 +123,8 @@
     "articolo": "Artikel",
     "novelle": "Novelle",
     "poesia": "Gedicht",
-    "fumetto": "Comic"
+    "fumetto": "Comic",
+    "illustrato": "Illustriert"
   },
   "ui": {
     "operaSing": "Werk",

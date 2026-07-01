@@ -7,7 +7,8 @@
     "libriAperti": "Libri Aperti",
     "regole": "Regole",
     "libreria": "Libreria",
-    "sostieni": "Sostieni"
+    "sostieni": "Sostieni",
+    "guida": "Guida"
   },
   "autoriDropdown": {
     "ricerca": "Ricerca autori",
@@ -112,7 +113,8 @@
     "articolo": "Articoli",
     "novelle": "Novelle",
     "poesia": "Poesie",
-    "fumetto": "Fumetti"
+    "fumetto": "Fumetti",
+    "illustrato": "Illustrati"
   },
   "generiTag": {
     "libro": "Libro",
@@ -121,7 +123,8 @@
     "articolo": "Articolo",
     "novelle": "Novella",
     "poesia": "Poesia",
-    "fumetto": "Fumetto"
+    "fumetto": "Fumetto",
+    "illustrato": "Illustrato"
   },
   "ui": {
     "operaSing": "opera",

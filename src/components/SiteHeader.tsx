@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import logo from "@/assets/liberiamo-hero.webp";
@@ -18,6 +18,8 @@ export function SiteHeader() {
   const [autoriLoaded, setAutoriLoaded] = useState(false);
   const autoriRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const routerState = useRouterState();
+  const isInAreaAutore = routerState.location.pathname.startsWith("/area-autore");
 
   useEffect(() => { setCestinoTooltip(getCestinoTranslation()); }, []);
 
@@ -185,6 +187,7 @@ export function SiteHeader() {
           <Link to="/community" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }}>{t("nav.community")}</Link>
           <Link to="/libri-aperti" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }}>{t("nav.libriAperti")}</Link>
           <Link to="/regolamento" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }}>{t("nav.regole")}</Link>
+          <Link to="/guida" className={`${linkBase} border border-cyan/25 px-3 py-1`} activeProps={{ className: "text-cyan text-glow-cyan border-cyan/60" }}>? {t("nav.guida")}</Link>
         </nav>
 
         <div className="flex items-center gap-2">
@@ -199,7 +202,7 @@ export function SiteHeader() {
                   to={isAuthor ? "/area-autore" : "/libreria"}
                   className="hidden sm:inline-flex font-mono tracking-widest text-[10px] uppercase text-cyan hover:text-magenta transition-colors px-3 py-2"
                 >
-                  [{displayName}]
+                  [{isInAreaAutore ? displayName : t("profiloAutore.areaRiservata")}]
                 </Link>
               )}
               <button

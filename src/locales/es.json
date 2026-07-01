@@ -7,7 +7,8 @@
     "libriAperti": "Libros Abiertos",
     "regole": "Normas",
     "libreria": "Mi Biblioteca",
-    "sostieni": "Apoyar"
+    "sostieni": "Apoyar",
+    "guida": "Guía"
   },
   "autoriDropdown": {
     "ricerca": "Buscar autores",
@@ -112,7 +113,8 @@
     "articolo": "Artículos",
     "novelle": "Novelas cortas",
     "poesia": "Poesías",
-    "fumetto": "Cómics"
+    "fumetto": "Cómics",
+    "illustrato": "Ilustrados"
   },
   "generiTag": {
     "libro": "Novela",
@@ -121,7 +123,8 @@
     "articolo": "Artículo",
     "novelle": "Novela corta",
     "poesia": "Poesía",
-    "fumetto": "Cómic"
+    "fumetto": "Cómic",
+    "illustrato": "Ilustrado"
   },
   "ui": {
     "operaSing": "obra",

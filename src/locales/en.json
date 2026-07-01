@@ -7,7 +7,8 @@
     "libriAperti": "Open Books",
     "regole": "Rules",
     "libreria": "My Library",
-    "sostieni": "Support"
+    "sostieni": "Support",
+    "guida": "Guide"
   },
   "autoriDropdown": {
     "ricerca": "Search authors",
@@ -112,7 +113,8 @@
     "articolo": "Articles",
     "novelle": "Short stories",
     "poesia": "Poetry",
-    "fumetto": "Comics"
+    "fumetto": "Comics",
+    "illustrato": "Illustrated"
   },
   "generiTag": {
     "libro": "Novel",
@@ -121,7 +123,8 @@
     "articolo": "Article",
     "novelle": "Short story",
     "poesia": "Poetry",
-    "fumetto": "Comics"
+    "fumetto": "Comics",
+    "illustrato": "Illustrated"
   },
   "ui": {
     "operaSing": "work",
