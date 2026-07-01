@@ -23,7 +23,7 @@ export function RichTextEditor({ value, onChange, userId, bookId }: Props) {
       StarterKit,
       Underline,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
-      Image.configure({ inline: false, allowBase64: false }),
+      Image.configure({ inline: false, allowBase64: true }),
     ],
     content: value,
     onUpdate: ({ editor }) => {

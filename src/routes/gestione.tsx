@@ -332,6 +332,8 @@ function GestionePage() {
       const result = await mammoth.convertToHtml({ arrayBuffer, convertImage });
       if (!result?.value) throw new Error("File vuoto o non leggibile.");
       setCapTesto(result.value);
+      const imgWarnings = (result.messages ?? []).filter((m: any) => m.type === "warning" && /image/i.test(m.message));
+      if (imgWarnings.length > 0) setImportError(`Attenzione: ${imgWarnings.length} immagine/i non convertita/e correttamente.`);
     } catch (err: any) {
       setImportError(err.message ?? "Errore conversione .docx.");
     } finally {
