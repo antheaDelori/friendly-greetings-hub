@@ -1478,7 +1478,19 @@ function GestionePage() {
   };
 
   const handleSaveCapitolo = async () => {
-    if (!selected || !userId || !capTitolo.trim()) return;
+    if (!selected || !userId) return;
+    if (!capTitolo.trim() && !capTesto.trim()) {
+      setCapError("Inserisci almeno il titolo e il testo prima di salvare.");
+      return;
+    }
+    if (!capTitolo.trim()) {
+      setCapError("Il titolo è obbligatorio.");
+      return;
+    }
+    if (!capTesto.trim()) {
+      setCapError("Il testo è obbligatorio.");
+      return;
+    }
     setSavingCapitolo(true);
     setCapError(null);
     try {
@@ -2370,7 +2382,7 @@ function GestionePage() {
                         <p className="font-mono text-[11px] text-magenta border border-magenta/30 bg-magenta/5 px-4 py-3">⚠ {capError}</p>
                       )}
                       <div className="flex gap-3">
-                        <HudButton variant="primary" onClick={handleSaveCapitolo} disabled={savingCapitolo || !capTitolo.trim()}>
+                        <HudButton variant="primary" onClick={handleSaveCapitolo} disabled={savingCapitolo}>
                           {savingCapitolo ? "▸ Salvataggio..." : editingCapitoloId ? `▸ Aggiorna ${contenutoLabel}` : `▸ Salva ${contenutoLabel}`}
                         </HudButton>
                         <HudButton variant="ghost" onClick={() => { setShowCapitoloForm(false); setEditingCapitoloId(null); setCapError(null); }}>
