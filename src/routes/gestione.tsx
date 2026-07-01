@@ -291,6 +291,7 @@ function GestionePage() {
   const importPdfRef = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
+  const [importPdfMsg, setImportPdfMsg] = useState(false);
 
   const handleImportDocx = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -299,7 +300,19 @@ function GestionePage() {
     try {
       const mod = await import("mammoth");
       const mammoth = (mod as any).default ?? mod;
-      const result = await mammoth.convertToHtml({ arrayBuffer: await file.arrayBuffer() });
+      const options: any = { arrayBuffer: await file.arrayBuffer() };
+      if (userId && editingId) {
+        options.convertImage = mammoth.images.imgElement(async (image: any) => {
+          const buffer = await image.read();
+          const ext = image.contentType?.split("/")[1] ?? "jpg";
+          const path = `${userId}/${editingId}/images/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+          const blob = new Blob([buffer], { type: image.contentType });
+          await supabase.storage.from("libri").upload(path, blob, { upsert: true });
+          const { data } = supabase.storage.from("libri").getPublicUrl(path);
+          return { src: data.publicUrl };
+        });
+      }
+      const result = await mammoth.convertToHtml(options);
       if (!result?.value) throw new Error("File vuoto o non leggibile.");
       setCapTesto(result.value);
     } catch (err: any) {
@@ -327,7 +340,7 @@ function GestionePage() {
   const handleImportPdf = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setImporting(true); setImportError(null);
+    setImporting(true); setImportError(null); setImportPdfMsg(false);
     try {
       const pdfjsLib = await import("pdfjs-dist");
       pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
@@ -340,6 +353,7 @@ function GestionePage() {
       }
       const html = fullText.split(/\n\n+/).filter(p => p.trim()).map(p => `<p>${p.trim()}</p>`).join("");
       setCapTesto(html);
+      setImportPdfMsg(true);
     } catch {
       setImportError("Errore lettura PDF.");
     } finally {
@@ -2440,7 +2454,7 @@ function GestionePage() {
                         <span className={labelClass}>↳ Testo</span>
                         <div className="flex gap-3 items-start mt-2">
                           <div className="flex-1 min-w-0">
-                            <RichTextEditor value={capTesto} onChange={setCapTesto} />
+                            <RichTextEditor value={capTesto} onChange={setCapTesto} userId={userId ?? undefined} bookId={editingId ?? undefined} />
                           </div>
                           <div className="w-32 flex-shrink-0 flex flex-col gap-1.5 pt-0">
                             <span className="font-mono text-[9px] tracking-widest text-cyan/50 uppercase">↳ importa file</span>
@@ -2469,6 +2483,11 @@ function GestionePage() {
                             </p>
                             {importing && <p className="font-mono text-[8px] text-cyan animate-pulse">▸ importazione…</p>}
                             {importError && <p className="font-mono text-[8px] text-magenta leading-tight">⚠ {importError}</p>}
+                            {importPdfMsg && (
+                              <p className="font-mono text-[8px] text-amber/70 leading-tight">
+                                ✓ Testo importato. Le immagini non vengono importate dal PDF — aggiungile con ⊞ img nella toolbar.
+                              </p>
+                            )}
                           </div>
                         </div>
                       </div>

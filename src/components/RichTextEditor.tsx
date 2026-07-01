@@ -2,19 +2,28 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import TextAlign from "@tiptap/extension-text-align";
-import { useEffect } from "react";
+import Image from "@tiptap/extension-image";
+import { useEffect, useRef, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 type Props = {
   value: string;
   onChange: (html: string) => void;
+  userId?: string;
+  bookId?: string;
 };
 
-export function RichTextEditor({ value, onChange }: Props) {
+export function RichTextEditor({ value, onChange, userId, bookId }: Props) {
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
+
   const editor = useEditor({
     extensions: [
       StarterKit,
       Underline,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
+      Image.configure({ inline: false, allowBase64: false }),
     ],
     content: value,
     onUpdate: ({ editor }) => {
@@ -34,6 +43,27 @@ export function RichTextEditor({ value, onChange }: Props) {
       editor.commands.setContent(value || "");
     }
   }, [value]);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !editor || !userId || !bookId) return;
+    setUploadingImage(true);
+    setImageError(null);
+    try {
+      const ext = file.name.split(".").pop() ?? "jpg";
+      const path = `${userId}/${bookId}/images/${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("libri").upload(path, file, { upsert: true });
+      if (upErr) throw upErr;
+      const { data } = supabase.storage.from("libri").getPublicUrl(path);
+      editor.chain().focus().setImage({ src: data.publicUrl }).run();
+      onChange(editor.getHTML());
+    } catch {
+      setImageError("Errore caricamento immagine.");
+    } finally {
+      setUploadingImage(false);
+      e.target.value = "";
+    }
+  };
 
   if (!editor) return null;
 
@@ -72,7 +102,29 @@ export function RichTextEditor({ value, onChange }: Props) {
 
         <button type="button" onClick={() => editor.chain().focus().toggleBulletList().run()}
           className={`${btnBase} ${editor.isActive("bulletList") ? btnActive : btnInactive}`}>≡</button>
+
+        {userId && bookId && (
+          <>
+            <span className="w-px h-4 bg-cyan/20 mx-1" />
+            <input ref={imageInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+            <button
+              type="button"
+              disabled={uploadingImage}
+              onClick={() => imageInputRef.current?.click()}
+              className={`${btnBase} ${btnInactive} disabled:opacity-40`}
+              title="Inserisci immagine"
+            >
+              {uploadingImage ? "▸ …" : "⊞ img"}
+            </button>
+          </>
+        )}
       </div>
+
+      {imageError && (
+        <p className="font-mono text-[9px] text-magenta px-2 py-1 bg-magenta/5 border-x border-cyan/20">
+          ⚠ {imageError}
+        </p>
+      )}
 
       <EditorContent editor={editor} />
     </div>
