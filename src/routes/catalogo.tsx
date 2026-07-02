@@ -87,8 +87,12 @@ function CatalogoPage() {
   const [libreriaMap, setLibreriaMap] = useState<Record<string, string>>({});
   const [tagsMap, setTagsMap] = useState<Record<string, string[]>>({});
   const [localQ, setLocalQ] = useState(q); // valore locale dell'input, inviato solo su submit
+  const [guidaVisible, setGuidaVisible] = useState(() => localStorage.getItem("catalogo_guida_dismissed") !== "1");
   const searchRef = useRef<HTMLDivElement>(null);
   const userFilteredRef = useRef(false);
+
+  const dismissGuida = () => { localStorage.setItem("catalogo_guida_dismissed", "1"); setGuidaVisible(false); };
+  const openGuida = () => { localStorage.removeItem("catalogo_guida_dismissed"); setGuidaVisible(true); };
 
   const scrollToSearch = () => {
     const id = setTimeout(() => {
@@ -282,6 +286,37 @@ function CatalogoPage() {
         </div>
       </section>
 
+      {/* Guida catalogo */}
+      {guidaVisible && (
+        <section className="border-b border-cyan/15 bg-deep/60">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10 py-6">
+            <div className="flex items-start justify-between gap-4 mb-5">
+              <div className="font-mono text-[9px] tracking-[0.3em] text-cyan/60 uppercase">// guida_catalogo — come orientarsi</div>
+              <button onClick={dismissGuida} className="font-mono text-[9px] tracking-widest text-bone/30 hover:text-bone/70 uppercase transition-colors flex-shrink-0">✕ chiudi</button>
+            </div>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[
+                { icon: "◉", label: "CERCA", desc: "Usa la barra sopra per trovare titoli, autori o argomenti. Premi INVIO o il tasto CERCA." },
+                { icon: "◈", label: "FILTRA PER GENERE", desc: "Sotto la barra trovi i filtri: Libri, Articoli, Fumetti, Illustrati... Cliccane uno per restringere il catalogo." },
+                { icon: "◆", label: "ORDINA", desc: "Scegli tra Più recenti, Più letti, Top rated o Anno di pubblicazione." },
+                { icon: "▸", label: "LEGGI", desc: "Clicca su qualsiasi opera per aprirla. La lettura è sempre gratuita e completa — nessun estratto tagliato." },
+                { icon: "◊", label: "COLLANE", desc: "Alcune opere fanno parte di serie tematiche. Usa il filtro COLLANE per leggerle nell'ordine dell'autore." },
+                { icon: "✦", label: "VUOI FARE DI PIÙ?", desc: "Registrandoti puoi salvare segnalibri, lasciare recensioni e seguire gli autori che ami.", link: "/auth", linkLabel: "Registrati gratis →" },
+              ].map(({ icon, label, desc, link, linkLabel }) => (
+                <div key={label} className="flex gap-3 glass border border-cyan/10 p-4">
+                  <span className="font-display text-xl text-cyan/40 flex-shrink-0 mt-0.5">{icon}</span>
+                  <div>
+                    <div className="font-mono text-[9px] tracking-[0.2em] text-cyan/70 uppercase mb-1">{label}</div>
+                    <p className="font-serif text-sm text-bone/65 leading-relaxed">{desc}</p>
+                    {link && <Link to={link} className="mt-2 inline-block font-mono text-[9px] tracking-widest text-magenta hover:text-magenta/70 uppercase">{linkLabel}</Link>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Filtri */}
       <section className="border-y border-cyan/15 bg-deep/40 backdrop-blur sticky top-[5.75rem] z-30">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10 py-4 flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
@@ -336,6 +371,15 @@ function CatalogoPage() {
                 {label}
               </button>
             ))}
+            {!guidaVisible && (
+              <button
+                onClick={openGuida}
+                title="Apri guida catalogo"
+                className="ml-2 font-mono text-[10px] tracking-widest border border-cyan/20 text-bone/40 hover:border-cyan/50 hover:text-cyan px-2 py-1 transition-colors"
+              >
+                ?
+              </button>
+            )}
           </div>
         </div>
       </section>
