@@ -27,6 +27,7 @@ function ProfiloAutorePage() {
   const [bio, setBio] = useState("");
   const [generi, setGeneri] = useState<string[]>([]);
   const [donationUrl, setDonationUrl] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [copyrightAccepted, setCopyrightAccepted] = useState(false);
   const [copyrightAlreadySaved, setCopyrightAlreadySaved] = useState(false);
 
@@ -37,6 +38,7 @@ function ProfiloAutorePage() {
         return;
       }
       setUserId(data.user.id);
+      setAvatarUrl(data.user.user_metadata?.avatar_url ?? null);
       Promise.all([
         supabase.from("author_profiles").select("bio, generi, donation_url").eq("id", data.user.id).maybeSingle(),
         supabase.from("profiles").select("copyright_accepted_at").eq("id", data.user.id).single(),
@@ -108,14 +110,18 @@ function ProfiloAutorePage() {
 
         {/* Avatar plate */}
         <HudPanel label="avatar" tone="cyan" className="flex flex-col items-center text-center">
-          <div className="relative w-44 h-44 hud-frame">
-            <div className="absolute inset-0 bg-gradient-to-br from-cyan/30 to-magenta/20" />
-            <div className="absolute inset-0 flex items-center justify-center font-display text-6xl text-bone/60">
-              ◊
-            </div>
+          <div className="relative w-44 h-44 hud-frame overflow-hidden">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
+            ) : (
+              <>
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan/30 to-magenta/20" />
+                <div className="absolute inset-0 flex items-center justify-center font-display text-6xl text-bone/60">◊</div>
+              </>
+            )}
           </div>
           <p className="mt-4 font-mono text-[10px] tracking-widest text-bone/40 uppercase">
-            {t("profiloAutore.uploadFoto")}
+            {avatarUrl ? t("profiloAutore.uploadFoto", "Modifica dalla sezione profilo") : t("profiloAutore.uploadFoto")}
           </p>
         </HudPanel>
 
