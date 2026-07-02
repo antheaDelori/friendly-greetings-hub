@@ -32,7 +32,6 @@ const registraSchema = z.object({
   pseudonimo: z.string().optional(),
   indirizzo: z.string().optional(),
   data_nascita: z.string().optional(),
-  avatar_url: z.string().url("Inserisci un URL valido").optional().or(z.literal("")),
 }).refine((d) => d.email === d.email_conferma, {
   message: "Le email non coincidono", path: ["email_conferma"],
 }).refine((d) => d.password === d.password_conferma, {
@@ -50,7 +49,6 @@ const modificaSchema = z.object({
   pseudonimo: z.string().optional(),
   indirizzo: z.string().optional(),
   data_nascita: z.string().optional(),
-  avatar_url: z.string().url("Inserisci un URL valido").optional().or(z.literal("")),
 }).refine((d) => !d.password || d.password === d.password_conferma, {
   message: "Le password non coincidono", path: ["password_conferma"],
 });
@@ -58,8 +56,28 @@ const modificaSchema = z.object({
 type FormData = {
   nome: string; cognome: string; email: string; email_conferma?: string;
   password?: string; password_conferma?: string; telefono?: string;
-  pseudonimo?: string; indirizzo?: string; data_nascita?: string; avatar_url?: string;
+  pseudonimo?: string; indirizzo?: string; data_nascita?: string;
 };
+
+const compressAvatar = (file: File): Promise<Blob> =>
+  new Promise((resolve, reject) => {
+    const img = new window.Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const size = 400;
+      const scale = Math.min(1, size / Math.max(img.width, img.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) { reject(new Error("canvas")); return; }
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("blob")), "image/jpeg", 0.85);
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
 
 function HudField({ label, error, tone = "cyan", children }: { label: string; error?: string; tone?: "cyan" | "magenta"; children: React.ReactNode }) {
   return (
@@ -82,6 +100,30 @@ function RegistrazionePage() {
   const [loading, setLoading] = useState(false);
   const [aggiornato, setAggiornato] = useState(false);
   const [originalEmail, setOriginalEmail] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarPreview(URL.createObjectURL(file));
+    setAvatarUploading(true);
+    setAvatarUrl(null);
+    try {
+      const compressed = await compressAvatar(file);
+      const { data: { user } } = await supabase.auth.getUser();
+      const path = user ? `avatars/${user.id}.jpg` : `avatars/reg-${Date.now()}.jpg`;
+      const { error } = await supabase.storage.from("libri").upload(path, compressed, { contentType: "image/jpeg", upsert: true });
+      if (error) throw error;
+      const { data: { publicUrl } } = supabase.storage.from("libri").getPublicUrl(path);
+      setAvatarUrl(publicUrl);
+    } catch {
+      // upload silently fails in registration without anon policy — avatar set to null
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(modifica ? modificaSchema : registraSchema) as any,
@@ -93,6 +135,7 @@ function RegistrazionePage() {
       if (!user) { navigate({ to: "/auth" }); return; }
       const m = user.user_metadata ?? {};
       setOriginalEmail(user.email ?? "");
+      if (m.avatar_url) { setAvatarUrl(m.avatar_url); setAvatarPreview(m.avatar_url); }
       reset({
         nome: m.nome ?? "",
         cognome: m.cognome ?? "",
@@ -101,7 +144,6 @@ function RegistrazionePage() {
         telefono: m.telefono ?? "",
         data_nascita: m.data_nascita ?? "",
         indirizzo: m.indirizzo ?? "",
-        avatar_url: m.avatar_url ?? "",
         password: "",
         password_conferma: "",
       });
@@ -126,7 +168,7 @@ function RegistrazionePage() {
             pseudonimo: data.pseudonimo ?? null,
             indirizzo: data.indirizzo ?? null,
             data_nascita: data.data_nascita ?? null,
-            avatar_url: data.avatar_url || null,
+            avatar_url: avatarUrl || null,
           },
         };
         if (data.email) updatePayload.email = data.email;
@@ -160,7 +202,7 @@ function RegistrazionePage() {
               pseudonimo: data.pseudonimo ?? null,
               indirizzo: data.indirizzo ?? null,
               data_nascita: data.data_nascita ?? null,
-              avatar_url: data.avatar_url || null,
+              avatar_url: avatarUrl || null,
               lingua: i18n.language ?? "it",
             },
           },
@@ -329,8 +371,27 @@ function RegistrazionePage() {
               <HudField label={t("registrazione.fIndirizzo")} tone="magenta">
                 <input {...register("indirizzo")} placeholder={t("registrazione.phIndirizzo")} className={inputClass} />
               </HudField>
-              <HudField label={t("registrazione.fAvatar")} tone="magenta" error={errors.avatar_url?.message}>
-                <input {...register("avatar_url")} placeholder="https://..." className={inputClass} />
+              <HudField label={t("registrazione.fAvatar")} tone="magenta">
+                <div className="mt-2 flex items-center gap-3">
+                  {avatarPreview && (
+                    <img src={avatarPreview} alt="avatar" className="w-14 h-14 object-cover rounded-full ring-1 ring-magenta/40 flex-shrink-0" />
+                  )}
+                  <label className="flex-1 cursor-pointer">
+                    <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+                    <div className={`border px-4 py-3 font-mono text-[10px] tracking-widest uppercase text-center transition-all ${
+                      avatarUploading
+                        ? "border-magenta/20 text-magenta/30 animate-pulse"
+                        : avatarUrl
+                          ? "border-magenta/50 text-magenta/80 hover:border-magenta"
+                          : "border-magenta/30 text-magenta/50 hover:border-magenta/60"
+                    }`}>
+                      {avatarUploading ? "▸ caricamento..." : avatarUrl ? "▸ cambia foto" : "▸ scegli foto"}
+                    </div>
+                  </label>
+                </div>
+                {avatarPreview && !avatarUrl && !avatarUploading && (
+                  <p className="mt-1 font-mono text-[10px] text-magenta">Upload non riuscito — aggiungila dopo la registrazione</p>
+                )}
               </HudField>
             </div>
           </HudPanel>
