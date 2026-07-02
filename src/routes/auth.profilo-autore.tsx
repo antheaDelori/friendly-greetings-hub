@@ -16,6 +16,26 @@ export const Route = createFileRoute("/auth/profilo-autore")({
 
 const GENERI_VALUES = ["libro", "racconto", "saggio", "articolo", "novelle", "poesia", "fumetto", "illustrato"] as const;
 
+const compressAvatar = (file: File): Promise<Blob> =>
+  new Promise((resolve, reject) => {
+    const img = new window.Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const size = 400;
+      const scale = Math.min(1, size / Math.max(img.width, img.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) { reject(new Error("canvas")); return; }
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("blob")), "image/jpeg", 0.85);
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+
 function ProfiloAutorePage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -28,6 +48,26 @@ function ProfiloAutorePage() {
   const [generi, setGeneri] = useState<string[]>([]);
   const [donationUrl, setDonationUrl] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !userId) return;
+    setAvatarUploading(true);
+    try {
+      const compressed = await compressAvatar(file);
+      const path = `avatars/${userId}.jpg`;
+      const { error } = await supabase.storage.from("libri").upload(path, compressed, { contentType: "image/jpeg", upsert: true });
+      if (error) throw error;
+      const { data: { publicUrl } } = supabase.storage.from("libri").getPublicUrl(path);
+      await supabase.auth.updateUser({ data: { avatar_url: publicUrl } });
+      setAvatarUrl(publicUrl);
+    } catch {
+      // silently fail
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
   const [copyrightAccepted, setCopyrightAccepted] = useState(false);
   const [copyrightAlreadySaved, setCopyrightAlreadySaved] = useState(false);
 
@@ -120,9 +160,18 @@ function ProfiloAutorePage() {
               </>
             )}
           </div>
-          <p className="mt-4 font-mono text-[10px] tracking-widest text-bone/40 uppercase">
-            {avatarUrl ? t("profiloAutore.uploadFoto", "Modifica dalla sezione profilo") : t("profiloAutore.uploadFoto")}
-          </p>
+          <label className="mt-4 cursor-pointer w-full">
+            <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} disabled={avatarUploading} />
+            <div className={`border px-4 py-2 font-mono text-[10px] tracking-widest uppercase text-center transition-all ${
+              avatarUploading
+                ? "border-cyan/15 text-cyan/30 animate-pulse"
+                : avatarUrl
+                  ? "border-cyan/30 text-cyan/60 hover:border-cyan/60"
+                  : "border-cyan/40 text-cyan/70 hover:border-cyan"
+            }`}>
+              {avatarUploading ? "▸ caricamento..." : avatarUrl ? "▸ cambia foto" : "▸ scegli foto"}
+            </div>
+          </label>
         </HudPanel>
 
         <div className="space-y-6">
