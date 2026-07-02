@@ -141,7 +141,7 @@ export function SiteHeader() {
               <span className={`text-[8px] transition-transform duration-200 ${autoriOpen ? "rotate-180" : ""}`}>▾</span>
             </button>
             {autoriOpen && (
-              <div className="absolute top-full left-0 mt-3 w-56 glass border border-cyan/30 z-50 shadow-[0_0_30px_oklch(0.82_0.16_200/0.15)]">
+              <div className="absolute top-full left-0 mt-3 w-56 bg-void border border-cyan/30 z-50 shadow-[0_0_30px_oklch(0.82_0.16_200/0.2)]">
                 <span className="absolute -top-px left-0 right-0 h-px bg-cyan/60" />
                 <Link
                   to="/autori"

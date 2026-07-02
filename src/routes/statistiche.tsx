@@ -186,8 +186,7 @@ function StatistichePage() {
       setIsAdmin(adminUser);
       if (adminUser) {
         // KPI piattaforma
-        const [autoriRes, opereRes, booksAllRes, recTotRes] = await Promise.all([
-          supabase.from("author_profiles").select("id", { count: "exact", head: true }),
+        const [opereRes, booksAllRes, recTotRes] = await Promise.all([
           supabase.from("books").select("id", { count: "exact", head: true }).eq("disponibile", true).eq("cestinato", false),
           supabase.from("books").select("titolo, author_name, letture, downloads, genere, slug").eq("disponibile", true).eq("cestinato", false),
           supabase.from("recensioni").select("id", { count: "exact", head: true }).eq("blocked", false),
@@ -195,9 +194,10 @@ function StatistichePage() {
         const allBooksPlat = (booksAllRes.data ?? []) as { titolo: string; author_name: string | null; letture: number; downloads: number; genere: string; slug: string }[];
         const lettureTotali = allBooksPlat.reduce((s, b) => s + (b.letture ?? 0), 0);
         const downloadTotali = allBooksPlat.reduce((s, b) => s + (b.downloads ?? 0), 0);
+        const autoriUnici = new Set(allBooksPlat.map(b => b.author_name).filter(Boolean)).size;
         setAdminStats({
           utenti: 0,
-          autori: autoriRes.count ?? 0,
+          autori: autoriUnici,
           opere: opereRes.count ?? 0,
           lettureTotali,
           downloadTotali,
