@@ -222,11 +222,11 @@ function RegistrazionePage() {
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-void/90 backdrop-blur-sm px-4">
         <div className="glass hud-frame max-w-lg w-full p-10 text-center fade-up">
           <div className="font-mono text-[10px] tracking-[0.35em] text-cyan uppercase mb-6">// profilo_aggiornato</div>
-          <div className="font-display text-4xl text-bone">Profilo aggiornato.</div>
-          <p className="mt-4 font-serif italic text-bone/60">Le modifiche sono state salvate.</p>
+          <div className="font-display text-4xl text-bone">{t("registrazione.aggiornato")}</div>
+          <p className="mt-4 font-serif italic text-bone/60">{t("registrazione.aggiornatoDesc")}</p>
           <div className="mt-8 flex gap-3 justify-center">
             <Link to="/libreria">
-              <HudButton variant="primary">▸ Torna alla libreria</HudButton>
+              <HudButton variant="primary">▸ {t("registrazione.tornaLibreria")}</HudButton>
             </Link>
           </div>
         </div>
@@ -243,31 +243,31 @@ function RegistrazionePage() {
             // trasmissione_inviata · 2076
           </div>
           <div className="font-display text-4xl md:text-5xl text-bone leading-tight tracking-tight">
-            Controlla<br />
-            <span className="text-cyan text-glow-cyan">la tua email.</span>
+            {t("registrazione.emailSentTitolo1")}<br />
+            <span className="text-cyan text-glow-cyan">{t("registrazione.emailSentTitolo2")}</span>
           </div>
           <p className="mt-6 font-serif italic text-lg text-bone/70 leading-relaxed">
-            Abbiamo inviato un link di conferma a<br />
+            {t("registrazione.emailSentInviato")}<br />
             <span className="text-bone not-italic font-mono text-sm tracking-widest">{emailInviata}</span>
           </p>
           <p className="mt-4 font-serif italic text-base text-bone/50 leading-relaxed">
-            Clicca il link per attivare il tuo account{autore ? " e poi completa il tuo profilo autore" : ""}. Il link è valido per 24 ore.
+            {t("registrazione.emailSentAttiva")}{autore ? t("registrazione.emailSentAutore") : ""}{t("registrazione.emailSentValido")}
           </p>
           {autore && (
             <div className="mt-6 border border-magenta/30 bg-magenta/5 px-5 py-4 text-left">
               <p className="font-mono text-[10px] tracking-widest text-magenta uppercase mb-2">// passo successivo</p>
               <p className="font-serif italic text-bone/70 text-sm leading-relaxed">
-                Dopo aver confermato l'email e fatto il primo accesso, completa il tuo profilo autore per iniziare a pubblicare.
+                {t("registrazione.emailSentDopoAutore")}
               </p>
               <Link to="/auth/profilo-autore" className="mt-3 inline-flex items-center gap-2 font-mono text-[10px] tracking-widest uppercase text-magenta hover:text-bone transition-colors">
-                ◆ Vai al profilo autore →
+                ◆ {t("registrazione.emailSentVaiAutore")}
               </Link>
             </div>
           )}
           <div className="mt-6 border-t border-cyan/10 pt-6 space-y-2">
-            <p className="font-mono text-[10px] tracking-widest text-bone/40 uppercase">Non trovi l'email? Cerca nello spam:</p>
+            <p className="font-mono text-[10px] tracking-widest text-bone/40 uppercase">{t("registrazione.emailSentSpam")}</p>
             <p className="font-mono text-[11px] text-cyan/70 border border-cyan/20 bg-cyan/5 px-4 py-2 inline-block">
-              liberiamo2076.com — Attiva il tuo account
+              {t("registrazione.emailSentSoggetto")}
             </p>
           </div>
         </div>
