@@ -267,7 +267,7 @@ function ProfiloAutorePage() {
                 )}
               </div>
               <div className="flex gap-3">
-                <HudButton variant="primary" onClick={handleSave} disabled={saving}>
+                <HudButton variant="primary" onClick={handleSave} disabled={saving || generi.length === 0 || !bio.trim()}>
                   {saving ? `▸ ${t("profiloAutore.salvaLoading")}` : `▸ ${t("profiloAutore.salvaBtn")}`}
                 </HudButton>
                 <Link to="/area-autore" onClick={(e) => { if (!saved && !copyrightAlreadySaved) e.preventDefault(); }}>
