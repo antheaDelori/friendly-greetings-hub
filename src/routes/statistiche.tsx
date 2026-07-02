@@ -53,7 +53,18 @@ function Star({ filled }: { filled: boolean }) {
 
 const GENERE_LABELS: Record<string, string> = {
   libro: "Libri", racconto: "Racconti", saggio: "Saggi", articolo: "Articoli",
-  novelle: "Novelle", poesia: "Poesie", fumetto: "Fumetti",
+  novelle: "Novelle", poesia: "Poesie", fumetto: "Fumetti", illustrato: "Illustrati",
+};
+
+const ADMIN_EMAIL = "antheadelori@live.it";
+
+const tooltipStyle = {
+  backgroundColor: "#0a0a0f",
+  border: "1px solid rgba(0,210,255,0.2)",
+  borderRadius: 0,
+  fontFamily: "monospace",
+  fontSize: 11,
+  color: "#f0ebe0",
 };
 
 function StatistichePage() {
@@ -65,6 +76,16 @@ function StatistichePage() {
   const [filtroGenere, setFiltroGenere] = useState<string | null>(null);
   const [stelleDistrib, setStelleDistrib] = useState<{ stelle: number; count: number }[]>([]);
   const [dashOpen, setDashOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [trafficoTotale, setTrafficoTotale] = useState(0);
+  const [trafficoGiorni, setTrafficoGiorni] = useState<{ giorno: string; visite: number }[]>([]);
+  const [trafficoPagine, setTrafficoPagine] = useState<{ path: string; visite: number }[]>([]);
+  const [trafficoDevice, setTrafficoDevice] = useState<{ device: string; visite: number }[]>([]);
+  const [trafficoPaesi, setTrafficoPaesi] = useState<{ country: string; visite: number }[]>([]);
+  const [adminStats, setAdminStats] = useState({ utenti: 0, autori: 0, opere: 0, lettureTotali: 0, downloadTotali: 0, recensioniTotali: 0 });
+  const [topOpere, setTopOpere] = useState<{ titolo: string; author_name: string | null; letture: number; downloads: number; slug: string; genere: string }[]>([]);
+  const [genereBreakdown, setGenereBreakdown] = useState<{ genere: string; count: number; letture: number }[]>([]);
+  const [topAutori, setTopAutori] = useState<{ author_name: string; letture: number; opere: number }[]>([]);
 
   useEffect(() => {
     const init = async () => {
@@ -160,6 +181,77 @@ function StatistichePage() {
         followers: totalFollowers,
       });
 
+      // Traffico sito — solo admin
+      const adminUser = user.email?.toLowerCase() === ADMIN_EMAIL;
+      setIsAdmin(adminUser);
+      if (adminUser) {
+        // KPI piattaforma
+        const [autoriRes, opereRes, booksAllRes, recTotRes] = await Promise.all([
+          supabase.from("author_profiles").select("id", { count: "exact", head: true }),
+          supabase.from("books").select("id", { count: "exact", head: true }).eq("disponibile", true).eq("cestinato", false),
+          supabase.from("books").select("titolo, author_name, letture, downloads, genere, slug").eq("disponibile", true).eq("cestinato", false),
+          supabase.from("recensioni").select("id", { count: "exact", head: true }).eq("blocked", false),
+        ]);
+        const allBooksPlat = (booksAllRes.data ?? []) as { titolo: string; author_name: string | null; letture: number; downloads: number; genere: string; slug: string }[];
+        const lettureTotali = allBooksPlat.reduce((s, b) => s + (b.letture ?? 0), 0);
+        const downloadTotali = allBooksPlat.reduce((s, b) => s + (b.downloads ?? 0), 0);
+        setAdminStats({
+          utenti: 0,
+          autori: autoriRes.count ?? 0,
+          opere: opereRes.count ?? 0,
+          lettureTotali,
+          downloadTotali,
+          recensioniTotali: recTotRes.count ?? 0,
+        });
+        setTopOpere([...allBooksPlat].sort((a, b) => (b.letture ?? 0) - (a.letture ?? 0)).slice(0, 10));
+        const genMap: Record<string, { count: number; letture: number }> = {};
+        for (const b of allBooksPlat) {
+          const g = b.genere ?? "altro";
+          if (!genMap[g]) genMap[g] = { count: 0, letture: 0 };
+          genMap[g].count++;
+          genMap[g].letture += b.letture ?? 0;
+        }
+        setGenereBreakdown(Object.entries(genMap).map(([genere, d]) => ({ genere, ...d })).sort((a, b) => b.letture - a.letture));
+        const authorMap: Record<string, { letture: number; opere: number }> = {};
+        for (const b of allBooksPlat) {
+          const n = b.author_name ?? "Autore";
+          if (!authorMap[n]) authorMap[n] = { letture: 0, opere: 0 };
+          authorMap[n].letture += b.letture ?? 0;
+          authorMap[n].opere++;
+        }
+        setTopAutori(Object.entries(authorMap).map(([author_name, d]) => ({ author_name, ...d })).sort((a, b) => b.letture - a.letture).slice(0, 8));
+
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        const [totalRes, recentRes] = await Promise.all([
+          supabase.from("page_views").select("id", { count: "exact", head: true }),
+          supabase.from("page_views").select("path, device, country, created_at").gte("created_at", sevenDaysAgo.toISOString()),
+        ]);
+        setTrafficoTotale(totalRes.count ?? 0);
+        const rows = recentRes.data ?? [];
+        // Ultimi 7 giorni in ordine cronologico
+        const last7: string[] = [];
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date(); d.setDate(d.getDate() - i);
+          last7.push(d.toLocaleDateString("it-IT", { day: "2-digit", month: "short" }));
+        }
+        const giorniMap: Record<string, number> = Object.fromEntries(last7.map(d => [d, 0]));
+        for (const v of rows) {
+          const g = new Date(v.created_at).toLocaleDateString("it-IT", { day: "2-digit", month: "short" });
+          if (giorniMap[g] !== undefined) giorniMap[g]++;
+        }
+        setTrafficoGiorni(last7.map(g => ({ giorno: g, visite: giorniMap[g] })));
+        const pagineMap: Record<string, number> = {};
+        for (const v of rows) pagineMap[v.path] = (pagineMap[v.path] ?? 0) + 1;
+        setTrafficoPagine(Object.entries(pagineMap).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([path, visite]) => ({ path, visite })));
+        const deviceMap: Record<string, number> = {};
+        for (const v of rows) deviceMap[v.device ?? "unknown"] = (deviceMap[v.device ?? "unknown"] ?? 0) + 1;
+        setTrafficoDevice(Object.entries(deviceMap).map(([device, visite]) => ({ device, visite })));
+        const paesiMap: Record<string, number> = {};
+        for (const v of rows) if (v.country) paesiMap[v.country] = (paesiMap[v.country] ?? 0) + 1;
+        setTrafficoPaesi(Object.entries(paesiMap).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([country, visite]) => ({ country, visite })));
+      }
+
       setLoading(false);
     };
     init();
@@ -209,6 +301,99 @@ function StatistichePage() {
 
         <div className="mx-auto max-w-7xl px-6 py-12 space-y-12">
 
+          {/* ── ADMIN PIATTAFORMA ── */}
+          {isAdmin && (
+            <section>
+              <div className="font-mono text-[9px] tracking-[0.3em] text-magenta/70 uppercase mb-4">// dashboard_piattaforma</div>
+
+              {/* KPI grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-px bg-cyan/10 border border-cyan/15 mb-6">
+                {[
+                  { label: "Autori", value: adminStats.autori.toLocaleString("it-IT"), color: "text-magenta" },
+                  { label: "Opere pubblicate", value: adminStats.opere.toLocaleString("it-IT"), color: "text-bone" },
+                  { label: "Aperture totali", value: adminStats.lettureTotali.toLocaleString("it-IT"), color: "text-cyan", note: "letture online" },
+                  { label: "Download totali", value: adminStats.downloadTotali.toLocaleString("it-IT"), color: "text-magenta" },
+                  { label: "Recensioni", value: adminStats.recensioniTotali.toLocaleString("it-IT"), color: "text-bone" },
+                ].map(({ label, value, color, note }) => (
+                  <div key={label} className="bg-void px-5 py-5 flex flex-col gap-1">
+                    <span className="font-mono text-[9px] tracking-[0.25em] text-bone/35 uppercase">{label}</span>
+                    <span className={`font-display text-2xl ${color}`}>{value}</span>
+                    {note && <span className="font-mono text-[8px] text-bone/20 uppercase">{note}</span>}
+                  </div>
+                ))}
+              </div>
+
+              {/* Top opere per aperture */}
+              {topOpere.length > 0 && (
+                <div className="mb-6">
+                  <div className="font-mono text-[9px] tracking-[0.25em] text-cyan/40 uppercase mb-3">↳ top opere per aperture online</div>
+                  <div className="border border-cyan/15">
+                    {topOpere.map((b, i) => (
+                      <div key={b.slug} className={`flex items-center gap-4 px-4 py-3 ${i > 0 ? "border-t border-cyan/[0.08]" : ""} hover:bg-cyan/5 transition-colors`}>
+                        <span className="font-mono text-[9px] text-bone/20 w-5 flex-shrink-0">{String(i + 1).padStart(2, "0")}</span>
+                        <div className="flex-1 min-w-0">
+                          <Link to="/leggi/$slug" params={{ slug: b.slug }} className="font-serif text-sm text-bone/80 hover:text-cyan transition-colors truncate block">{b.titolo}</Link>
+                          <span className="font-mono text-[9px] text-bone/30">{b.author_name ?? "—"} · {GENERE_LABELS[b.genere] ?? b.genere}</span>
+                        </div>
+                        <div className="flex gap-6 flex-shrink-0 text-right">
+                          <div>
+                            <div className="font-mono text-[8px] text-bone/25 uppercase">aperture</div>
+                            <div className="font-display text-sm text-cyan">{(b.letture ?? 0).toLocaleString("it-IT")}</div>
+                          </div>
+                          <div>
+                            <div className="font-mono text-[8px] text-bone/25 uppercase">download</div>
+                            <div className="font-display text-sm text-magenta">{(b.downloads ?? 0).toLocaleString("it-IT")}</div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Generi + Top autori */}
+              <div className="grid lg:grid-cols-2 gap-6">
+                <HudPanel label="opere e aperture per genere" tone="cyan">
+                  {genereBreakdown.length === 0
+                    ? <p className="font-serif italic text-bone/40 text-sm">Nessun dato.</p>
+                    : <div className="space-y-3">
+                        {genereBreakdown.map(g => (
+                          <div key={g.genere} className="flex items-center gap-3">
+                            <span className="font-mono text-[9px] tracking-widest text-bone/40 uppercase w-20 flex-shrink-0">{GENERE_LABELS[g.genere] ?? g.genere}</span>
+                            <div className="flex-1 h-1 bg-cyan/10 relative">
+                              <div
+                                className="absolute inset-y-0 left-0 bg-cyan/50"
+                                style={{ width: `${Math.round((g.letture / Math.max(1, genereBreakdown[0].letture)) * 100)}%` }}
+                              />
+                            </div>
+                            <span className="font-mono text-[9px] text-bone/30 w-8 text-right">{g.count}</span>
+                            <span className="font-display text-sm text-cyan w-14 text-right">{g.letture.toLocaleString("it-IT")}</span>
+                          </div>
+                        ))}
+                        <div className="font-mono text-[8px] text-bone/20 pt-1">colonne: opere · aperture</div>
+                      </div>
+                  }
+                </HudPanel>
+                <HudPanel label="top autori per aperture" tone="magenta">
+                  {topAutori.length === 0
+                    ? <p className="font-serif italic text-bone/40 text-sm">Nessun dato.</p>
+                    : <div className="space-y-3">
+                        {topAutori.map((a, i) => (
+                          <div key={a.author_name} className="flex items-center gap-3">
+                            <span className="font-mono text-[8px] text-bone/20 w-4 flex-shrink-0">{i + 1}</span>
+                            <span className="font-serif text-sm text-bone/70 flex-1 truncate">{a.author_name}</span>
+                            <span className="font-mono text-[9px] text-bone/25">{a.opere} op.</span>
+                            <span className="font-display text-sm text-magenta w-14 text-right">{a.letture.toLocaleString("it-IT")}</span>
+                          </div>
+                        ))}
+                        <div className="font-mono text-[8px] text-bone/20 pt-1">colonne: opere · aperture totali</div>
+                      </div>
+                  }
+                </HudPanel>
+              </div>
+            </section>
+          )}
+
           {/* ── TOTALI ── */}
           <section>
             <div className="font-mono text-[9px] tracking-[0.3em] text-cyan/50 uppercase mb-4">// riepilogo_globale</div>
@@ -228,6 +413,83 @@ function StatistichePage() {
               ))}
             </div>
           </section>
+
+          {/* ── TRAFFICO SITO (solo admin) ── */}
+          {isAdmin && (
+            <section>
+              <div className="font-mono text-[9px] tracking-[0.3em] text-cyan/50 uppercase mb-4">// traffico_sito</div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-cyan/10 border border-cyan/15 mb-6">
+                {[
+                  { label: "Visite totali", value: trafficoTotale.toLocaleString("it-IT"), color: "text-cyan" },
+                  { label: "Visite 7gg", value: trafficoGiorni.reduce((s, d) => s + d.visite, 0).toLocaleString("it-IT"), color: "text-bone" },
+                  { label: "Pagine uniche", value: trafficoPagine.length || "—", color: "text-magenta" },
+                  { label: "Paesi", value: trafficoPaesi.length || "—", color: "text-bone" },
+                ].map(({ label, value, color }) => (
+                  <div key={label} className="bg-void px-5 py-5 flex flex-col gap-1">
+                    <span className="font-mono text-[9px] tracking-[0.25em] text-bone/35 uppercase">{label}</span>
+                    <span className={`font-display text-2xl ${color}`}>{value}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="grid lg:grid-cols-2 gap-6">
+                <HudPanel label="visite per giorno — ultimi 7gg" tone="cyan">
+                  {trafficoGiorni.every(d => d.visite === 0)
+                    ? <p className="font-serif italic text-bone/40 text-sm">Nessuna visita ancora registrata.</p>
+                    : <ResponsiveContainer width="100%" height={220}>
+                        <BarChart data={trafficoGiorni} margin={{ left: 0, right: 8, top: 4, bottom: 4 }}>
+                          <XAxis dataKey="giorno" tick={{ fill: "rgba(240,235,224,0.4)", fontSize: 9, fontFamily: "monospace" }} axisLine={false} tickLine={false} />
+                          <YAxis tick={{ fill: "rgba(240,235,224,0.3)", fontSize: 10, fontFamily: "monospace" }} axisLine={false} tickLine={false} allowDecimals={false} />
+                          <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(0,210,255,0.05)" }} formatter={(v: number) => [v, "Visite"]} />
+                          <Bar dataKey="visite" fill="#00d2ff" radius={[2, 2, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                  }
+                </HudPanel>
+                <HudPanel label="pagine più visitate — 7gg" tone="magenta">
+                  {trafficoPagine.length === 0
+                    ? <p className="font-serif italic text-bone/40 text-sm">Nessun dato ancora.</p>
+                    : <ResponsiveContainer width="100%" height={220}>
+                        <BarChart data={trafficoPagine} layout="vertical" margin={{ left: 8, right: 16, top: 4, bottom: 4 }}>
+                          <XAxis type="number" tick={{ fill: "rgba(240,235,224,0.3)", fontSize: 10, fontFamily: "monospace" }} axisLine={false} tickLine={false} allowDecimals={false} />
+                          <YAxis type="category" dataKey="path" width={130} tick={{ fill: "rgba(240,235,224,0.5)", fontSize: 9, fontFamily: "monospace" }} axisLine={false} tickLine={false} />
+                          <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(0,210,255,0.05)" }} formatter={(v: number) => [v, "Visite"]} />
+                          <Bar dataKey="visite" fill="#e040fb" radius={[0, 2, 2, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                  }
+                </HudPanel>
+                <HudPanel label="dispositivi — 7gg" tone="cyan">
+                  {trafficoDevice.length === 0
+                    ? <p className="font-serif italic text-bone/40 text-sm">Nessun dato ancora.</p>
+                    : <ResponsiveContainer width="100%" height={220}>
+                        <PieChart>
+                          <Pie data={trafficoDevice} cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={3} dataKey="visite" nameKey="device">
+                            {trafficoDevice.map((_, i) => (
+                              <Cell key={i} fill={["#00d2ff", "#e040fb", "#ffc400"][i % 3]} />
+                            ))}
+                          </Pie>
+                          <Tooltip contentStyle={tooltipStyle} />
+                          <Legend iconType="square" iconSize={8} wrapperStyle={{ fontFamily: "monospace", fontSize: 10, color: "rgba(240,235,224,0.5)" }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                  }
+                </HudPanel>
+                <HudPanel label="paesi — 7gg" tone="magenta">
+                  {trafficoPaesi.length === 0
+                    ? <p className="font-serif italic text-bone/40 text-sm">Nessun dato ancora.</p>
+                    : <ResponsiveContainer width="100%" height={220}>
+                        <BarChart data={trafficoPaesi} layout="vertical" margin={{ left: 8, right: 16, top: 4, bottom: 4 }}>
+                          <XAxis type="number" tick={{ fill: "rgba(240,235,224,0.3)", fontSize: 10, fontFamily: "monospace" }} axisLine={false} tickLine={false} allowDecimals={false} />
+                          <YAxis type="category" dataKey="country" width={120} tick={{ fill: "rgba(240,235,224,0.5)", fontSize: 10, fontFamily: "monospace" }} axisLine={false} tickLine={false} />
+                          <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(0,210,255,0.05)" }} formatter={(v: number) => [v, "Visite"]} />
+                          <Bar dataKey="visite" fill="#69ff94" radius={[0, 2, 2, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                  }
+                </HudPanel>
+              </div>
+            </section>
+          )}
 
           {/* ── DASHBOARD GRAFICI ── */}
           {bookStats.length > 0 && (
@@ -271,15 +533,6 @@ function StatistichePage() {
                     Libreria: b.numLibreria,
                     Recensioni: b.numRecensioni,
                   }));
-
-                const tooltipStyle = {
-                  backgroundColor: "#0a0a0f",
-                  border: "1px solid rgba(0,210,255,0.2)",
-                  borderRadius: 0,
-                  fontFamily: "monospace",
-                  fontSize: 11,
-                  color: "#f0ebe0",
-                };
 
                 return (
                   <div className="grid lg:grid-cols-2 gap-6">
