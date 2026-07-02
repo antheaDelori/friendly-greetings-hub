@@ -344,12 +344,11 @@ function RegistrazionePage() {
                 </Link>
               </div>
               {!modifica && (
-                <>
-                  <div className="hud-divider mt-4" />
-                  <p className="font-mono text-[9px] tracking-[0.1em] text-bone/70 whitespace-nowrap">
+                <div className="mt-4 border border-cyan/30 bg-cyan/5 px-4 py-3">
+                  <p className="font-serif text-sm text-bone/90 leading-relaxed">
                     {t("registrazione.emailConfermaNote")}
                   </p>
-                </>
+                </div>
               )}
             </div>
           </HudPanel>
