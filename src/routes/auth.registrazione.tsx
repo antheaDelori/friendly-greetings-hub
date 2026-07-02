@@ -346,7 +346,7 @@ function RegistrazionePage() {
               {!modifica && (
                 <>
                   <div className="hud-divider mt-4" />
-                  <p className="font-mono text-[10px] tracking-widest text-bone uppercase">
+                  <p className="font-mono text-[9px] tracking-[0.1em] text-bone uppercase whitespace-nowrap">
                     {t("registrazione.emailConfermaNote")}
                   </p>
                 </>
@@ -358,7 +358,8 @@ function RegistrazionePage() {
             <p className="font-serif italic text-bone/70 text-sm">
               {t("registrazione.panelOpzionaliDesc", "Arricchisci il tuo profilo. Puoi completare o modificare questi dati in qualsiasi momento.")}
             </p>
-            <div className="mt-5 space-y-4">
+            <div className="hud-divider mt-4 mb-5" />
+            <div className="space-y-4">
               <HudField label={t("registrazione.fPseudonimo")} tone="magenta">
                 <input {...register("pseudonimo")} placeholder={t("registrazione.phPseudonimo")} className={inputClass} />
               </HudField>
