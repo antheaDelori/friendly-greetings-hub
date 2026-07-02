@@ -320,11 +320,11 @@ function RegistrazionePage() {
               )}
 
               {!modifica && (
-                <div className="flex items-start gap-3 pt-2 pb-1">
-                  <input type="checkbox" id="privacy_consent" required className="mt-1 accent-cyan cursor-pointer" />
-                  <label htmlFor="privacy_consent" className="font-mono text-[10px] text-bone/60 leading-relaxed cursor-pointer">
+                <div className="flex items-start gap-3 pt-2 pb-1 border border-cyan/20 bg-cyan/5 px-4 py-3">
+                  <input type="checkbox" id="privacy_consent" required className="mt-1 accent-cyan cursor-pointer flex-shrink-0" />
+                  <label htmlFor="privacy_consent" className="font-serif text-sm text-bone/90 leading-relaxed cursor-pointer">
                     Ho letto e accetto la{" "}
-                    <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-cyan hover:underline">Privacy Policy</a>
+                    <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-cyan underline hover:text-cyan/80 font-semibold">Privacy Policy</a>
                     {" "}e il trattamento dei miei dati personali ai sensi del GDPR.
                   </label>
                 </div>
@@ -339,14 +339,14 @@ function RegistrazionePage() {
                       : `▸ ${t("registrazione.invioBtn")}`
                   }
                 </HudButton>
-                <Link to={modifica ? "/libreria" : "/auth"} className="font-mono text-[10px] tracking-widest uppercase text-bone/60 hover:text-cyan transition-colors">
+                <Link to={modifica ? "/libreria" : "/auth"} className="font-mono text-[10px] tracking-widest uppercase text-bone/50 hover:text-bone border border-bone/20 hover:border-bone/50 px-4 py-2 transition-all">
                   {t("registrazione.annulla")}
                 </Link>
               </div>
               {!modifica && (
                 <>
                   <div className="hud-divider mt-4" />
-                  <p className="font-mono text-[9px] tracking-[0.1em] text-bone uppercase whitespace-nowrap">
+                  <p className="font-mono text-[9px] tracking-[0.1em] text-bone/70 whitespace-nowrap">
                     {t("registrazione.emailConfermaNote")}
                   </p>
                 </>
