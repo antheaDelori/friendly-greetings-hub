@@ -61,10 +61,10 @@ type FormData = {
   pseudonimo?: string; indirizzo?: string; data_nascita?: string; avatar_url?: string;
 };
 
-function HudField({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
+function HudField({ label, error, tone = "cyan", children }: { label: string; error?: string; tone?: "cyan" | "magenta"; children: React.ReactNode }) {
   return (
     <div>
-      <span className="font-mono text-[10px] tracking-[0.25em] text-cyan/70 uppercase">↳ {label}</span>
+      <span className={`font-mono text-[10px] tracking-[0.25em] uppercase ${tone === "magenta" ? "text-magenta/70" : "text-cyan/70"}`}>↳ {label}</span>
       {children}
       {error && <p className="mt-1 font-mono text-[10px] text-magenta">{error}</p>}
     </div>
@@ -317,19 +317,19 @@ function RegistrazionePage() {
               {t("registrazione.panelOpzionaliDesc", "Arricchisci il tuo profilo. Puoi completare o modificare questi dati in qualsiasi momento.")}
             </p>
             <div className="mt-5 space-y-4">
-              <HudField label={t("registrazione.fPseudonimo")}>
+              <HudField label={t("registrazione.fPseudonimo")} tone="magenta">
                 <input {...register("pseudonimo")} placeholder={t("registrazione.phPseudonimo")} className={inputClass} />
               </HudField>
-              <HudField label={t("registrazione.fTelefono")}>
+              <HudField label={t("registrazione.fTelefono")} tone="magenta">
                 <input {...register("telefono")} placeholder="+39 ..." className={inputClass} />
               </HudField>
-              <HudField label={t("registrazione.fDataNascita")}>
+              <HudField label={t("registrazione.fDataNascita")} tone="magenta">
                 <input {...register("data_nascita")} type="date" className={inputClass} />
               </HudField>
-              <HudField label={t("registrazione.fIndirizzo")}>
+              <HudField label={t("registrazione.fIndirizzo")} tone="magenta">
                 <input {...register("indirizzo")} placeholder={t("registrazione.phIndirizzo")} className={inputClass} />
               </HudField>
-              <HudField label={t("registrazione.fAvatar")} error={errors.avatar_url?.message}>
+              <HudField label={t("registrazione.fAvatar")} tone="magenta" error={errors.avatar_url?.message}>
                 <input {...register("avatar_url")} placeholder="https://..." className={inputClass} />
               </HudField>
             </div>
