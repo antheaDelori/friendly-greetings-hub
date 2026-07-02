@@ -371,28 +371,27 @@ function RegistrazionePage() {
               <HudField label={t("registrazione.fIndirizzo")} tone="magenta">
                 <input {...register("indirizzo")} placeholder={t("registrazione.phIndirizzo")} className={inputClass} />
               </HudField>
-              <HudField label={t("registrazione.fAvatar")} tone="magenta">
-                <div className="mt-2 flex items-center gap-3">
-                  {avatarPreview && (
-                    <img src={avatarPreview} alt="avatar" className="w-14 h-14 object-cover rounded-full ring-1 ring-magenta/40 flex-shrink-0" />
-                  )}
-                  <label className="flex-1 cursor-pointer">
-                    <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
-                    <div className={`border px-4 py-3 font-mono text-[10px] tracking-widest uppercase text-center transition-all ${
-                      avatarUploading
-                        ? "border-magenta/20 text-magenta/30 animate-pulse"
-                        : avatarUrl
-                          ? "border-magenta/50 text-magenta/80 hover:border-magenta"
-                          : "border-magenta/30 text-magenta/50 hover:border-magenta/60"
-                    }`}>
-                      {avatarUploading ? "▸ caricamento..." : avatarUrl ? "▸ cambia foto" : "▸ scegli foto"}
-                    </div>
-                  </label>
-                </div>
-                {avatarPreview && !avatarUrl && !avatarUploading && (
-                  <p className="mt-1 font-mono text-[10px] text-magenta">Upload non riuscito — aggiungila dopo la registrazione</p>
-                )}
-              </HudField>
+              {modifica && (
+                <HudField label={t("registrazione.fAvatar")} tone="magenta">
+                  <div className="mt-2 flex items-center gap-3">
+                    {avatarPreview && (
+                      <img src={avatarPreview} alt="avatar" className="w-14 h-14 object-cover rounded-full ring-1 ring-magenta/40 flex-shrink-0" />
+                    )}
+                    <label className="flex-1 cursor-pointer">
+                      <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+                      <div className={`border px-4 py-3 font-mono text-[10px] tracking-widest uppercase text-center transition-all ${
+                        avatarUploading
+                          ? "border-magenta/20 text-magenta/30 animate-pulse"
+                          : avatarUrl
+                            ? "border-magenta/50 text-magenta/80 hover:border-magenta"
+                            : "border-magenta/30 text-magenta/50 hover:border-magenta/60"
+                      }`}>
+                        {avatarUploading ? "▸ caricamento..." : avatarUrl ? "▸ cambia foto" : "▸ scegli foto"}
+                      </div>
+                    </label>
+                  </div>
+                </HudField>
+              )}
             </div>
           </HudPanel>
 
