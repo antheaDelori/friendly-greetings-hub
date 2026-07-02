@@ -14,7 +14,7 @@ export const Route = createFileRoute("/auth/profilo-autore")({
   component: ProfiloAutorePage,
 });
 
-const GENERI_VALUES = ["libro", "racconto", "saggio", "articolo", "novelle", "poesia"] as const;
+const GENERI_VALUES = ["libro", "racconto", "saggio", "articolo", "novelle", "poesia", "fumetto", "illustrato"] as const;
 
 function ProfiloAutorePage() {
   const { t } = useTranslation();
@@ -77,7 +77,12 @@ function ProfiloAutorePage() {
       if (copyrightAccepted && !copyrightAlreadySaved) {
         profileUpdate.copyright_accepted_at = new Date().toISOString();
       }
-      await supabase.from("profiles").update(profileUpdate).eq("id", userId);
+      const { error: profileError } = await supabase.from("profiles").update(profileUpdate).eq("id", userId);
+      if (profileError) {
+        setSaving(false);
+        setError(profileError.message);
+        return;
+      }
       if (copyrightAccepted) setCopyrightAlreadySaved(true);
     }
 
