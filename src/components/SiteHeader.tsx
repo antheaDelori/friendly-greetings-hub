@@ -80,7 +80,7 @@ export function SiteHeader() {
     window.location.href = "/";
   };
 
-  const linkBase = "text-[11px] font-mono tracking-[0.18em] uppercase text-bone/70 hover:text-cyan transition-colors";
+  const linkBase = "text-[11px] font-mono tracking-[0.18em] uppercase text-bone/70 hover:text-cyan transition-colors whitespace-nowrap";
 
   return (
     <header className="sticky top-0 z-40 bg-void/70 backdrop-blur-xl">
@@ -127,7 +127,7 @@ export function SiteHeader() {
           </div>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-7">
+        <nav className="hidden md:flex items-center gap-4">
           <Link to="/" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }} activeOptions={{ exact: true }}>{t("nav.home")}</Link>
           <Link to="/catalogo" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }}>{t("nav.catalogo")}</Link>
 
