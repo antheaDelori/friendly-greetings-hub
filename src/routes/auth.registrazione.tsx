@@ -251,7 +251,7 @@ function RegistrazionePage() {
             <span className="text-bone not-italic font-mono text-sm tracking-widest">{emailInviata}</span>
           </p>
           <p className="mt-4 font-serif italic text-base text-bone/50 leading-relaxed">
-            Clicca il link per attivare il tuo account{autore ? " e poi completa il tuo profilo autore." : " e iniziare a leggere."} Il link è valido per 24 ore.
+            Clicca il link per attivare il tuo account{autore ? " e poi completa il tuo profilo autore" : ""}. Il link è valido per 24 ore.
           </p>
           {autore && (
             <div className="mt-6 border border-magenta/30 bg-magenta/5 px-5 py-4 text-left">
