@@ -94,6 +94,7 @@ function AreaAutorePage() {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [authorProfile, setAuthorProfile] = useState<AuthorProfile | null>(null);
   const [bookStats, setBookStats] = useState<BookStats>({ count: 0, letture: 0, downloads: 0, perGenere: {} });
@@ -126,6 +127,7 @@ function AreaAutorePage() {
       if (!user || user.is_anonymous) { window.location.replace("/auth"); return; }
 
       setEmail(user.email ?? null);
+      setAvatarUrl(user.user_metadata?.avatar_url ?? null);
       const uid = user.id;
       setUserId(uid);
 
@@ -368,9 +370,15 @@ function AreaAutorePage() {
       >
         {/* Intestazione autore */}
         <div className="glass hud-frame p-6 mb-8 flex flex-col sm:flex-row items-center sm:items-start gap-6">
-          <div className="relative w-20 h-20 hud-frame flex-shrink-0">
-            <div className="absolute inset-0 bg-gradient-to-br from-cyan/30 to-magenta/20" />
-            <div className="absolute inset-0 flex items-center justify-center font-display text-3xl text-bone/60">◊</div>
+          <div className="relative w-20 h-20 hud-frame flex-shrink-0 overflow-hidden">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
+            ) : (
+              <>
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan/30 to-magenta/20" />
+                <div className="absolute inset-0 flex items-center justify-center font-display text-3xl text-bone/60">◊</div>
+              </>
+            )}
           </div>
           <div className="flex-1 text-center sm:text-left">
             <div className="font-mono text-[10px] tracking-[0.3em] text-cyan/70 uppercase">// terminale_autore</div>

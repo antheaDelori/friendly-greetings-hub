@@ -100,6 +100,11 @@ function ProfiloAutorePage() {
   const toggleGenere = (g: string) =>
     setGeneri((prev) => prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g]);
 
+  const missingFields = [
+    !bio.trim() && "la descrizione",
+    generi.length === 0 && "almeno un genere",
+  ].filter(Boolean) as string[];
+
   const handleSave = async () => {
     if (!userId) return;
     if (!copyrightAccepted) {
@@ -259,6 +264,9 @@ function ProfiloAutorePage() {
                 <p className="mt-2 font-serif italic text-bone/70">
                   {t("profiloAutore.lancioDesc")}
                 </p>
+                {!saved && missingFields.length > 0 && (
+                  <p className="mt-2 font-mono text-[11px] text-amber">⚠ Manca: {missingFields.join(" e ")}</p>
+                )}
                 {error && (
                   <p className="mt-2 font-mono text-[11px] text-magenta">⚠ {error}</p>
                 )}
@@ -267,7 +275,7 @@ function ProfiloAutorePage() {
                 )}
               </div>
               <div className="flex gap-3">
-                <HudButton variant="primary" onClick={handleSave} disabled={saving || generi.length === 0 || !bio.trim()}>
+                <HudButton variant="primary" onClick={handleSave} disabled={saving || missingFields.length > 0}>
                   {saving ? `▸ ${t("profiloAutore.salvaLoading")}` : `▸ ${t("profiloAutore.salvaBtn")}`}
                 </HudButton>
                 <Link to="/area-autore" onClick={(e) => { if (!saved && !copyrightAlreadySaved) e.preventDefault(); }}>
