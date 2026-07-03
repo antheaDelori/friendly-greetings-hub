@@ -20,6 +20,7 @@ export function SiteHeader() {
   const navigate = useNavigate();
   const routerState = useRouterState();
   const isInAreaAutore = routerState.location.pathname.startsWith("/area-autore");
+  const guidaTarget = routerState.location.pathname.startsWith("/gestione") ? "/guida/gestione" : "/guida";
 
   useEffect(() => { setCestinoTooltip(getCestinoTranslation()); }, []);
 
@@ -187,7 +188,7 @@ export function SiteHeader() {
           <Link to="/community" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }}>{t("nav.community")}</Link>
           <Link to="/libri-aperti" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }}>{t("nav.libriAperti")}</Link>
           <Link to="/regolamento" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }}>{t("nav.regole")}</Link>
-          <Link to="/guida" className={`${linkBase} border border-magenta/30 px-3 py-1 text-magenta/70 hover:text-magenta hover:border-magenta/60`} activeProps={{ className: "text-magenta border-magenta/60" }}>{t("nav.guida")}</Link>
+          <Link to={guidaTarget} className={`${linkBase} border border-magenta/30 px-3 py-1 text-magenta/70 hover:text-magenta hover:border-magenta/60`} activeProps={{ className: "text-magenta border-magenta/60" }}>{t("nav.guida")}</Link>
         </nav>
 
         <div className="flex items-center gap-2">
