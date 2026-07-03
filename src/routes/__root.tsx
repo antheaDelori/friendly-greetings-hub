@@ -1,5 +1,13 @@
-import { Outlet, Link, createRootRoute } from "@tanstack/react-router";
+import { Outlet, Link, createRootRoute, useRouterState } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { LangDetectModal } from "@/components/LangDetectModal";
+import { trackPageView } from "@/lib/analytics";
+
+function PageViewTracker() {
+  const { location } = useRouterState();
+  useEffect(() => { trackPageView(location.pathname); }, [location.pathname]);
+  return null;
+}
 
 function NotFoundComponent() {
   return (
@@ -31,6 +39,7 @@ export const Route = createRootRoute({
 function RootComponent() {
   return (
     <>
+      <PageViewTracker />
       <LangDetectModal />
       <Outlet />
     </>
