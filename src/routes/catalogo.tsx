@@ -111,6 +111,11 @@ function CatalogoPage() {
     return () => clearTimeout(id);
   }, [genre, showCollane]);
 
+  // Tiene l'input di ricerca sincronizzato quando l'URL cambia senza remount (es. dal menu Autori)
+  useEffect(() => {
+    setLocalQ(q);
+  }, [q]);
+
   // Lancia la ricerca: aggiorna URL e scrolla
   const handleSearch = () => {
     setQ(localQ);
