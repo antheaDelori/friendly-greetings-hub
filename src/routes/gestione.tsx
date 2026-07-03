@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { HudPanel, PageShell, HudButton } from "@/components/HudPanel";
@@ -438,6 +438,29 @@ function GestionePage() {
   const [coverAlettaDxTesto, setCoverAlettaDxTesto] = useState("");
   const [coverFotoAutore, setCoverFotoAutore] = useState<File | null>(null);
   const [existingCoverFotoAutoreUrl, setExistingCoverFotoAutoreUrl] = useState<string | null>(null);
+  // Modo testo/immagine per retro e alette (autore può caricare un design già pronto)
+  const [coverQuartaModo, setCoverQuartaModo] = useState<"testo" | "immagine">("testo");
+  const [coverAlettaSxModo, setCoverAlettaSxModo] = useState<"testo" | "immagine">("testo");
+  const [coverAlettaDxModo, setCoverAlettaDxModo] = useState<"testo" | "immagine">("testo");
+  const [coverQuartaImg, setCoverQuartaImg] = useState<File | null>(null);
+  const [coverAlettaSxImg, setCoverAlettaSxImg] = useState<File | null>(null);
+  const [coverAlettaDxImg, setCoverAlettaDxImg] = useState<File | null>(null);
+  const [existingCoverQuartaImgUrl, setExistingCoverQuartaImgUrl] = useState<string | null>(null);
+  const [existingCoverAlettaSxImgUrl, setExistingCoverAlettaSxImgUrl] = useState<string | null>(null);
+  const [existingCoverAlettaDxImgUrl, setExistingCoverAlettaDxImgUrl] = useState<string | null>(null);
+  const coverQuartaImgRef = useRef<HTMLInputElement>(null);
+  const coverAlettaSxImgRef = useRef<HTMLInputElement>(null);
+  const coverAlettaDxImgRef = useRef<HTMLInputElement>(null);
+  // URL di anteprima (file appena scelto ha priorità sull'immagine già salvata)
+  const coverQuartaImgPreviewUrl = useMemo(
+    () => coverQuartaImg ? URL.createObjectURL(coverQuartaImg) : existingCoverQuartaImgUrl,
+    [coverQuartaImg, existingCoverQuartaImgUrl]);
+  const coverAlettaSxImgPreviewUrl = useMemo(
+    () => coverAlettaSxImg ? URL.createObjectURL(coverAlettaSxImg) : existingCoverAlettaSxImgUrl,
+    [coverAlettaSxImg, existingCoverAlettaSxImgUrl]);
+  const coverAlettaDxImgPreviewUrl = useMemo(
+    () => coverAlettaDxImg ? URL.createObjectURL(coverAlettaDxImg) : existingCoverAlettaDxImgUrl,
+    [coverAlettaDxImg, existingCoverAlettaDxImgUrl]);
   const [coverHasIsbn, setCoverHasIsbn] = useState(false);
   const [coverIsbn, setCoverIsbn] = useState("");
   const [coverPrezzo, setCoverPrezzo] = useState("");
@@ -779,6 +802,15 @@ function GestionePage() {
       setCoverPrezzo(savedPrezzo);
     }
     setExistingCoverFotoAutoreUrl((bcs.cover_foto_autore_url as string) ?? null);
+    setCoverQuartaModo((bcs.cover_quarta_modo as string) === "immagine" ? "immagine" : "testo");
+    setCoverAlettaSxModo((bcs.cover_aletta_sx_modo as string) === "immagine" ? "immagine" : "testo");
+    setCoverAlettaDxModo((bcs.cover_aletta_dx_modo as string) === "immagine" ? "immagine" : "testo");
+    setExistingCoverQuartaImgUrl((bcs.cover_quarta_img_url as string) ?? null);
+    setExistingCoverAlettaSxImgUrl((bcs.cover_aletta_sx_img_url as string) ?? null);
+    setExistingCoverAlettaDxImgUrl((bcs.cover_aletta_dx_img_url as string) ?? null);
+    setCoverQuartaImg(null);
+    setCoverAlettaSxImg(null);
+    setCoverAlettaDxImg(null);
     setExistingCoverStampaUrl((bcs.cover_stampa_url as string) ?? null);
     setExistingCoverStampaBleedUrl((bcs.cover_stampa_bleed_url as string) ?? null);
     setCoverFotoAutore(null);
@@ -956,6 +988,17 @@ function GestionePage() {
     }
   };
 
+  // Carica un'immagine di sezione copertina (retro/alette) in Storage e restituisce l'URL pubblico
+  const uploadCoverSectionImg = async (file: File | null, existingUrl: string | null, suffix: string): Promise<string | null> => {
+    if (!file || !userId || !editingId) return existingUrl;
+    const ext = file.name.split(".").pop() ?? "jpg";
+    const path = `${userId}/${editingId}-${suffix}.${ext}`;
+    const { error: upErr } = await supabase.storage.from("copertine").upload(path, file, { upsert: true });
+    if (upErr) return existingUrl;
+    const { data: urlData } = supabase.storage.from("copertine").getPublicUrl(path);
+    return urlData.publicUrl;
+  };
+
   // Salva i testi e le impostazioni della copertina da stampa
   const handleSaveCoverStampa = async () => {
     if (!editingId || !userId) return;
@@ -973,7 +1016,22 @@ function GestionePage() {
           setCoverFotoAutore(null);
         }
       }
+      const quartaImgUrl   = await uploadCoverSectionImg(coverQuartaImg, existingCoverQuartaImgUrl, "quarta");
+      const alettaSxImgUrl = await uploadCoverSectionImg(coverAlettaSxImg, existingCoverAlettaSxImgUrl, "aletta-sx");
+      const alettaDxImgUrl = await uploadCoverSectionImg(coverAlettaDxImg, existingCoverAlettaDxImgUrl, "aletta-dx");
+      setExistingCoverQuartaImgUrl(quartaImgUrl);
+      setExistingCoverAlettaSxImgUrl(alettaSxImgUrl);
+      setExistingCoverAlettaDxImgUrl(alettaDxImgUrl);
+      setCoverQuartaImg(null);
+      setCoverAlettaSxImg(null);
+      setCoverAlettaDxImg(null);
       const { error } = await supabase.from("books").update({
+        cover_quarta_modo: coverQuartaModo,
+        cover_aletta_sx_modo: coverAlettaSxModo,
+        cover_aletta_dx_modo: coverAlettaDxModo,
+        cover_quarta_img_url: quartaImgUrl,
+        cover_aletta_sx_img_url: alettaSxImgUrl,
+        cover_aletta_dx_img_url: alettaDxImgUrl,
         cover_formato: coverFormato,
         cover_numero_pagine: coverNumeroPagine ? parseInt(coverNumeroPagine) : null,
         cover_quarta_testo: coverQuartaTesto.trim() || null,
@@ -3067,34 +3125,125 @@ function GestionePage() {
                     </div>
                   </div>
 
-                  {/* Testi sezioni */}
-                  <div className="space-y-4">
+                  {/* Testi sezioni — testo o immagine custom a scelta dell'autore */}
+                  <div className="space-y-5">
                     <div>
-                      <label className={labelClass}>Aletta anteriore <span className="text-bone/30 normal-case">(si piega dentro la copertina)</span></label>
-                      <textarea value={coverAlettaSxTesto} onChange={e => setCoverAlettaSxTesto(e.target.value)}
-                        placeholder="Biografia dell'autore, nota sull'opera..."
-                        rows={4}
-                        className={inputClass + " resize-y font-serif"} />
+                      <div className="flex items-center justify-between gap-3 flex-wrap mb-1">
+                        <label className={labelClass}>Aletta anteriore <span className="text-bone/30 normal-case">(si piega dentro la copertina)</span></label>
+                        <div className="flex items-center gap-2">
+                          <button type="button"
+                            onClick={() => setCoverAlettaSxModo(coverAlettaSxModo === "testo" ? "immagine" : "testo")}
+                            className={`w-10 h-5 border transition-all relative flex-shrink-0 ${coverAlettaSxModo === "immagine" ? "border-cyan bg-cyan/20" : "border-cyan/30"}`}>
+                            <span className={`absolute top-0.5 w-3.5 h-3.5 bg-current transition-all ${coverAlettaSxModo === "immagine" ? "left-5 text-cyan" : "left-0.5 text-bone/30"}`} />
+                          </button>
+                          <span className="font-mono text-[9px] tracking-widest text-bone/50 uppercase">
+                            {coverAlettaSxModo === "immagine" ? "Immagine" : "Testo"}
+                          </span>
+                        </div>
+                      </div>
+                      {coverAlettaSxModo === "testo" ? (
+                        <textarea value={coverAlettaSxTesto} onChange={e => setCoverAlettaSxTesto(e.target.value)}
+                          placeholder="Biografia dell'autore, nota sull'opera..."
+                          rows={4}
+                          className={inputClass + " resize-y font-serif"} />
+                      ) : (
+                        <div className="flex items-center gap-3 flex-wrap">
+                          {coverAlettaSxImgPreviewUrl && (
+                            <img src={coverAlettaSxImgPreviewUrl} alt="" className="w-16 h-24 object-cover ring-1 ring-cyan/30" />
+                          )}
+                          <input ref={coverAlettaSxImgRef} type="file" accept="image/*"
+                            onChange={e => setCoverAlettaSxImg(e.target.files?.[0] ?? null)}
+                            className="hidden" />
+                          <button type="button" onClick={() => coverAlettaSxImgRef.current?.click()}
+                            className="border border-cyan/40 px-4 py-2 font-mono text-[10px] uppercase tracking-widest hover:border-cyan hover:text-cyan transition-all text-bone/60 cursor-pointer">
+                            {coverAlettaSxImg ? `✓ ${coverAlettaSxImg.name}` : existingCoverAlettaSxImgUrl ? "✓ caricata (sostituisci)" : "▸ Carica immagine"}
+                          </button>
+                          <p className="font-mono text-[9px] text-bone/30 tracking-widest w-full">
+                            Sostituisce interamente l'aletta — niente testo o foto autore automatici.
+                          </p>
+                        </div>
+                      )}
                     </div>
 
                     <div>
-                      <label className={labelClass}>Quarta di copertina <span className="text-bone/30 normal-case">(retro)</span></label>
-                      <textarea value={coverQuartaTesto} onChange={e => setCoverQuartaTesto(e.target.value)}
-                        placeholder="Descrizione del libro, citazioni, testo di presentazione..."
-                        rows={5}
-                        className={inputClass + " resize-y font-serif"} />
+                      <div className="flex items-center justify-between gap-3 flex-wrap mb-1">
+                        <label className={labelClass}>Quarta di copertina <span className="text-bone/30 normal-case">(retro)</span></label>
+                        <div className="flex items-center gap-2">
+                          <button type="button"
+                            onClick={() => setCoverQuartaModo(coverQuartaModo === "testo" ? "immagine" : "testo")}
+                            className={`w-10 h-5 border transition-all relative flex-shrink-0 ${coverQuartaModo === "immagine" ? "border-cyan bg-cyan/20" : "border-cyan/30"}`}>
+                            <span className={`absolute top-0.5 w-3.5 h-3.5 bg-current transition-all ${coverQuartaModo === "immagine" ? "left-5 text-cyan" : "left-0.5 text-bone/30"}`} />
+                          </button>
+                          <span className="font-mono text-[9px] tracking-widest text-bone/50 uppercase">
+                            {coverQuartaModo === "immagine" ? "Immagine" : "Testo"}
+                          </span>
+                        </div>
+                      </div>
+                      {coverQuartaModo === "testo" ? (
+                        <textarea value={coverQuartaTesto} onChange={e => setCoverQuartaTesto(e.target.value)}
+                          placeholder="Descrizione del libro, citazioni, testo di presentazione..."
+                          rows={5}
+                          className={inputClass + " resize-y font-serif"} />
+                      ) : (
+                        <div className="flex items-center gap-3 flex-wrap">
+                          {coverQuartaImgPreviewUrl && (
+                            <img src={coverQuartaImgPreviewUrl} alt="" className="w-16 h-24 object-cover ring-1 ring-cyan/30" />
+                          )}
+                          <input ref={coverQuartaImgRef} type="file" accept="image/*"
+                            onChange={e => setCoverQuartaImg(e.target.files?.[0] ?? null)}
+                            className="hidden" />
+                          <button type="button" onClick={() => coverQuartaImgRef.current?.click()}
+                            className="border border-cyan/40 px-4 py-2 font-mono text-[10px] uppercase tracking-widest hover:border-cyan hover:text-cyan transition-all text-bone/60 cursor-pointer">
+                            {coverQuartaImg ? `✓ ${coverQuartaImg.name}` : existingCoverQuartaImgUrl ? "✓ caricata (sostituisci)" : "▸ Carica immagine"}
+                          </button>
+                          <p className="font-mono text-[9px] text-bone/30 tracking-widest w-full">
+                            Sostituisce interamente il retro — niente testo, prezzo o ISBN automatici.
+                          </p>
+                        </div>
+                      )}
                     </div>
 
                     <div>
-                      <label className={labelClass}>Aletta posteriore <span className="text-bone/30 normal-case">(si piega dentro il retro)</span></label>
-                      <textarea value={coverAlettaDxTesto} onChange={e => setCoverAlettaDxTesto(e.target.value)}
-                        placeholder="Collana, altri titoli, note..."
-                        rows={3}
-                        className={inputClass + " resize-y font-serif"} />
+                      <div className="flex items-center justify-between gap-3 flex-wrap mb-1">
+                        <label className={labelClass}>Aletta posteriore <span className="text-bone/30 normal-case">(si piega dentro il retro)</span></label>
+                        <div className="flex items-center gap-2">
+                          <button type="button"
+                            onClick={() => setCoverAlettaDxModo(coverAlettaDxModo === "testo" ? "immagine" : "testo")}
+                            className={`w-10 h-5 border transition-all relative flex-shrink-0 ${coverAlettaDxModo === "immagine" ? "border-cyan bg-cyan/20" : "border-cyan/30"}`}>
+                            <span className={`absolute top-0.5 w-3.5 h-3.5 bg-current transition-all ${coverAlettaDxModo === "immagine" ? "left-5 text-cyan" : "left-0.5 text-bone/30"}`} />
+                          </button>
+                          <span className="font-mono text-[9px] tracking-widest text-bone/50 uppercase">
+                            {coverAlettaDxModo === "immagine" ? "Immagine" : "Testo"}
+                          </span>
+                        </div>
+                      </div>
+                      {coverAlettaDxModo === "testo" ? (
+                        <textarea value={coverAlettaDxTesto} onChange={e => setCoverAlettaDxTesto(e.target.value)}
+                          placeholder="Collana, altri titoli, note..."
+                          rows={3}
+                          className={inputClass + " resize-y font-serif"} />
+                      ) : (
+                        <div className="flex items-center gap-3 flex-wrap">
+                          {coverAlettaDxImgPreviewUrl && (
+                            <img src={coverAlettaDxImgPreviewUrl} alt="" className="w-16 h-24 object-cover ring-1 ring-cyan/30" />
+                          )}
+                          <input ref={coverAlettaDxImgRef} type="file" accept="image/*"
+                            onChange={e => setCoverAlettaDxImg(e.target.files?.[0] ?? null)}
+                            className="hidden" />
+                          <button type="button" onClick={() => coverAlettaDxImgRef.current?.click()}
+                            className="border border-cyan/40 px-4 py-2 font-mono text-[10px] uppercase tracking-widest hover:border-cyan hover:text-cyan transition-all text-bone/60 cursor-pointer">
+                            {coverAlettaDxImg ? `✓ ${coverAlettaDxImg.name}` : existingCoverAlettaDxImgUrl ? "✓ caricata (sostituisci)" : "▸ Carica immagine"}
+                          </button>
+                          <p className="font-mono text-[9px] text-bone/30 tracking-widest w-full">
+                            Sostituisce interamente l'aletta.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
 
                   {/* Foto autore */}
+                  {coverAlettaSxModo === "testo" && (
                   <div>
                     <label className={labelClass}>Foto autore <span className="text-bone/30 normal-case">(opzionale — per l'aletta)</span></label>
                     <div className="mt-2 flex items-center gap-3 flex-wrap">
@@ -3110,6 +3259,7 @@ function GestionePage() {
                       </button>
                     </div>
                   </div>
+                  )}
 
                   {/* ISBN / logo */}
                   <div className="space-y-3">
@@ -3169,6 +3319,9 @@ function GestionePage() {
                       hasIsbn={coverHasIsbn}
                       formato={coverFormato}
                       pagine={coverNumeroPagine ? parseInt(coverNumeroPagine) : 200}
+                      quartaImgUrl={coverQuartaModo === "immagine" ? coverQuartaImgPreviewUrl : null}
+                      alettaSxImgUrl={coverAlettaSxModo === "immagine" ? coverAlettaSxImgPreviewUrl : null}
+                      alettaDxImgUrl={coverAlettaDxModo === "immagine" ? coverAlettaDxImgPreviewUrl : null}
                     />
                     <p className="mt-1.5 font-mono text-[9px] text-bone/30 tracking-widest">
                       ↳ L'anteprima si aggiorna mentre scrivi i testi — colori adattativi dalla copertina fronte

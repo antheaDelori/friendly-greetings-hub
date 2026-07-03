@@ -246,6 +246,15 @@ Deno.serve(async (req) => {
   const isbnText    = (b.cover_isbn   as string | null);
   const fotoAutoreUrl = (b.cover_foto_autore_url as string | null);
 
+  // Modalità testo/immagine per retro e alette — se "immagine" l'upload sostituisce
+  // interamente la sezione (niente testo/prezzo/isbn o foto-autore auto-generati)
+  const quartaModo     = (b.cover_quarta_modo     as string | null) ?? "testo";
+  const alettaSxModo   = (b.cover_aletta_sx_modo  as string | null) ?? "testo";
+  const alettaDxModo   = (b.cover_aletta_dx_modo  as string | null) ?? "testo";
+  const quartaImgUrl   = quartaModo   === "immagine" ? (b.cover_quarta_img_url    as string | null) : null;
+  const alettaSxImgUrl = alettaSxModo === "immagine" ? (b.cover_aletta_sx_img_url as string | null) : null;
+  const alettaDxImgUrl = alettaDxModo === "immagine" ? (b.cover_aletta_dx_img_url as string | null) : null;
+
   // Prezzo: auto-aggiunge "EUR " se nessun prefisso valuta, e ",00" se nessun decimale
   const rawPrezzo = ((b.cover_prezzo as string | null) ?? "").trim();
   let prezzo = rawPrezzo;
@@ -283,20 +292,26 @@ Deno.serve(async (req) => {
   const X_FLAP_DX = flapPx + coverW + spinePx + coverW;
 
   // ── Fetch assets in parallelo ─────────────────────────────────────────────
-  const [flatRes, logoRes, antheaLogoRes, fotoAutoreRes] = await Promise.all([
+  const [flatRes, logoRes, antheaLogoRes, fotoAutoreRes, quartaImgRes, alettaSxImgRes, alettaDxImgRes] = await Promise.all([
     fetch(flatUrl),
     fetch(LIBERIAMO_LOGO_URL).catch(() => null),
     fetch(ANTHEA_SPINE_LOGO_URL).catch(() => null),
-    fotoAutoreUrl ? fetch(fotoAutoreUrl).catch(() => null) : Promise.resolve(null),
+    fotoAutoreUrl   ? fetch(fotoAutoreUrl).catch(() => null)   : Promise.resolve(null),
+    quartaImgUrl    ? fetch(quartaImgUrl).catch(() => null)    : Promise.resolve(null),
+    alettaSxImgUrl  ? fetch(alettaSxImgUrl).catch(() => null)  : Promise.resolve(null),
+    alettaDxImgUrl  ? fetch(alettaDxImgUrl).catch(() => null)  : Promise.resolve(null),
   ]);
 
   if (!flatRes.ok) return json({ error: `Impossibile scaricare la copertina: ${flatRes.status}` }, 500);
 
-  const [flatBytes, logoBytes, antheaLogoBytes, fotoAutoreBytes] = await Promise.all([
+  const [flatBytes, logoBytes, antheaLogoBytes, fotoAutoreBytes, quartaImgBytes, alettaSxImgBytes, alettaDxImgBytes] = await Promise.all([
     flatRes.arrayBuffer().then(ab => new Uint8Array(ab)),
-    logoRes?.ok ? logoRes.arrayBuffer().then(ab => new Uint8Array(ab)) : Promise.resolve(null),
-    antheaLogoRes?.ok ? antheaLogoRes.arrayBuffer().then(ab => new Uint8Array(ab)) : Promise.resolve(null),
-    fotoAutoreRes?.ok ? fotoAutoreRes.arrayBuffer().then(ab => new Uint8Array(ab)) : Promise.resolve(null),
+    logoRes?.ok        ? logoRes.arrayBuffer().then(ab => new Uint8Array(ab))        : Promise.resolve(null),
+    antheaLogoRes?.ok  ? antheaLogoRes.arrayBuffer().then(ab => new Uint8Array(ab))  : Promise.resolve(null),
+    fotoAutoreRes?.ok  ? fotoAutoreRes.arrayBuffer().then(ab => new Uint8Array(ab))  : Promise.resolve(null),
+    quartaImgRes?.ok   ? quartaImgRes.arrayBuffer().then(ab => new Uint8Array(ab))   : Promise.resolve(null),
+    alettaSxImgRes?.ok ? alettaSxImgRes.arrayBuffer().then(ab => new Uint8Array(ab)) : Promise.resolve(null),
+    alettaDxImgRes?.ok ? alettaDxImgRes.arrayBuffer().then(ab => new Uint8Array(ab)) : Promise.resolve(null),
   ]);
 
   // Font incorporato — sempre disponibile, nessuna dipendenza di rete
@@ -347,6 +362,18 @@ Deno.serve(async (req) => {
   let fotoAutoreImg: Image | null = null;
   if (fotoAutoreBytes) {
     try { fotoAutoreImg = await Image.decode(fotoAutoreBytes); } catch { /* ignora */ }
+  }
+  let quartaCustomImg: Image | null = null;
+  if (quartaImgBytes) {
+    try { quartaCustomImg = await Image.decode(quartaImgBytes); } catch { /* ignora */ }
+  }
+  let alettaSxCustomImg: Image | null = null;
+  if (alettaSxImgBytes) {
+    try { alettaSxCustomImg = await Image.decode(alettaSxImgBytes); } catch { /* ignora */ }
+  }
+  let alettaDxCustomImg: Image | null = null;
+  if (alettaDxImgBytes) {
+    try { alettaDxCustomImg = await Image.decode(alettaDxImgBytes); } catch { /* ignora */ }
   }
 
   // ── Canvas principale ─────────────────────────────────────────────────────
@@ -412,83 +439,99 @@ Deno.serve(async (req) => {
   }
 
   // ── RETRO ─────────────────────────────────────────────────────────────────
-  // bottomY: posizione della riga separatrice / footer del retro
-  const bottomY    = canvasH - px(22);
-  const backTextW  = coverW - padPx * 2;
-  const backFS     = Math.round(coverH * 0.022);   // ~3.7mm font
-  const backTopMin = padPx * 3;                    // ~24mm margine superiore minimo
-  const backMaxH   = bottomY - backTopMin - padPx; // non tocca la riga separatrice
+  if (quartaCustomImg) {
+    // Immagine custom: sostituisce interamente il retro (niente testo/prezzo/isbn auto)
+    scaleToCover(quartaCustomImg, coverW, canvasH);
+    canvas.composite(quartaCustomImg, X_BACK, 0);
+  } else {
+    // bottomY: posizione della riga separatrice / footer del retro
+    const bottomY    = canvasH - px(22);
+    const backTextW  = coverW - padPx * 2;
+    const backFS     = Math.round(coverH * 0.022);   // ~3.7mm font
+    const backTopMin = padPx * 3;                    // ~24mm margine superiore minimo
+    const backMaxH   = bottomY - backTopMin - padPx; // non tocca la riga separatrice
 
-  if (fontBytes && quarta) {
-    // Calcola altezza totale del blocco testo per centrarlo nel terzo superiore
-    const lineH   = Math.round(backFS * 1.55);
-    const lines   = wrapText(quarta, backTextW, backFS);
-    const textH   = Math.min(lines.length * lineH, backMaxH);
-    // Zona disponibile per la centratura: dalla cima al 55% del retro
-    const zoneH   = Math.round(canvasH * 0.55) - backTopMin;
-    const offsetY = textH < zoneH ? Math.round((zoneH - textH) / 3) : 0;
-    const backY   = backTopMin + offsetY;
+    if (fontBytes && quarta) {
+      // Calcola altezza totale del blocco testo per centrarlo nel terzo superiore
+      const lineH   = Math.round(backFS * 1.55);
+      const lines   = wrapText(quarta, backTextW, backFS);
+      const textH   = Math.min(lines.length * lineH, backMaxH);
+      // Zona disponibile per la centratura: dalla cima al 55% del retro
+      const zoneH   = Math.round(canvasH * 0.55) - backTopMin;
+      const offsetY = textH < zoneH ? Math.round((zoneH - textH) / 3) : 0;
+      const backY   = backTopMin + offsetY;
 
-    await renderBlock(canvas, fontBytes, quarta,
-      X_BACK + padPx, backY, backTextW, backFS, COLOR_BACK_TEXT, 1.55, backMaxH);
-  }
+      await renderBlock(canvas, fontBytes, quarta,
+        X_BACK + padPx, backY, backTextW, backFS, COLOR_BACK_TEXT, 1.55, backMaxH);
+    }
 
-  // Riga separatrice in fondo al retro (già definito sopra, non ridichiarare)
-  // const bottomY = canvasH - px(22);  ← spostato in cima alla sezione
-  hLine(canvas, X_BACK + padPx, bottomY, backTextW, COLOR_BACK_RULE, 1);
+    // Riga separatrice in fondo al retro
+    hLine(canvas, X_BACK + padPx, bottomY, backTextW, COLOR_BACK_RULE, 1);
 
-  // Prezzo (in basso a sinistra del retro)
-  if (fontBytes && prezzo) {
-    const prFS = Math.round(backFS * 0.9);
-    try {
-      const prImg = await Image.renderText(fontBytes, prFS, prezzo, COLOR_BACK_TEXT);
-      canvas.composite(prImg, X_BACK + padPx, bottomY + px(4));
-    } catch { /* ignora */ }
-  }
+    // Prezzo (in basso a sinistra del retro)
+    if (fontBytes && prezzo) {
+      const prFS = Math.round(backFS * 0.9);
+      try {
+        const prImg = await Image.renderText(fontBytes, prFS, prezzo, COLOR_BACK_TEXT);
+        canvas.composite(prImg, X_BACK + padPx, bottomY + px(4));
+      } catch { /* ignora */ }
+    }
 
-  // ISBN o logo Liberiamo (in basso a destra del retro)
-  if (fontBytes && isbnText) {
-    const isFS = Math.round(backFS * 0.85);
-    try {
-      const isImg = await Image.renderText(fontBytes, isFS, `ISBN ${isbnText}`, COLOR_BACK_TEXT);
-      const isX = X_BACK + coverW - padPx - isImg.width;
-      canvas.composite(isImg, Math.max(X_BACK + padPx, isX), bottomY + px(4));
-    } catch { /* ignora */ }
-  } else if (logoImg) {
-    const logoMaxH = px(22);
-    const logoMaxW = Math.round(coverW * 0.30);  // max 30% larghezza copertina
-    const logoScale = Math.min(logoMaxH / logoImg.height, logoMaxW / logoImg.width);
-    const logoW = Math.round(logoImg.width  * logoScale);
-    const logoH = Math.round(logoImg.height * logoScale);
-    logoImg.resize(logoW, logoH);
-    const logoX = X_BACK + coverW - padPx - logoImg.width;
-    canvas.composite(logoImg, Math.max(X_BACK + padPx, logoX), bottomY + px(3));
+    // ISBN o logo Liberiamo (in basso a destra del retro)
+    if (fontBytes && isbnText) {
+      const isFS = Math.round(backFS * 0.85);
+      try {
+        const isImg = await Image.renderText(fontBytes, isFS, `ISBN ${isbnText}`, COLOR_BACK_TEXT);
+        const isX = X_BACK + coverW - padPx - isImg.width;
+        canvas.composite(isImg, Math.max(X_BACK + padPx, isX), bottomY + px(4));
+      } catch { /* ignora */ }
+    } else if (logoImg) {
+      const logoMaxH = px(22);
+      const logoMaxW = Math.round(coverW * 0.30);  // max 30% larghezza copertina
+      const logoScale = Math.min(logoMaxH / logoImg.height, logoMaxW / logoImg.width);
+      const logoW = Math.round(logoImg.width  * logoScale);
+      const logoH = Math.round(logoImg.height * logoScale);
+      logoImg.resize(logoW, logoH);
+      const logoX = X_BACK + coverW - padPx - logoImg.width;
+      canvas.composite(logoImg, Math.max(X_BACK + padPx, logoX), bottomY + px(3));
+    }
   }
 
   // ── ALETTA SINISTRA ───────────────────────────────────────────────────────
   const flapFS = Math.round(coverH * 0.020);
-  let alettaSxTextY = padPx;
 
-  // Foto autore IN CIMA all'aletta (prima del testo), larghezza massima con margini
-  if (fotoAutoreImg) {
-    const maxFW = flapPx - padPx * 2;          // larghezza disponibile (con margini laterali)
-    const maxFH = px(52);                       // altezza massima ~52mm
-    const scale = Math.min(maxFW / fotoAutoreImg.width, maxFH / fotoAutoreImg.height);
-    const fw = Math.round(fotoAutoreImg.width  * scale);
-    const fh = Math.round(fotoAutoreImg.height * scale);
-    fotoAutoreImg.resize(fw, fh);
-    const fx = X_FLAP_SX + Math.floor((flapPx - fw) / 2);  // centrata orizzontalmente
-    canvas.composite(fotoAutoreImg, fx, padPx);
-    alettaSxTextY = padPx + fh + Math.round(padPx * 0.75);  // testo inizia sotto la foto
-  }
+  if (alettaSxCustomImg) {
+    // Immagine custom: sostituisce interamente l'aletta (niente foto autore/testo auto)
+    scaleToCover(alettaSxCustomImg, flapPx, canvasH);
+    canvas.composite(alettaSxCustomImg, X_FLAP_SX, 0);
+  } else {
+    let alettaSxTextY = padPx;
 
-  if (fontBytes && alettaSx) {
-    await renderBlock(canvas, fontBytes, alettaSx,
-      X_FLAP_SX + padPx, alettaSxTextY, flapPx - padPx * 2, flapFS, COLOR_BACK_TEXT);
+    // Foto autore IN CIMA all'aletta (prima del testo), larghezza massima con margini
+    if (fotoAutoreImg) {
+      const maxFW = flapPx - padPx * 2;          // larghezza disponibile (con margini laterali)
+      const maxFH = px(52);                       // altezza massima ~52mm
+      const scale = Math.min(maxFW / fotoAutoreImg.width, maxFH / fotoAutoreImg.height);
+      const fw = Math.round(fotoAutoreImg.width  * scale);
+      const fh = Math.round(fotoAutoreImg.height * scale);
+      fotoAutoreImg.resize(fw, fh);
+      const fx = X_FLAP_SX + Math.floor((flapPx - fw) / 2);  // centrata orizzontalmente
+      canvas.composite(fotoAutoreImg, fx, padPx);
+      alettaSxTextY = padPx + fh + Math.round(padPx * 0.75);  // testo inizia sotto la foto
+    }
+
+    if (fontBytes && alettaSx) {
+      await renderBlock(canvas, fontBytes, alettaSx,
+        X_FLAP_SX + padPx, alettaSxTextY, flapPx - padPx * 2, flapFS, COLOR_BACK_TEXT);
+    }
   }
 
   // ── ALETTA DESTRA ─────────────────────────────────────────────────────────
-  if (fontBytes && alettaDx) {
+  if (alettaDxCustomImg) {
+    // Immagine custom: sostituisce interamente l'aletta
+    scaleToCover(alettaDxCustomImg, flapPx, canvasH);
+    canvas.composite(alettaDxCustomImg, X_FLAP_DX, 0);
+  } else if (fontBytes && alettaDx) {
     await renderBlock(canvas, fontBytes, alettaDx,
       X_FLAP_DX + padPx, padPx, flapPx - padPx * 2, flapFS, COLOR_BACK_TEXT);
   }

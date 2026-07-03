@@ -12,6 +12,9 @@ interface CoverSpreadPreviewProps {
   hasIsbn:   boolean;
   formato:   string;   // "a5" | "15x21" | "17x24" | "tascabile"
   pagine:    number;
+  quartaImgUrl?:   string | null;  // se presente, sostituisce il testo del retro
+  alettaSxImgUrl?: string | null;  // se presente, sostituisce il testo dell'aletta anteriore
+  alettaDxImgUrl?: string | null;  // se presente, sostituisce il testo dell'aletta posteriore
 }
 
 const FORMATS: Record<string, { w: number; h: number }> = {
@@ -30,6 +33,7 @@ function spineWidthMm(pages: number): number {
 export function CoverSpreadPreview({
   flatUrl, titolo, autore, quarta, alettaSx, alettaDx,
   prezzo, isbn, hasIsbn, formato, pagine,
+  quartaImgUrl, alettaSxImgUrl, alettaDxImgUrl,
 }: CoverSpreadPreviewProps) {
   const [avgColor, setAvgColor] = useState<{ r: number; g: number; b: number; luma: number } | null>(null);
 
@@ -131,42 +135,54 @@ export function CoverSpreadPreview({
           width: pct(FLAP_PREVIEW), flexShrink: 0,
           background: backOuter,
           borderRight: `1px solid ${ruleColor}`,
-          padding: "5% 5%",
+          padding: alettaSxImgUrl ? 0 : "5% 5%",
           overflow: "hidden",
         }}>
-          <div style={labelMono}>aletta ant.</div>
-          <div style={{ ...flapText, ...fade }}>
-            {alettaSx || <span style={{ opacity: 0.25 }}>—</span>}
-          </div>
+          {alettaSxImgUrl ? (
+            <img src={alettaSxImgUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+          ) : (
+            <>
+              <div style={labelMono}>aletta ant.</div>
+              <div style={{ ...flapText, ...fade }}>
+                {alettaSx || <span style={{ opacity: 0.25 }}>—</span>}
+              </div>
+            </>
+          )}
         </div>
 
         {/* ── Retro ────────────────────────────────────── */}
         <div style={{
           width: pct(fmt.w), flexShrink: 0,
-          background: `linear-gradient(to right, ${backOuter}, ${backBase})`,
-          padding: "8% 8%",
+          background: quartaImgUrl ? undefined : `linear-gradient(to right, ${backOuter}, ${backBase})`,
+          padding: quartaImgUrl ? 0 : "8% 8%",
           overflow: "hidden",
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
         }}>
-          <div style={{ ...textBase, ...fade, flex: 1, overflow: "hidden", overflowWrap: "break-word", wordBreak: "break-word" }}>
-            {quarta || <span style={{ opacity: 0.25, fontFamily: "monospace", fontSize: "7px", letterSpacing: "0.1em" }}>quarta di copertina</span>}
-          </div>
-          <div style={{
-            borderTop: `1px solid ${ruleColor}`,
-            paddingTop: "4%",
-            display: "flex",
-            justifyContent: "space-between",
-            fontSize: "7.5px",
-            color: textColor,
-            opacity: 0.70,
-            fontFamily: "monospace",
-            flexShrink: 0,
-          }}>
-            <span>{prezzo}</span>
-            {hasIsbn && isbn ? <span>ISBN {isbn}</span> : null}
-          </div>
+          {quartaImgUrl ? (
+            <img src={quartaImgUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+          ) : (
+            <>
+              <div style={{ ...textBase, ...fade, flex: 1, overflow: "hidden", overflowWrap: "break-word", wordBreak: "break-word" }}>
+                {quarta || <span style={{ opacity: 0.25, fontFamily: "monospace", fontSize: "7px", letterSpacing: "0.1em" }}>quarta di copertina</span>}
+              </div>
+              <div style={{
+                borderTop: `1px solid ${ruleColor}`,
+                paddingTop: "4%",
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: "7.5px",
+                color: textColor,
+                opacity: 0.70,
+                fontFamily: "monospace",
+                flexShrink: 0,
+              }}>
+                <span>{prezzo}</span>
+                {hasIsbn && isbn ? <span>ISBN {isbn}</span> : null}
+              </div>
+            </>
+          )}
         </div>
 
         {/* ── Spina ────────────────────────────────────── */}
@@ -234,13 +250,19 @@ export function CoverSpreadPreview({
           width: pct(FLAP_PREVIEW), flexShrink: 0,
           background: backOuter,
           borderLeft: `1px solid ${ruleColor}`,
-          padding: "5% 5%",
+          padding: alettaDxImgUrl ? 0 : "5% 5%",
           overflow: "hidden",
         }}>
-          <div style={labelMono}>aletta post.</div>
-          <div style={{ ...flapText, ...fade }}>
-            {alettaDx || <span style={{ opacity: 0.25 }}>—</span>}
-          </div>
+          {alettaDxImgUrl ? (
+            <img src={alettaDxImgUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+          ) : (
+            <>
+              <div style={labelMono}>aletta post.</div>
+              <div style={{ ...flapText, ...fade }}>
+                {alettaDx || <span style={{ opacity: 0.25 }}>—</span>}
+              </div>
+            </>
+          )}
         </div>
 
       </div>
