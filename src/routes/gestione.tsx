@@ -1816,28 +1816,6 @@ function GestionePage() {
           <HudPanel label="le tue opere" code={`${activeBooks.length}`} tone="cyan">
             {/* Filtro per tipologia */}
             <div className="mb-4 grid grid-cols-2 gap-1.5">
-              <div className="col-span-2 font-mono text-[11px] tracking-[0.25em] text-cyan uppercase mb-0.5">// Collane</div>
-              <button
-                onClick={() => { setSelected(null); setShowForm(false); setSelectedCollana(null); setShowCollanaList(false); resetCollanaForm(); setShowCollanaForm(true); }}
-                className={`font-mono text-[9px] uppercase tracking-widest border py-2 transition-all ${
-                  showCollanaForm && !collanaEditingId
-                    ? "border-magenta bg-magenta/15 text-magenta"
-                    : "border-cyan/20 text-bone/40 hover:border-cyan/50 hover:text-bone/70"
-                }`}
-              >
-                ◆ Crea
-              </button>
-              <button
-                onClick={() => { setSelected(null); setShowForm(false); setShowCollanaForm(false); resetCollanaForm(); setShowCollanaList(true); setSelectedCollana(null); }}
-                className={`font-mono text-[9px] uppercase tracking-widest border py-2 transition-all ${
-                  showCollanaList || (selectedCollana && !showCollanaForm)
-                    ? "border-magenta bg-magenta/15 text-magenta"
-                    : "border-cyan/20 text-bone/40 hover:border-cyan/50 hover:text-bone/70"
-                }`}
-              >
-                ◆ Modifica
-              </button>
-              <div className="col-span-2 border-t border-cyan/[0.08]" />
               <div className="col-span-2 font-mono text-[11px] tracking-[0.25em] text-cyan uppercase mb-0.5">// Opere</div>
               {GENERI.map(g => {
                 const count = activeBooks.filter(b => b.genere === g).length;
@@ -1864,39 +1842,37 @@ function GestionePage() {
                 );
               })}
             </div>
-
-            <div className="mb-3 space-y-0.5">
-              {(() => {
-                const articoliCount = books.filter(b => b.genere === "articolo").length;
-                const altreCount = books.filter(b => b.genere !== "articolo").length;
-                return (
-                  <>
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono text-[9px] tracking-widest text-bone/30 uppercase">
-                        opere: {altreCount} / {maxOpere >= 999 ? "∞" : maxOpere}
-                      </span>
-                      {altreCount >= maxOpere && maxOpere < 999 && (
-                        <span className="font-mono text-[9px] tracking-widest text-magenta uppercase">⊗ limite</span>
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono text-[9px] tracking-widest text-bone/30 uppercase">
-                        articoli: {articoliCount} / {maxArticoli >= 999 ? "∞" : maxArticoli}
-                      </span>
-                      {articoliCount >= maxArticoli && maxArticoli < 999 && (
-                        <span className="font-mono text-[9px] tracking-widest text-magenta uppercase">⊗ limite</span>
-                      )}
-                    </div>
-                  </>
-                );
-              })()}
-            </div>
             <button
               onClick={handleNewBook}
               className="mb-4 w-full font-mono text-[10px] tracking-widest text-magenta uppercase border border-magenta/40 py-2 hover:bg-magenta/10 transition-colors"
             >
               ◆ + nuova opera
             </button>
+
+            <div className="mb-4 grid grid-cols-2 gap-1.5">
+              <div className="col-span-2 border-t border-magenta/[0.15] pt-3 mb-0.5" />
+              <div className="col-span-2 font-mono text-[11px] tracking-[0.25em] text-magenta uppercase mb-0.5">// Collane</div>
+              <button
+                onClick={() => { setSelected(null); setShowForm(false); setSelectedCollana(null); setShowCollanaList(false); resetCollanaForm(); setShowCollanaForm(true); }}
+                className={`font-mono text-[9px] uppercase tracking-widest border py-2 transition-all ${
+                  showCollanaForm && !collanaEditingId
+                    ? "border-magenta bg-magenta/15 text-magenta"
+                    : "border-magenta/20 text-bone/40 hover:border-magenta/50 hover:text-bone/70"
+                }`}
+              >
+                ◆ Crea
+              </button>
+              <button
+                onClick={() => { setSelected(null); setShowForm(false); setShowCollanaForm(false); resetCollanaForm(); setShowCollanaList(true); setSelectedCollana(null); }}
+                className={`font-mono text-[9px] uppercase tracking-widest border py-2 transition-all ${
+                  showCollanaList || (selectedCollana && !showCollanaForm)
+                    ? "border-magenta bg-magenta/15 text-magenta"
+                    : "border-magenta/20 text-bone/40 hover:border-magenta/50 hover:text-bone/70"
+                }`}
+              >
+                ◆ Modifica
+              </button>
+            </div>
 
             {filteredBooks.length === 0 && (
               <p className="font-mono text-[10px] text-bone/40 uppercase tracking-widest mb-4">
