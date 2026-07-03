@@ -31,6 +31,8 @@ import { Route as AuthIndexRouteImport } from './routes/auth.index'
 import { Route as LibriApertiSlugRouteImport } from './routes/libri-aperti.$slug'
 import { Route as LeggiSlugRouteImport } from './routes/leggi.$slug'
 import { Route as GuidaGestioneRouteImport } from './routes/guida.gestione'
+import { Route as GuidaCatalogoRouteImport } from './routes/guida.catalogo'
+import { Route as GuidaAccessiRouteImport } from './routes/guida.accessi'
 import { Route as DownloadSlugRouteImport } from './routes/download.$slug'
 import { Route as CommunitySlugRouteImport } from './routes/community.$slug'
 import { Route as CollaneSlugRouteImport } from './routes/collane.$slug'
@@ -147,6 +149,16 @@ const GuidaGestioneRoute = GuidaGestioneRouteImport.update({
   path: '/gestione',
   getParentRoute: () => GuidaRoute,
 } as any)
+const GuidaCatalogoRoute = GuidaCatalogoRouteImport.update({
+  id: '/catalogo',
+  path: '/catalogo',
+  getParentRoute: () => GuidaRoute,
+} as any)
+const GuidaAccessiRoute = GuidaAccessiRouteImport.update({
+  id: '/accessi',
+  path: '/accessi',
+  getParentRoute: () => GuidaRoute,
+} as any)
 const DownloadSlugRoute = DownloadSlugRouteImport.update({
   id: '/download/$slug',
   path: '/download/$slug',
@@ -196,6 +208,8 @@ export interface FileRoutesByFullPath {
   '/collane/$slug': typeof CollaneSlugRoute
   '/community/$slug': typeof CommunitySlugRoute
   '/download/$slug': typeof DownloadSlugRoute
+  '/guida/accessi': typeof GuidaAccessiRoute
+  '/guida/catalogo': typeof GuidaCatalogoRoute
   '/guida/gestione': typeof GuidaGestioneRoute
   '/leggi/$slug': typeof LeggiSlugRoute
   '/libri-aperti/$slug': typeof LibriApertiSlugRoute
@@ -223,6 +237,8 @@ export interface FileRoutesByTo {
   '/collane/$slug': typeof CollaneSlugRoute
   '/community/$slug': typeof CommunitySlugRoute
   '/download/$slug': typeof DownloadSlugRoute
+  '/guida/accessi': typeof GuidaAccessiRoute
+  '/guida/catalogo': typeof GuidaCatalogoRoute
   '/guida/gestione': typeof GuidaGestioneRoute
   '/leggi/$slug': typeof LeggiSlugRoute
   '/libri-aperti/$slug': typeof LibriApertiSlugRoute
@@ -253,6 +269,8 @@ export interface FileRoutesById {
   '/collane/$slug': typeof CollaneSlugRoute
   '/community/$slug': typeof CommunitySlugRoute
   '/download/$slug': typeof DownloadSlugRoute
+  '/guida/accessi': typeof GuidaAccessiRoute
+  '/guida/catalogo': typeof GuidaCatalogoRoute
   '/guida/gestione': typeof GuidaGestioneRoute
   '/leggi/$slug': typeof LeggiSlugRoute
   '/libri-aperti/$slug': typeof LibriApertiSlugRoute
@@ -284,6 +302,8 @@ export interface FileRouteTypes {
     | '/collane/$slug'
     | '/community/$slug'
     | '/download/$slug'
+    | '/guida/accessi'
+    | '/guida/catalogo'
     | '/guida/gestione'
     | '/leggi/$slug'
     | '/libri-aperti/$slug'
@@ -311,6 +331,8 @@ export interface FileRouteTypes {
     | '/collane/$slug'
     | '/community/$slug'
     | '/download/$slug'
+    | '/guida/accessi'
+    | '/guida/catalogo'
     | '/guida/gestione'
     | '/leggi/$slug'
     | '/libri-aperti/$slug'
@@ -340,6 +362,8 @@ export interface FileRouteTypes {
     | '/collane/$slug'
     | '/community/$slug'
     | '/download/$slug'
+    | '/guida/accessi'
+    | '/guida/catalogo'
     | '/guida/gestione'
     | '/leggi/$slug'
     | '/libri-aperti/$slug'
@@ -526,6 +550,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GuidaGestioneRouteImport
       parentRoute: typeof GuidaRoute
     }
+    '/guida/catalogo': {
+      id: '/guida/catalogo'
+      path: '/catalogo'
+      fullPath: '/guida/catalogo'
+      preLoaderRoute: typeof GuidaCatalogoRouteImport
+      parentRoute: typeof GuidaRoute
+    }
+    '/guida/accessi': {
+      id: '/guida/accessi'
+      path: '/accessi'
+      fullPath: '/guida/accessi'
+      preLoaderRoute: typeof GuidaAccessiRouteImport
+      parentRoute: typeof GuidaRoute
+    }
     '/download/$slug': {
       id: '/download/$slug'
       path: '/download/$slug'
@@ -591,10 +629,14 @@ const CommunityRouteWithChildren = CommunityRoute._addFileChildren(
 )
 
 interface GuidaRouteChildren {
+  GuidaAccessiRoute: typeof GuidaAccessiRoute
+  GuidaCatalogoRoute: typeof GuidaCatalogoRoute
   GuidaGestioneRoute: typeof GuidaGestioneRoute
 }
 
 const GuidaRouteChildren: GuidaRouteChildren = {
+  GuidaAccessiRoute: GuidaAccessiRoute,
+  GuidaCatalogoRoute: GuidaCatalogoRoute,
   GuidaGestioneRoute: GuidaGestioneRoute,
 }
 

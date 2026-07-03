@@ -20,7 +20,12 @@ export function SiteHeader() {
   const navigate = useNavigate();
   const routerState = useRouterState();
   const isInAreaAutore = routerState.location.pathname.startsWith("/area-autore");
-  const guidaTarget = routerState.location.pathname.startsWith("/gestione") ? "/guida/gestione" : "/guida";
+  const GUIDA_PER_PAGINA: [string, "/guida/gestione" | "/guida/catalogo"][] = [
+    ["/gestione", "/guida/gestione"],
+    ["/catalogo", "/guida/catalogo"],
+  ];
+  const guidaTarget: "/guida/accessi" | "/guida/gestione" | "/guida/catalogo" =
+    GUIDA_PER_PAGINA.find(([prefix]) => routerState.location.pathname.startsWith(prefix))?.[1] ?? "/guida/accessi";
 
   useEffect(() => { setCestinoTooltip(getCestinoTranslation()); }, []);
 
