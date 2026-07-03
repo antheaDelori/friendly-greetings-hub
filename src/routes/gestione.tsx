@@ -2631,7 +2631,7 @@ function GestionePage() {
                       )}
                       <div className="flex flex-col gap-2">
                         <div className="flex gap-3">
-                          <HudButton variant="primary" onClick={handleSaveCapitolo} disabled={savingCapitolo || !capTitolo.trim() || !capTesto.trim()}>
+                          <HudButton variant="primary" onClick={handleSaveCapitolo} disabled={savingCapitolo}>
                             {savingCapitolo ? "▸ Salvataggio..." : editingCapitoloId ? `▸ Aggiorna ${contenutoLabel}` : `▸ Salva ${contenutoLabel}`}
                           </HudButton>
                           <HudButton variant="ghost" onClick={() => { setShowCapitoloForm(false); setEditingCapitoloId(null); setCapError(null); }}>
