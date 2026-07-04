@@ -99,7 +99,8 @@
     "nessunPoesia": "Ningún poema todavía en el archivo.",
     "nessunGenere": "Ninguna obra todavía en el archivo.",
     "nessunCollana": "Ninguna colección todavía en el archivo.",
-    "collanaLabel": "colección"
+    "collanaLabel": "colección",
+    "nascondiLibreria": "Ocultar ya en biblioteca"
   },
   "autoriPage": {
     "titolo": "Los autores.",

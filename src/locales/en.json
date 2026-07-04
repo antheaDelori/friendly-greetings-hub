@@ -99,7 +99,8 @@
     "nessunPoesia": "No poems yet in the archive.",
     "nessunGenere": "No works yet in the archive.",
     "nessunCollana": "No collections yet in the archive.",
-    "collanaLabel": "collection"
+    "collanaLabel": "collection",
+    "nascondiLibreria": "Hide already in library"
   },
   "autoriPage": {
     "titolo": "The authors.",

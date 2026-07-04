@@ -99,7 +99,8 @@
     "nessunPoesia": "Aucune poésie encore présente dans les archives.",
     "nessunGenere": "Aucune œuvre encore présente dans les archives.",
     "nessunCollana": "Aucune collection encore présente dans les archives.",
-    "collanaLabel": "collection"
+    "collanaLabel": "collection",
+    "nascondiLibreria": "Masquer déjà en bibliothèque"
   },
   "autoriPage": {
     "titolo": "Les auteurs.",

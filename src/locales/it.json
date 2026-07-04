@@ -99,7 +99,8 @@
     "nessunPoesia": "Nessuna poesia ancora presente in archivio.",
     "nessunGenere": "Nessuna opera ancora presente in archivio.",
     "nessunCollana": "Nessuna collana ancora presente in archivio.",
-    "collanaLabel": "collana"
+    "collanaLabel": "collana",
+    "nascondiLibreria": "Nascondi già in libreria"
   },
   "autoriPage": {
     "titolo": "Gli autori.",

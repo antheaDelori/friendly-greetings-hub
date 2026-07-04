@@ -87,8 +87,17 @@ function CatalogoPage() {
   const [libreriaMap, setLibreriaMap] = useState<Record<string, string>>({});
   const [tagsMap, setTagsMap] = useState<Record<string, string[]>>({});
   const [localQ, setLocalQ] = useState(q); // valore locale dell'input, inviato solo su submit
+  const [hideLibreria, setHideLibreria] = useState(() => localStorage.getItem("catalogo_hide_libreria") === "1");
   const searchRef = useRef<HTMLDivElement>(null);
   const userFilteredRef = useRef(false);
+
+  const toggleHideLibreria = () => {
+    setHideLibreria(prev => {
+      const next = !prev;
+      localStorage.setItem("catalogo_hide_libreria", next ? "1" : "0");
+      return next;
+    });
+  };
 
   const scrollToSearch = () => {
     const id = setTimeout(() => {
@@ -231,7 +240,8 @@ function CatalogoPage() {
         b.tagline.toLowerCase().includes(text) ||
         tags.some(t => t.toLowerCase().includes(text));
       const notInCollana = !dbBooksRaw.find(r => r.slug === b.slug)?.collana_id;
-      return matchesGenre && matchesQ && notInCollana;
+      const notHidden = !hideLibreria || !libreriaMap[b.slug];
+      return matchesGenre && matchesQ && notInCollana && notHidden;
     });
     if (sort === "recenti") return filtered;
     return [...filtered].sort((a, b) => {
@@ -239,7 +249,7 @@ function CatalogoPage() {
       if (sort === "anno") return a.year - b.year;
       return b.rating - a.rating;
     });
-  }, [allBooks, q, genre, sort, tagsMap]);
+  }, [allBooks, q, genre, sort, tagsMap, hideLibreria, libreriaMap, dbBooksRaw]);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -341,6 +351,19 @@ function CatalogoPage() {
                 {label}
               </button>
             ))}
+            {isLoggedIn && Object.keys(libreriaMap).length > 0 && (
+              <button
+                onClick={toggleHideLibreria}
+                className={`ml-2 flex items-center gap-2 font-mono tracking-[0.18em] text-[9px] uppercase px-2 py-1 border transition-colors ${
+                  hideLibreria ? "border-magenta/60 text-magenta bg-magenta/10" : "border-cyan/20 text-bone/40 hover:border-cyan/50 hover:text-cyan"
+                }`}
+              >
+                <span className={`w-7 h-3.5 border relative flex-shrink-0 transition-colors ${hideLibreria ? "border-magenta bg-magenta/20" : "border-cyan/30"}`}>
+                  <span className={`absolute top-0.5 w-2 h-2 bg-current transition-all ${hideLibreria ? "left-3.5" : "left-0.5"}`} />
+                </span>
+                {t("catalogo.nascondiLibreria")}
+              </button>
+            )}
           </div>
         </div>
       </section>
