@@ -8,7 +8,10 @@
     "regole": "Regeln",
     "libreria": "Meine Bibliothek",
     "sostieni": "Unterstützen",
-    "guida": "Hilfe"
+    "guida": "Hilfe",
+    "guidaAccessi": "Zugang",
+    "guidaCatalogo": "Katalog",
+    "guidaGestione": "Verwaltung"
   },
   "autoriDropdown": {
     "ricerca": "Autoren suchen",

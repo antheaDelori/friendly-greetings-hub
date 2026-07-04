@@ -8,7 +8,10 @@
     "regole": "Regole",
     "libreria": "Libreria",
     "sostieni": "Sostieni",
-    "guida": "Guida"
+    "guida": "Guida",
+    "guidaAccessi": "Accedi",
+    "guidaCatalogo": "Catalogo",
+    "guidaGestione": "Gestione"
   },
   "autoriDropdown": {
     "ricerca": "Ricerca autori",

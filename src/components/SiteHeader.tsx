@@ -20,12 +20,13 @@ export function SiteHeader() {
   const navigate = useNavigate();
   const routerState = useRouterState();
   const isInAreaAutore = routerState.location.pathname.startsWith("/area-autore");
-  const GUIDA_PER_PAGINA: [string, "/guida/gestione" | "/guida/catalogo"][] = [
-    ["/gestione", "/guida/gestione"],
-    ["/catalogo", "/guida/catalogo"],
+  const GUIDA_PER_PAGINA: [string, "/guida/gestione" | "/guida/catalogo", string][] = [
+    ["/gestione", "/guida/gestione", "guidaGestione"],
+    ["/catalogo", "/guida/catalogo", "guidaCatalogo"],
   ];
-  const guidaTarget: "/guida/accessi" | "/guida/gestione" | "/guida/catalogo" =
-    GUIDA_PER_PAGINA.find(([prefix]) => routerState.location.pathname.startsWith(prefix))?.[1] ?? "/guida/accessi";
+  const guidaMatch = GUIDA_PER_PAGINA.find(([prefix]) => routerState.location.pathname.startsWith(prefix));
+  const guidaTarget: "/guida/accessi" | "/guida/gestione" | "/guida/catalogo" = guidaMatch?.[1] ?? "/guida/accessi";
+  const guidaLabelKey = guidaMatch?.[2] ?? "guidaAccessi";
 
   useEffect(() => { setCestinoTooltip(getCestinoTranslation()); }, []);
 
@@ -113,8 +114,8 @@ export function SiteHeader() {
       </div>
 
       {/* main bar */}
-      <div className="border-b border-cyan/15 mx-auto flex h-16 max-w-7xl items-center justify-between gap-6 px-4 sm:px-6 lg:px-10">
-        <Link to="/" className="flex items-center gap-3 group">
+      <div className="border-b border-cyan/15 mx-auto flex h-16 max-w-7xl items-center gap-8 px-4 sm:px-6 lg:px-10">
+        <Link to="/" className="flex items-center gap-3 group flex-shrink-0">
           <div className="relative h-10 w-10 hud-frame bg-deep/60 overflow-hidden">
             <img
               src={logo}
@@ -193,10 +194,10 @@ export function SiteHeader() {
           <Link to="/community" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }}>{t("nav.community")}</Link>
           <Link to="/libri-aperti" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }}>{t("nav.libriAperti")}</Link>
           <Link to="/regolamento" className={linkBase} activeProps={{ className: "text-cyan text-glow-cyan" }}>{t("nav.regole")}</Link>
-          <Link to={guidaTarget} className={`${linkBase} border border-magenta/30 px-3 py-1 text-magenta/70 hover:text-magenta hover:border-magenta/60`} activeProps={{ className: "text-magenta border-magenta/60" }}>{t("nav.guida")}</Link>
+          <Link to={guidaTarget} className={`${linkBase} border border-magenta/30 px-3 py-1 text-magenta/70 hover:text-magenta hover:border-magenta/60`} activeProps={{ className: "text-magenta border-magenta/60" }}>{t("nav.guida")} · {t(`nav.${guidaLabelKey}`)}</Link>
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 ml-auto">
           {displayName ? (
             <>
               {isAnonymous ? (
