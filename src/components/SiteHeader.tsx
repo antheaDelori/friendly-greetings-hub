@@ -7,6 +7,10 @@ import { getCestinoTranslation } from "@/lib/cestinoI18n";
 
 type AuthorEntry = { name: string; count: number };
 
+function slugify(name: string): string {
+  return name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-");
+}
+
 export function SiteHeader() {
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [isAnonymous, setIsAnonymous] = useState(false);
@@ -166,7 +170,7 @@ export function SiteHeader() {
                     autoriList.map(a => (
                       <button
                         key={a.name}
-                        onClick={() => { navigate({ to: "/catalogo", search: { q: a.name, genre: "", sort: "recenti" } }); setAutoriOpen(false); }}
+                        onClick={() => { navigate({ to: "/autori/$slug", params: { slug: slugify(a.name) } }); setAutoriOpen(false); }}
                         className="w-full text-left px-4 py-2.5 flex items-center justify-between group hover:bg-cyan/5 transition-colors"
                       >
                         <span className="font-serif text-sm text-bone/80 group-hover:text-cyan transition-colors truncate">{a.name}</span>

@@ -110,6 +110,13 @@
     "caricamento": "chargement...",
     "nessunAutore": "Aucun auteur trouvé."
   },
+  "paginaAutore": {
+    "inBiblioteca": "dans la bibliothèque",
+    "desc": "Les œuvres déposées par cet auteur, par ordre de publication.",
+    "tornaAutori": "Tous les auteurs",
+    "nonTrovato": "Auteur non trouvé.",
+    "nessunRisultato": "Aucune œuvre ne correspond aux filtres sélectionnés."
+  },
   "generi": {
     "libro": "Romans",
     "racconto": "Récits",

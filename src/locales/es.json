@@ -110,6 +110,13 @@
     "caricamento": "cargando...",
     "nessunAutore": "Ningún autor encontrado."
   },
+  "paginaAutore": {
+    "inBiblioteca": "en la biblioteca",
+    "desc": "Las obras depositadas por este autor, en orden de publicación.",
+    "tornaAutori": "Todos los autores",
+    "nonTrovato": "Autor no encontrado.",
+    "nessunRisultato": "Ninguna obra corresponde a los filtros seleccionados."
+  },
   "generi": {
     "libro": "Novelas",
     "racconto": "Cuentos",

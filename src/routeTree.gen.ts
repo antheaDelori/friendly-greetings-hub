@@ -36,6 +36,7 @@ import { Route as GuidaAccessiRouteImport } from './routes/guida.accessi'
 import { Route as DownloadSlugRouteImport } from './routes/download.$slug'
 import { Route as CommunitySlugRouteImport } from './routes/community.$slug'
 import { Route as CollaneSlugRouteImport } from './routes/collane.$slug'
+import { Route as AutoriSlugRouteImport } from './routes/autori_.$slug'
 import { Route as AuthRegistrazioneRouteImport } from './routes/auth.registrazione'
 import { Route as AuthProfiloAutoreRouteImport } from './routes/auth.profilo-autore'
 
@@ -174,6 +175,11 @@ const CollaneSlugRoute = CollaneSlugRouteImport.update({
   path: '/collane/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AutoriSlugRoute = AutoriSlugRouteImport.update({
+  id: '/autori_/$slug',
+  path: '/autori/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRegistrazioneRoute = AuthRegistrazioneRouteImport.update({
   id: '/registrazione',
   path: '/registrazione',
@@ -205,6 +211,7 @@ export interface FileRoutesByFullPath {
   '/statistiche': typeof StatisticheRoute
   '/auth/profilo-autore': typeof AuthProfiloAutoreRoute
   '/auth/registrazione': typeof AuthRegistrazioneRoute
+  '/autori/$slug': typeof AutoriSlugRoute
   '/collane/$slug': typeof CollaneSlugRoute
   '/community/$slug': typeof CommunitySlugRoute
   '/download/$slug': typeof DownloadSlugRoute
@@ -234,6 +241,7 @@ export interface FileRoutesByTo {
   '/statistiche': typeof StatisticheRoute
   '/auth/profilo-autore': typeof AuthProfiloAutoreRoute
   '/auth/registrazione': typeof AuthRegistrazioneRoute
+  '/autori/$slug': typeof AutoriSlugRoute
   '/collane/$slug': typeof CollaneSlugRoute
   '/community/$slug': typeof CommunitySlugRoute
   '/download/$slug': typeof DownloadSlugRoute
@@ -266,6 +274,7 @@ export interface FileRoutesById {
   '/statistiche': typeof StatisticheRoute
   '/auth/profilo-autore': typeof AuthProfiloAutoreRoute
   '/auth/registrazione': typeof AuthRegistrazioneRoute
+  '/autori_/$slug': typeof AutoriSlugRoute
   '/collane/$slug': typeof CollaneSlugRoute
   '/community/$slug': typeof CommunitySlugRoute
   '/download/$slug': typeof DownloadSlugRoute
@@ -299,6 +308,7 @@ export interface FileRouteTypes {
     | '/statistiche'
     | '/auth/profilo-autore'
     | '/auth/registrazione'
+    | '/autori/$slug'
     | '/collane/$slug'
     | '/community/$slug'
     | '/download/$slug'
@@ -328,6 +338,7 @@ export interface FileRouteTypes {
     | '/statistiche'
     | '/auth/profilo-autore'
     | '/auth/registrazione'
+    | '/autori/$slug'
     | '/collane/$slug'
     | '/community/$slug'
     | '/download/$slug'
@@ -359,6 +370,7 @@ export interface FileRouteTypes {
     | '/statistiche'
     | '/auth/profilo-autore'
     | '/auth/registrazione'
+    | '/autori_/$slug'
     | '/collane/$slug'
     | '/community/$slug'
     | '/download/$slug'
@@ -389,6 +401,7 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   RegolamentoRoute: typeof RegolamentoRoute
   StatisticheRoute: typeof StatisticheRoute
+  AutoriSlugRoute: typeof AutoriSlugRoute
   CollaneSlugRoute: typeof CollaneSlugRoute
   DownloadSlugRoute: typeof DownloadSlugRoute
   LeggiSlugRoute: typeof LeggiSlugRoute
@@ -585,6 +598,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CollaneSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/autori_/$slug': {
+      id: '/autori_/$slug'
+      path: '/autori/$slug'
+      fullPath: '/autori/$slug'
+      preLoaderRoute: typeof AutoriSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth/registrazione': {
       id: '/auth/registrazione'
       path: '/registrazione'
@@ -674,6 +694,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   RegolamentoRoute: RegolamentoRoute,
   StatisticheRoute: StatisticheRoute,
+  AutoriSlugRoute: AutoriSlugRoute,
   CollaneSlugRoute: CollaneSlugRoute,
   DownloadSlugRoute: DownloadSlugRoute,
   LeggiSlugRoute: LeggiSlugRoute,

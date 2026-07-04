@@ -11,6 +11,10 @@ type AuthorEntry = {
   generi: string[];
 };
 
+function slugify(name: string): string {
+  return name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-");
+}
+
 
 export const Route = createFileRoute("/autori")({
   head: () => ({
@@ -165,8 +169,8 @@ function AutoriPage() {
                   {group.map(a => (
                     <Link
                       key={a.name}
-                      to="/catalogo"
-                      search={{ q: a.name, genre: "", sort: "recenti" }}
+                      to="/autori/$slug"
+                      params={{ slug: slugify(a.name) }}
                       className="group glass holo-hover p-5 flex flex-col gap-3 relative"
                     >
                       <span className="absolute top-1.5 left-1.5 w-2.5 h-2.5 border-l border-t border-cyan/50" />

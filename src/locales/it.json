@@ -110,6 +110,13 @@
     "caricamento": "caricamento...",
     "nessunAutore": "Nessun autore trovato."
   },
+  "paginaAutore": {
+    "inBiblioteca": "in biblioteca",
+    "desc": "Le opere depositate da questo autore, in ordine di pubblicazione.",
+    "tornaAutori": "Tutti gli autori",
+    "nonTrovato": "Autore non trovato.",
+    "nessunRisultato": "Nessuna opera corrisponde ai filtri selezionati."
+  },
   "generi": {
     "libro": "Libri",
     "racconto": "Racconti",

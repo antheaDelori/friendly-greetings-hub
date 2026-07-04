@@ -110,6 +110,13 @@
     "caricamento": "loading...",
     "nessunAutore": "No authors found."
   },
+  "paginaAutore": {
+    "inBiblioteca": "in the library",
+    "desc": "The works deposited by this author, in order of publication.",
+    "tornaAutori": "All authors",
+    "nonTrovato": "Author not found.",
+    "nessunRisultato": "No work matches the selected filters."
+  },
   "generi": {
     "libro": "Novels",
     "racconto": "Short stories",
