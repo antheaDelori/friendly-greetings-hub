@@ -24,13 +24,13 @@ export function SiteHeader() {
   const navigate = useNavigate();
   const routerState = useRouterState();
   const isInAreaAutore = routerState.location.pathname.startsWith("/area-autore");
-  const GUIDA_PER_PAGINA: [string, "/guida/gestione" | "/guida/catalogo", string][] = [
+  const GUIDA_PER_PAGINA: [string, "/guida/gestione" | "/guida/catalogo" | "/guida/autori", string][] = [
     ["/gestione", "/guida/gestione", "guidaGestione"],
     ["/catalogo", "/guida/catalogo", "guidaCatalogo"],
-    ["/autori", "/guida/catalogo", "guidaAutori"],
+    ["/autori", "/guida/autori", "guidaAutori"],
   ];
   const guidaMatch = GUIDA_PER_PAGINA.find(([prefix]) => routerState.location.pathname.startsWith(prefix));
-  const guidaTarget: "/guida/accessi" | "/guida/gestione" | "/guida/catalogo" = guidaMatch?.[1] ?? "/guida/accessi";
+  const guidaTarget: "/guida/accessi" | "/guida/gestione" | "/guida/catalogo" | "/guida/autori" = guidaMatch?.[1] ?? "/guida/accessi";
   const guidaLabelKey = guidaMatch?.[2] ?? "guidaAccessi";
 
   useEffect(() => { setCestinoTooltip(getCestinoTranslation()); }, []);
