@@ -11,7 +11,8 @@
     "guida": "Guide",
     "guidaAccessi": "Accès",
     "guidaCatalogo": "Catalogue",
-    "guidaGestione": "Gestion"
+    "guidaGestione": "Gestion",
+    "guidaAutori": "Auteurs"
   },
   "autoriDropdown": {
     "ricerca": "Rechercher des auteurs",
