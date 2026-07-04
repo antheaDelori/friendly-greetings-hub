@@ -54,6 +54,8 @@ function slugify(name: string): string {
   return name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-");
 }
 
+type CollanaCard = { id: string; slug: string; titolo: string; descrizione: string | null; copertina_url: string | null; count: number };
+
 export const Route = createFileRoute("/autori_/$slug")({
   validateSearch: searchSchema,
   component: AutorePage,
@@ -68,6 +70,8 @@ function AutorePage() {
   const [loading, setLoading] = useState(true);
   const [authorName, setAuthorName] = useState<string | null>(null);
   const [dbBooksRaw, setDbBooksRaw] = useState<DbBook[]>([]);
+  const [collane, setCollane] = useState<CollanaCard[]>([]);
+  const [showCollane, setShowCollane] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [libreriaMap, setLibreriaMap] = useState<Record<string, string>>({});
 
@@ -112,6 +116,22 @@ function AutorePage() {
       const mine = raw.filter(b => slugify(b.author_name || "autore") === slug);
       setDbBooksRaw(mine);
       setAuthorName(mine[0]?.author_name || null);
+
+      const collanaIds = [...new Set(mine.filter(b => b.collana_id).map(b => b.collana_id as string))];
+      if (collanaIds.length > 0) {
+        const { data: collaneData } = await supabase
+          .from("collane")
+          .select("id, slug, titolo, descrizione, copertina_url")
+          .in("id", collanaIds);
+        const counts: Record<string, number> = {};
+        for (const b of raw) {
+          if (b.collana_id && collanaIds.includes(b.collana_id)) counts[b.collana_id] = (counts[b.collana_id] ?? 0) + 1;
+        }
+        setCollane((collaneData ?? []).map(c => ({ ...c, count: counts[c.id] ?? 0 })));
+      } else {
+        setCollane([]);
+      }
+
       setLoading(false);
     };
     fetchBooks();
@@ -224,7 +244,7 @@ function AutorePage() {
               {genres.map((g) => (
                 <button
                   key={g.value}
-                  onClick={() => setGenre(genre === g.value ? "" : g.value)}
+                  onClick={() => { setShowCollane(false); setGenre(genre === g.value ? "" : g.value); }}
                   className={`relative group font-mono tracking-[0.22em] text-[10px] uppercase px-4 py-2 border transition-all ${
                     genre === g.value
                       ? "border-cyan bg-cyan/15 text-cyan glow-cyan"
@@ -239,6 +259,16 @@ function AutorePage() {
                   )}
                 </button>
               ))}
+              {collane.length > 0 && (
+                <button
+                  onClick={() => { setShowCollane(v => !v); setGenre(""); }}
+                  className={`font-mono tracking-[0.22em] text-[10px] uppercase px-4 py-2 border transition-all ${
+                    showCollane ? "border-magenta bg-magenta/15 text-magenta" : "border-magenta/30 text-bone/60 hover:border-magenta/60 hover:text-magenta"
+                  }`}
+                >
+                  ◆ {t("catalogo.collaneBtn")}<span className={`ml-1 ${showCollane ? "text-magenta/70" : "text-bone/30"}`}>{collane.length}</span>
+                </button>
+              )}
             </div>
             <div className="flex items-center gap-3">
               <span className="font-mono tracking-[0.22em] text-[10px] uppercase text-bone/50">sort:</span>
@@ -264,7 +294,27 @@ function AutorePage() {
       )}
 
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10 py-12 flex-1">
-        {loading ? null : results.length === 0 ? (
+        {loading ? null : showCollane ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            {collane.map(c => (
+              <Link key={c.id} to="/collane/$slug" params={{ slug: c.slug }}
+                className="group relative glass holo-hover hover:glow-cyan flex gap-4 p-5">
+                <span className="absolute top-1.5 left-1.5 w-3 h-3 border-l border-t border-cyan/70" />
+                <span className="absolute top-1.5 right-1.5 w-3 h-3 border-r border-t border-cyan/70" />
+                <span className="absolute bottom-1.5 left-1.5 w-3 h-3 border-l border-b border-cyan/70" />
+                <span className="absolute bottom-1.5 right-1.5 w-3 h-3 border-r border-b border-cyan/70" />
+                {c.copertina_url
+                  ? <img src={c.copertina_url} alt={c.titolo} className="w-16 h-20 object-cover flex-shrink-0 ring-1 ring-cyan/30" />
+                  : <div className="w-16 h-20 flex-shrink-0 bg-void/60 border border-cyan/20 flex items-center justify-center font-display text-2xl text-bone/20">◊</div>}
+                <div className="min-w-0">
+                  <h3 className="font-display text-lg text-bone tracking-tight leading-tight group-hover:text-cyan transition-colors">{c.titolo}</h3>
+                  {c.descrizione && <p className="mt-1 font-serif text-sm text-bone/60 line-clamp-2">{c.descrizione}</p>}
+                  <div className="mt-2 font-mono text-[9px] tracking-widest text-bone/30 uppercase">{c.count} {c.count === 1 ? t("ui.operaSing") : t("ui.operePlur")}</div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : results.length === 0 ? (
           <div className="text-center py-24 glass p-12 hud-frame">
             <div className="font-display text-7xl text-magenta">∅</div>
             <p className="mt-4 font-serif italic text-xl text-bone/70">{t("paginaAutore.nessunRisultato")}</p>

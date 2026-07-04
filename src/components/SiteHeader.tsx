@@ -27,6 +27,7 @@ export function SiteHeader() {
   const GUIDA_PER_PAGINA: [string, "/guida/gestione" | "/guida/catalogo", string][] = [
     ["/gestione", "/guida/gestione", "guidaGestione"],
     ["/catalogo", "/guida/catalogo", "guidaCatalogo"],
+    ["/autori", "/guida/catalogo", "guidaCatalogo"],
   ];
   const guidaMatch = GUIDA_PER_PAGINA.find(([prefix]) => routerState.location.pathname.startsWith(prefix));
   const guidaTarget: "/guida/accessi" | "/guida/gestione" | "/guida/catalogo" = guidaMatch?.[1] ?? "/guida/accessi";
