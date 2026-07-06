@@ -30,6 +30,7 @@ import { Route as LibriApertiIndexRouteImport } from './routes/libri-aperti.inde
 import { Route as AuthIndexRouteImport } from './routes/auth.index'
 import { Route as LibriApertiSlugRouteImport } from './routes/libri-aperti.$slug'
 import { Route as LeggiSlugRouteImport } from './routes/leggi.$slug'
+import { Route as GuidaLibriApertiRouteImport } from './routes/guida.libri-aperti'
 import { Route as GuidaGestioneRouteImport } from './routes/guida.gestione'
 import { Route as GuidaCatalogoRouteImport } from './routes/guida.catalogo'
 import { Route as GuidaAutoriRouteImport } from './routes/guida.autori'
@@ -146,6 +147,11 @@ const LeggiSlugRoute = LeggiSlugRouteImport.update({
   path: '/leggi/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GuidaLibriApertiRoute = GuidaLibriApertiRouteImport.update({
+  id: '/libri-aperti',
+  path: '/libri-aperti',
+  getParentRoute: () => GuidaRoute,
+} as any)
 const GuidaGestioneRoute = GuidaGestioneRouteImport.update({
   id: '/gestione',
   path: '/gestione',
@@ -225,6 +231,7 @@ export interface FileRoutesByFullPath {
   '/guida/autori': typeof GuidaAutoriRoute
   '/guida/catalogo': typeof GuidaCatalogoRoute
   '/guida/gestione': typeof GuidaGestioneRoute
+  '/guida/libri-aperti': typeof GuidaLibriApertiRoute
   '/leggi/$slug': typeof LeggiSlugRoute
   '/libri-aperti/$slug': typeof LibriApertiSlugRoute
   '/auth/': typeof AuthIndexRoute
@@ -256,6 +263,7 @@ export interface FileRoutesByTo {
   '/guida/autori': typeof GuidaAutoriRoute
   '/guida/catalogo': typeof GuidaCatalogoRoute
   '/guida/gestione': typeof GuidaGestioneRoute
+  '/guida/libri-aperti': typeof GuidaLibriApertiRoute
   '/leggi/$slug': typeof LeggiSlugRoute
   '/libri-aperti/$slug': typeof LibriApertiSlugRoute
   '/auth': typeof AuthIndexRoute
@@ -290,6 +298,7 @@ export interface FileRoutesById {
   '/guida/autori': typeof GuidaAutoriRoute
   '/guida/catalogo': typeof GuidaCatalogoRoute
   '/guida/gestione': typeof GuidaGestioneRoute
+  '/guida/libri-aperti': typeof GuidaLibriApertiRoute
   '/leggi/$slug': typeof LeggiSlugRoute
   '/libri-aperti/$slug': typeof LibriApertiSlugRoute
   '/auth/': typeof AuthIndexRoute
@@ -325,6 +334,7 @@ export interface FileRouteTypes {
     | '/guida/autori'
     | '/guida/catalogo'
     | '/guida/gestione'
+    | '/guida/libri-aperti'
     | '/leggi/$slug'
     | '/libri-aperti/$slug'
     | '/auth/'
@@ -356,6 +366,7 @@ export interface FileRouteTypes {
     | '/guida/autori'
     | '/guida/catalogo'
     | '/guida/gestione'
+    | '/guida/libri-aperti'
     | '/leggi/$slug'
     | '/libri-aperti/$slug'
     | '/auth'
@@ -389,6 +400,7 @@ export interface FileRouteTypes {
     | '/guida/autori'
     | '/guida/catalogo'
     | '/guida/gestione'
+    | '/guida/libri-aperti'
     | '/leggi/$slug'
     | '/libri-aperti/$slug'
     | '/auth/'
@@ -568,6 +580,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LeggiSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/guida/libri-aperti': {
+      id: '/guida/libri-aperti'
+      path: '/libri-aperti'
+      fullPath: '/guida/libri-aperti'
+      preLoaderRoute: typeof GuidaLibriApertiRouteImport
+      parentRoute: typeof GuidaRoute
+    }
     '/guida/gestione': {
       id: '/guida/gestione'
       path: '/gestione'
@@ -672,6 +691,7 @@ interface GuidaRouteChildren {
   GuidaAutoriRoute: typeof GuidaAutoriRoute
   GuidaCatalogoRoute: typeof GuidaCatalogoRoute
   GuidaGestioneRoute: typeof GuidaGestioneRoute
+  GuidaLibriApertiRoute: typeof GuidaLibriApertiRoute
 }
 
 const GuidaRouteChildren: GuidaRouteChildren = {
@@ -679,6 +699,7 @@ const GuidaRouteChildren: GuidaRouteChildren = {
   GuidaAutoriRoute: GuidaAutoriRoute,
   GuidaCatalogoRoute: GuidaCatalogoRoute,
   GuidaGestioneRoute: GuidaGestioneRoute,
+  GuidaLibriApertiRoute: GuidaLibriApertiRoute,
 }
 
 const GuidaRouteWithChildren = GuidaRoute._addFileChildren(GuidaRouteChildren)

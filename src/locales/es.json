@@ -12,7 +12,8 @@
     "guidaAccessi": "Acceso",
     "guidaCatalogo": "Catálogo",
     "guidaGestione": "Gestión",
-    "guidaAutori": "Autores"
+    "guidaAutori": "Autores",
+    "guidaLibriAperti": "Libros Abiertos"
   },
   "autoriDropdown": {
     "ricerca": "Buscar autores",
