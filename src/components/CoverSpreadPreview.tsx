@@ -13,8 +13,8 @@ interface CoverSpreadPreviewProps {
   formato:   string;   // "a5" | "15x21" | "17x24" | "tascabile"
   pagine:    number;
   quartaImgUrl?:   string | null;  // se presente, sostituisce il testo del retro
-  alettaSxImgUrl?: string | null;  // se presente, sostituisce il testo dell'aletta anteriore
-  alettaDxImgUrl?: string | null;  // se presente, sostituisce il testo dell'aletta posteriore
+  alettaSxImgUrl?: string | null;  // se presente, sostituisce il testo dell'aletta posteriore
+  alettaDxImgUrl?: string | null;  // se presente, sostituisce il testo dell'aletta anteriore
   spinaImgUrl?:    string | null;  // se presente, sostituisce titolo/autore/logo della spina
 }
 
@@ -131,7 +131,7 @@ export function CoverSpreadPreview({
     >
       <div className="flex h-full">
 
-        {/* ── Aletta anteriore ─────────────────────────── */}
+        {/* ── Aletta posteriore ────────────────────────── */}
         <div style={{
           width: pct(FLAP_PREVIEW), flexShrink: 0,
           background: backOuter,
@@ -143,7 +143,7 @@ export function CoverSpreadPreview({
             <img src={alettaSxImgUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
           ) : (
             <>
-              <div style={labelMono}>aletta ant.</div>
+              <div style={labelMono}>aletta post.</div>
               <div style={{ ...flapText, ...fade }}>
                 {alettaSx || <span style={{ opacity: 0.25 }}>—</span>}
               </div>
@@ -252,7 +252,7 @@ export function CoverSpreadPreview({
           }
         </div>
 
-        {/* ── Aletta posteriore ────────────────────────── */}
+        {/* ── Aletta anteriore ─────────────────────────── */}
         <div style={{
           width: pct(FLAP_PREVIEW), flexShrink: 0,
           background: backOuter,
@@ -264,7 +264,7 @@ export function CoverSpreadPreview({
             <img src={alettaDxImgUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
           ) : (
             <>
-              <div style={labelMono}>aletta post.</div>
+              <div style={labelMono}>aletta ant.</div>
               <div style={{ ...flapText, ...fade }}>
                 {alettaDx || <span style={{ opacity: 0.25 }}>—</span>}
               </div>

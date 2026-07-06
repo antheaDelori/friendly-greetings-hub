@@ -3144,7 +3144,7 @@ function GestionePage() {
                   <div className="space-y-5">
                     <div>
                       <div className="flex items-center justify-between gap-3 flex-wrap mb-1">
-                        <label className={labelClass}>Aletta anteriore <span className="text-bone/30 normal-case">(si piega dentro la copertina)</span></label>
+                        <label className={labelClass}>Aletta posteriore <span className="text-bone/30 normal-case">(si piega dentro il retro)</span></label>
                         <div className="flex items-center gap-2">
                           <button type="button"
                             onClick={() => setCoverAlettaSxModo(coverAlettaSxModo === "testo" ? "immagine" : "testo")}
@@ -3257,7 +3257,7 @@ function GestionePage() {
 
                     <div>
                       <div className="flex items-center justify-between gap-3 flex-wrap mb-1">
-                        <label className={labelClass}>Aletta posteriore <span className="text-bone/30 normal-case">(si piega dentro il retro)</span></label>
+                        <label className={labelClass}>Aletta anteriore <span className="text-bone/30 normal-case">(si piega dentro la copertina)</span></label>
                         <div className="flex items-center gap-2">
                           <button type="button"
                             onClick={() => setCoverAlettaDxModo(coverAlettaDxModo === "testo" ? "immagine" : "testo")}
