@@ -15,6 +15,7 @@ interface CoverSpreadPreviewProps {
   quartaImgUrl?:   string | null;  // se presente, sostituisce il testo del retro
   alettaSxImgUrl?: string | null;  // se presente, sostituisce il testo dell'aletta anteriore
   alettaDxImgUrl?: string | null;  // se presente, sostituisce il testo dell'aletta posteriore
+  spinaImgUrl?:    string | null;  // se presente, sostituisce titolo/autore/logo della spina
 }
 
 const FORMATS: Record<string, { w: number; h: number }> = {
@@ -33,7 +34,7 @@ function spineWidthMm(pages: number): number {
 export function CoverSpreadPreview({
   flatUrl, titolo, autore, quarta, alettaSx, alettaDx,
   prezzo, isbn, hasIsbn, formato, pagine,
-  quartaImgUrl, alettaSxImgUrl, alettaDxImgUrl,
+  quartaImgUrl, alettaSxImgUrl, alettaDxImgUrl, spinaImgUrl,
 }: CoverSpreadPreviewProps) {
   const [avgColor, setAvgColor] = useState<{ r: number; g: number; b: number; luma: number } | null>(null);
 
@@ -189,44 +190,50 @@ export function CoverSpreadPreview({
         <div style={{
           width: pct(spineW), flexShrink: 0,
           minWidth: "6px", maxWidth: "44px",
-          background: backBase,
+          background: spinaImgUrl ? undefined : backBase,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "flex-start",
-          paddingTop: "3%",
+          paddingTop: spinaImgUrl ? 0 : "3%",
           gap: "5%",
           overflow: "hidden",
         }}>
-          {titolo && (
-            <span style={{
-              writingMode: "vertical-rl",
-              transform: "rotate(180deg)",
-              color: textColor,
-              fontSize: "8px",
-              letterSpacing: "0.10em",
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              maxHeight: "45%",
-              fontFamily: "Georgia, serif",
-              fontWeight: "bold",
-            }}>
-              {titolo.toUpperCase()}
-            </span>
-          )}
-          {autore && (
-            <span style={{
-              writingMode: "vertical-rl",
-              transform: "rotate(180deg)",
-              color: textColor,
-              fontSize: "6.5px",
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              maxHeight: "35%",
-              opacity: 0.80,
-            }}>
-              {autore}
-            </span>
+          {spinaImgUrl ? (
+            <img src={spinaImgUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+          ) : (
+            <>
+              {titolo && (
+                <span style={{
+                  writingMode: "vertical-rl",
+                  transform: "rotate(180deg)",
+                  color: textColor,
+                  fontSize: "8px",
+                  letterSpacing: "0.10em",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  maxHeight: "45%",
+                  fontFamily: "Georgia, serif",
+                  fontWeight: "bold",
+                }}>
+                  {titolo.toUpperCase()}
+                </span>
+              )}
+              {autore && (
+                <span style={{
+                  writingMode: "vertical-rl",
+                  transform: "rotate(180deg)",
+                  color: textColor,
+                  fontSize: "6.5px",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  maxHeight: "35%",
+                  opacity: 0.80,
+                }}>
+                  {autore}
+                </span>
+              )}
+            </>
           )}
         </div>
 

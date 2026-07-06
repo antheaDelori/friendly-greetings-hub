@@ -251,9 +251,11 @@ Deno.serve(async (req) => {
   const quartaModo     = (b.cover_quarta_modo     as string | null) ?? "testo";
   const alettaSxModo   = (b.cover_aletta_sx_modo  as string | null) ?? "testo";
   const alettaDxModo   = (b.cover_aletta_dx_modo  as string | null) ?? "testo";
+  const spinaModo      = (b.cover_spina_modo      as string | null) ?? "testo";
   const quartaImgUrl   = quartaModo   === "immagine" ? (b.cover_quarta_img_url    as string | null) : null;
   const alettaSxImgUrl = alettaSxModo === "immagine" ? (b.cover_aletta_sx_img_url as string | null) : null;
   const alettaDxImgUrl = alettaDxModo === "immagine" ? (b.cover_aletta_dx_img_url as string | null) : null;
+  const spinaImgUrl    = spinaModo    === "immagine" ? (b.cover_spina_img_url    as string | null) : null;
 
   // Prezzo: auto-aggiunge "EUR " se nessun prefisso valuta, e ",00" se nessun decimale
   const rawPrezzo = ((b.cover_prezzo as string | null) ?? "").trim();
@@ -292,7 +294,7 @@ Deno.serve(async (req) => {
   const X_FLAP_DX = flapPx + coverW + spinePx + coverW;
 
   // ── Fetch assets in parallelo ─────────────────────────────────────────────
-  const [flatRes, logoRes, antheaLogoRes, fotoAutoreRes, quartaImgRes, alettaSxImgRes, alettaDxImgRes] = await Promise.all([
+  const [flatRes, logoRes, antheaLogoRes, fotoAutoreRes, quartaImgRes, alettaSxImgRes, alettaDxImgRes, spinaImgRes] = await Promise.all([
     fetch(flatUrl),
     fetch(LIBERIAMO_LOGO_URL).catch(() => null),
     fetch(ANTHEA_SPINE_LOGO_URL).catch(() => null),
@@ -300,11 +302,12 @@ Deno.serve(async (req) => {
     quartaImgUrl    ? fetch(quartaImgUrl).catch(() => null)    : Promise.resolve(null),
     alettaSxImgUrl  ? fetch(alettaSxImgUrl).catch(() => null)  : Promise.resolve(null),
     alettaDxImgUrl  ? fetch(alettaDxImgUrl).catch(() => null)  : Promise.resolve(null),
+    spinaImgUrl     ? fetch(spinaImgUrl).catch(() => null)     : Promise.resolve(null),
   ]);
 
   if (!flatRes.ok) return json({ error: `Impossibile scaricare la copertina: ${flatRes.status}` }, 500);
 
-  const [flatBytes, logoBytes, antheaLogoBytes, fotoAutoreBytes, quartaImgBytes, alettaSxImgBytes, alettaDxImgBytes] = await Promise.all([
+  const [flatBytes, logoBytes, antheaLogoBytes, fotoAutoreBytes, quartaImgBytes, alettaSxImgBytes, alettaDxImgBytes, spinaImgBytes] = await Promise.all([
     flatRes.arrayBuffer().then(ab => new Uint8Array(ab)),
     logoRes?.ok        ? logoRes.arrayBuffer().then(ab => new Uint8Array(ab))        : Promise.resolve(null),
     antheaLogoRes?.ok  ? antheaLogoRes.arrayBuffer().then(ab => new Uint8Array(ab))  : Promise.resolve(null),
@@ -312,6 +315,7 @@ Deno.serve(async (req) => {
     quartaImgRes?.ok   ? quartaImgRes.arrayBuffer().then(ab => new Uint8Array(ab))   : Promise.resolve(null),
     alettaSxImgRes?.ok ? alettaSxImgRes.arrayBuffer().then(ab => new Uint8Array(ab)) : Promise.resolve(null),
     alettaDxImgRes?.ok ? alettaDxImgRes.arrayBuffer().then(ab => new Uint8Array(ab)) : Promise.resolve(null),
+    spinaImgRes?.ok    ? spinaImgRes.arrayBuffer().then(ab => new Uint8Array(ab))    : Promise.resolve(null),
   ]);
 
   // Font incorporato — sempre disponibile, nessuna dipendenza di rete
@@ -375,6 +379,10 @@ Deno.serve(async (req) => {
   if (alettaDxImgBytes) {
     try { alettaDxCustomImg = await Image.decode(alettaDxImgBytes); } catch { /* ignora */ }
   }
+  let spinaCustomImg: Image | null = null;
+  if (spinaImgBytes) {
+    try { spinaCustomImg = await Image.decode(spinaImgBytes); } catch { /* ignora */ }
+  }
 
   // ── Canvas principale ─────────────────────────────────────────────────────
   const canvas = new Image(canvasW, canvasH);
@@ -390,52 +398,58 @@ Deno.serve(async (req) => {
   canvas.composite(flatImg, X_FRONT, 0);
 
   // ── SPINA ─────────────────────────────────────────────────────────────────
-  // Layout: AUTORE in alto · TITOLO centrato nel mezzo · LOGO in basso
-  fillGradientH(canvas, X_SPINE, 0, spinePx, canvasH, COLOR_BACK_BASE, COLOR_SPINE_FRONT, 32);
+  if (spinaCustomImg) {
+    // Immagine custom: sostituisce interamente la spina (niente titolo/autore/logo automatici)
+    scaleToCover(spinaCustomImg, spinePx, canvasH);
+    canvas.composite(spinaCustomImg, X_SPINE, 0);
+  } else {
+    // Layout: AUTORE in alto · TITOLO centrato nel mezzo · LOGO in basso
+    fillGradientH(canvas, X_SPINE, 0, spinePx, canvasH, COLOR_BACK_BASE, COLOR_SPINE_FRONT, 32);
 
-  // Font size: ~82% larghezza dorso — massimo fisico (dopo rotazione testo h ≈ sf*1.2 ≤ spinePx)
-  const sf = Math.max(9, Math.min(32, Math.round(spinePx * 0.82)));
-  const cx = (img: Image) => X_SPINE + Math.max(0, Math.floor((spinePx - img.width) / 2));
+    // Font size: ~82% larghezza dorso — massimo fisico (dopo rotazione testo h ≈ sf*1.2 ≤ spinePx)
+    const sf = Math.max(9, Math.min(32, Math.round(spinePx * 0.82)));
+    const cx = (img: Image) => X_SPINE + Math.max(0, Math.floor((spinePx - img.width) / 2));
 
-  // Pre-calcola logo size per conoscere lo spazio disponibile prima di posizionare il titolo
-  let spineLw = 0, spineLh = 0;
-  if (antheaLogoImg) {
-    const maxLogoSide = spinePx - px(1);
-    const ls = Math.min(maxLogoSide / antheaLogoImg.width, maxLogoSide / antheaLogoImg.height);
-    spineLw = Math.max(1, Math.round(antheaLogoImg.width  * ls));
-    spineLh = Math.max(1, Math.round(antheaLogoImg.height * ls));
-  }
+    // Pre-calcola logo size per conoscere lo spazio disponibile prima di posizionare il titolo
+    let spineLw = 0, spineLh = 0;
+    if (antheaLogoImg) {
+      const maxLogoSide = spinePx - px(1);
+      const ls = Math.min(maxLogoSide / antheaLogoImg.width, maxLogoSide / antheaLogoImg.height);
+      spineLw = Math.max(1, Math.round(antheaLogoImg.width  * ls));
+      spineLh = Math.max(1, Math.round(antheaLogoImg.height * ls));
+    }
 
-  // AUTORE in cima
-  let authorH = 0;
-  if (autore) {
-    const af = Math.max(8, Math.round(sf * 0.78));
-    try {
-      const aImg = await Image.renderText(fontBytes, af, autore, COLOR_BACK_TEXT);
-      const aRot = rotate90cw(aImg);
-      canvas.composite(aRot, cx(aRot), padPx);
-      authorH = aRot.height;
-    } catch { /* ignora */ }
-  }
+    // AUTORE in cima
+    let authorH = 0;
+    if (autore) {
+      const af = Math.max(8, Math.round(sf * 0.78));
+      try {
+        const aImg = await Image.renderText(fontBytes, af, autore, COLOR_BACK_TEXT);
+        const aRot = rotate90cw(aImg);
+        canvas.composite(aRot, cx(aRot), padPx);
+        authorH = aRot.height;
+      } catch { /* ignora */ }
+    }
 
-  // TITOLO centrato nell'area tra autore e logo
-  if (titolo) {
-    try {
-      const tImg = await Image.renderText(fontBytes, sf, titolo.toUpperCase(), COLOR_BACK_TEXT);
-      const tRot = rotate90cw(tImg);
-      const topBound    = padPx + authorH + Math.round(sf * 2.0);
-      const bottomBound = canvasH - spineLh - Math.round(padPx / 2) - padPx;
-      const titleY = topBound + Math.max(0, Math.round((bottomBound - topBound - tRot.height) / 2));
-      canvas.composite(tRot, cx(tRot), Math.max(topBound, titleY));
-    } catch { /* ignora */ }
-  }
+    // TITOLO centrato nell'area tra autore e logo
+    if (titolo) {
+      try {
+        const tImg = await Image.renderText(fontBytes, sf, titolo.toUpperCase(), COLOR_BACK_TEXT);
+        const tRot = rotate90cw(tImg);
+        const topBound    = padPx + authorH + Math.round(sf * 2.0);
+        const bottomBound = canvasH - spineLh - Math.round(padPx / 2) - padPx;
+        const titleY = topBound + Math.max(0, Math.round((bottomBound - topBound - tRot.height) / 2));
+        canvas.composite(tRot, cx(tRot), Math.max(topBound, titleY));
+      } catch { /* ignora */ }
+    }
 
-  // LOGO AntheaDelori in fondo
-  if (antheaLogoImg && spineLw > 0) {
-    antheaLogoImg.resize(spineLw, spineLh);
-    const lx = X_SPINE + Math.floor((spinePx - spineLw) / 2);
-    const ly = canvasH - spineLh - Math.round(padPx / 2);
-    canvas.composite(antheaLogoImg, lx, ly);
+    // LOGO AntheaDelori in fondo
+    if (antheaLogoImg && spineLw > 0) {
+      antheaLogoImg.resize(spineLw, spineLh);
+      const lx = X_SPINE + Math.floor((spinePx - spineLw) / 2);
+      const ly = canvasH - spineLh - Math.round(padPx / 2);
+      canvas.composite(antheaLogoImg, lx, ly);
+    }
   }
 
   // ── RETRO ─────────────────────────────────────────────────────────────────

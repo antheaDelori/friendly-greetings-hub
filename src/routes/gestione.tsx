@@ -442,15 +442,19 @@ function GestionePage() {
   const [coverQuartaModo, setCoverQuartaModo] = useState<"testo" | "immagine">("testo");
   const [coverAlettaSxModo, setCoverAlettaSxModo] = useState<"testo" | "immagine">("testo");
   const [coverAlettaDxModo, setCoverAlettaDxModo] = useState<"testo" | "immagine">("testo");
+  const [coverSpinaModo, setCoverSpinaModo] = useState<"testo" | "immagine">("testo");
   const [coverQuartaImg, setCoverQuartaImg] = useState<File | null>(null);
   const [coverAlettaSxImg, setCoverAlettaSxImg] = useState<File | null>(null);
   const [coverAlettaDxImg, setCoverAlettaDxImg] = useState<File | null>(null);
+  const [coverSpinaImg, setCoverSpinaImg] = useState<File | null>(null);
   const [existingCoverQuartaImgUrl, setExistingCoverQuartaImgUrl] = useState<string | null>(null);
   const [existingCoverAlettaSxImgUrl, setExistingCoverAlettaSxImgUrl] = useState<string | null>(null);
   const [existingCoverAlettaDxImgUrl, setExistingCoverAlettaDxImgUrl] = useState<string | null>(null);
+  const [existingCoverSpinaImgUrl, setExistingCoverSpinaImgUrl] = useState<string | null>(null);
   const coverQuartaImgRef = useRef<HTMLInputElement>(null);
   const coverAlettaSxImgRef = useRef<HTMLInputElement>(null);
   const coverAlettaDxImgRef = useRef<HTMLInputElement>(null);
+  const coverSpinaImgRef = useRef<HTMLInputElement>(null);
   // URL di anteprima (file appena scelto ha priorità sull'immagine già salvata)
   const coverQuartaImgPreviewUrl = useMemo(
     () => coverQuartaImg ? URL.createObjectURL(coverQuartaImg) : existingCoverQuartaImgUrl,
@@ -461,6 +465,9 @@ function GestionePage() {
   const coverAlettaDxImgPreviewUrl = useMemo(
     () => coverAlettaDxImg ? URL.createObjectURL(coverAlettaDxImg) : existingCoverAlettaDxImgUrl,
     [coverAlettaDxImg, existingCoverAlettaDxImgUrl]);
+  const coverSpinaImgPreviewUrl = useMemo(
+    () => coverSpinaImg ? URL.createObjectURL(coverSpinaImg) : existingCoverSpinaImgUrl,
+    [coverSpinaImg, existingCoverSpinaImgUrl]);
   const [coverHasIsbn, setCoverHasIsbn] = useState(false);
   const [coverIsbn, setCoverIsbn] = useState("");
   const [coverPrezzo, setCoverPrezzo] = useState("");
@@ -805,12 +812,15 @@ function GestionePage() {
     setCoverQuartaModo((bcs.cover_quarta_modo as string) === "immagine" ? "immagine" : "testo");
     setCoverAlettaSxModo((bcs.cover_aletta_sx_modo as string) === "immagine" ? "immagine" : "testo");
     setCoverAlettaDxModo((bcs.cover_aletta_dx_modo as string) === "immagine" ? "immagine" : "testo");
+    setCoverSpinaModo((bcs.cover_spina_modo as string) === "immagine" ? "immagine" : "testo");
     setExistingCoverQuartaImgUrl((bcs.cover_quarta_img_url as string) ?? null);
     setExistingCoverAlettaSxImgUrl((bcs.cover_aletta_sx_img_url as string) ?? null);
     setExistingCoverAlettaDxImgUrl((bcs.cover_aletta_dx_img_url as string) ?? null);
+    setExistingCoverSpinaImgUrl((bcs.cover_spina_img_url as string) ?? null);
     setCoverQuartaImg(null);
     setCoverAlettaSxImg(null);
     setCoverAlettaDxImg(null);
+    setCoverSpinaImg(null);
     setExistingCoverStampaUrl((bcs.cover_stampa_url as string) ?? null);
     setExistingCoverStampaBleedUrl((bcs.cover_stampa_bleed_url as string) ?? null);
     setCoverFotoAutore(null);
@@ -1019,19 +1029,24 @@ function GestionePage() {
       const quartaImgUrl   = await uploadCoverSectionImg(coverQuartaImg, existingCoverQuartaImgUrl, "quarta");
       const alettaSxImgUrl = await uploadCoverSectionImg(coverAlettaSxImg, existingCoverAlettaSxImgUrl, "aletta-sx");
       const alettaDxImgUrl = await uploadCoverSectionImg(coverAlettaDxImg, existingCoverAlettaDxImgUrl, "aletta-dx");
+      const spinaImgUrl    = await uploadCoverSectionImg(coverSpinaImg, existingCoverSpinaImgUrl, "spina");
       setExistingCoverQuartaImgUrl(quartaImgUrl);
       setExistingCoverAlettaSxImgUrl(alettaSxImgUrl);
       setExistingCoverAlettaDxImgUrl(alettaDxImgUrl);
+      setExistingCoverSpinaImgUrl(spinaImgUrl);
       setCoverQuartaImg(null);
       setCoverAlettaSxImg(null);
       setCoverAlettaDxImg(null);
+      setCoverSpinaImg(null);
       const { error } = await supabase.from("books").update({
         cover_quarta_modo: coverQuartaModo,
         cover_aletta_sx_modo: coverAlettaSxModo,
         cover_aletta_dx_modo: coverAlettaDxModo,
+        cover_spina_modo: coverSpinaModo,
         cover_quarta_img_url: quartaImgUrl,
         cover_aletta_sx_img_url: alettaSxImgUrl,
         cover_aletta_dx_img_url: alettaDxImgUrl,
+        cover_spina_img_url: spinaImgUrl,
         cover_formato: coverFormato,
         cover_numero_pagine: coverNumeroPagine ? parseInt(coverNumeroPagine) : null,
         cover_quarta_testo: coverQuartaTesto.trim() || null,
@@ -3205,6 +3220,43 @@ function GestionePage() {
 
                     <div>
                       <div className="flex items-center justify-between gap-3 flex-wrap mb-1">
+                        <label className={labelClass}>Spina <span className="text-bone/30 normal-case">(dorso — divide fronte e retro, larghezza calcolata dal numero di pagine)</span></label>
+                        <div className="flex items-center gap-2">
+                          <button type="button"
+                            onClick={() => setCoverSpinaModo(coverSpinaModo === "testo" ? "immagine" : "testo")}
+                            className={`w-10 h-5 border transition-all relative flex-shrink-0 ${coverSpinaModo === "immagine" ? "border-cyan bg-cyan/20" : "border-cyan/30"}`}>
+                            <span className={`absolute top-0.5 w-3.5 h-3.5 bg-current transition-all ${coverSpinaModo === "immagine" ? "left-5 text-cyan" : "left-0.5 text-bone/30"}`} />
+                          </button>
+                          <span className="font-mono text-[9px] tracking-widest text-bone/50 uppercase">
+                            {coverSpinaModo === "immagine" ? "Immagine" : "Testo"}
+                          </span>
+                        </div>
+                      </div>
+                      {coverSpinaModo === "testo" ? (
+                        <p className="font-mono text-[9px] text-bone/30 tracking-widest">
+                          Generata automaticamente da titolo, autore e logo — nessun testo da inserire.
+                        </p>
+                      ) : (
+                        <div className="flex items-center gap-3 flex-wrap">
+                          {coverSpinaImgPreviewUrl && (
+                            <img src={coverSpinaImgPreviewUrl} alt="" className="w-8 h-24 object-cover ring-1 ring-cyan/30" />
+                          )}
+                          <input ref={coverSpinaImgRef} type="file" accept="image/*"
+                            onChange={e => setCoverSpinaImg(e.target.files?.[0] ?? null)}
+                            className="hidden" />
+                          <button type="button" onClick={() => coverSpinaImgRef.current?.click()}
+                            className="border border-cyan/40 px-4 py-2 font-mono text-[10px] uppercase tracking-widest hover:border-cyan hover:text-cyan transition-all text-bone/60 cursor-pointer">
+                            {coverSpinaImg ? `✓ ${coverSpinaImg.name}` : existingCoverSpinaImgUrl ? "✓ caricata (sostituisci)" : "▸ Carica immagine"}
+                          </button>
+                          <p className="font-mono text-[9px] text-bone/30 tracking-widest w-full">
+                            Sostituisce interamente la spina — niente titolo, autore o logo automatici.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between gap-3 flex-wrap mb-1">
                         <label className={labelClass}>Aletta posteriore <span className="text-bone/30 normal-case">(si piega dentro il retro)</span></label>
                         <div className="flex items-center gap-2">
                           <button type="button"
@@ -3322,6 +3374,7 @@ function GestionePage() {
                       quartaImgUrl={coverQuartaModo === "immagine" ? coverQuartaImgPreviewUrl : null}
                       alettaSxImgUrl={coverAlettaSxModo === "immagine" ? coverAlettaSxImgPreviewUrl : null}
                       alettaDxImgUrl={coverAlettaDxModo === "immagine" ? coverAlettaDxImgPreviewUrl : null}
+                      spinaImgUrl={coverSpinaModo === "immagine" ? coverSpinaImgPreviewUrl : null}
                     />
                     <p className="mt-1.5 font-mono text-[9px] text-bone/30 tracking-widest">
                       ↳ L'anteprima si aggiorna mentre scrivi i testi — colori adattativi dalla copertina fronte
