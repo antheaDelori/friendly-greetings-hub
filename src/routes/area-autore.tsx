@@ -395,17 +395,17 @@ function AreaAutorePage() {
           </div>
           <div className="flex-shrink-0 flex flex-col items-center sm:items-end gap-2">
             {profile?.is_blocked ? (
-              <span className="font-mono text-[10px] uppercase tracking-widest border border-magenta/60 bg-magenta/10 text-magenta px-3 py-2">
+              <span className="w-44 text-center font-mono text-[10px] uppercase tracking-widest border border-magenta/60 bg-magenta/10 text-magenta px-3 py-2">
                 ⚠ Account bloccato
               </span>
             ) : (
-              <span className="font-mono text-[10px] uppercase tracking-widest border border-cyan/40 bg-cyan/5 text-cyan/70 px-3 py-2">
+              <span className="w-44 text-center font-mono text-[10px] uppercase tracking-widest border border-cyan/40 bg-cyan/5 text-cyan/70 px-3 py-2">
                 ✓ Account attivo
               </span>
             )}
             <Link
               to="/area-autore/tessera"
-              className="font-mono text-[9px] uppercase tracking-widest border border-magenta/40 text-magenta/80 hover:text-magenta hover:border-magenta px-3 py-1.5 transition-colors whitespace-nowrap"
+              className="w-44 text-center font-mono text-[10px] uppercase tracking-widest border border-magenta/40 text-magenta/80 hover:text-magenta hover:border-magenta px-3 py-2 transition-colors"
             >
               ▣ Tessera autore
             </Link>
