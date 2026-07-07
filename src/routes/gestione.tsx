@@ -488,7 +488,7 @@ function GestionePage() {
   const [sendingNewsletter, setSendingNewsletter] = useState(false);
   const [newsletterBookId, setNewsletterBookId] = useState("");
   const [newsletterMessage, setNewsletterMessage] = useState("");
-  const [newsletterResult, setNewsletterResult] = useState<{ sent: number } | { error: string } | null>(null);
+  const [newsletterResult, setNewsletterResult] = useState<{ sent: number; failed?: string[] } | { error: string } | null>(null);
 
   // Fumetti — pagine
   const [fumettoPagine, setFumettoPagine] = useState<{ id: string; ordine: number; image_url: string; testo?: string | null }[]>([]);
@@ -3821,8 +3821,13 @@ function GestionePage() {
                     </span>
                   )}
                 </div>
+                {newsletterResult && "failed" in newsletterResult && newsletterResult.failed && newsletterResult.failed.length > 0 && (
+                  <p className="font-mono text-[10px] text-magenta tracking-widest">
+                    ✗ Non consegnata a: {newsletterResult.failed.join(", ")}
+                  </p>
+                )}
                 <p className="font-mono text-[9px] text-bone/25 tracking-widest">
-                  ↳ L'email arriva anche a te in copia — tutti i lettori sono in BCC (non si vedono tra loro)
+                  ↳ L'email arriva anche a te in copia — ogni lettore riceve un invio individuale, non si vedono tra loro
                 </p>
               </div>
             )}

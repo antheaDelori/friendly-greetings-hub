@@ -208,7 +208,7 @@ function GuidaGestionePage() {
           <FieldRow name="I tuoi lettori — aggiungi indirizzo" desc="Aggiungi manualmente le email di chi vuoi avvisare delle tue pubblicazioni." />
           <FieldRow
             name="I tuoi lettori — Invia comunicazione"
-            desc="Scegli l'opera da presentare e scrivi un messaggio personale opzionale, poi invia: parte un'email curata a tutti i tuoi lettori in copia nascosta (non si vedono tra loro). Tu ricevi sempre una copia."
+            desc="Scegli l'opera da presentare e scrivi un messaggio personale opzionale, poi invia: parte un'email curata a ciascun lettore come invio individuale (non si vedono tra loro). Tu ricevi sempre una copia."
           />
           <FieldRow name="PayPal donazioni" desc="Inserisci il tuo link paypal.me personale: comparirà sulla pagina donazioni della piattaforma così i lettori possono sostenerti direttamente." />
           <FieldRow name="Moderazione community" desc="Le recensioni segnalate dai lettori sulle tue opere compaiono qui: puoi bloccarle o ripristinarle. Se non c'è nulla di segnalato, resta vuota." />

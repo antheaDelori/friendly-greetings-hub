@@ -192,27 +192,41 @@ Deno.serve(async (req) => {
     customMessage: custom_message,
   });
 
-  // Invia via Resend — autore in TO, follower in BCC, reply_to all'autore
-  const res = await fetch("https://api.resend.com/emails", {
+  // Invia via Resend — un'email individuale per destinatario (autore incluso), non una singola
+  // email con tutti i follower in BCC: i grandi provider (Gmail in testa) penalizzano fortemente
+  // i BCC di massa, ed è la causa più probabile di consegne parziali su liste anche piccole.
+  const subject = `Nuova pubblicazione: ${b.titolo}`;
+  const recipients = [authorEmail, ...followerEmails];
+  const batch = recipients.map(to => ({
+    from:     FROM_EMAIL,
+    to:       [to],
+    reply_to: `${authorName} <${authorEmail}>`,
+    subject,
+    html,
+  }));
+
+  const res = await fetch("https://api.resend.com/emails/batch", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${RESEND_API_KEY}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      from:     FROM_EMAIL,
-      to:       [authorEmail],
-      bcc:      followerEmails,
-      reply_to: `${authorName} <${authorEmail}>`,
-      subject:  `Nuova pubblicazione: ${b.titolo}`,
-      html,
-    }),
+    body: JSON.stringify(batch),
   });
 
   if (!res.ok) {
     const err = await res.text();
     return json({ error: `Errore Resend: ${err}` }, 502);
   }
+
+  const result = await res.json().catch(() => null) as { data?: Array<{ id?: string; error?: { message?: string } }> } | null;
+  const items = result?.data ?? [];
+  const failedRecipients = items
+    .map((item, i) => ({ item, email: recipients[i] }))
+    .filter(({ item }) => !item?.id || item?.error)
+    .map(({ email }) => email);
+
+  const sentCount = recipients.length - failedRecipients.length;
 
   // Registra l'invio
   await supabase.from("newsletter_sends").insert({
@@ -222,5 +236,8 @@ Deno.serve(async (req) => {
     sent_at:      new Date().toISOString(),
   }).maybeSingle();
 
+  if (failedRecipients.length > 0) {
+    return json({ sent: sentCount, failed: failedRecipients });
+  }
   return json({ sent: followerEmails.length });
 });
