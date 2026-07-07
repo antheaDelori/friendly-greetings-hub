@@ -13,7 +13,8 @@
     "guidaCatalogo": "Catalog",
     "guidaGestione": "Management",
     "guidaAutori": "Authors",
-    "guidaLibriAperti": "Open Books"
+    "guidaLibriAperti": "Open Books",
+    "guidaAreaAutore": "Dashboard"
   },
   "autoriDropdown": {
     "ricerca": "Search authors",

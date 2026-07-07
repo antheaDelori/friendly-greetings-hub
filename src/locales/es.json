@@ -13,7 +13,8 @@
     "guidaCatalogo": "Catálogo",
     "guidaGestione": "Gestión",
     "guidaAutori": "Autores",
-    "guidaLibriAperti": "Libros Abiertos"
+    "guidaLibriAperti": "Libros Abiertos",
+    "guidaAreaAutore": "Área reservada"
   },
   "autoriDropdown": {
     "ricerca": "Buscar autores",

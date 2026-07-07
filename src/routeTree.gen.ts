@@ -34,6 +34,7 @@ import { Route as GuidaLibriApertiRouteImport } from './routes/guida.libri-apert
 import { Route as GuidaGestioneRouteImport } from './routes/guida.gestione'
 import { Route as GuidaCatalogoRouteImport } from './routes/guida.catalogo'
 import { Route as GuidaAutoriRouteImport } from './routes/guida.autori'
+import { Route as GuidaAreaAutoreRouteImport } from './routes/guida.area-autore'
 import { Route as GuidaAccessiRouteImport } from './routes/guida.accessi'
 import { Route as DownloadSlugRouteImport } from './routes/download.$slug'
 import { Route as CommunitySlugRouteImport } from './routes/community.$slug'
@@ -41,6 +42,7 @@ import { Route as CollaneSlugRouteImport } from './routes/collane.$slug'
 import { Route as AutoriSlugRouteImport } from './routes/autori_.$slug'
 import { Route as AuthRegistrazioneRouteImport } from './routes/auth.registrazione'
 import { Route as AuthProfiloAutoreRouteImport } from './routes/auth.profilo-autore'
+import { Route as AreaAutoreTesseraRouteImport } from './routes/area-autore_.tessera'
 
 const StatisticheRoute = StatisticheRouteImport.update({
   id: '/statistiche',
@@ -167,6 +169,11 @@ const GuidaAutoriRoute = GuidaAutoriRouteImport.update({
   path: '/autori',
   getParentRoute: () => GuidaRoute,
 } as any)
+const GuidaAreaAutoreRoute = GuidaAreaAutoreRouteImport.update({
+  id: '/area-autore',
+  path: '/area-autore',
+  getParentRoute: () => GuidaRoute,
+} as any)
 const GuidaAccessiRoute = GuidaAccessiRouteImport.update({
   id: '/accessi',
   path: '/accessi',
@@ -202,6 +209,11 @@ const AuthProfiloAutoreRoute = AuthProfiloAutoreRouteImport.update({
   path: '/profilo-autore',
   getParentRoute: () => AuthRoute,
 } as any)
+const AreaAutoreTesseraRoute = AreaAutoreTesseraRouteImport.update({
+  id: '/area-autore_/tessera',
+  path: '/area-autore/tessera',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -221,6 +233,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/regolamento': typeof RegolamentoRoute
   '/statistiche': typeof StatisticheRoute
+  '/area-autore/tessera': typeof AreaAutoreTesseraRoute
   '/auth/profilo-autore': typeof AuthProfiloAutoreRoute
   '/auth/registrazione': typeof AuthRegistrazioneRoute
   '/autori/$slug': typeof AutoriSlugRoute
@@ -228,6 +241,7 @@ export interface FileRoutesByFullPath {
   '/community/$slug': typeof CommunitySlugRoute
   '/download/$slug': typeof DownloadSlugRoute
   '/guida/accessi': typeof GuidaAccessiRoute
+  '/guida/area-autore': typeof GuidaAreaAutoreRoute
   '/guida/autori': typeof GuidaAutoriRoute
   '/guida/catalogo': typeof GuidaCatalogoRoute
   '/guida/gestione': typeof GuidaGestioneRoute
@@ -253,6 +267,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/regolamento': typeof RegolamentoRoute
   '/statistiche': typeof StatisticheRoute
+  '/area-autore/tessera': typeof AreaAutoreTesseraRoute
   '/auth/profilo-autore': typeof AuthProfiloAutoreRoute
   '/auth/registrazione': typeof AuthRegistrazioneRoute
   '/autori/$slug': typeof AutoriSlugRoute
@@ -260,6 +275,7 @@ export interface FileRoutesByTo {
   '/community/$slug': typeof CommunitySlugRoute
   '/download/$slug': typeof DownloadSlugRoute
   '/guida/accessi': typeof GuidaAccessiRoute
+  '/guida/area-autore': typeof GuidaAreaAutoreRoute
   '/guida/autori': typeof GuidaAutoriRoute
   '/guida/catalogo': typeof GuidaCatalogoRoute
   '/guida/gestione': typeof GuidaGestioneRoute
@@ -288,6 +304,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/regolamento': typeof RegolamentoRoute
   '/statistiche': typeof StatisticheRoute
+  '/area-autore_/tessera': typeof AreaAutoreTesseraRoute
   '/auth/profilo-autore': typeof AuthProfiloAutoreRoute
   '/auth/registrazione': typeof AuthRegistrazioneRoute
   '/autori_/$slug': typeof AutoriSlugRoute
@@ -295,6 +312,7 @@ export interface FileRoutesById {
   '/community/$slug': typeof CommunitySlugRoute
   '/download/$slug': typeof DownloadSlugRoute
   '/guida/accessi': typeof GuidaAccessiRoute
+  '/guida/area-autore': typeof GuidaAreaAutoreRoute
   '/guida/autori': typeof GuidaAutoriRoute
   '/guida/catalogo': typeof GuidaCatalogoRoute
   '/guida/gestione': typeof GuidaGestioneRoute
@@ -324,6 +342,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/regolamento'
     | '/statistiche'
+    | '/area-autore/tessera'
     | '/auth/profilo-autore'
     | '/auth/registrazione'
     | '/autori/$slug'
@@ -331,6 +350,7 @@ export interface FileRouteTypes {
     | '/community/$slug'
     | '/download/$slug'
     | '/guida/accessi'
+    | '/guida/area-autore'
     | '/guida/autori'
     | '/guida/catalogo'
     | '/guida/gestione'
@@ -356,6 +376,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/regolamento'
     | '/statistiche'
+    | '/area-autore/tessera'
     | '/auth/profilo-autore'
     | '/auth/registrazione'
     | '/autori/$slug'
@@ -363,6 +384,7 @@ export interface FileRouteTypes {
     | '/community/$slug'
     | '/download/$slug'
     | '/guida/accessi'
+    | '/guida/area-autore'
     | '/guida/autori'
     | '/guida/catalogo'
     | '/guida/gestione'
@@ -390,6 +412,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/regolamento'
     | '/statistiche'
+    | '/area-autore_/tessera'
     | '/auth/profilo-autore'
     | '/auth/registrazione'
     | '/autori_/$slug'
@@ -397,6 +420,7 @@ export interface FileRouteTypes {
     | '/community/$slug'
     | '/download/$slug'
     | '/guida/accessi'
+    | '/guida/area-autore'
     | '/guida/autori'
     | '/guida/catalogo'
     | '/guida/gestione'
@@ -425,6 +449,7 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   RegolamentoRoute: typeof RegolamentoRoute
   StatisticheRoute: typeof StatisticheRoute
+  AreaAutoreTesseraRoute: typeof AreaAutoreTesseraRoute
   AutoriSlugRoute: typeof AutoriSlugRoute
   CollaneSlugRoute: typeof CollaneSlugRoute
   DownloadSlugRoute: typeof DownloadSlugRoute
@@ -608,6 +633,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GuidaAutoriRouteImport
       parentRoute: typeof GuidaRoute
     }
+    '/guida/area-autore': {
+      id: '/guida/area-autore'
+      path: '/area-autore'
+      fullPath: '/guida/area-autore'
+      preLoaderRoute: typeof GuidaAreaAutoreRouteImport
+      parentRoute: typeof GuidaRoute
+    }
     '/guida/accessi': {
       id: '/guida/accessi'
       path: '/accessi'
@@ -657,6 +689,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthProfiloAutoreRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/area-autore_/tessera': {
+      id: '/area-autore_/tessera'
+      path: '/area-autore/tessera'
+      fullPath: '/area-autore/tessera'
+      preLoaderRoute: typeof AreaAutoreTesseraRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -688,6 +727,7 @@ const CommunityRouteWithChildren = CommunityRoute._addFileChildren(
 
 interface GuidaRouteChildren {
   GuidaAccessiRoute: typeof GuidaAccessiRoute
+  GuidaAreaAutoreRoute: typeof GuidaAreaAutoreRoute
   GuidaAutoriRoute: typeof GuidaAutoriRoute
   GuidaCatalogoRoute: typeof GuidaCatalogoRoute
   GuidaGestioneRoute: typeof GuidaGestioneRoute
@@ -696,6 +736,7 @@ interface GuidaRouteChildren {
 
 const GuidaRouteChildren: GuidaRouteChildren = {
   GuidaAccessiRoute: GuidaAccessiRoute,
+  GuidaAreaAutoreRoute: GuidaAreaAutoreRoute,
   GuidaAutoriRoute: GuidaAutoriRoute,
   GuidaCatalogoRoute: GuidaCatalogoRoute,
   GuidaGestioneRoute: GuidaGestioneRoute,
@@ -736,6 +777,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   RegolamentoRoute: RegolamentoRoute,
   StatisticheRoute: StatisticheRoute,
+  AreaAutoreTesseraRoute: AreaAutoreTesseraRoute,
   AutoriSlugRoute: AutoriSlugRoute,
   CollaneSlugRoute: CollaneSlugRoute,
   DownloadSlugRoute: DownloadSlugRoute,

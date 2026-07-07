@@ -24,14 +24,15 @@ export function SiteHeader() {
   const navigate = useNavigate();
   const routerState = useRouterState();
   const isInAreaAutore = routerState.location.pathname.startsWith("/area-autore");
-  const GUIDA_PER_PAGINA: [string, "/guida/gestione" | "/guida/catalogo" | "/guida/autori" | "/guida/libri-aperti", string][] = [
+  const GUIDA_PER_PAGINA: [string, "/guida/gestione" | "/guida/catalogo" | "/guida/autori" | "/guida/libri-aperti" | "/guida/area-autore", string][] = [
     ["/gestione", "/guida/gestione", "guidaGestione"],
     ["/catalogo", "/guida/catalogo", "guidaCatalogo"],
     ["/autori", "/guida/autori", "guidaAutori"],
     ["/libri-aperti", "/guida/libri-aperti", "guidaLibriAperti"],
+    ["/area-autore", "/guida/area-autore", "guidaAreaAutore"],
   ];
   const guidaMatch = GUIDA_PER_PAGINA.find(([prefix]) => routerState.location.pathname.startsWith(prefix));
-  const guidaTarget: "/guida/accessi" | "/guida/gestione" | "/guida/catalogo" | "/guida/autori" | "/guida/libri-aperti" = guidaMatch?.[1] ?? "/guida/accessi";
+  const guidaTarget: "/guida/accessi" | "/guida/gestione" | "/guida/catalogo" | "/guida/autori" | "/guida/libri-aperti" | "/guida/area-autore" = guidaMatch?.[1] ?? "/guida/accessi";
   const guidaLabelKey = guidaMatch?.[2] ?? "guidaAccessi";
 
   useEffect(() => { setCestinoTooltip(getCestinoTranslation()); }, []);
