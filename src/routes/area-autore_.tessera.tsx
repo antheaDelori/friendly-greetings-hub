@@ -22,6 +22,8 @@ function TesseraAutorePage() {
   const [pseudonimo, setPseudonimo] = useState<string | null>(null);
   const [numeroTessera, setNumeroTessera] = useState<number | null>(null);
   const [memberSinceLabel, setMemberSinceLabel] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string>("");
+  const [isBlocked, setIsBlocked] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -29,9 +31,10 @@ function TesseraAutorePage() {
       if (!user || user.is_anonymous) { window.location.replace("/auth"); return; }
 
       setAvatarUrl(user.user_metadata?.avatar_url ?? null);
+      setUserId(user.id);
 
       const [profileRes, authorRes] = await Promise.all([
-        supabase.from("profiles").select("nome, cognome, pseudonimo, created_at").eq("id", user.id).single(),
+        supabase.from("profiles").select("nome, cognome, pseudonimo, created_at, is_blocked").eq("id", user.id).single(),
         supabase.from("author_profiles").select("numero_tessera").eq("id", user.id).maybeSingle(),
       ]);
 
@@ -39,6 +42,7 @@ function TesseraAutorePage() {
         const p = profileRes.data;
         setFullName([p.nome, p.cognome].filter(Boolean).join(" "));
         setPseudonimo(p.pseudonimo ?? null);
+        setIsBlocked(!!p.is_blocked);
         if (p.created_at) {
           setMemberSinceLabel(new Date(p.created_at).toLocaleDateString("it-IT", { day: "2-digit", month: "long", year: "numeric" }));
         }
@@ -56,6 +60,8 @@ function TesseraAutorePage() {
         @media print {
           .no-print { display: none !important; }
           .tessera-print-area { box-shadow: none !important; }
+          .tessera-face { break-inside: avoid; break-after: page; }
+          .tessera-face:last-child { break-after: auto; }
           body { background: white !important; }
         }
       `}</style>
@@ -64,7 +70,7 @@ function TesseraAutorePage() {
         <SiteHeader />
       </div>
 
-      <section className="mx-auto max-w-xl w-full px-4 sm:px-6 py-16 flex-1">
+      <section className="mx-auto max-w-3xl w-full px-4 sm:px-6 py-16 flex-1">
         <div className="no-print mb-8">
           <Link
             to="/area-autore"
@@ -85,6 +91,8 @@ function TesseraAutorePage() {
                 numeroTessera={numeroTessera}
                 avatarUrl={avatarUrl}
                 memberSinceLabel={memberSinceLabel}
+                userId={userId}
+                isBlocked={isBlocked}
               />
             </div>
 
