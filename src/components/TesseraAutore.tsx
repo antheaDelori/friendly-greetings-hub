@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import tesseraFronte from "@/assets/tessera-fronte-template.png";
 
 // Il fronte e il retro della tessera sono un unico template statico fornito
@@ -55,6 +55,57 @@ const PHOTO_LEFT = 202;
 const PHOTO_TOP = 157;
 const PHOTO_WIDTH = 200;
 const PHOTO_HEIGHT = 300;
+const PHOTO_CANVAS_W = 200;
+const PHOTO_CANVAS_H = 300;
+const DUOTONE_DARK: [number, number, number] = [4, 14, 20];
+const DUOTONE_BRIGHT: [number, number, number] = [1, 255, 255];
+
+// Converte la foto/avatar reale in un duotono ciano "cotto" a pixel — non un filtro
+// CSS live: garantisce lo stesso risultato a schermo e in stampa, senza dipendere
+// da mix-blend-mode (poco affidabile in stampa/anteprima).
+function useDuotoneAvatar(avatarUrl?: string | null): string | null {
+  const [dataUrl, setDataUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!avatarUrl) { setDataUrl(null); return; }
+    let cancelled = false;
+    const img = new window.Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      if (cancelled) return;
+      const canvas = document.createElement("canvas");
+      canvas.width = PHOTO_CANVAS_W;
+      canvas.height = PHOTO_CANVAS_H;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      const scale = Math.max(PHOTO_CANVAS_W / img.width, PHOTO_CANVAS_H / img.height);
+      const sw = PHOTO_CANVAS_W / scale;
+      const sh = PHOTO_CANVAS_H / scale;
+      const sx = (img.width - sw) / 2;
+      const sy = (img.height - sh) / 2;
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, PHOTO_CANVAS_W, PHOTO_CANVAS_H);
+      try {
+        const imageData = ctx.getImageData(0, 0, PHOTO_CANVAS_W, PHOTO_CANVAS_H);
+        const data = imageData.data;
+        for (let i = 0; i < data.length; i += 4) {
+          const lum = Math.min(1, (0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]) / 255 * 1.3);
+          data[i]     = DUOTONE_DARK[0] + (DUOTONE_BRIGHT[0] - DUOTONE_DARK[0]) * lum;
+          data[i + 1] = DUOTONE_DARK[1] + (DUOTONE_BRIGHT[1] - DUOTONE_DARK[1]) * lum;
+          data[i + 2] = DUOTONE_DARK[2] + (DUOTONE_BRIGHT[2] - DUOTONE_DARK[2]) * lum;
+        }
+        ctx.putImageData(imageData, 0, 0);
+        setDataUrl(canvas.toDataURL("image/png"));
+      } catch {
+        setDataUrl(null);
+      }
+    };
+    img.onerror = () => setDataUrl(null);
+    img.src = avatarUrl;
+    return () => { cancelled = true; };
+  }, [avatarUrl]);
+
+  return dataUrl;
+}
 
 const HASH_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
@@ -148,6 +199,7 @@ export function TesseraAutore({ fullName, numeroTessera, isBlocked = false, memb
   const stato = isBlocked ? "SOSPESO" : "ACTIVE";
   const hashArchivistico = deterministicHash(userId, "ARCHIVIO");
   const idCrittografico = deterministicHash(userId, "CRIPTO");
+  const duotoneAvatar = useDuotoneAvatar(avatarUrl);
 
   return (
     <div className={`ta-display ${className}`} style={{ containerType: "inline-size" }}>
@@ -157,27 +209,20 @@ export function TesseraAutore({ fullName, numeroTessera, isBlocked = false, memb
         <img src={tesseraFronte} alt="Tessera autore" className="absolute inset-0 w-full h-full object-contain" />
 
         {/* Se l'autore ha una foto/avatar, la mostriamo nel riquadro al posto del volto
-            wireframe statico — ma "ciano-izzata" (grayscale + tinta colore) per restare
-            fedele all'estetica della tessera invece di introdurre colori reali. */}
-        {avatarUrl && (
-          <div
-            className="absolute overflow-hidden"
+            wireframe statico — convertita in duotono ciano via canvas (pixel "cotti",
+            non un filtro CSS live) per restare fedele all'estetica anche in stampa. */}
+        {duotoneAvatar && (
+          <img
+            src={duotoneAvatar}
+            alt=""
+            className="absolute object-cover"
             style={{
               left: `${(PHOTO_LEFT / TEMPLATE_W) * 100}%`,
               top: `${(PHOTO_TOP / TEMPLATE_H) * 100}%`,
               width: `${(PHOTO_WIDTH / TEMPLATE_W) * 100}%`,
               height: `${(PHOTO_HEIGHT / TEMPLATE_H) * 100}%`,
-              isolation: "isolate",
             }}
-          >
-            <img
-              src={avatarUrl}
-              alt=""
-              className="absolute inset-0 w-full h-full object-cover"
-              style={{ filter: "grayscale(1) brightness(1.2) contrast(1.1)" }}
-            />
-            <div className="absolute inset-0" style={{ background: COLOR_CYAN, mixBlendMode: "color" }} />
-          </div>
+          />
         )}
 
         {/* ── Fronte ── */}
