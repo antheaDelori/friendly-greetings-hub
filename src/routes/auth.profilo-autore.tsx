@@ -49,21 +49,27 @@ function ProfiloAutorePage() {
   const [donationUrl, setDonationUrl] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !userId) return;
     setAvatarUploading(true);
+    setAvatarError(null);
     try {
       const compressed = await compressAvatar(file);
-      const path = `avatars/${userId}.jpg`;
+      // Il primo segmento del path deve essere lo userId: è quello che la policy
+      // RLS del bucket "libri" verifica per riconoscere il proprietario del file.
+      const path = `${userId}/avatar.jpg`;
       const { error } = await supabase.storage.from("libri").upload(path, compressed, { contentType: "image/jpeg", upsert: true });
       if (error) throw error;
       const { data: { publicUrl } } = supabase.storage.from("libri").getPublicUrl(path);
-      await supabase.auth.updateUser({ data: { avatar_url: publicUrl } });
-      setAvatarUrl(publicUrl);
-    } catch {
-      // silently fail
+      const bustedUrl = `${publicUrl}?v=${Date.now()}`;
+      await supabase.auth.updateUser({ data: { avatar_url: bustedUrl } });
+      setAvatarUrl(bustedUrl);
+    } catch (err) {
+      console.error("Errore caricamento avatar:", err);
+      setAvatarError(err instanceof Error ? err.message : "Errore durante il caricamento dell'immagine.");
     } finally {
       setAvatarUploading(false);
     }
@@ -177,6 +183,9 @@ function ProfiloAutorePage() {
               {avatarUploading ? "▸ caricamento..." : avatarUrl ? "▸ cambia foto" : "▸ scegli foto"}
             </div>
           </label>
+          {avatarError && (
+            <p className="mt-2 font-mono text-[10px] text-magenta">⚠ {avatarError}</p>
+          )}
         </HudPanel>
 
         <div className="space-y-6">

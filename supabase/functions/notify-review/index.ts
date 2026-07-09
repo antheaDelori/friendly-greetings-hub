@@ -28,13 +28,24 @@ Deno.serve(async (req) => {
 
   const meta = authorUser.user_metadata ?? {};
   const authorNome = meta.pseudonimo || meta.nome || authorUser.email.split("@")[0];
+  const lingua = meta.lingua || "it";
 
-  const { data: template } = await supabase
+  let { data: template } = await supabase
     .from("email_templates")
     .select("oggetto, corpo_html")
     .eq("tipo", "nuova_recensione")
-    .eq("lingua", "it")
-    .single();
+    .eq("lingua", lingua)
+    .maybeSingle();
+
+  if (!template) {
+    const { data: fallback } = await supabase
+      .from("email_templates")
+      .select("oggetto, corpo_html")
+      .eq("tipo", "nuova_recensione")
+      .eq("lingua", "it")
+      .maybeSingle();
+    template = fallback;
+  }
 
   if (!template) return new Response("Template not found", { status: 500 });
 

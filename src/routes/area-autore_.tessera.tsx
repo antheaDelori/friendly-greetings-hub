@@ -22,6 +22,7 @@ function TesseraAutorePage() {
   const [pseudonimo, setPseudonimo] = useState<string | null>(null);
   const [numeroTessera, setNumeroTessera] = useState<number | null>(null);
   const [memberSinceLabel, setMemberSinceLabel] = useState<string | null>(null);
+  const [expiryLabel, setExpiryLabel] = useState<string | null>(null);
   const [userId, setUserId] = useState<string>("");
   const [isBlocked, setIsBlocked] = useState(false);
 
@@ -44,7 +45,14 @@ function TesseraAutorePage() {
         setPseudonimo(p.pseudonimo ?? null);
         setIsBlocked(!!p.is_blocked);
         if (p.created_at) {
-          setMemberSinceLabel(new Date(p.created_at).toLocaleDateString("it-IT", { day: "2-digit", month: "long", year: "numeric" }));
+          const d = new Date(p.created_at);
+          const dd = String(d.getDate()).padStart(2, "0");
+          const mm = String(d.getMonth() + 1).padStart(2, "0");
+          setMemberSinceLabel(`${dd} · ${mm} · ${d.getFullYear()}`);
+
+          const expiry = new Date(d);
+          expiry.setFullYear(expiry.getFullYear() + 5);
+          setExpiryLabel(`${dd} · ${mm} · ${expiry.getFullYear()}`);
         }
       }
       if (authorRes.data) setNumeroTessera(authorRes.data.numero_tessera ?? null);
@@ -87,12 +95,12 @@ function TesseraAutorePage() {
             <div className="tessera-print-area">
               <TesseraAutore
                 fullName={fullName}
-                pseudonimo={pseudonimo}
                 numeroTessera={numeroTessera}
-                avatarUrl={avatarUrl}
-                memberSinceLabel={memberSinceLabel}
-                userId={userId}
                 isBlocked={isBlocked}
+                memberSinceLabel={memberSinceLabel}
+                expiryLabel={expiryLabel}
+                userId={userId}
+                avatarUrl={avatarUrl}
               />
             </div>
 

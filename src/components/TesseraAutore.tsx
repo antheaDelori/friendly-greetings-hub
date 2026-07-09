@@ -1,255 +1,224 @@
-import { useEffect, useState } from "react";
-import QRCode from "qrcode";
+import { useLayoutEffect, useRef } from "react";
+import tesseraFronte from "@/assets/tessera-fronte-template.png";
 
-const SITE_URL = "https://liberiamo2076.com";
+// Il fronte e il retro della tessera sono un unico template statico fornito
+// da Daniele (fedele al mockup ufficiale), con overlay dinamico solo per i
+// campi concordati — stesso principio delle teche dei libri (immagine fissa
+// + contenuto reale sopra). Font caricato e scoped qui dentro, senza toccare
+// i font del resto del sito.
+const TESSERA_STYLE = `
+  @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap');
+  .ta-display { font-family: 'Rajdhani', sans-serif; }
+`;
 
-// Stessa logica di priorità usata per author_name sui libri (gestione.tsx):
-// nome+cognome se presenti, altrimenti pseudonimo — garantisce che lo slug
-// combaci sempre con la pagina /autori/$slug reale.
-function slugify(name: string): string {
-  return name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-");
-}
+// Colori campionati a pixel dal template originale — non i token colore del
+// sito, per restare identici al bianco/magenta/ciano "pieni" dell'immagine.
+const COLOR_WHITE = "#FFFFFF";
+const COLOR_CYAN = "#01FFFF";
+const COLOR_MAGENTA = "#E95DB0";
 
-// Codici decorativi deterministici — stabili per autore (derivati dal suo id reale),
-// ma senza alcun significato crittografico/archivistico reale.
-function hashSegment(input: string): string {
+// Dimensioni native del template (px) — le posizioni sotto sono calcolate su questa base.
+const TEMPLATE_W = 1536;
+const TEMPLATE_H = 1024;
+
+// Coordinate misurate direttamente sul template (confronto area vuota vs originale compilato).
+const NOME_TOP = 183;
+const COGNOME_TOP = 251;
+const NAME_LEFT = 470;
+const NAME_FONT_SIZE = 40;
+// Larghezza massima disponibile prima di invadere la colonna della citazione a destra —
+// se il testo (nomi lunghi, cognomi composti) la supererebbe, il font si restringe.
+const MAX_NAME_WIDTH = 380;
+
+// Colonna valori della lista campi sul fronte (ID AUTORE, STATO ARCHIVIO,
+// DATA DI SALVATAGGIO, HASH ARCHIVISTICO). LIVELLO, NODO e ACCESSO restano
+// testo statico dell'immagine, non toccati.
+const FIELD_LEFT = 675;
+const FIELD_FONT_SIZE = 16;
+const ID_AUTORE_TOP = 331;
+const STATO_TOP = 424;
+const DATA_TOP = 446;
+const HASH_TOP = 468;
+
+// Colonna valori "Dati tecnici" sul retro (TESSERA, EMISSIONE, SCADENZA,
+// ID CRITTOGRAFICO). PROTOCOLLO, CIFRATURA e NODO ORIGINE restano statici.
+const FIELD2_LEFT = 1200;
+const TESSERA_TOP = 650;
+const EMISSIONE_TOP = 675;
+const SCADENZA_TOP = 698;
+const ID_CRIPTO_TOP = 800;
+
+// Riquadro foto sul fronte (angoli ciano nel template) — misurato a pixel sul template.
+// Se l'autore non ha caricato una foto, il riquadro resta il volto wireframe già disegnato
+// nell'immagine statica: nessun overlay viene renderizzato.
+const PHOTO_LEFT = 202;
+const PHOTO_TOP = 157;
+const PHOTO_WIDTH = 200;
+const PHOTO_HEIGHT = 300;
+
+const HASH_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+// Hash decorativo deterministico — stabile per autore (derivato dal suo id reale
+// + un "sale" diverso per ogni campo), ma senza alcun significato crittografico
+// o archivistico reale.
+function deterministicHash(id: string, salt: string): string {
   let h = 2166136261;
+  const input = salt + id;
   for (let i = 0; i < input.length; i++) {
     h ^= input.charCodeAt(i);
     h = Math.imul(h, 16777619);
   }
-  return (h >>> 0).toString(16).toUpperCase().padStart(8, "0");
-}
-
-function deterministicCode(id: string, salt: string): string {
-  const raw = (hashSegment(salt + id) + hashSegment(id + salt)).slice(0, 12);
-  return `${raw.slice(0, 4)}-${raw.slice(4, 8)}-${raw.slice(8, 12)}`;
-}
-
-function barcodeWidths(seed: string): number[] {
-  const out: number[] = [];
-  for (let i = 0; i < seed.length; i++) {
-    out.push(1 + (seed.charCodeAt(i) % 4));
+  h = h >>> 0;
+  let out = "";
+  for (let i = 0; i < 12; i++) {
+    h = (Math.imul(h, 1103515245) + 12345) >>> 0;
+    out += HASH_ALPHABET[h % HASH_ALPHABET.length];
   }
-  return out;
+  return `${out.slice(0, 4)}-${out.slice(4, 8)}-${out.slice(8, 12)}`;
+}
+
+// Adatta il font-size del testo al contenitore reale, e lo restringe solo se
+// il nome/cognome è troppo lungo per stare nello spazio disponibile.
+function useFitText(text: string, containerRef: React.RefObject<HTMLDivElement | null>) {
+  const ref = useRef<HTMLSpanElement>(null);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    const container = containerRef.current;
+    if (!el || !container) return;
+
+    const fit = () => {
+      const scale = container.clientWidth / TEMPLATE_W;
+      const naturalFontSize = NAME_FONT_SIZE * scale;
+      el.style.fontSize = `${naturalFontSize}px`;
+      const maxWidthActual = MAX_NAME_WIDTH * scale;
+      const width = el.scrollWidth;
+      if (width > maxWidthActual && width > 0) {
+        el.style.fontSize = `${naturalFontSize * (maxWidthActual / width)}px`;
+      }
+    };
+
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(container);
+    return () => ro.disconnect();
+  }, [text, containerRef]);
+
+  return ref;
 }
 
 interface TesseraAutoreProps {
   fullName: string;
-  pseudonimo?: string | null;
   numeroTessera?: number | null;
-  avatarUrl?: string | null;
-  memberSinceLabel?: string | null;
-  userId: string;
   isBlocked?: boolean;
+  memberSinceLabel?: string | null;
+  expiryLabel?: string | null;
+  userId: string;
+  avatarUrl?: string | null;
   className?: string;
 }
 
-function Field({ label, value, accent = "cyan" }: { label: string; value: string; accent?: "cyan" | "magenta" }) {
+function FieldValue({ left, top, color = COLOR_WHITE, children }: { left: number; top: number; color?: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-baseline gap-2">
-      <span className={`font-mono text-[9px] tracking-[0.15em] uppercase flex-shrink-0 ${accent === "cyan" ? "text-cyan/70" : "text-magenta/70"}`}>{label}</span>
-      <span className="flex-1 border-b border-dotted border-bone/15 translate-y-[-2px]" />
-      <span className="font-mono text-[10px] text-bone/85 tracking-wide flex-shrink-0">{value}</span>
-    </div>
+    <span
+      className="ta-display absolute whitespace-nowrap font-semibold"
+      style={{
+        left: `${(left / TEMPLATE_W) * 100}%`,
+        top: `${(top / TEMPLATE_H) * 100}%`,
+        fontSize: `${(FIELD_FONT_SIZE / TEMPLATE_W) * 100}cqw`,
+        letterSpacing: "0.03em",
+        lineHeight: 1,
+        color,
+      }}
+    >
+      {children}
+    </span>
   );
 }
 
-function FieldStacked({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <div className="font-mono text-[8px] tracking-[0.15em] uppercase text-cyan/60">{label}</div>
-      <div className="font-mono text-[10px] text-bone/85 tracking-wide break-all">{value}</div>
-    </div>
-  );
-}
+export function TesseraAutore({ fullName, numeroTessera, isBlocked = false, memberSinceLabel, expiryLabel, userId, avatarUrl, className = "" }: TesseraAutoreProps) {
+  const nome = fullName.split(" ")[0] || fullName;
+  const cognome = fullName.split(" ").slice(1).join(" ") || "—";
 
-function Seal() {
-  return (
-    <div className="relative w-16 h-16 flex-shrink-0 rounded-full border border-cyan/50 flex items-center justify-center text-center">
-      <div className="absolute inset-1 rounded-full border border-cyan/20" />
-      <div className="font-mono text-cyan/80 leading-none">
-        <div className="text-[6px] tracking-widest">PAROLE VIVE</div>
-        <div className="text-lg">❦</div>
-        <div className="text-[6px] tracking-widest">EST. 2076</div>
-      </div>
-    </div>
-  );
-}
+  const containerRef = useRef<HTMLDivElement>(null);
+  const nomeRef = useFitText(nome, containerRef);
+  const cognomeRef = useFitText(cognome, containerRef);
 
-function Fingerprint() {
-  return (
-    <div className="relative w-14 h-14 flex-shrink-0 flex items-center justify-center">
-      {[0, 1, 2].map(i => (
-        <span key={i} className="absolute rounded-full border border-cyan/40" style={{ inset: `${i * 5}px` }} />
-      ))}
-      <span className="relative font-mono text-cyan text-sm">✓</span>
-    </div>
-  );
-}
-
-export function TesseraAutore({
-  fullName, pseudonimo, numeroTessera, avatarUrl, memberSinceLabel, userId, isBlocked = false, className = "",
-}: TesseraAutoreProps) {
-  const idAutore = numeroTessera != null ? `LB-2076-A-${String(numeroTessera).padStart(6, "0")}` : "LB-2076-A-——————";
-  const accesso = numeroTessera != null ? `ALPHA ${String(numeroTessera).padStart(3, "0")}` : "ALPHA —";
+  const idAutore = numeroTessera != null ? `LB · 2076 · A · ${String(numeroTessera).padStart(6, "0")}` : "LB · 2076 · A · ——————";
   const stato = isBlocked ? "SOSPESO" : "ACTIVE";
-  const hashArchivistico = deterministicCode(userId, "ARCHIVIO");
-  const idCrittografico = deterministicCode(userId, "CRIPTO");
-  const barcode = barcodeWidths(idCrittografico.replace(/-/g, ""));
-
-  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
-  useEffect(() => {
-    const nameForSlug = fullName.trim() || pseudonimo || "Autore";
-    const slug = slugify(nameForSlug);
-    const profileUrl = `${SITE_URL}/autori/${slug}`;
-    QRCode.toDataURL(profileUrl, { margin: 1, width: 128, color: { dark: "#0a0a12", light: "#ffffff" } })
-      .then(setQrDataUrl)
-      .catch(() => setQrDataUrl(null));
-  }, [fullName, pseudonimo]);
+  const hashArchivistico = deterministicHash(userId, "ARCHIVIO");
+  const idCrittografico = deterministicHash(userId, "CRIPTO");
 
   return (
-    <div className={`space-y-1 ${className}`}>
-      {/* ── FRONTE ─────────────────────────────────────────────── */}
-      <div className="tessera-face relative glass hud-frame overflow-hidden p-6">
-        <div className="absolute inset-0 scanlines pointer-events-none opacity-25" />
-        <div className="absolute -top-24 -left-16 w-56 h-56 rounded-full bg-cyan/10 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -right-16 w-56 h-56 rounded-full bg-magenta/10 blur-3xl pointer-events-none" />
+    <div className={`ta-display ${className}`} style={{ containerType: "inline-size" }}>
+      <style>{TESSERA_STYLE}</style>
 
-        {/* Header */}
-        <div className="relative flex items-start justify-between mb-5">
-          <div>
-            <div className="flex items-baseline gap-2">
-              <span className="font-display text-lg text-bone tracking-tight">
-                LIB<span className="text-magenta text-glow-magenta">e</span>RIAMO
-              </span>
-              <span className="font-mono text-[9px] tracking-[0.3em] text-cyan/70 uppercase">// autore certificato</span>
-            </div>
-            <div className="font-mono text-[9px] tracking-[0.2em] text-bone/40 uppercase mt-0.5">Il mondo dei creativi — 2076</div>
+      <div ref={containerRef} className="relative w-full" style={{ aspectRatio: `${TEMPLATE_W} / ${TEMPLATE_H}` }}>
+        <img src={tesseraFronte} alt="Tessera autore" className="absolute inset-0 w-full h-full object-contain" />
+
+        {/* Se l'autore ha una foto/avatar, la mostriamo nel riquadro al posto del volto
+            wireframe statico — ma "ciano-izzata" (grayscale + tinta colore) per restare
+            fedele all'estetica della tessera invece di introdurre colori reali. */}
+        {avatarUrl && (
+          <div
+            className="absolute overflow-hidden"
+            style={{
+              left: `${(PHOTO_LEFT / TEMPLATE_W) * 100}%`,
+              top: `${(PHOTO_TOP / TEMPLATE_H) * 100}%`,
+              width: `${(PHOTO_WIDTH / TEMPLATE_W) * 100}%`,
+              height: `${(PHOTO_HEIGHT / TEMPLATE_H) * 100}%`,
+              isolation: "isolate",
+            }}
+          >
+            <img
+              src={avatarUrl}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover"
+              style={{ filter: "grayscale(1) brightness(1.2) contrast(1.1)" }}
+            />
+            <div className="absolute inset-0" style={{ background: COLOR_CYAN, mixBlendMode: "color" }} />
           </div>
-          <div className="text-right flex-shrink-0">
-            <div className="font-mono text-[9px] tracking-widest text-cyan/70 uppercase flex items-center gap-1.5 justify-end">
-              <span className="w-1.5 h-1.5 bg-cyan rounded-full animate-pulse" /> SYS:ONLINE
-            </div>
-            <div className="font-mono text-[9px] tracking-widest text-bone/30 uppercase mt-0.5">NODE 03 / SECTOR LIB</div>
-          </div>
-        </div>
+        )}
 
-        {/* Corpo */}
-        <div className="relative flex gap-6 items-start">
-          {/* Foto */}
-          <div className="relative w-24 h-28 hud-frame flex-shrink-0 overflow-hidden bg-void/60">
-            {avatarUrl ? (
-              <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
-            ) : (
-              <>
-                <div className="absolute inset-0 bg-gradient-to-br from-cyan/15 to-magenta/10" />
-                <div className="absolute inset-0 flex items-center justify-center font-display text-4xl text-bone/15">◊</div>
-              </>
-            )}
-          </div>
+        {/* ── Fronte ── */}
+        <span
+          ref={nomeRef}
+          className="absolute uppercase whitespace-nowrap font-semibold"
+          style={{
+            left: `${(NAME_LEFT / TEMPLATE_W) * 100}%`,
+            top: `${(NOME_TOP / TEMPLATE_H) * 100}%`,
+            letterSpacing: "0.05em",
+            lineHeight: 0.85,
+            color: COLOR_WHITE,
+          }}
+        >
+          {nome}
+        </span>
 
-          {/* Dati */}
-          <div className="flex-1 min-w-0 space-y-3">
-            <div>
-              <p className="font-mono text-[9px] tracking-[0.2em] text-bone/40 uppercase">Nome</p>
-              <p className="font-display text-lg text-bone tracking-tight leading-tight">{fullName.split(" ")[0] || fullName}</p>
-              <p className="font-mono text-[9px] tracking-[0.2em] text-bone/40 uppercase mt-1.5">Cognome</p>
-              <p className="font-display text-lg text-bone tracking-tight leading-tight">{fullName.split(" ").slice(1).join(" ") || "—"}</p>
-              {pseudonimo && <p className="font-serif italic text-bone/45 text-xs mt-1">alias {pseudonimo}</p>}
-            </div>
-            <div className="space-y-1 pt-1 border-t border-cyan/10">
-              <Field label="ID Autore" value={idAutore} />
-              <Field label="Livello" value="AUTORE CERTIFICATO" />
-              <Field label="Nodo" value="03 - SECTOR LIB" />
-              <Field label="Accesso" value={accesso} accent="magenta" />
-              <Field label="Stato archivio" value={stato} />
-              <Field label="Data di salvataggio" value={memberSinceLabel ?? "—"} />
-              <Field label="Hash archivistico" value={hashArchivistico} />
-            </div>
-          </div>
+        <span
+          ref={cognomeRef}
+          className="absolute uppercase whitespace-nowrap font-semibold"
+          style={{
+            left: `${(NAME_LEFT / TEMPLATE_W) * 100}%`,
+            top: `${(COGNOME_TOP / TEMPLATE_H) * 100}%`,
+            letterSpacing: "0.05em",
+            lineHeight: 0.85,
+            color: COLOR_WHITE,
+          }}
+        >
+          {cognome}
+        </span>
 
-          {/* Tagline + sigillo + QR */}
-          <div className="hidden sm:flex flex-col items-end justify-between h-full flex-shrink-0 w-40 text-right gap-4">
-            <p className="font-serif italic text-bone/55 text-xs leading-relaxed">
-              Ogni autore salvato prolunga la memoria del mondo.
-            </p>
-            <div className="flex items-end gap-3">
-              <Seal />
-              {qrDataUrl && (
-                <div className="flex flex-col items-center gap-1">
-                  <div className="bg-white p-1">
-                    <img src={qrDataUrl} alt="QR pagina autore" className="w-14 h-14 block" />
-                  </div>
-                  <span className="font-mono text-[6px] tracking-widest text-bone/40 uppercase">scansiona</span>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        <FieldValue left={FIELD_LEFT} top={ID_AUTORE_TOP}>{idAutore}</FieldValue>
+        <FieldValue left={FIELD_LEFT} top={STATO_TOP} color={isBlocked ? COLOR_MAGENTA : COLOR_CYAN}>{stato}</FieldValue>
+        <FieldValue left={FIELD_LEFT} top={DATA_TOP}>{memberSinceLabel ?? "—"}</FieldValue>
+        <FieldValue left={FIELD_LEFT} top={HASH_TOP}>{hashArchivistico}</FieldValue>
 
-        <div className="relative mt-5 pt-3 border-t border-cyan/10 flex items-center justify-between">
-          <span className="font-mono text-[9px] tracking-widest text-magenta/60 uppercase">✛ read_or_perish.exe</span>
-          <span className="font-mono text-[8px] tracking-[0.3em] text-bone/15">••••••••••••••••••••••••</span>
-        </div>
-      </div>
-
-      {/* ── RETRO ──────────────────────────────────────────────── */}
-      <div className="tessera-face relative glass hud-frame overflow-hidden p-6">
-        <div className="grid sm:grid-cols-4 gap-6">
-          <div>
-            <div className="font-display text-base text-bone tracking-tight">
-              LIB<span className="text-magenta text-glow-magenta">e</span>RIAMO
-            </div>
-            <div className="font-mono text-[8px] tracking-[0.2em] text-bone/40 uppercase mt-0.5 mb-2">Archivio centrale delle parole vive</div>
-            <p className="font-serif text-[11px] text-bone/55 leading-relaxed">
-              Liberiamo le parole dagli algoritmi. Proteggiamo la creatività umana. Costruiamo la memoria del futuro. Una biblioteca sospesa nel vetro.
-            </p>
-          </div>
-
-          <div>
-            <div className="font-mono text-[9px] tracking-[0.2em] text-cyan/70 uppercase mb-2">Privilegi concessi</div>
-            <ul className="space-y-1.5">
-              {["Pubblicazione opere", "Accesso archivio completo", "Biblioteca olografica", "Parole_vive community", "Eventi e incontri riservati", "Assistenza autore dedicata"].map(p => (
-                <li key={p} className="font-mono text-[10px] text-bone/60 flex gap-1.5"><span className="text-cyan/50">›</span>{p}</li>
-              ))}
-            </ul>
-          </div>
-
-          <div>
-            <div className="font-mono text-[9px] tracking-[0.2em] text-cyan/70 uppercase mb-3">Verifica autore</div>
-            <Fingerprint />
-            <div className="font-mono text-[8px] tracking-[0.2em] text-magenta/60 uppercase mt-4 mb-1">Firma digitale</div>
-            <svg viewBox="0 0 100 24" className="w-full h-6 text-bone/40" fill="none" stroke="currentColor" strokeWidth="1.2">
-              <path d="M2 18 C 10 4, 16 4, 20 14 S 30 22, 36 10 S 44 2, 50 12 S 60 20, 66 8 S 78 4, 84 14 S 94 18, 98 10" />
-            </svg>
-          </div>
-
-          <div>
-            <div className="font-mono text-[9px] tracking-[0.2em] text-cyan/70 uppercase mb-2">Dati tecnici</div>
-            <div className="space-y-1.5">
-              <FieldStacked label="Tessera" value={idAutore} />
-              <FieldStacked label="Emissione" value={memberSinceLabel ?? "—"} />
-              <FieldStacked label="Scadenza" value="∞" />
-              <FieldStacked label="Protocollo" value="HOLO/v7" />
-              <FieldStacked label="Cifratura" value="AES-2076" />
-              <FieldStacked label="Nodo origine" value="03 - SECTOR LIB" />
-              <FieldStacked label="ID crittografico" value={idCrittografico} />
-            </div>
-            <div className="flex items-end gap-[1.5px] mt-3 h-6">
-              {barcode.map((w, i) => (
-                <span key={i} className="bg-cyan/50" style={{ width: `${w}px`, height: "100%" }} />
-              ))}
-              <span className="bg-magenta w-[2px] h-full" />
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-5 pt-3 border-t border-cyan/10 flex items-center justify-between flex-wrap gap-2">
-          <span className="font-mono text-[9px] tracking-widest text-magenta/60 uppercase">✛ read_or_perish.exe</span>
-          <span className="font-mono text-[9px] tracking-widest text-bone/40 uppercase">protocol: holo/v7</span>
-          <span className="font-mono text-[9px] tracking-widest text-cyan/60 uppercase">• custodiamo le parole. proteggiamo il futuro.</span>
-        </div>
+        {/* ── Retro ── */}
+        <FieldValue left={FIELD2_LEFT} top={TESSERA_TOP}>{idAutore}</FieldValue>
+        <FieldValue left={FIELD2_LEFT} top={EMISSIONE_TOP}>{memberSinceLabel ?? "—"}</FieldValue>
+        <FieldValue left={FIELD2_LEFT} top={SCADENZA_TOP}>{expiryLabel ?? "—"}</FieldValue>
+        <FieldValue left={FIELD2_LEFT} top={ID_CRIPTO_TOP}>{idCrittografico}</FieldValue>
       </div>
     </div>
   );

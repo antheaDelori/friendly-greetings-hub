@@ -113,13 +113,16 @@ function RegistrazionePage() {
     try {
       const compressed = await compressAvatar(file);
       const { data: { user } } = await supabase.auth.getUser();
-      const path = user ? `avatars/${user.id}.jpg` : `avatars/reg-${Date.now()}.jpg`;
+      // Il primo segmento del path deve essere lo userId: è quello che la policy
+      // RLS del bucket "libri" verifica per riconoscere il proprietario del file.
+      const path = user ? `${user.id}/avatar.jpg` : `avatars/reg-${Date.now()}.jpg`;
       const { error } = await supabase.storage.from("libri").upload(path, compressed, { contentType: "image/jpeg", upsert: true });
       if (error) throw error;
       const { data: { publicUrl } } = supabase.storage.from("libri").getPublicUrl(path);
-      setAvatarUrl(publicUrl);
-    } catch {
-      // upload silently fails in registration without anon policy — avatar set to null
+      setAvatarUrl(user ? `${publicUrl}?v=${Date.now()}` : publicUrl);
+    } catch (err) {
+      // Upload fallisce ancora senza policy anonima in registrazione pre-account — avatar resta nullo.
+      console.error("Errore caricamento avatar:", err);
     } finally {
       setAvatarUploading(false);
     }
