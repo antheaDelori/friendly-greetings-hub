@@ -51,14 +51,16 @@ const ID_CRIPTO_TOP = 800;
 // Riquadro foto sul fronte (angoli ciano nel template) — misurato a pixel sul template.
 // Se l'autore non ha caricato una foto, il riquadro resta il volto wireframe già disegnato
 // nell'immagine statica: nessun overlay viene renderizzato.
-const PHOTO_LEFT = 202;
+const PHOTO_LEFT = 200;
 const PHOTO_TOP = 157;
-const PHOTO_WIDTH = 200;
-const PHOTO_HEIGHT = 300;
-const PHOTO_CANVAS_W = 200;
-const PHOTO_CANVAS_H = 300;
+const PHOTO_WIDTH = 228;
+const PHOTO_HEIGHT = 306;
+const PHOTO_CANVAS_W = 228;
+const PHOTO_CANVAS_H = 306;
 const DUOTONE_DARK: [number, number, number] = [4, 14, 20];
-const DUOTONE_BRIGHT: [number, number, number] = [1, 255, 255];
+// Blu campionato a pixel dal wireframe del template stesso (non il ciano brillante
+// del testo dinamico, troppo "azzurro" rispetto al resto della grafica).
+const DUOTONE_BRIGHT: [number, number, number] = [15, 151, 187];
 
 // Converte la foto/avatar reale in un duotono ciano "cotto" a pixel — non un filtro
 // CSS live: garantisce lo stesso risultato a schermo e in stampa, senza dipendere
