@@ -614,6 +614,8 @@ function ReadPage() {
   useEffect(() => {
     if (book.chapters.length === 0 || isAnonymous) return;
     if (isLoggedIn && userId) {
+      // Le query supabase-js sono "thenable": senza .then()/await la richiesta non
+      // parte mai — va sempre consumata, anche per un fire-and-forget.
       supabase.from("reading_progress").upsert({
         user_id: userId,
         book_slug: book.slug,
@@ -621,7 +623,7 @@ function ReadPage() {
         book_title: book.title,
         book_author: book.author,
         updated_at: new Date().toISOString(),
-      }, { onConflict: "user_id,book_slug" });
+      }, { onConflict: "user_id,book_slug" }).then();
     } else if (!isLoggedIn) {
       // Non loggato: salva in localStorage, verrà migrato su Supabase al login
       localStorage.setItem(bookmarkKey, JSON.stringify({ chapterIdx: currentIdx, title: book.title, author: book.author, ts: Date.now() }));
@@ -637,15 +639,17 @@ function ReadPage() {
     try { setParaBookmark(JSON.parse(saved)); } catch { /* noop */ }
   }, []);
 
-  // Marca visivamente il paragrafo e scrolla ad esso quando si cambia capitolo
+  // Scrolla al paragrafo segnato quando si cambia capitolo o si riprende un segnalibro.
+  // Il capitolo può essere HTML renderizzato con dangerouslySetInnerHTML: se lo marcassimo
+  // aggiungendo una classe via DOM diretto, un qualsiasi re-render (anche non collegato,
+  // es. l'hover su un altro elemento della pagina) ricreerebbe l'innerHTML e cancellerebbe
+  // la modifica. Per questo l'evidenziazione vera e propria è CSS, guidata dallo stato React
+  // (vedi <style> più sotto), non una mutazione diretta del DOM.
   useEffect(() => {
-    if (!proseRef.current) return;
+    if (!proseRef.current || !paraBookmark || paraBookmark.chapterIdx !== currentIdx) return;
     const paras = Array.from(proseRef.current.querySelectorAll('p'));
-    paras.forEach(p => p.classList.remove('bookmarked-para'));
-    if (!paraBookmark || paraBookmark.chapterIdx !== currentIdx) return;
     const target = paras[paraBookmark.paragraphIdx];
     if (!target) return;
-    target.classList.add('bookmarked-para');
     setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80);
   }, [paraBookmark, currentIdx]);
 
@@ -660,7 +664,7 @@ function ReadPage() {
       setParaBookmark(null);
       localStorage.removeItem(bookmarkParaKey);
       if (isLoggedIn && !isAnonymous && userId) {
-        supabase.from("reading_progress").update({ paragraph_idx: null }).eq("user_id", userId).eq("book_slug", book.slug);
+        supabase.from("reading_progress").update({ paragraph_idx: null }).eq("user_id", userId).eq("book_slug", book.slug).then();
       }
     } else {
       const data = { chapterIdx: currentIdx, paragraphIdx };
@@ -675,7 +679,7 @@ function ReadPage() {
           book_title: book.title,
           book_author: book.author,
           updated_at: new Date().toISOString(),
-        }, { onConflict: "user_id,book_slug" });
+        }, { onConflict: "user_id,book_slug" }).then();
       }
     }
   };
@@ -1267,6 +1271,13 @@ function ReadPage() {
               <div className="mt-6 h-[2px] bg-ink/10 relative">
                 <div className="absolute inset-y-0 left-0 bg-blood" style={{ width: `${((currentIdx + 1) / book.chapters.length) * 100}%` }} />
               </div>
+
+              {paraBookmark && paraBookmark.chapterIdx === currentIdx && (
+                <style>{`.chapter-bookmark-area p:nth-of-type(${paraBookmark.paragraphIdx + 1}) {
+                  border-left: 2px solid oklch(0.82 0.16 200 / 0.6);
+                  padding-left: 0.75rem;
+                }`}</style>
+              )}
 
               {chapter.isHtml ? (
                 <div
