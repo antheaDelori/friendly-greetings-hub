@@ -78,7 +78,7 @@ function TesseraAutorePage() {
         <SiteHeader />
       </div>
 
-      <section className="mx-auto max-w-3xl w-full px-4 sm:px-6 py-16 flex-1">
+      <section className="mx-auto max-w-5xl w-full px-4 sm:px-6 py-16 flex-1">
         <div className="no-print mb-8">
           <Link
             to="/area-autore"
