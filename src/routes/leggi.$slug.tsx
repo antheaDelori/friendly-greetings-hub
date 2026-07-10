@@ -295,6 +295,7 @@ function ReadPage() {
   const [fontScale, setFontScale] = useState(1);
   const [resumeBanner, setResumeBanner] = useState(false);
   const savedIdxRef = useRef<number>(0);
+  const savedParaIdxRef = useRef<number | null>(null);
 
   const [voti, setVoti] = useState(initialVoti ?? 0);
   const [hasVoted, setHasVoted] = useState(false);
@@ -585,19 +586,26 @@ function ReadPage() {
     finally { setFollowLoading(false); }
   };
 
-  // Carica il progresso dal database al mount
+  // Carica il progresso dal database al mount — stessa regola per ogni genere e per
+  // le opere a capitolo singolo: un segnalibro di paragrafo vale quanto un cambio di
+  // capitolo, non solo chapter_idx > 0.
   useEffect(() => {
     if (!isLoggedIn || isAnonymous || !userId) return;
     supabase
       .from("reading_progress")
-      .select("chapter_idx")
+      .select("chapter_idx, paragraph_idx")
       .eq("user_id", userId)
       .eq("book_slug", book.slug)
       .maybeSingle()
       .then(({ data }) => {
-        if (data && data.chapter_idx > 0 && data.chapter_idx < book.chapters.length) {
+        if (!data || data.chapter_idx >= book.chapters.length) return;
+        if (data.chapter_idx > 0 || data.paragraph_idx != null) {
           savedIdxRef.current = data.chapter_idx;
+          savedParaIdxRef.current = data.paragraph_idx ?? null;
           setResumeBanner(true);
+        }
+        if (data.paragraph_idx != null) {
+          setParaBookmark({ chapterIdx: data.chapter_idx, paragraphIdx: data.paragraph_idx });
         }
       });
   }, []);
@@ -620,9 +628,10 @@ function ReadPage() {
     }
   }, [currentIdx]);
 
-  // Carica il segnalibro di paragrafo salvato (non per ospiti anonimi)
+  // Carica il segnalibro di paragrafo da localStorage — solo per chi non è loggato
+  // (per chi è loggato la fonte di verità è il database, caricato nell'effetto sopra).
   useEffect(() => {
-    if (isAnonymous) return;
+    if (isAnonymous || isLoggedIn) return;
     const saved = localStorage.getItem(bookmarkParaKey);
     if (!saved) return;
     try { setParaBookmark(JSON.parse(saved)); } catch { /* noop */ }
@@ -650,10 +659,24 @@ function ReadPage() {
     if (paraBookmark?.chapterIdx === currentIdx && paraBookmark?.paragraphIdx === paragraphIdx) {
       setParaBookmark(null);
       localStorage.removeItem(bookmarkParaKey);
+      if (isLoggedIn && !isAnonymous && userId) {
+        supabase.from("reading_progress").update({ paragraph_idx: null }).eq("user_id", userId).eq("book_slug", book.slug);
+      }
     } else {
       const data = { chapterIdx: currentIdx, paragraphIdx };
       setParaBookmark(data);
       localStorage.setItem(bookmarkParaKey, JSON.stringify(data));
+      if (isLoggedIn && !isAnonymous && userId) {
+        supabase.from("reading_progress").upsert({
+          user_id: userId,
+          book_slug: book.slug,
+          chapter_idx: currentIdx,
+          paragraph_idx: paragraphIdx,
+          book_title: book.title,
+          book_author: book.author,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "user_id,book_slug" });
+      }
     }
   };
 
@@ -998,7 +1021,13 @@ function ReadPage() {
               </p>
               <div className="flex gap-4">
                 <button
-                  onClick={() => { setCurrentIdx(savedIdxRef.current); setResumeBanner(false); }}
+                  onClick={() => {
+                    setCurrentIdx(savedIdxRef.current);
+                    if (savedParaIdxRef.current != null) {
+                      setParaBookmark({ chapterIdx: savedIdxRef.current, paragraphIdx: savedParaIdxRef.current });
+                    }
+                    setResumeBanner(false);
+                  }}
                   className="font-display tracking-widest text-[10px] uppercase text-blood hover:underline"
                 >
                   Riprendi

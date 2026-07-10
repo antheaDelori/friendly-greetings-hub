@@ -14,7 +14,8 @@
     "guidaGestione": "Gestión",
     "guidaAutori": "Autores",
     "guidaLibriAperti": "Libros Abiertos",
-    "guidaAreaAutore": "Área reservada"
+    "guidaAreaAutore": "Área reservada",
+    "guidaStatistiche": "Estadísticas"
   },
   "autoriDropdown": {
     "ricerca": "Buscar autores",

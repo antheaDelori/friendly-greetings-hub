@@ -14,7 +14,8 @@
     "guidaGestione": "Verwaltung",
     "guidaAutori": "Autoren",
     "guidaLibriAperti": "Offene Bücher",
-    "guidaAreaAutore": "Mitgliederbereich"
+    "guidaAreaAutore": "Mitgliederbereich",
+    "guidaStatistiche": "Statistiken"
   },
   "autoriDropdown": {
     "ricerca": "Autoren suchen",

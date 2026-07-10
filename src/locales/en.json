@@ -14,7 +14,8 @@
     "guidaGestione": "Management",
     "guidaAutori": "Authors",
     "guidaLibriAperti": "Open Books",
-    "guidaAreaAutore": "Dashboard"
+    "guidaAreaAutore": "Dashboard",
+    "guidaStatistiche": "Stats"
   },
   "autoriDropdown": {
     "ricerca": "Search authors",
