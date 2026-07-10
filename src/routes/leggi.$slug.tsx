@@ -336,7 +336,8 @@ function ReadPage() {
   useEffect(() => { window.scrollTo({ top: 0, behavior: "instant" }); }, []);
 
   useEffect(() => {
-    if (bookId) supabase.rpc("increment_reads", { p_book_id: bookId });
+    // Le query supabase-js sono "thenable": senza .then()/await la richiesta non parte mai.
+    if (bookId) supabase.rpc("increment_reads", { p_book_id: bookId }).then();
   }, [bookId]);
 
   // Auto-aggiorna libreria: da_leggere → in_lettura all'apertura del libro
@@ -506,7 +507,7 @@ function ReadPage() {
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-      supabase.rpc("increment_downloads", { p_book_id: bookId });
+      supabase.rpc("increment_downloads", { p_book_id: bookId }).then();
     } catch (e) {
       console.error("Download error:", e);
       alert("Errore nel download. Riprova.");
@@ -534,7 +535,7 @@ function ReadPage() {
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-      supabase.rpc("increment_downloads", { p_book_id: bookId });
+      supabase.rpc("increment_downloads", { p_book_id: bookId }).then();
     } catch (e) {
       console.error("Download epub error:", e);
       alert("Errore nel download. Riprova.");
@@ -562,7 +563,7 @@ function ReadPage() {
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-      supabase.rpc("increment_downloads", { p_book_id: bookId });
+      supabase.rpc("increment_downloads", { p_book_id: bookId }).then();
     } catch (e) {
       console.error("Download mobi error:", e);
       alert("Errore nel download. Riprova.");
