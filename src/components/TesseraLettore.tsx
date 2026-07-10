@@ -138,6 +138,38 @@ function useFitText(text: string, containerRef: React.RefObject<HTMLDivElement |
   return ref;
 }
 
+// Alcuni valori dinamici (hash, ID) non hanno una larghezza prevedibile: caratteri
+// larghi come "W" possono farli sconfinare oltre il bordo della tessera anche se
+// il conteggio caratteri è lo stesso di un valore che ci sta comodamente. Si
+// restringe automaticamente solo se necessario, invece di una dimensione fissa.
+function useFitFieldValue(text: string, maxWidth: number, containerRef: React.RefObject<HTMLDivElement | null>) {
+  const ref = useRef<HTMLSpanElement>(null);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    const container = containerRef.current;
+    if (!el || !container) return;
+
+    const fit = () => {
+      const scale = container.clientWidth / TEMPLATE_W;
+      const naturalFontSize = FIELD_FONT_SIZE * scale;
+      el.style.fontSize = `${naturalFontSize}px`;
+      const maxWidthActual = maxWidth * scale;
+      const width = el.scrollWidth;
+      if (width > maxWidthActual && width > 0) {
+        el.style.fontSize = `${naturalFontSize * (maxWidthActual / width)}px`;
+      }
+    };
+
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(container);
+    return () => ro.disconnect();
+  }, [text, maxWidth, containerRef]);
+
+  return ref;
+}
+
 interface TesseraLettoreProps {
   fullName: string;
   numeroTessera?: number | null;
@@ -148,14 +180,15 @@ interface TesseraLettoreProps {
   className?: string;
 }
 
-function FieldValue({ left, top, color = COLOR_WHITE, children }: { left: number; top: number; color?: string; children: React.ReactNode }) {
+function FieldValue({ left, top, color = COLOR_WHITE, fitRef, children }: { left: number; top: number; color?: string; fitRef?: React.RefObject<HTMLSpanElement | null>; children: React.ReactNode }) {
   return (
     <span
+      ref={fitRef}
       className="tl-display absolute whitespace-nowrap font-semibold"
       style={{
         left: `${(left / TEMPLATE_W) * 100}%`,
         top: `${(top / TEMPLATE_H) * 100}%`,
-        fontSize: `${(FIELD_FONT_SIZE / TEMPLATE_W) * 100}cqw`,
+        fontSize: fitRef ? undefined : `${(FIELD_FONT_SIZE / TEMPLATE_W) * 100}cqw`,
         letterSpacing: "0.03em",
         lineHeight: 1,
         color,
@@ -179,6 +212,13 @@ export function TesseraLettore({ fullName, numeroTessera, isBlocked = false, mem
   const hashArchivistico = deterministicHash(userId, "ARCHIVIO");
   const idCrittografico = deterministicHash(userId, "CRIPTO");
   const duotoneAvatar = useDuotoneAvatar(avatarUrl);
+
+  // Larghezza massima disponibile prima del bordo — sul retro la colonna valori è
+  // molto più stretta che sul fronte, quindi ID/hash lunghi rischiano di sconfinare.
+  const idLettoreFrontRef = useFitFieldValue(idLettore, 300, containerRef);
+  const hashRef = useFitFieldValue(hashArchivistico, 300, containerRef);
+  const idLettoreBackRef = useFitFieldValue(idLettore, 175, containerRef);
+  const idCriptoRef = useFitFieldValue(idCrittografico, 175, containerRef);
 
   return (
     <div className={`tl-display ${className}`} style={{ containerType: "inline-size" }}>
@@ -244,15 +284,15 @@ export function TesseraLettore({ fullName, numeroTessera, isBlocked = false, mem
           {cognome}
         </span>
 
-        <FieldValue left={FIELD_LEFT} top={ID_LETTORE_TOP}>{idLettore}</FieldValue>
+        <FieldValue left={FIELD_LEFT} top={ID_LETTORE_TOP} fitRef={idLettoreFrontRef}>{idLettore}</FieldValue>
         <FieldValue left={FIELD_LEFT} top={STATO_TOP} color={isBlocked ? COLOR_MAGENTA : COLOR_CYAN}>{stato}</FieldValue>
         <FieldValue left={FIELD_LEFT} top={DATA_TOP}>{memberSinceLabel ?? "—"}</FieldValue>
-        <FieldValue left={FIELD_LEFT} top={HASH_TOP}>{hashArchivistico}</FieldValue>
+        <FieldValue left={FIELD_LEFT} top={HASH_TOP} fitRef={hashRef}>{hashArchivistico}</FieldValue>
 
         {/* ── Retro (SCADENZA resta statica "∞" nel template — nessun overlay) ── */}
-        <FieldValue left={FIELD2_LEFT} top={TESSERA_TOP}>{idLettore}</FieldValue>
+        <FieldValue left={FIELD2_LEFT} top={TESSERA_TOP} fitRef={idLettoreBackRef}>{idLettore}</FieldValue>
         <FieldValue left={FIELD2_LEFT} top={EMISSIONE_TOP}>{memberSinceLabel ?? "—"}</FieldValue>
-        <FieldValue left={FIELD2_LEFT} top={ID_CRIPTO_TOP}>{idCrittografico}</FieldValue>
+        <FieldValue left={FIELD2_LEFT} top={ID_CRIPTO_TOP} fitRef={idCriptoRef}>{idCrittografico}</FieldValue>
       </div>
     </div>
   );
