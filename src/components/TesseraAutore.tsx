@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import tesseraFronte from "@/assets/tessera-fronte-template.png";
+import tesseraPhotoFrame from "@/assets/tessera-photo-frame.png";
 
 // Il fronte e il retro della tessera sono un unico template statico fornito
 // da Daniele (fedele al mockup ufficiale), con overlay dinamico solo per i
@@ -48,15 +49,23 @@ const EMISSIONE_TOP = 675;
 const SCADENZA_TOP = 698;
 const ID_CRIPTO_TOP = 800;
 
-// Riquadro foto sul fronte (angoli ciano nel template) — misurato a pixel sul template.
-// Se l'autore non ha caricato una foto, il riquadro resta il volto wireframe già disegnato
-// nell'immagine statica: nessun overlay viene renderizzato.
-const PHOTO_LEFT = 210;
-const PHOTO_TOP = 168;
-const PHOTO_WIDTH = 208;
-const PHOTO_HEIGHT = 284;
-const PHOTO_CANVAS_W = 208;
-const PHOTO_CANVAS_H = 284;
+// Riquadro foto sul fronte — misurato a pixel individuando il vertice esatto delle 4
+// staffe ciano nel template (non un margine arbitrario: la foto riempie esattamente
+// lo spazio che le staffe delimitano). Se l'autore non ha caricato una foto, il
+// riquadro resta il volto wireframe già disegnato nell'immagine statica.
+const PHOTO_LEFT = 200;
+const PHOTO_TOP = 159;
+const PHOTO_WIDTH = 227;
+const PHOTO_HEIGHT = 312;
+const PHOTO_CANVAS_W = 227;
+const PHOTO_CANVAS_H = 312;
+// Le staffe si estendono per ~24px verso l'interno del riquadro, quindi la foto le
+// coprirebbe in parte: questo overlay isola solo le staffe (sfondo trasparente) e
+// viene ridisegnato sopra la foto, così la cornice resta sempre intatta.
+const FRAME_LEFT = 180;
+const FRAME_TOP = 140;
+const FRAME_WIDTH = 270;
+const FRAME_HEIGHT = 350;
 const DUOTONE_DARK: [number, number, number] = [4, 14, 20];
 // Blu campionato a pixel dal wireframe del template stesso (non il ciano brillante
 // del testo dinamico, troppo "azzurro" rispetto al resto della grafica).
@@ -223,6 +232,23 @@ export function TesseraAutore({ fullName, numeroTessera, isBlocked = false, memb
               top: `${(PHOTO_TOP / TEMPLATE_H) * 100}%`,
               width: `${(PHOTO_WIDTH / TEMPLATE_W) * 100}%`,
               height: `${(PHOTO_HEIGHT / TEMPLATE_H) * 100}%`,
+            }}
+          />
+        )}
+
+        {/* Le staffe agli angoli del riquadro foto, ridisegnate sopra: la foto riempie
+            lo spazio esatto tra i loro vertici, ma le staffe stesse (che si estendono
+            un poco verso l'interno) restano sempre visibili, sopra la foto. */}
+        {duotoneAvatar && (
+          <img
+            src={tesseraPhotoFrame}
+            alt=""
+            className="absolute pointer-events-none"
+            style={{
+              left: `${(FRAME_LEFT / TEMPLATE_W) * 100}%`,
+              top: `${(FRAME_TOP / TEMPLATE_H) * 100}%`,
+              width: `${(FRAME_WIDTH / TEMPLATE_W) * 100}%`,
+              height: `${(FRAME_HEIGHT / TEMPLATE_H) * 100}%`,
             }}
           />
         )}
