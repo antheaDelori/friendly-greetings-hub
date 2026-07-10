@@ -139,19 +139,36 @@ Deno.serve(async (req) => {
   const format: "pdf" | "epub" | "mobi" =
     body.format === "epub" ? "epub" :
     body.format === "mobi" ? "mobi" : "pdf";
+  // Sorgente esplicita dal client ("docx"/"pdf"), altrimenti auto-rilevata
+  // (compatibile con le chiamate esistenti che non la specificano).
+  const requestedSource: "docx" | "pdf" | null =
+    body.source === "docx" ? "docx" : body.source === "pdf" ? "pdf" : null;
 
   if (!book_id) return json({ error: "book_id richiesto" }, 400);
 
-  // Verifica ownership e recupera docx_url
+  // Verifica ownership e recupera la sorgente disponibile
   const { data: book, error: bookErr } = await supabase
     .from("books")
-    .select("id, docx_url, author_id, titolo, author_name, copertina_flat_url")
+    .select("id, docx_url, file_url, author_id, titolo, author_name, copertina_flat_url")
     .eq("id", book_id)
     .single();
 
   if (bookErr || !book) return json({ error: "Opera non trovata" }, 404);
   if (book.author_id !== user.id) return json({ error: "Non autorizzato" }, 403);
-  if (!book.docx_url) return json({ error: "Nessun file .docx caricato per questa opera" }, 400);
+
+  // Il PDF va sempre generato dal .docx (massima fedeltà). L'e-book invece può
+  // partire dal .docx se c'è, altrimenti dal PDF caricato/generato — con una
+  // qualità di conversione inferiore, segnalata al frontend tramite "source".
+  // Il client può forzare esplicitamente quale sorgente usare (requestedSource);
+  // altrimenti si auto-rileva preferendo il .docx quando presente.
+  const sourceIsDocx = requestedSource ? requestedSource === "docx" : !!book.docx_url;
+  const sourceUrl = sourceIsDocx ? book.docx_url : (format !== "pdf" ? book.file_url : null);
+  if (!sourceUrl) {
+    return json({ error: sourceIsDocx ? "Nessun file .docx caricato per questa opera" : "Nessun file sorgente (.docx o PDF) disponibile per generare l'e-book" }, 400);
+  }
+  if (format === "pdf" && !sourceIsDocx) {
+    return json({ error: "Il PDF è già stato caricato manualmente: non serve rigenerarlo dal .docx" }, 400);
+  }
 
   // Se author_name è vuoto, recuperalo dal profilo autore
   let authorName: string | null = book.author_name ?? null;
@@ -183,17 +200,18 @@ Deno.serve(async (req) => {
   // Genera URL firmato (10 min) per CloudConvert
   const { data: signedData, error: signedErr } = await supabase.storage
     .from("libri")
-    .createSignedUrl(book.docx_url, 600);
+    .createSignedUrl(sourceUrl, 600);
 
   if (signedErr || !signedData) {
-    return json({ error: "Impossibile accedere al file .docx" }, 500);
+    return json({ error: `Impossibile accedere al file ${sourceIsDocx ? ".docx" : "PDF"}` }, 500);
   }
 
   // Parametri CloudConvert per formato
   // PDF → LibreOffice (alta fedeltà al layout Word)
-  // EPUB / MOBI → Calibre (ottimizzato per e-reader)
+  // EPUB / MOBI → Calibre (ottimizzato per e-reader; da .docx se disponibile, altrimenti dal PDF)
   const engine = format === "pdf" ? "libreoffice" : "calibre";
   const ext = format === "pdf" ? "pdf" : format === "epub" ? "epub" : "mobi";
+  const sourceFilename = sourceIsDocx ? "book.docx" : "book.pdf";
   const contentType =
     format === "pdf"  ? "application/pdf" :
     format === "epub" ? "application/epub+zip" :
@@ -215,7 +233,7 @@ Deno.serve(async (req) => {
         "import-docx": {
           operation: "import/url",
           url: signedData.signedUrl,
-          filename: "book.docx",
+          filename: sourceFilename,
         },
         "convert-file": {
           operation: "convert",
@@ -288,6 +306,11 @@ Deno.serve(async (req) => {
     const pageCount = countPdfPages(fileBytes);
     if (pageCount !== null) updateData.cover_numero_pagine = pageCount;
   }
+  // Segna se l'e-book è stato ricavato dal PDF invece che dal .docx (qualità
+  // di conversione inferiore) — il frontend mostra un avviso in questo caso.
+  if (format === "epub" || format === "mobi") {
+    updateData.ebook_from_pdf = !sourceIsDocx;
+  }
 
   await supabase.from("books").update(updateData).eq("id", book_id);
 
@@ -300,5 +323,5 @@ Deno.serve(async (req) => {
   });
 
   const newCount = (count ?? 0) + 1;
-  return json({ file_path: storagePath, used: newCount, limit: FREE_LIMIT, unlimited: isAdmin });
+  return json({ file_path: storagePath, used: newCount, limit: FREE_LIMIT, unlimited: isAdmin, source: sourceIsDocx ? "docx" : "pdf" });
 });

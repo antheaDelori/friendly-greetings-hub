@@ -67,6 +67,7 @@ type Book = {
   epub_url: string | null;
   mobi_url: string | null;
   docx_url: string | null;
+  ebook_from_pdf: boolean | null;
   disponibile: boolean;
   cestinato: boolean;
   recuperato: boolean;
@@ -281,12 +282,17 @@ function GestionePage() {
   const [pdfConvUsed, setPdfConvUsed] = useState(0);
   const [epubConvUsed, setEpubConvUsed] = useState(0);
   const [mobiConvUsed, setMobiConvUsed] = useState(0);
+  // Sorgente alternativa: PDF già pronto dell'autore invece del manoscritto .docx
+  const [docSourceMode, setDocSourceMode] = useState<"docx" | "pdf">("docx");
+  const [pdfSourceFile, setPdfSourceFile] = useState<File | null>(null);
+  const [existingEbookFromPdf, setExistingEbookFromPdf] = useState(false);
 
   const copertRef = useRef<HTMLInputElement>(null);
   const lastraRef = useRef<HTMLInputElement>(null);
   const pdfRef = useRef<HTMLInputElement>(null);
   const epubRef = useRef<HTMLInputElement>(null);
   const docxRef = useRef<HTMLInputElement>(null);
+  const pdfSourceRef = useRef<HTMLInputElement>(null);
 
   // Import testo capitolo
   const importDocxRef = useRef<HTMLInputElement>(null);
@@ -784,6 +790,9 @@ function GestionePage() {
     setExistingEpubUrl(b.epub_url);
     setExistingMobiUrl(b.mobi_url);
     setExistingDocxUrl(b.docx_url ?? null);
+    setExistingEbookFromPdf(!!b.ebook_from_pdf);
+    setDocSourceMode("docx");
+    setPdfSourceFile(null);
     setDocxFile(null);
     setDocGenPdfOk(false);
     setDocGenEpubOk(false);
@@ -945,36 +954,50 @@ function GestionePage() {
     }
   };
 
-  // Carica .docx e genera PDF + ePub in sequenza
+  // Carica .docx (o PDF già pronto) e genera PDF + ePub in sequenza
   const handleGenerateDocs = async () => {
-    if (!editingId || !userId || (!docxFile && !existingDocxUrl)) return;
+    if (!editingId || !userId) return;
+    if (docSourceMode === "docx" && !docxFile && !existingDocxUrl) return;
+    if (docSourceMode === "pdf" && !pdfSourceFile && !existingFileUrl) return;
     setDocGenerating(true);
     setDocGenError(null);
     setDocGenPdfOk(false);
     setDocGenEpubOk(false);
     setDocGenMobiOk(false);
     try {
-      // 1. Carica il .docx se è nuovo
-      if (docxFile) {
-        const path = `${userId}/${editingId}-source.docx`;
-        const { error: upErr } = await supabase.storage.from("libri").upload(path, docxFile, { upsert: true });
+      if (docSourceMode === "docx") {
+        // 1. Carica il .docx se è nuovo
+        if (docxFile) {
+          const path = `${userId}/${editingId}-source.docx`;
+          const { error: upErr } = await supabase.storage.from("libri").upload(path, docxFile, { upsert: true });
+          if (upErr) { setDocGenError(upErr.message); return; }
+          await supabase.from("books").update({ docx_url: path }).eq("id", editingId);
+          setExistingDocxUrl(path);
+          setDocxFile(null);
+        }
+      } else if (pdfSourceFile) {
+        // 1bis. PDF già pronto dell'autore: caricato direttamente, nessuna generazione da fare
+        const path = `${userId}/${editingId}-generated.pdf`;
+        const { error: upErr } = await supabase.storage.from("libri").upload(path, pdfSourceFile, { upsert: true, contentType: "application/pdf" });
         if (upErr) { setDocGenError(upErr.message); return; }
-        await supabase.from("books").update({ docx_url: path }).eq("id", editingId);
-        setExistingDocxUrl(path);
-        setDocxFile(null);
+        await supabase.from("books").update({ file_url: path }).eq("id", editingId);
+        setExistingFileUrl(path);
+        setPdfSourceFile(null);
       }
+      if (docSourceMode === "pdf") setDocGenPdfOk(true);
+
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
       const call = async (format: "pdf" | "epub" | "mobi") => {
         const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-pdf`, {
           method: "POST",
           headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ book_id: editingId, format }),
+          body: JSON.stringify({ book_id: editingId, format, source: docSourceMode }),
         });
         return { ok: res.ok, data: await res.json() };
       };
-      // 2. Genera PDF (se entro limite)
-      if (isAdmin || pdfConvUsed < 10) {
+      // 2. Genera PDF dal .docx (se entro limite) — non in modalità "PDF già pronto"
+      if (docSourceMode === "docx" && (isAdmin || pdfConvUsed < 10)) {
         const { ok, data } = await call("pdf");
         if (ok) { setExistingFileUrl(data.file_path); setPdfConvUsed(data.used); setDocGenPdfOk(true); }
         else if (data.error !== "limit_reached") { setDocGenError(`PDF: ${data.error ?? "errore"}`); return; }
@@ -982,13 +1005,13 @@ function GestionePage() {
       // 3. Genera ePub (se entro limite)
       if (isAdmin || epubConvUsed < 10) {
         const { ok, data } = await call("epub");
-        if (ok) { setExistingEpubUrl(data.file_path); setEpubConvUsed(data.used); setDocGenEpubOk(true); }
+        if (ok) { setExistingEpubUrl(data.file_path); setEpubConvUsed(data.used); setDocGenEpubOk(true); setExistingEbookFromPdf(data.source === "pdf"); }
         else if (data.error !== "limit_reached") { setDocGenError(`ePub: ${data.error ?? "errore"}`); }
       }
       // 4. Genera MOBI per Kindle classico (se entro limite)
       if (isAdmin || mobiConvUsed < 10) {
         const { ok, data } = await call("mobi");
-        if (ok) { setExistingMobiUrl(data.file_path); setMobiConvUsed(data.used); setDocGenMobiOk(true); }
+        if (ok) { setExistingMobiUrl(data.file_path); setMobiConvUsed(data.used); setDocGenMobiOk(true); setExistingEbookFromPdf(data.source === "pdf"); }
         else if (data.error !== "limit_reached") { setDocGenError(`MOBI: ${data.error ?? "errore"}`); }
       }
     } catch (e) {
@@ -3010,25 +3033,61 @@ function GestionePage() {
                         }
                       </div>
                       <p className="font-serif italic text-bone/60 text-sm">
-                        Carica il manoscritto Word (.docx): PDF ed E-Book vengono generati automaticamente in un click.
+                        {docSourceMode === "docx"
+                          ? "Carica il manoscritto Word (.docx): PDF ed E-Book vengono generati automaticamente in un click."
+                          : "Hai già il PDF pronto (es. impaginato professionalmente)? Caricalo direttamente: proviamo comunque a ricavarne l'E-Book."}
                         {!isAdmin && <span className="text-amber not-italic font-mono text-[10px] tracking-widest uppercase ml-2">10 generazioni gratuite</span>}
                       </p>
-                      <div className="flex items-center gap-3 flex-wrap">
-                        <input ref={docxRef} type="file" accept=".docx"
-                          onChange={e => { setDocxFile(e.target.files?.[0] ?? null); setDocGenPdfOk(false); setDocGenEpubOk(false); setDocGenMobiOk(false); setDocGenError(null); }}
-                          className="hidden" />
-                        <button type="button" onClick={() => docxRef.current?.click()}
-                          className="border border-amber/40 px-4 py-2 font-mono text-[10px] uppercase tracking-widest hover:border-amber hover:text-amber transition-all text-bone/60 cursor-pointer">
-                          {docxFile ? `✓ ${docxFile.name}` : existingDocxUrl ? "✓ .docx caricato (sostituisci)" : "▸ Scegli .docx"}
+
+                      {/* Scelta sorgente */}
+                      <div className="flex items-center gap-2">
+                        <button type="button"
+                          onClick={() => { setDocSourceMode("docx"); setDocGenError(null); }}
+                          className={`font-mono text-[9px] uppercase tracking-widest px-3 py-1.5 border transition-all ${
+                            docSourceMode === "docx" ? "border-amber bg-amber/15 text-amber" : "border-amber/25 text-bone/40 hover:border-amber/50"
+                          }`}>
+                          Ho il manoscritto .docx
                         </button>
-                        <HudButton variant="ghost" onClick={handleGenerateDocs} disabled={docGenerating || (!docxFile && !existingDocxUrl)}>
-                          {docGenerating ? "▸ Generazione in corso..." : existingDocxUrl && !docxFile ? "◈ Rigenera PDF + E-Book + Kindle" : "◈ Carica e genera PDF + E-Book + Kindle"}
-                        </HudButton>
+                        <button type="button"
+                          onClick={() => { setDocSourceMode("pdf"); setDocGenError(null); }}
+                          className={`font-mono text-[9px] uppercase tracking-widest px-3 py-1.5 border transition-all ${
+                            docSourceMode === "pdf" ? "border-amber bg-amber/15 text-amber" : "border-amber/25 text-bone/40 hover:border-amber/50"
+                          }`}>
+                          Ho già il PDF pronto
+                        </button>
                       </div>
+
+                      {docSourceMode === "docx" ? (
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <input ref={docxRef} type="file" accept=".docx"
+                            onChange={e => { setDocxFile(e.target.files?.[0] ?? null); setDocGenPdfOk(false); setDocGenEpubOk(false); setDocGenMobiOk(false); setDocGenError(null); }}
+                            className="hidden" />
+                          <button type="button" onClick={() => docxRef.current?.click()}
+                            className="border border-amber/40 px-4 py-2 font-mono text-[10px] uppercase tracking-widest hover:border-amber hover:text-amber transition-all text-bone/60 cursor-pointer">
+                            {docxFile ? `✓ ${docxFile.name}` : existingDocxUrl ? "✓ .docx caricato (sostituisci)" : "▸ Scegli .docx"}
+                          </button>
+                          <HudButton variant="ghost" onClick={handleGenerateDocs} disabled={docGenerating || (!docxFile && !existingDocxUrl)}>
+                            {docGenerating ? "▸ Generazione in corso..." : existingDocxUrl && !docxFile ? "◈ Rigenera PDF + E-Book + Kindle" : "◈ Carica e genera PDF + E-Book + Kindle"}
+                          </HudButton>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <input ref={pdfSourceRef} type="file" accept=".pdf"
+                            onChange={e => { setPdfSourceFile(e.target.files?.[0] ?? null); setDocGenPdfOk(false); setDocGenEpubOk(false); setDocGenMobiOk(false); setDocGenError(null); }}
+                            className="hidden" />
+                          <button type="button" onClick={() => pdfSourceRef.current?.click()}
+                            className="border border-amber/40 px-4 py-2 font-mono text-[10px] uppercase tracking-widest hover:border-amber hover:text-amber transition-all text-bone/60 cursor-pointer">
+                            {pdfSourceFile ? `✓ ${pdfSourceFile.name}` : existingFileUrl ? "✓ PDF caricato (sostituisci)" : "▸ Scegli PDF"}
+                          </button>
+                          <HudButton variant="ghost" onClick={handleGenerateDocs} disabled={docGenerating || (!pdfSourceFile && !existingFileUrl)}>
+                            {docGenerating ? "▸ Generazione in corso..." : "◈ Carica PDF e genera E-Book + Kindle"}
+                          </HudButton>
+                        </div>
+                      )}
                       {docGenerating && (
                         <div className="flex items-center gap-3 flex-wrap">
                           <span className="font-mono text-[11px] tracking-widest text-amber uppercase animate-pulse">
-                            {!docGenPdfOk ? "◈ Generazione PDF..." : !docGenEpubOk ? "◈ Generazione E-Book..." : "◈ Generazione MOBI (Kindle)..."}
+                            {docSourceMode === "docx" && !docGenPdfOk ? "◈ Generazione PDF..." : !docGenEpubOk ? "◈ Generazione E-Book..." : "◈ Generazione MOBI (Kindle)..."}
                           </span>
                           <div className="flex gap-1">
                             {Array.from({ length: 10 }).map((_, i) => (
@@ -3048,6 +3107,11 @@ function GestionePage() {
                         </p>
                       )}
                       {docGenError && <p className="font-mono text-[10px] tracking-wide text-magenta uppercase">✗ {docGenError}</p>}
+                      {existingEbookFromPdf && (existingEpubUrl || existingMobiUrl) && (
+                        <p className="font-serif italic text-amber/80 text-sm border-l-2 border-amber/40 pl-3">
+                          ⚑ L'E-Book è stato ricavato dal PDF (non da un manoscritto Word): controlla che paragrafi e spaziatura siano corretti prima di considerarlo definitivo.
+                        </p>
+                      )}
 
                       {/* Download — visibili quando i file esistono */}
                       {(existingFileUrl || existingEpubUrl || existingMobiUrl) && !docGenerating && (
