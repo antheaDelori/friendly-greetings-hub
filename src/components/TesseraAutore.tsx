@@ -51,12 +51,12 @@ const ID_CRIPTO_TOP = 800;
 // Riquadro foto sul fronte (angoli ciano nel template) — misurato a pixel sul template.
 // Se l'autore non ha caricato una foto, il riquadro resta il volto wireframe già disegnato
 // nell'immagine statica: nessun overlay viene renderizzato.
-const PHOTO_LEFT = 200;
-const PHOTO_TOP = 157;
-const PHOTO_WIDTH = 228;
-const PHOTO_HEIGHT = 306;
-const PHOTO_CANVAS_W = 228;
-const PHOTO_CANVAS_H = 306;
+const PHOTO_LEFT = 210;
+const PHOTO_TOP = 168;
+const PHOTO_WIDTH = 208;
+const PHOTO_HEIGHT = 284;
+const PHOTO_CANVAS_W = 208;
+const PHOTO_CANVAS_H = 284;
 const DUOTONE_DARK: [number, number, number] = [4, 14, 20];
 // Blu campionato a pixel dal wireframe del template stesso (non il ciano brillante
 // del testo dinamico, troppo "azzurro" rispetto al resto della grafica).
