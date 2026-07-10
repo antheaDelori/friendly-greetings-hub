@@ -296,6 +296,10 @@ function ReadPage() {
   const [resumeBanner, setResumeBanner] = useState(false);
   const savedIdxRef = useRef<number>(0);
   const savedParaIdxRef = useRef<number | null>(null);
+  // Evita che l'effetto di salvataggio scriva chapter_idx=0 (il valore iniziale di
+  // currentIdx) PRIMA che il progresso già salvato sia stato letto — altrimenti lo
+  // sovrascrive con una corsa critica, perdendo il vero punto di lettura.
+  const progressLoadedRef = useRef(false);
 
   const [voti, setVoti] = useState(initialVoti ?? 0);
   const [hasVoted, setHasVoted] = useState(false);
@@ -591,7 +595,7 @@ function ReadPage() {
   // le opere a capitolo singolo: un segnalibro di paragrafo vale quanto un cambio di
   // capitolo, non solo chapter_idx > 0.
   useEffect(() => {
-    if (!isLoggedIn || isAnonymous || !userId) return;
+    if (!isLoggedIn || isAnonymous || !userId) { progressLoadedRef.current = true; return; }
     supabase
       .from("reading_progress")
       .select("chapter_idx, paragraph_idx")
@@ -599,11 +603,20 @@ function ReadPage() {
       .eq("book_slug", book.slug)
       .maybeSingle()
       .then(({ data }) => {
+        progressLoadedRef.current = true;
         if (!data || data.chapter_idx >= book.chapters.length) return;
+        // Arrivando dal popup "riprendi la lettura" al login (?riprendi=1) la richiesta
+        // di riprendere è già esplicita: si salta direttamente al punto salvato, senza
+        // fare ripetere la conferma con il banner in pagina.
+        const autoResume = new URLSearchParams(window.location.search).get("riprendi") === "1";
         if (data.chapter_idx > 0 || data.paragraph_idx != null) {
           savedIdxRef.current = data.chapter_idx;
           savedParaIdxRef.current = data.paragraph_idx ?? null;
-          setResumeBanner(true);
+          if (autoResume) {
+            setCurrentIdx(data.chapter_idx);
+          } else {
+            setResumeBanner(true);
+          }
         }
         if (data.paragraph_idx != null) {
           setParaBookmark({ chapterIdx: data.chapter_idx, paragraphIdx: data.paragraph_idx });
@@ -615,6 +628,10 @@ function ReadPage() {
   useEffect(() => {
     if (book.chapters.length === 0 || isAnonymous) return;
     if (isLoggedIn && userId) {
+      // Non scrivere finché non abbiamo letto il progresso già salvato — altrimenti
+      // il valore iniziale (capitolo 0) rischia di sovrascrivere un segnalibro vero
+      // prima ancora che venga applicato.
+      if (!progressLoadedRef.current) return;
       // Le query supabase-js sono "thenable": senza .then()/await la richiesta non
       // parte mai — va sempre consumata, anche per un fire-and-forget.
       supabase.from("reading_progress").upsert({

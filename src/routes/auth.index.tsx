@@ -225,7 +225,7 @@ function AuthLanding() {
                     ) : (
                       <div className="flex items-center group">
                         <button
-                          onClick={() => window.location.replace(`/leggi/${b.slug}`)}
+                          onClick={() => window.location.replace(`/leggi/${b.slug}?riprendi=1`)}
                           className="flex-1 text-left px-4 py-3"
                         >
                           <span className="font-mono text-[9px] text-cyan/60 group-hover:text-cyan mr-2 tracking-widest">▸</span>
@@ -256,7 +256,7 @@ function AuthLanding() {
           <div className="mt-8 flex flex-col sm:flex-row gap-3">
             {resumeBooks.length === 1 && (
               <button
-                onClick={() => window.location.replace(`/leggi/${resumeBooks[0].slug}`)}
+                onClick={() => window.location.replace(`/leggi/${resumeBooks[0].slug}?riprendi=1`)}
                 className="flex-1 border border-cyan bg-cyan/10 text-cyan px-6 py-3 font-mono tracking-[0.2em] text-[11px] uppercase hover:bg-cyan hover:text-void transition-all hud-frame"
               >
                 ▸ {t("authLogin.riprSi")}
