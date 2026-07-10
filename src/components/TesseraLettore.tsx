@@ -1,12 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import tesseraFronte from "@/assets/tessera-fronte-template-lettore.png";
-import tesseraPhotoFrame from "@/assets/tessera-photo-frame.png";
+import tesseraFronte from "@/assets/tessera-lettore-template.png";
+import tesseraPhotoFrame from "@/assets/tessera-lettore-photo-frame.png";
 
-// Stessa struttura della tessera autore (vedi TesseraAutore.tsx per i commenti
-// estesi sulle scelte tecniche) — qui cambia solo l'identità visiva minima
-// richiesta: bordo esterno, riquadro foto/QR/NFC in magenta invece di ciano,
-// template col campo LIVELLO che dice "LETTORE" invece di "AUTORE CERTIFICATO".
-// Tutto il resto (colori dei campi dinamici, font, layout) resta identico.
+// Template dedicato fornito da Daniele (stesso layout della tessera autore, colori
+// e testo LIVELLO adattati a "LETTORE CERTIFICATO"). Stessa logica di overlay
+// dinamico dell'autore — vedi TesseraAutore.tsx per i commenti estesi.
 const TESSERA_STYLE = `
   @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap');
   .tl-display { font-family: 'Rajdhani', sans-serif; }
@@ -27,7 +25,7 @@ const MAX_NAME_WIDTH = 380;
 
 const FIELD_LEFT = 675;
 const FIELD_FONT_SIZE = 16;
-const ID_AUTORE_TOP = 331;
+const ID_LETTORE_TOP = 331;
 const STATO_TOP = 424;
 const DATA_TOP = 446;
 const HASH_TOP = 468;
@@ -35,7 +33,6 @@ const HASH_TOP = 468;
 const FIELD2_LEFT = 1200;
 const TESSERA_TOP = 650;
 const EMISSIONE_TOP = 675;
-const SCADENZA_TOP = 698;
 const ID_CRIPTO_TOP = 800;
 
 const PHOTO_LEFT = 200;
@@ -50,18 +47,6 @@ const FRAME_WIDTH = 270;
 const FRAME_HEIGHT = 350;
 const DUOTONE_DARK: [number, number, number] = [4, 14, 20];
 const DUOTONE_BRIGHT: [number, number, number] = [15, 151, 187];
-
-// Riquadri QR code e NFC sul fronte — misurati a pixel sul template, usati solo
-// per disegnarci sopra un bordo magenta (nessuna estrazione: il contenuto sotto
-// resta quello dell'immagine originale, invariato).
-const QR_LEFT = 983;
-const QR_TOP = 282;
-const QR_WIDTH = 214;
-const QR_HEIGHT = 177;
-const NFC_LEFT = 1253;
-const NFC_TOP = 268;
-const NFC_WIDTH = 149;
-const NFC_HEIGHT = 193;
 
 function useDuotoneAvatar(avatarUrl?: string | null): string | null {
   const [dataUrl, setDataUrl] = useState<string | null>(null);
@@ -158,7 +143,6 @@ interface TesseraLettoreProps {
   numeroTessera?: number | null;
   isBlocked?: boolean;
   memberSinceLabel?: string | null;
-  expiryLabel?: string | null;
   userId: string;
   avatarUrl?: string | null;
   className?: string;
@@ -182,24 +166,7 @@ function FieldValue({ left, top, color = COLOR_WHITE, children }: { left: number
   );
 }
 
-function AccentBox({ left, top, width, height }: { left: number; top: number; width: number; height: number }) {
-  return (
-    <div
-      className="absolute pointer-events-none"
-      style={{
-        left: `${(left / TEMPLATE_W) * 100}%`,
-        top: `${(top / TEMPLATE_H) * 100}%`,
-        width: `${(width / TEMPLATE_W) * 100}%`,
-        height: `${(height / TEMPLATE_H) * 100}%`,
-        border: `1.5px solid ${COLOR_MAGENTA}`,
-        borderRadius: "6%",
-        boxShadow: `0 0 6px 0 ${COLOR_MAGENTA}80`,
-      }}
-    />
-  );
-}
-
-export function TesseraLettore({ fullName, numeroTessera, isBlocked = false, memberSinceLabel, expiryLabel, userId, avatarUrl, className = "" }: TesseraLettoreProps) {
+export function TesseraLettore({ fullName, numeroTessera, isBlocked = false, memberSinceLabel, userId, avatarUrl, className = "" }: TesseraLettoreProps) {
   const nome = fullName.split(" ")[0] || fullName;
   const cognome = fullName.split(" ").slice(1).join(" ") || "—";
 
@@ -207,30 +174,18 @@ export function TesseraLettore({ fullName, numeroTessera, isBlocked = false, mem
   const nomeRef = useFitText(nome, containerRef);
   const cognomeRef = useFitText(cognome, containerRef);
 
-  const idLettore = numeroTessera != null ? `LB · 2076 · L · ${String(numeroTessera).padStart(6, "0")}` : "LB · 2076 · L · ——————";
+  const idLettore = numeroTessera != null ? `LB-2076-L-${String(numeroTessera).padStart(6, "0")}` : "LB-2076-L-——————";
   const stato = isBlocked ? "SOSPESO" : "ACTIVE";
   const hashArchivistico = deterministicHash(userId, "ARCHIVIO");
   const idCrittografico = deterministicHash(userId, "CRIPTO");
   const duotoneAvatar = useDuotoneAvatar(avatarUrl);
 
   return (
-    <div
-      className={`tl-display ${className}`}
-      style={{
-        containerType: "inline-size",
-        border: `1.5px solid ${COLOR_MAGENTA}`,
-        borderRadius: "1.2%",
-        boxShadow: `0 0 14px 0 ${COLOR_MAGENTA}66`,
-      }}
-    >
+    <div className={`tl-display ${className}`} style={{ containerType: "inline-size" }}>
       <style>{TESSERA_STYLE}</style>
 
       <div ref={containerRef} className="relative w-full" style={{ aspectRatio: `${TEMPLATE_W} / ${TEMPLATE_H}` }}>
         <img src={tesseraFronte} alt="Tessera lettore" className="absolute inset-0 w-full h-full object-contain" />
-
-        <AccentBox left={PHOTO_LEFT} top={PHOTO_TOP} width={PHOTO_WIDTH} height={PHOTO_HEIGHT} />
-        <AccentBox left={QR_LEFT} top={QR_TOP} width={QR_WIDTH} height={QR_HEIGHT} />
-        <AccentBox left={NFC_LEFT} top={NFC_TOP} width={NFC_WIDTH} height={NFC_HEIGHT} />
 
         {duotoneAvatar && (
           <img
@@ -289,15 +244,14 @@ export function TesseraLettore({ fullName, numeroTessera, isBlocked = false, mem
           {cognome}
         </span>
 
-        <FieldValue left={FIELD_LEFT} top={ID_AUTORE_TOP}>{idLettore}</FieldValue>
+        <FieldValue left={FIELD_LEFT} top={ID_LETTORE_TOP}>{idLettore}</FieldValue>
         <FieldValue left={FIELD_LEFT} top={STATO_TOP} color={isBlocked ? COLOR_MAGENTA : COLOR_CYAN}>{stato}</FieldValue>
         <FieldValue left={FIELD_LEFT} top={DATA_TOP}>{memberSinceLabel ?? "—"}</FieldValue>
         <FieldValue left={FIELD_LEFT} top={HASH_TOP}>{hashArchivistico}</FieldValue>
 
-        {/* ── Retro ── */}
+        {/* ── Retro (SCADENZA resta statica "∞" nel template — nessun overlay) ── */}
         <FieldValue left={FIELD2_LEFT} top={TESSERA_TOP}>{idLettore}</FieldValue>
         <FieldValue left={FIELD2_LEFT} top={EMISSIONE_TOP}>{memberSinceLabel ?? "—"}</FieldValue>
-        <FieldValue left={FIELD2_LEFT} top={SCADENZA_TOP}>{expiryLabel ?? "—"}</FieldValue>
         <FieldValue left={FIELD2_LEFT} top={ID_CRIPTO_TOP}>{idCrittografico}</FieldValue>
       </div>
     </div>
