@@ -170,6 +170,11 @@ function LibreriaPage() {
                 Diventa autore
               </Link>
             </p>
+            <p className="font-serif italic text-bone/45 text-base">
+              <Link to="/libreria/tessera" className="text-magenta hover:text-magenta/80 underline underline-offset-2 transition-colors">
+                ▣ La tua tessera lettore
+              </Link>
+            </p>
           </div>
         }
       >

@@ -29,6 +29,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as LibriApertiIndexRouteImport } from './routes/libri-aperti.index'
 import { Route as AuthIndexRouteImport } from './routes/auth.index'
 import { Route as LibriApertiSlugRouteImport } from './routes/libri-aperti.$slug'
+import { Route as LibreriaTesseraRouteImport } from './routes/libreria_.tessera'
 import { Route as LeggiSlugRouteImport } from './routes/leggi.$slug'
 import { Route as GuidaStatisticheRouteImport } from './routes/guida.statistiche'
 import { Route as GuidaLibriApertiRouteImport } from './routes/guida.libri-aperti'
@@ -145,6 +146,11 @@ const LibriApertiSlugRoute = LibriApertiSlugRouteImport.update({
   path: '/$slug',
   getParentRoute: () => LibriApertiRoute,
 } as any)
+const LibreriaTesseraRoute = LibreriaTesseraRouteImport.update({
+  id: '/libreria_/tessera',
+  path: '/libreria/tessera',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LeggiSlugRoute = LeggiSlugRouteImport.update({
   id: '/leggi/$slug',
   path: '/leggi/$slug',
@@ -254,6 +260,7 @@ export interface FileRoutesByFullPath {
   '/guida/libri-aperti': typeof GuidaLibriApertiRoute
   '/guida/statistiche': typeof GuidaStatisticheRoute
   '/leggi/$slug': typeof LeggiSlugRoute
+  '/libreria/tessera': typeof LibreriaTesseraRoute
   '/libri-aperti/$slug': typeof LibriApertiSlugRoute
   '/auth/': typeof AuthIndexRoute
   '/libri-aperti/': typeof LibriApertiIndexRoute
@@ -289,6 +296,7 @@ export interface FileRoutesByTo {
   '/guida/libri-aperti': typeof GuidaLibriApertiRoute
   '/guida/statistiche': typeof GuidaStatisticheRoute
   '/leggi/$slug': typeof LeggiSlugRoute
+  '/libreria/tessera': typeof LibreriaTesseraRoute
   '/libri-aperti/$slug': typeof LibriApertiSlugRoute
   '/auth': typeof AuthIndexRoute
   '/libri-aperti': typeof LibriApertiIndexRoute
@@ -327,6 +335,7 @@ export interface FileRoutesById {
   '/guida/libri-aperti': typeof GuidaLibriApertiRoute
   '/guida/statistiche': typeof GuidaStatisticheRoute
   '/leggi/$slug': typeof LeggiSlugRoute
+  '/libreria_/tessera': typeof LibreriaTesseraRoute
   '/libri-aperti/$slug': typeof LibriApertiSlugRoute
   '/auth/': typeof AuthIndexRoute
   '/libri-aperti/': typeof LibriApertiIndexRoute
@@ -366,6 +375,7 @@ export interface FileRouteTypes {
     | '/guida/libri-aperti'
     | '/guida/statistiche'
     | '/leggi/$slug'
+    | '/libreria/tessera'
     | '/libri-aperti/$slug'
     | '/auth/'
     | '/libri-aperti/'
@@ -401,6 +411,7 @@ export interface FileRouteTypes {
     | '/guida/libri-aperti'
     | '/guida/statistiche'
     | '/leggi/$slug'
+    | '/libreria/tessera'
     | '/libri-aperti/$slug'
     | '/auth'
     | '/libri-aperti'
@@ -438,6 +449,7 @@ export interface FileRouteTypes {
     | '/guida/libri-aperti'
     | '/guida/statistiche'
     | '/leggi/$slug'
+    | '/libreria_/tessera'
     | '/libri-aperti/$slug'
     | '/auth/'
     | '/libri-aperti/'
@@ -466,6 +478,7 @@ export interface RootRouteChildren {
   CollaneSlugRoute: typeof CollaneSlugRoute
   DownloadSlugRoute: typeof DownloadSlugRoute
   LeggiSlugRoute: typeof LeggiSlugRoute
+  LibreriaTesseraRoute: typeof LibreriaTesseraRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -609,6 +622,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/libri-aperti/$slug'
       preLoaderRoute: typeof LibriApertiSlugRouteImport
       parentRoute: typeof LibriApertiRoute
+    }
+    '/libreria_/tessera': {
+      id: '/libreria_/tessera'
+      path: '/libreria/tessera'
+      fullPath: '/libreria/tessera'
+      preLoaderRoute: typeof LibreriaTesseraRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/leggi/$slug': {
       id: '/leggi/$slug'
@@ -803,6 +823,7 @@ const rootRouteChildren: RootRouteChildren = {
   CollaneSlugRoute: CollaneSlugRoute,
   DownloadSlugRoute: DownloadSlugRoute,
   LeggiSlugRoute: LeggiSlugRoute,
+  LibreriaTesseraRoute: LibreriaTesseraRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
