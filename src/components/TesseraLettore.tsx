@@ -217,8 +217,8 @@ export function TesseraLettore({ fullName, numeroTessera, isBlocked = false, mem
   // molto più stretta che sul fronte, quindi ID/hash lunghi rischiano di sconfinare.
   const idLettoreFrontRef = useFitFieldValue(idLettore, 300, containerRef);
   const hashRef = useFitFieldValue(hashArchivistico, 300, containerRef);
-  const idLettoreBackRef = useFitFieldValue(idLettore, 175, containerRef);
-  const idCriptoRef = useFitFieldValue(idCrittografico, 175, containerRef);
+  const idLettoreBackRef = useFitFieldValue(idLettore, 160, containerRef);
+  const idCriptoRef = useFitFieldValue(idCrittografico, 160, containerRef);
 
   return (
     <div className={`tl-display ${className}`} style={{ containerType: "inline-size" }}>
