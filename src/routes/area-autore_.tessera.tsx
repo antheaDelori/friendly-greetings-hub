@@ -1,9 +1,29 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { TesseraAutore } from "@/components/TesseraAutore";
+import { TesseraAutoreStampa } from "@/components/TesseraAutoreStampa";
 import { supabase } from "@/lib/supabase";
+
+const STAMPA_TEMPLATE_W = 1252;
+
+async function scaricaFaccia(el: HTMLDivElement | null, nomeFile: string) {
+  if (!el) return;
+  const html2canvas = (await import("html2canvas-pro")).default;
+  const scale = STAMPA_TEMPLATE_W / el.clientWidth;
+  const canvas = await html2canvas(el, { scale, backgroundColor: null });
+  const blob: Blob | null = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+  if (!blob) return;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = nomeFile;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
 
 export const Route = createFileRoute("/area-autore_/tessera")({
   head: () => ({
@@ -25,6 +45,19 @@ function TesseraAutorePage() {
   const [expiryLabel, setExpiryLabel] = useState<string | null>(null);
   const [userId, setUserId] = useState<string>("");
   const [isBlocked, setIsBlocked] = useState(false);
+  const [generandoStampa, setGenerandoStampa] = useState(false);
+  const stampaFrontRef = useRef<HTMLDivElement>(null);
+  const stampaBackRef = useRef<HTMLDivElement>(null);
+
+  const handleStampaReale = async () => {
+    setGenerandoStampa(true);
+    try {
+      await scaricaFaccia(stampaFrontRef.current, "tessera-autore-fronte.png");
+      await scaricaFaccia(stampaBackRef.current, "tessera-autore-retro.png");
+    } finally {
+      setGenerandoStampa(false);
+    }
+  };
 
   useEffect(() => {
     const init = async () => {
@@ -105,11 +138,30 @@ function TesseraAutorePage() {
             </div>
 
             <button
-              onClick={() => window.print()}
-              className="no-print mt-6 w-full border border-magenta/60 bg-magenta/10 px-4 py-3 font-mono text-[11px] uppercase tracking-widest text-magenta hover:bg-magenta hover:text-void transition-all"
+              onClick={handleStampaReale}
+              disabled={generandoStampa}
+              className="no-print mt-6 w-full border border-magenta/60 bg-magenta/10 px-4 py-3 font-mono text-[11px] uppercase tracking-widest text-magenta hover:bg-magenta hover:text-void transition-all disabled:opacity-50"
             >
-              ▸ Stampa tessera
+              {generandoStampa ? "▸ generazione in corso..." : "▸ Tessera per stampa reale"}
             </button>
+            <p className="no-print mt-2 font-serif italic text-bone/35 text-xs text-center">
+              Scarica fronte e retro pronti da portare in copisteria — o da stampare tu stesso su carta.
+            </p>
+
+            {/* Renderizzata fuori schermo (non display:none, serve al layout per la cattura) solo per generare i file di stampa */}
+            <div className="no-print" style={{ position: "fixed", top: 0, left: "-9999px", width: 340 }}>
+              <TesseraAutoreStampa
+                fullName={fullName}
+                numeroTessera={numeroTessera}
+                isBlocked={isBlocked}
+                memberSinceLabel={memberSinceLabel}
+                expiryLabel={expiryLabel}
+                userId={userId}
+                avatarUrl={avatarUrl}
+                frontRef={stampaFrontRef}
+                backRef={stampaBackRef}
+              />
+            </div>
           </>
         )}
       </section>
