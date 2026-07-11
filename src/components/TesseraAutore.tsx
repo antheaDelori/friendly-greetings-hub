@@ -70,9 +70,9 @@ const FRAME_HEIGHT = 350;
 // Riquadro QR — misurato individuando i tre "occhi" del disegno decorativo nel
 // template, per farci stare esattamente sopra un QR code reale (che apre sempre
 // liberiamo2076.com, uguale per ogni tessera) senza toccare la cornice attorno.
-const QR_LEFT = 995;
-const QR_TOP = 295;
-const QR_SIZE = 180;
+const QR_LEFT = 1005;
+const QR_TOP = 288;
+const QR_SIZE = 205;
 const DUOTONE_DARK: [number, number, number] = [4, 14, 20];
 // Blu campionato a pixel dal wireframe del template stesso (non il ciano brillante
 // del testo dinamico, troppo "azzurro" rispetto al resto della grafica).
