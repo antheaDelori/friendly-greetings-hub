@@ -28,6 +28,8 @@ type BookStat = {
   isOpen: boolean;
 };
 
+type RuoloCount = { autori: number; lettori: number; esploratori: number };
+
 type RecentRecensione = {
   id: string;
   bookTitolo: string;
@@ -86,6 +88,9 @@ function StatistichePage() {
   const [topOpere, setTopOpere] = useState<{ titolo: string; author_name: string | null; letture: number; downloads: number; slug: string; genere: string }[]>([]);
   const [genereBreakdown, setGenereBreakdown] = useState<{ genere: string; count: number; letture: number }[]>([]);
   const [topAutori, setTopAutori] = useState<{ author_name: string; letture: number; opere: number }[]>([]);
+  const [trafficoRuolo, setTrafficoRuolo] = useState<RuoloCount>({ autori: 0, lettori: 0, esploratori: 0 });
+  const [downloadRuolo, setDownloadRuolo] = useState<RuoloCount>({ autori: 0, lettori: 0, esploratori: 0 });
+  const [recensioniRuolo, setRecensioniRuolo] = useState<RuoloCount>({ autori: 0, lettori: 0, esploratori: 0 });
 
   useEffect(() => {
     const init = async () => {
@@ -186,17 +191,32 @@ function StatistichePage() {
       setIsAdmin(adminUser);
       if (adminUser) {
         // KPI piattaforma
-        const [opereRes, booksAllRes, recTotRes] = await Promise.all([
+        const [opereRes, booksAllRes, recTotRes, profilesRes, authorProfilesRes] = await Promise.all([
           supabase.from("books").select("id", { count: "exact", head: true }).eq("disponibile", true).eq("cestinato", false),
           supabase.from("books").select("titolo, author_name, letture, downloads, genere, slug").eq("disponibile", true).eq("cestinato", false),
           supabase.from("recensioni").select("id", { count: "exact", head: true }).eq("blocked", false),
+          supabase.from("profiles").select("id"),
+          supabase.from("author_profiles").select("id"),
         ]);
         const allBooksPlat = (booksAllRes.data ?? []) as { titolo: string; author_name: string | null; letture: number; downloads: number; genere: string; slug: string }[];
         const lettureTotali = allBooksPlat.reduce((s, b) => s + (b.letture ?? 0), 0);
         const downloadTotali = allBooksPlat.reduce((s, b) => s + (b.downloads ?? 0), 0);
         const autoriUnici = new Set(allBooksPlat.map(b => b.author_name).filter(Boolean)).size;
+
+        // Chi è chi — per dividere traffico/download/recensioni tra autori, lettori ed esploratori.
+        // "Esploratore" = nessun profilo registrato (visita anonima o pre-login, anche fugace).
+        const authorIds = new Set((authorProfilesRes.data ?? []).map((a: { id: string }) => a.id));
+        const readerIds = new Set(
+          (profilesRes.data ?? []).map((p: { id: string }) => p.id).filter((id: string) => !authorIds.has(id))
+        );
+        const classify = (userId: string | null): "autori" | "lettori" | "esploratori" => {
+          if (userId && authorIds.has(userId)) return "autori";
+          if (userId && readerIds.has(userId)) return "lettori";
+          return "esploratori";
+        };
+
         setAdminStats({
-          utenti: 0,
+          utenti: readerIds.size,
           autori: autoriUnici,
           opere: opereRes.count ?? 0,
           lettureTotali,
@@ -223,12 +243,26 @@ function StatistichePage() {
 
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-        const [totalRes, recentRes] = await Promise.all([
+        const [totalRes, recentRes, downloadsLogRes, recensioniRuoloRes] = await Promise.all([
           supabase.from("page_views").select("id", { count: "exact", head: true }),
-          supabase.from("page_views").select("path, device, country, created_at").gte("created_at", sevenDaysAgo.toISOString()),
+          supabase.from("page_views").select("path, device, country, created_at, user_id").gte("created_at", sevenDaysAgo.toISOString()),
+          supabase.from("downloads_log").select("user_id"),
+          supabase.from("recensioni").select("user_id").eq("blocked", false),
         ]);
         setTrafficoTotale(totalRes.count ?? 0);
         const rows = recentRes.data ?? [];
+
+        // Ripartizione autori / lettori / esploratori — traffico (7gg), download e recensioni (totali)
+        const emptyRuolo = (): RuoloCount => ({ autori: 0, lettori: 0, esploratori: 0 });
+        const trafficoR = emptyRuolo();
+        for (const v of rows as { user_id: string | null }[]) trafficoR[classify(v.user_id)]++;
+        setTrafficoRuolo(trafficoR);
+        const downloadR = emptyRuolo();
+        for (const v of (downloadsLogRes.data ?? []) as { user_id: string | null }[]) downloadR[classify(v.user_id)]++;
+        setDownloadRuolo(downloadR);
+        const recensioniR = emptyRuolo();
+        for (const v of (recensioniRuoloRes.data ?? []) as { user_id: string | null }[]) recensioniR[classify(v.user_id)]++;
+        setRecensioniRuolo(recensioniR);
         // Ultimi 7 giorni in ordine cronologico
         const last7: string[] = [];
         for (let i = 6; i >= 0; i--) {
@@ -307,9 +341,10 @@ function StatistichePage() {
               <div className="font-mono text-[9px] tracking-[0.3em] text-magenta/70 uppercase mb-4">// dashboard_piattaforma</div>
 
               {/* KPI grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-px bg-cyan/10 border border-cyan/15 mb-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-px bg-cyan/10 border border-cyan/15 mb-6">
                 {[
                   { label: "Autori", value: adminStats.autori.toLocaleString("it-IT"), color: "text-magenta" },
+                  { label: "Lettori", value: adminStats.utenti.toLocaleString("it-IT"), color: "text-cyan" },
                   { label: "Opere pubblicate", value: adminStats.opere.toLocaleString("it-IT"), color: "text-bone" },
                   { label: "Aperture totali", value: adminStats.lettureTotali.toLocaleString("it-IT"), color: "text-cyan", note: "letture online" },
                   { label: "Download totali", value: adminStats.downloadTotali.toLocaleString("it-IT"), color: "text-magenta" },
@@ -486,6 +521,42 @@ function StatistichePage() {
                         </BarChart>
                       </ResponsiveContainer>
                   }
+                </HudPanel>
+
+                <HudPanel label="chi entra, scarica, recensisce" tone="cyan">
+                  {[
+                    { label: "Traffico (7gg)", data: trafficoRuolo, note: "ogni pagina vista, anche una sola visita fugace" },
+                    { label: "Download", data: downloadRuolo, note: "da quando è attivo il tracciamento" },
+                    { label: "Recensioni", data: recensioniRuolo, note: "totale, tutte" },
+                  ].map(({ label, data, note }) => {
+                    const tot = data.autori + data.lettori + data.esploratori;
+                    const pct = (n: number) => (tot > 0 ? (n / tot) * 100 : 0);
+                    return (
+                      <div key={label} className="mb-5 last:mb-0">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="font-mono text-[9px] tracking-widest text-bone/40 uppercase">{label}</span>
+                          <span className="font-mono text-[8px] text-bone/20">{tot.toLocaleString("it-IT")} tot.</span>
+                        </div>
+                        {tot === 0 ? (
+                          <p className="font-serif italic text-bone/30 text-xs">Nessun dato ancora.</p>
+                        ) : (
+                          <>
+                            <div className="flex h-2 w-full overflow-hidden bg-cyan/5">
+                              <div className="bg-magenta" style={{ width: `${pct(data.autori)}%` }} />
+                              <div className="bg-cyan" style={{ width: `${pct(data.lettori)}%` }} />
+                              <div className="bg-bone/25" style={{ width: `${pct(data.esploratori)}%` }} />
+                            </div>
+                            <div className="flex gap-4 mt-1.5 font-mono text-[9px]">
+                              <span className="text-magenta">◼ autori {data.autori.toLocaleString("it-IT")}</span>
+                              <span className="text-cyan">◼ lettori {data.lettori.toLocaleString("it-IT")}</span>
+                              <span className="text-bone/50">◼ esploratori {data.esploratori.toLocaleString("it-IT")}</span>
+                            </div>
+                          </>
+                        )}
+                        <p className="font-mono text-[8px] text-bone/20 uppercase mt-1">{note}</p>
+                      </div>
+                    );
+                  })}
                 </HudPanel>
               </div>
             </section>

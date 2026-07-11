@@ -22,11 +22,15 @@ function getDevice(): string {
 }
 
 export async function trackPageView(path: string) {
-  const country = await getCountry();
+  const [country, { data: { user } }] = await Promise.all([
+    getCountry(),
+    supabase.auth.getUser(),
+  ]);
   await supabase.from("page_views").insert({
     path,
     referrer: document.referrer || null,
     country,
     device: getDevice(),
+    user_id: user?.id ?? null,
   });
 }
