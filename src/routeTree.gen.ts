@@ -44,6 +44,7 @@ import { Route as CollaneSlugRouteImport } from './routes/collane.$slug'
 import { Route as AutoriSlugRouteImport } from './routes/autori_.$slug'
 import { Route as AuthRegistrazioneRouteImport } from './routes/auth.registrazione'
 import { Route as AuthProfiloAutoreRouteImport } from './routes/auth.profilo-autore'
+import { Route as AuthCambiaPasswordRouteImport } from './routes/auth.cambia-password'
 import { Route as AreaAutoreTesseraRouteImport } from './routes/area-autore_.tessera'
 
 const StatisticheRoute = StatisticheRouteImport.update({
@@ -221,6 +222,11 @@ const AuthProfiloAutoreRoute = AuthProfiloAutoreRouteImport.update({
   path: '/profilo-autore',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthCambiaPasswordRoute = AuthCambiaPasswordRouteImport.update({
+  id: '/cambia-password',
+  path: '/cambia-password',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AreaAutoreTesseraRoute = AreaAutoreTesseraRouteImport.update({
   id: '/area-autore_/tessera',
   path: '/area-autore/tessera',
@@ -246,6 +252,7 @@ export interface FileRoutesByFullPath {
   '/regolamento': typeof RegolamentoRoute
   '/statistiche': typeof StatisticheRoute
   '/area-autore/tessera': typeof AreaAutoreTesseraRoute
+  '/auth/cambia-password': typeof AuthCambiaPasswordRoute
   '/auth/profilo-autore': typeof AuthProfiloAutoreRoute
   '/auth/registrazione': typeof AuthRegistrazioneRoute
   '/autori/$slug': typeof AutoriSlugRoute
@@ -282,6 +289,7 @@ export interface FileRoutesByTo {
   '/regolamento': typeof RegolamentoRoute
   '/statistiche': typeof StatisticheRoute
   '/area-autore/tessera': typeof AreaAutoreTesseraRoute
+  '/auth/cambia-password': typeof AuthCambiaPasswordRoute
   '/auth/profilo-autore': typeof AuthProfiloAutoreRoute
   '/auth/registrazione': typeof AuthRegistrazioneRoute
   '/autori/$slug': typeof AutoriSlugRoute
@@ -321,6 +329,7 @@ export interface FileRoutesById {
   '/regolamento': typeof RegolamentoRoute
   '/statistiche': typeof StatisticheRoute
   '/area-autore_/tessera': typeof AreaAutoreTesseraRoute
+  '/auth/cambia-password': typeof AuthCambiaPasswordRoute
   '/auth/profilo-autore': typeof AuthProfiloAutoreRoute
   '/auth/registrazione': typeof AuthRegistrazioneRoute
   '/autori_/$slug': typeof AutoriSlugRoute
@@ -361,6 +370,7 @@ export interface FileRouteTypes {
     | '/regolamento'
     | '/statistiche'
     | '/area-autore/tessera'
+    | '/auth/cambia-password'
     | '/auth/profilo-autore'
     | '/auth/registrazione'
     | '/autori/$slug'
@@ -397,6 +407,7 @@ export interface FileRouteTypes {
     | '/regolamento'
     | '/statistiche'
     | '/area-autore/tessera'
+    | '/auth/cambia-password'
     | '/auth/profilo-autore'
     | '/auth/registrazione'
     | '/autori/$slug'
@@ -435,6 +446,7 @@ export interface FileRouteTypes {
     | '/regolamento'
     | '/statistiche'
     | '/area-autore_/tessera'
+    | '/auth/cambia-password'
     | '/auth/profilo-autore'
     | '/auth/registrazione'
     | '/autori_/$slug'
@@ -728,6 +740,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthProfiloAutoreRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/auth/cambia-password': {
+      id: '/auth/cambia-password'
+      path: '/cambia-password'
+      fullPath: '/auth/cambia-password'
+      preLoaderRoute: typeof AuthCambiaPasswordRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/area-autore_/tessera': {
       id: '/area-autore_/tessera'
       path: '/area-autore/tessera'
@@ -739,12 +758,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthRouteChildren {
+  AuthCambiaPasswordRoute: typeof AuthCambiaPasswordRoute
   AuthProfiloAutoreRoute: typeof AuthProfiloAutoreRoute
   AuthRegistrazioneRoute: typeof AuthRegistrazioneRoute
   AuthIndexRoute: typeof AuthIndexRoute
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
+  AuthCambiaPasswordRoute: AuthCambiaPasswordRoute,
   AuthProfiloAutoreRoute: AuthProfiloAutoreRoute,
   AuthRegistrazioneRoute: AuthRegistrazioneRoute,
   AuthIndexRoute: AuthIndexRoute,

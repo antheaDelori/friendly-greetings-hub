@@ -189,7 +189,31 @@
     "altriLibriPre": "and {{n}} more in the",
     "riprSi": "Yes, continue",
     "riprNo": "No, go home",
-    "rimuoviTitle": "Remove from list"
+    "rimuoviTitle": "Remove from list",
+    "forgotLink": "Forgot your password?",
+    "forgotDesc": "Enter your email: if it's registered, you'll receive a temporary password.",
+    "forgotSubmit": "Send temporary password",
+    "forgotSending": "Sending...",
+    "forgotSent": "If the address is registered, you'll receive an email with a temporary password shortly.",
+    "contactLink": "Trouble signing in? Contact the administrator",
+    "contactDesc": "Describe the problem, we'll reply to your email.",
+    "contactMessagePlaceholder": "Describe what's happening...",
+    "contactSubmit": "Send report",
+    "contactSending": "Sending...",
+    "contactSent": "Report sent. We'll get back to you as soon as possible.",
+    "backLink": "← Back to login"
+  },
+  "authCambiaPassword": {
+    "pageTitle": "New password required",
+    "title": "Set a new password",
+    "desc": "For security reasons you must set a new password before continuing.",
+    "newPasswordLabel": "↳ new password",
+    "confirmPasswordLabel": "↳ confirm password",
+    "submit": "Set password",
+    "submitLoading": "Saving...",
+    "errMismatch": "Passwords don't match.",
+    "errTooShort": "Password must be at least 8 characters.",
+    "errGeneric": "Error while saving. Try again."
   },
   "registrazione": {
     "pageTitle": "New terminal",

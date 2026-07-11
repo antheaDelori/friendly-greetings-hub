@@ -26,6 +26,39 @@ function AuthLanding() {
   const [loading, setLoading] = useState(false);
   const loginAttempted = useRef(false);
 
+  const [helpMode, setHelpMode] = useState<"forgot" | "contact" | null>(null);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotSent, setForgotSent] = useState(false);
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactMessage, setContactMessage] = useState("");
+  const [contactLoading, setContactLoading] = useState(false);
+  const [contactSent, setContactSent] = useState(false);
+
+  const handleForgotSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotLoading(true);
+    try {
+      await supabase.functions.invoke("request-password-reset", { body: { email: forgotEmail } });
+    } catch {
+      // mostriamo comunque il messaggio generico: non rivela se l'email esiste
+    }
+    setForgotSent(true);
+    setForgotLoading(false);
+  };
+
+  const handleContactSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setContactLoading(true);
+    try {
+      await supabase.functions.invoke("contact-admin", { body: { email: contactEmail, message: contactMessage } });
+    } catch {
+      // ignorato: mostriamo comunque conferma per non lasciare l'utente bloccato
+    }
+    setContactSent(true);
+    setContactLoading(false);
+  };
+
   type ResumeBook = { slug: string; title: string; author: string };
   const [resumeBooks, setResumeBooks] = useState<ResumeBook[]>([]);
   const [resumeTotal, setResumeTotal] = useState(0);
@@ -61,9 +94,14 @@ function AuthLanding() {
 
           const { data: profile } = await supabase
             .from("profiles")
-            .select("is_blocked, block_reason")
+            .select("is_blocked, block_reason, must_change_password")
             .eq("id", userId)
             .single();
+
+          if (profile?.must_change_password) {
+            window.location.replace("/auth/cambia-password");
+            return;
+          }
 
           if (profile?.is_blocked) {
             await supabase.from("access_logs").insert({
@@ -386,6 +424,89 @@ function AuthLanding() {
               {loading ? `◆ ${t("authLogin.opt02BtnLoading")}` : `◆ ${t("authLogin.opt02Btn")}`}
             </HudButton>
           </form>
+
+          {helpMode === null && (
+            <div className="mt-5 flex flex-col gap-2">
+              <button
+                onClick={() => { setHelpMode("forgot"); setForgotSent(false); setForgotEmail(email); }}
+                className="font-mono text-[10px] tracking-widest text-bone/40 hover:text-magenta uppercase transition-colors text-left"
+              >
+                ▸ {t("authLogin.forgotLink")}
+              </button>
+              <button
+                onClick={() => { setHelpMode("contact"); setContactSent(false); setContactEmail(email); }}
+                className="font-mono text-[10px] tracking-widest text-bone/40 hover:text-magenta uppercase transition-colors text-left"
+              >
+                ▸ {t("authLogin.contactLink")}
+              </button>
+            </div>
+          )}
+
+          {helpMode === "forgot" && (
+            <div className="mt-5 border-t border-magenta/15 pt-5">
+              {forgotSent ? (
+                <p className="font-serif italic text-bone/70 text-sm">{t("authLogin.forgotSent")}</p>
+              ) : (
+                <form onSubmit={handleForgotSubmit} className="space-y-3">
+                  <p className="font-serif italic text-bone/60 text-sm">{t("authLogin.forgotDesc")}</p>
+                  <input
+                    type="email"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    placeholder="tu@dominio.it"
+                    required
+                    className={inputClass}
+                  />
+                  <HudButton variant="ghost" type="submit" disabled={forgotLoading} className="w-full">
+                    {forgotLoading ? `▸ ${t("authLogin.forgotSending")}` : `▸ ${t("authLogin.forgotSubmit")}`}
+                  </HudButton>
+                </form>
+              )}
+              <button
+                onClick={() => setHelpMode(null)}
+                className="mt-3 font-mono text-[10px] tracking-widest text-bone/40 hover:text-bone/70 uppercase transition-colors"
+              >
+                {t("authLogin.backLink")}
+              </button>
+            </div>
+          )}
+
+          {helpMode === "contact" && (
+            <div className="mt-5 border-t border-magenta/15 pt-5">
+              {contactSent ? (
+                <p className="font-serif italic text-bone/70 text-sm">{t("authLogin.contactSent")}</p>
+              ) : (
+                <form onSubmit={handleContactSubmit} className="space-y-3">
+                  <p className="font-serif italic text-bone/60 text-sm">{t("authLogin.contactDesc")}</p>
+                  <input
+                    type="email"
+                    value={contactEmail}
+                    onChange={(e) => setContactEmail(e.target.value)}
+                    placeholder="tu@dominio.it"
+                    required
+                    className={inputClass}
+                  />
+                  <textarea
+                    value={contactMessage}
+                    onChange={(e) => setContactMessage(e.target.value)}
+                    placeholder={t("authLogin.contactMessagePlaceholder") ?? ""}
+                    required
+                    rows={3}
+                    className={inputClass}
+                  />
+                  <HudButton variant="ghost" type="submit" disabled={contactLoading} className="w-full">
+                    {contactLoading ? `▸ ${t("authLogin.contactSending")}` : `▸ ${t("authLogin.contactSubmit")}`}
+                  </HudButton>
+                </form>
+              )}
+              <button
+                onClick={() => setHelpMode(null)}
+                className="mt-3 font-mono text-[10px] tracking-widest text-bone/40 hover:text-bone/70 uppercase transition-colors"
+              >
+                {t("authLogin.backLink")}
+              </button>
+            </div>
+          )}
         </HudPanel>
 
       </div>

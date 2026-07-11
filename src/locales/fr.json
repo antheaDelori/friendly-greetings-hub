@@ -189,7 +189,31 @@
     "altriLibriPre": "et {{n}} autres dans le",
     "riprSi": "Oui, reprendre",
     "riprNo": "Non, aller à l'accueil",
-    "rimuoviTitle": "Retirer de la liste"
+    "rimuoviTitle": "Retirer de la liste",
+    "forgotLink": "Mot de passe oublié ?",
+    "forgotDesc": "Entrez votre email : si elle est enregistrée, vous recevrez un mot de passe temporaire.",
+    "forgotSubmit": "Envoyer un mot de passe temporaire",
+    "forgotSending": "Envoi en cours...",
+    "forgotSent": "Si l'adresse est enregistrée, vous recevrez bientôt un email avec un mot de passe temporaire.",
+    "contactLink": "Problème de connexion ? Contactez l'administrateur",
+    "contactDesc": "Décrivez le problème, nous vous répondrons à votre email.",
+    "contactMessagePlaceholder": "Décrivez ce qui se passe...",
+    "contactSubmit": "Envoyer le signalement",
+    "contactSending": "Envoi en cours...",
+    "contactSent": "Signalement envoyé. Nous vous répondrons dès que possible.",
+    "backLink": "← Retour à la connexion"
+  },
+  "authCambiaPassword": {
+    "pageTitle": "Nouveau mot de passe requis",
+    "title": "Définissez un nouveau mot de passe",
+    "desc": "Pour des raisons de sécurité, vous devez définir un nouveau mot de passe avant de continuer.",
+    "newPasswordLabel": "↳ nouveau mot de passe",
+    "confirmPasswordLabel": "↳ confirmer le mot de passe",
+    "submit": "Définir le mot de passe",
+    "submitLoading": "Enregistrement...",
+    "errMismatch": "Les mots de passe ne correspondent pas.",
+    "errTooShort": "Le mot de passe doit contenir au moins 8 caractères.",
+    "errGeneric": "Erreur lors de l'enregistrement. Réessayez."
   },
   "registrazione": {
     "pageTitle": "Nouveau terminal",

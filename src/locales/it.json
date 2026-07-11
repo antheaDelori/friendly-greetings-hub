@@ -189,7 +189,31 @@
     "altriLibriPre": "e altri {{n}} nel",
     "riprSi": "Sì, riprendi",
     "riprNo": "No, alla home",
-    "rimuoviTitle": "Rimuovi dalla lista"
+    "rimuoviTitle": "Rimuovi dalla lista",
+    "forgotLink": "Password dimenticata?",
+    "forgotDesc": "Inserisci la tua email: se è registrata, riceverai una password temporanea.",
+    "forgotSubmit": "Invia password temporanea",
+    "forgotSending": "Invio in corso...",
+    "forgotSent": "Se l'indirizzo è registrato, riceverai a breve una email con una password temporanea.",
+    "contactLink": "Problemi ad accedere? Contatta l'amministratore",
+    "contactDesc": "Descrivi il problema, ti risponderemo alla tua email.",
+    "contactMessagePlaceholder": "Descrivi cosa sta succedendo...",
+    "contactSubmit": "Invia segnalazione",
+    "contactSending": "Invio in corso...",
+    "contactSent": "Segnalazione inviata. Ti risponderemo il prima possibile.",
+    "backLink": "← Torna al login"
+  },
+  "authCambiaPassword": {
+    "pageTitle": "Nuova password richiesta",
+    "title": "Imposta una nuova password",
+    "desc": "Per motivi di sicurezza devi impostare una nuova password prima di continuare.",
+    "newPasswordLabel": "↳ nuova password",
+    "confirmPasswordLabel": "↳ conferma password",
+    "submit": "Imposta password",
+    "submitLoading": "Salvataggio...",
+    "errMismatch": "Le password non coincidono.",
+    "errTooShort": "La password deve avere almeno 8 caratteri.",
+    "errGeneric": "Errore durante il salvataggio. Riprova."
   },
   "registrazione": {
     "pageTitle": "Nuovo terminale",

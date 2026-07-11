@@ -2,10 +2,35 @@ import { Outlet, Link, createRootRoute, useRouterState } from "@tanstack/react-r
 import { useEffect } from "react";
 import { LangDetectModal } from "@/components/LangDetectModal";
 import { trackPageView } from "@/lib/analytics";
+import { supabase } from "@/lib/supabase";
 
 function PageViewTracker() {
   const { location } = useRouterState();
   useEffect(() => { trackPageView(location.pathname); }, [location.pathname]);
+  return null;
+}
+
+// Rete di sicurezza: se una sessione con temp-password attiva naviga altrove
+// senza passare dal login (es. tab già aperta), la reindirizza comunque.
+function MustChangePasswordGuard() {
+  const { location } = useRouterState();
+  useEffect(() => {
+    if (location.pathname.startsWith("/auth")) return;
+    let cancelled = false;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || cancelled) return;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("must_change_password")
+        .eq("id", user.id)
+        .single();
+      if (!cancelled && profile?.must_change_password) {
+        window.location.replace("/auth/cambia-password");
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [location.pathname]);
   return null;
 }
 
@@ -40,6 +65,7 @@ function RootComponent() {
   return (
     <>
       <PageViewTracker />
+      <MustChangePasswordGuard />
       <LangDetectModal />
       <Outlet />
     </>
