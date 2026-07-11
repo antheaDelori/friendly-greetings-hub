@@ -188,10 +188,7 @@ function RegistrazionePage() {
 
         setAggiornato(true);
       } else {
-        const timeout = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("Timeout: riprova tra qualche minuto con la stessa email.")), 15000)
-        );
-        const result = await Promise.race([supabase.auth.signUp({
+        const result = await supabase.auth.signUp({
           email: data.email!,
           password: data.password!,
           options: {
@@ -209,7 +206,7 @@ function RegistrazionePage() {
               lingua: i18n.language ?? "it",
             },
           },
-        }), timeout]);
+        });
         if (result.error) { setServerError(result.error.message); return; }
         setEmailInviata(data.email!);
       }
