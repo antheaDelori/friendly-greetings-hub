@@ -1,7 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import tesseraFronte from "@/assets/tessera-fronte-template.png";
 import tesseraPhotoFrame from "@/assets/tessera-photo-frame.png";
-import tesseraQr from "@/assets/tessera-qr-autore.png";
 
 // Il fronte e il retro della tessera sono un unico template statico fornito
 // da Daniele (fedele al mockup ufficiale), con overlay dinamico solo per i
@@ -67,12 +66,6 @@ const FRAME_LEFT = 180;
 const FRAME_TOP = 140;
 const FRAME_WIDTH = 270;
 const FRAME_HEIGHT = 350;
-// Riquadro QR — misurato individuando i tre "occhi" del disegno decorativo nel
-// template, per farci stare esattamente sopra un QR code reale (che apre sempre
-// liberiamo2076.com, uguale per ogni tessera) senza toccare la cornice attorno.
-const QR_LEFT = 1005;
-const QR_TOP = 288;
-const QR_SIZE = 205;
 const DUOTONE_DARK: [number, number, number] = [4, 14, 20];
 // Blu campionato a pixel dal wireframe del template stesso (non il ciano brillante
 // del testo dinamico, troppo "azzurro" rispetto al resto della grafica).
@@ -260,20 +253,6 @@ export function TesseraAutore({ fullName, numeroTessera, isBlocked = false, memb
           />
         )}
 
-        {/* QR code reale (stesso link per tutti: liberiamo2076.com), sopra il
-            disegno decorativo del template — nessuna generazione per utente,
-            è un'immagine statica come le teche dei libri. */}
-        <img
-          src={tesseraQr}
-          alt="QR code — liberiamo2076.com"
-          className="absolute pointer-events-none"
-          style={{
-            left: `${(QR_LEFT / TEMPLATE_W) * 100}%`,
-            top: `${(QR_TOP / TEMPLATE_H) * 100}%`,
-            width: `${(QR_SIZE / TEMPLATE_W) * 100}%`,
-            height: `${(QR_SIZE / TEMPLATE_H) * 100}%`,
-          }}
-        />
 
         {/* ── Fronte ── */}
         <span

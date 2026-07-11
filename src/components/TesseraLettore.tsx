@@ -1,7 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import tesseraFronte from "@/assets/tessera-lettore-template.png";
 import tesseraPhotoFrame from "@/assets/tessera-lettore-photo-frame.png";
-import tesseraQr from "@/assets/tessera-qr-lettore.png";
 
 // Template dedicato fornito da Daniele (stesso layout della tessera autore, colori
 // e testo LIVELLO adattati a "LETTORE CERTIFICATO"). Stessa logica di overlay
@@ -46,9 +45,6 @@ const FRAME_LEFT = 180;
 const FRAME_TOP = 140;
 const FRAME_WIDTH = 270;
 const FRAME_HEIGHT = 350;
-const QR_LEFT = 1005;
-const QR_TOP = 288;
-const QR_SIZE = 205;
 const DUOTONE_DARK: [number, number, number] = [4, 14, 20];
 const DUOTONE_BRIGHT: [number, number, number] = [15, 151, 187];
 
@@ -258,19 +254,6 @@ export function TesseraLettore({ fullName, numeroTessera, isBlocked = false, mem
             }}
           />
         )}
-
-        {/* QR code reale (stesso link per tutti: liberiamo2076.com) */}
-        <img
-          src={tesseraQr}
-          alt="QR code — liberiamo2076.com"
-          className="absolute pointer-events-none"
-          style={{
-            left: `${(QR_LEFT / TEMPLATE_W) * 100}%`,
-            top: `${(QR_TOP / TEMPLATE_H) * 100}%`,
-            width: `${(QR_SIZE / TEMPLATE_W) * 100}%`,
-            height: `${(QR_SIZE / TEMPLATE_H) * 100}%`,
-          }}
-        />
 
         {/* ── Fronte ── */}
         <span
