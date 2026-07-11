@@ -174,6 +174,8 @@
     "opt03Desc": "Free access to all public content. No registration.",
     "opt03Btn": "Enter as guest",
     "errCredenziali": "Invalid credentials. Try again.",
+    "errEmailNonTrovata": "Email not registered. Check that you typed it correctly.",
+    "errPasswordErrata": "Wrong password. Try again.",
     "errConnessione": "Connection error. Try again.",
     "errOspite": "Error accessing as guest. Try again.",
     "errBloccatoPrefix": "Access blocked:",

@@ -166,7 +166,14 @@ function AuthLanding() {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         loginAttempted.current = false;
-        setError(t("authLogin.errCredenziali"));
+        let message = t("authLogin.errCredenziali");
+        try {
+          const { data: exists } = await supabase.rpc("email_exists", { check_email: email });
+          message = exists ? t("authLogin.errPasswordErrata") : t("authLogin.errEmailNonTrovata");
+        } catch {
+          // rpc non disponibile: mantieni il messaggio generico
+        }
+        setError(message);
         setLoading(false);
       }
       // successo: onAuthStateChange gestisce il blocco, il log e la navigazione

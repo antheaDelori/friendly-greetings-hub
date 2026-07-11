@@ -174,6 +174,8 @@
     "opt03Desc": "Kostenloser Zugang zu allen öffentlichen Inhalten. Keine Registrierung.",
     "opt03Btn": "Als Gast eintreten",
     "errCredenziali": "Ungültige Anmeldedaten. Erneut versuchen.",
+    "errEmailNonTrovata": "E-Mail nicht registriert. Prüfen Sie, ob Sie sie richtig eingegeben haben.",
+    "errPasswordErrata": "Falsches Passwort. Erneut versuchen.",
     "errConnessione": "Verbindungsfehler. Erneut versuchen.",
     "errOspite": "Fehler beim Gast-Zugang. Erneut versuchen.",
     "errBloccatoPrefix": "Zugang gesperrt:",
