@@ -46,9 +46,9 @@ const FRAME_LEFT = 180;
 const FRAME_TOP = 140;
 const FRAME_WIDTH = 270;
 const FRAME_HEIGHT = 350;
-const QR_LEFT = 985;
-const QR_TOP = 285;
-const QR_SIZE = 200;
+const QR_LEFT = 995;
+const QR_TOP = 295;
+const QR_SIZE = 180;
 const DUOTONE_DARK: [number, number, number] = [4, 14, 20];
 const DUOTONE_BRIGHT: [number, number, number] = [15, 151, 187];
 
