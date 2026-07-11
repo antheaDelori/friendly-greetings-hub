@@ -426,7 +426,7 @@ function AreaAutorePage() {
           </Link>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
           {/* Opere */}
           <HudPanel label="le mie opere" code={`${bookStats.count} pub`} tone="cyan">
@@ -692,9 +692,9 @@ function AreaAutorePage() {
           <p className="font-mono text-[10px] tracking-widest text-bone/40 uppercase mb-8">
             Scarica il PDF A5 pronto per la stampa
           </p>
-          <div className="divide-y divide-cyan/10 border border-cyan/15 glass">
+          <div className="divide-y divide-cyan/10 border border-cyan/15 glass overflow-hidden">
             {bookEngagement.map(b => (
-              <div key={b.id} className="flex items-center gap-4 px-5 py-4">
+              <div key={b.id} className="flex items-center gap-4 px-5 py-4 min-w-0">
                 {/* Copertina mini */}
                 {b.copertina_url
                   ? <img src={b.copertina_url} alt={b.titolo} className="w-10 h-14 object-cover flex-shrink-0 ring-1 ring-cyan/30" />
@@ -702,7 +702,7 @@ function AreaAutorePage() {
                 }
                 {/* Info libro */}
                 <div className="flex-1 min-w-0">
-                  <p className="font-display text-bone tracking-tight truncate">{b.titolo}</p>
+                  <p className="font-display text-bone tracking-tight line-clamp-1">{b.titolo}</p>
                   <p className="font-mono text-[9px] tracking-widest text-bone/40 uppercase mt-0.5">
                     {b.letture} letture · {b.numRecensioni} rec · ♥ {b.numLikes}
                   </p>
