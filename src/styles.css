@@ -362,6 +362,8 @@
   .chapter-prose strong, .chapter-prose b { font-weight: 500; }
   .chapter-prose em { font-style: italic; }
   .chapter-prose u { text-decoration: underline; }
+  .chapter-prose a { color: var(--cyan); text-decoration: underline; text-underline-offset: 0.15em; }
+  .chapter-prose a:hover { opacity: 0.8; }
   .chapter-prose h2 { font-family: var(--font-serif); font-size: 1.5em; font-weight: 600; margin: 1.8em 0 0.6em; }
   .chapter-prose h3 { font-family: var(--font-serif); font-size: 1.2em; font-weight: 600; margin: 1.4em 0 0.5em; }
   .chapter-prose ul { list-style: disc; padding-left: 1.5em; margin-bottom: 1.2em; }

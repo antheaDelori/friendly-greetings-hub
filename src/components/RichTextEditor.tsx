@@ -3,6 +3,7 @@ import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import TextAlign from "@tiptap/extension-text-align";
 import Image from "@tiptap/extension-image";
+import Link from "@tiptap/extension-link";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
@@ -38,11 +39,17 @@ export function RichTextEditor({ value, onChange, userId, bookId }: Props) {
   const [imageError, setImageError] = useState<string | null>(null);
 
   const editor = useEditor({
+    shouldRerenderOnTransaction: true,
     extensions: [
       StarterKit,
       Underline,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Image.configure({ inline: false, allowBase64: true }),
+      Link.configure({
+        openOnClick: false,
+        autolink: false,
+        HTMLAttributes: { target: "_blank", rel: "noopener noreferrer nofollow" },
+      }),
     ],
     content: value,
     onUpdate: ({ editor }) => {
@@ -99,6 +106,18 @@ export function RichTextEditor({ value, onChange, userId, bookId }: Props) {
     }
   };
 
+  const handleSetLink = () => {
+    if (!editor) return;
+    const previousUrl = editor.getAttributes("link").href as string | undefined;
+    const url = window.prompt("Indirizzo del link:", previousUrl ?? "https://");
+    if (url === null) return;
+    if (url.trim() === "") {
+      editor.chain().focus().extendMarkRange("link").unsetLink().run();
+      return;
+    }
+    editor.chain().focus().extendMarkRange("link").setLink({ href: url.trim() }).run();
+  };
+
   if (!editor) return null;
 
   const btnBase =
@@ -115,6 +134,9 @@ export function RichTextEditor({ value, onChange, userId, bookId }: Props) {
           className={`${btnBase} ${editor.isActive("italic") ? btnActive : btnInactive} italic`}>I</button>
         <button type="button" onClick={() => editor.chain().focus().toggleUnderline().run()}
           className={`${btnBase} ${editor.isActive("underline") ? btnActive : btnInactive} underline`}>U</button>
+        <button type="button" onClick={handleSetLink} title="Inserisci/modifica link"
+          disabled={editor.state.selection.empty && !editor.isActive("link")}
+          className={`${btnBase} ${editor.isActive("link") ? btnActive : btnInactive} disabled:opacity-30`}>🔗</button>
 
         <span className="w-px h-4 bg-cyan/20 mx-1" />
 
