@@ -58,7 +58,7 @@ export function RichTextEditor({ value, onChange, userId, bookId }: Props) {
     editorProps: {
       attributes: {
         class:
-          "min-h-[12rem] px-4 py-3 font-serif text-bone bg-void/40 border-x border-b border-cyan/30 focus:outline-none focus:border-cyan prose prose-invert prose-sm max-w-none transition-colors",
+          "px-4 py-3 font-serif text-bone bg-void/40 focus:outline-none prose prose-invert prose-sm max-w-none transition-colors [&_a]:text-cyan [&_a]:underline [&_a]:underline-offset-2",
       },
     },
   });
@@ -118,6 +118,11 @@ export function RichTextEditor({ value, onChange, userId, bookId }: Props) {
     editor.chain().focus().extendMarkRange("link").setLink({ href: url.trim() }).run();
   };
 
+  const handleUnlink = () => {
+    if (!editor) return;
+    editor.chain().focus().extendMarkRange("link").unsetLink().run();
+  };
+
   if (!editor) return null;
 
   const btnBase =
@@ -127,7 +132,8 @@ export function RichTextEditor({ value, onChange, userId, bookId }: Props) {
 
   return (
     <div className="mt-2">
-      <div className="flex flex-wrap items-center gap-1 border border-cyan/30 border-b-0 bg-void/60 px-2 py-1.5">
+      <div className="min-h-[12rem] max-h-[36rem] overflow-y-auto border border-cyan/30 focus-within:border-cyan transition-colors">
+      <div className="sticky top-0 z-10 flex flex-wrap items-center gap-1 border-b border-cyan/30 bg-void/95 backdrop-blur px-2 py-1.5">
         <button type="button" onClick={() => editor.chain().focus().toggleBold().run()}
           className={`${btnBase} ${editor.isActive("bold") ? btnActive : btnInactive} font-bold`}>B</button>
         <button type="button" onClick={() => editor.chain().focus().toggleItalic().run()}
@@ -137,6 +143,9 @@ export function RichTextEditor({ value, onChange, userId, bookId }: Props) {
         <button type="button" onClick={handleSetLink} title="Inserisci/modifica link"
           disabled={editor.state.selection.empty && !editor.isActive("link")}
           className={`${btnBase} ${editor.isActive("link") ? btnActive : btnInactive} disabled:opacity-30`}>🔗</button>
+        <button type="button" onClick={handleUnlink} title="Rimuovi link"
+          disabled={!editor.isActive("link")}
+          className={`${btnBase} ${btnInactive} disabled:opacity-30`}>🔗✕</button>
 
         <span className="w-px h-4 bg-cyan/20 mx-1" />
 
@@ -176,13 +185,14 @@ export function RichTextEditor({ value, onChange, userId, bookId }: Props) {
         )}
       </div>
 
+        <EditorContent editor={editor} />
+      </div>
+
       {imageError && (
         <p className="font-mono text-[9px] text-magenta px-2 py-1 bg-magenta/5 border-x border-cyan/20">
           ⚠ {imageError}
         </p>
       )}
-
-      <EditorContent editor={editor} />
     </div>
   );
 }
