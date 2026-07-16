@@ -93,6 +93,34 @@ function Abbonamento() {
             </ul>
           </section>
 
+          <section>
+            <h2 className="font-display tracking-widest text-xs text-blood uppercase mb-4">— Video promozionale AI</h2>
+            <p className="font-serif text-ink/75 leading-relaxed mb-4">
+              Un breve videoclip cinematografico di 10 secondi, generato dall'intelligenza artificiale a partire dalla descrizione della tua opera — qualcosa che nessun'altra piattaforma di self-publishing offre. Il risultato non è modificabile né rigenerabile gratuitamente: ogni generazione consuma un credito.
+            </p>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="border border-ink/15 p-5">
+                <div className="font-display text-2xl text-ink mb-1">€12<span className="text-sm text-ink/50">/anno</span></div>
+                <p className="font-serif text-sm text-ink/60 leading-relaxed">Solo abbonamento autore, come sopra.</p>
+              </div>
+              <div className="border border-blood/40 bg-blood/5 p-5">
+                <div className="font-display text-2xl text-ink mb-1">€24<span className="text-sm text-ink/50">/anno</span></div>
+                <p className="font-serif text-sm text-ink/60 leading-relaxed">Abbonamento autore + 2 crediti video promozionale.</p>
+              </div>
+            </div>
+            <p className="font-serif italic text-ink/50 text-sm leading-relaxed mt-4">
+              Dopo aver inviato il contributo tramite PayPal, scrivici (via il form contatti o rispondendo alla mail di conferma) indicando quale pacchetto hai scelto: attiviamo l'abbonamento e i crediti manualmente, di solito entro un giorno.
+            </p>
+            <a
+              href="https://paypal.me/antheaDelori"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 inline-flex items-center gap-2 border border-blood/40 px-5 py-2.5 font-mono tracking-[0.2em] text-xs uppercase text-blood hover:bg-blood/10 transition-all"
+            >
+              ▸ Vai a PayPal
+            </a>
+          </section>
+
         </div>
 
         <div className="mt-12 border-t border-ink/10 pt-8 flex flex-wrap gap-4">

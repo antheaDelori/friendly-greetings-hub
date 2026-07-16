@@ -79,6 +79,7 @@ type Book = {
   collana_id: string | null;
   status: string;
   data_pubblicazione: string | null;
+  video_url: string | null;
 };
 
 const GENERI = ["libro", "racconto", "saggio", "articolo", "novelle", "poesia", "fumetto", "illustrato"] as const;
@@ -431,6 +432,15 @@ function GestionePage() {
   const [saveAiCoverError, setSaveAiCoverError] = useState<string | null>(null);
   const [saveFlash, setSaveFlash] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+
+  // Video promozionale AI
+  const [videoCrediti, setVideoCrediti] = useState(0);
+  const [abbonamentoAttivo, setAbbonamentoAttivo] = useState(false);
+  const [videoGenerating, setVideoGenerating] = useState(false);
+  const [videoError, setVideoError] = useState<string | null>(null);
+  const [videoProgress, setVideoProgress] = useState(0);
+  const [existingVideoUrl, setExistingVideoUrl] = useState<string | null>(null);
+
   const [cleaningUp, setCleaningUp] = useState(false);
   const [cleanupResult, setCleanupResult] = useState<{ deleted: number; total_in_bucket: number; errors: string[] } | null>(null);
   const cestinoSectionRef = useRef<HTMLDivElement>(null);
@@ -530,7 +540,7 @@ function GestionePage() {
 
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("pseudonimo, nome, cognome, max_opere, max_articoli, paypal_url, is_author")
+        .select("pseudonimo, nome, cognome, max_opere, max_articoli, paypal_url, is_author, abbonamento_attivo, video_crediti")
         .eq("id", user.id)
         .single();
 
@@ -542,6 +552,8 @@ function GestionePage() {
       setMaxOpere(adminEmail ? 999 : (profileData?.max_opere ?? 1));
       setMaxArticoli(adminEmail ? 999 : (profileData?.max_articoli ?? 5));
       setPaypalUrl(profileData?.paypal_url ?? "");
+      setVideoCrediti(profileData?.video_crediti ?? 0);
+      setAbbonamentoAttivo(profileData?.abbonamento_attivo ?? false);
       const name =
         [profileData?.nome, profileData?.cognome].filter(Boolean).join(" ") ||
         profileData?.pseudonimo ||
@@ -585,6 +597,7 @@ function GestionePage() {
     setCopertina(null); setLastra(null); setFilePdf(null); setSaveError(null);
     setEditingId(null); setConfirmMode(null);
     setExistingCopertinaUrl(null); setExistingLastraUrl(null); setExistingFileUrl(null);
+    setExistingVideoUrl(null); setVideoError(null);
     setCollanaId("");
     setCoverFormato("a5"); setCoverNumeroPagine(""); setCoverQuartaTesto("");
     setCoverAlettaSxTesto(""); setCoverAlettaDxTesto(""); setCoverIsbn("");
@@ -708,6 +721,13 @@ function GestionePage() {
     return () => clearInterval(iv);
   }, [docGenerating]);
 
+  useEffect(() => {
+    if (!videoGenerating) { setVideoProgress(0); return; }
+    setVideoProgress(0);
+    const iv = setInterval(() => setVideoProgress(p => (p + 1) % 21), 4000);
+    return () => clearInterval(iv);
+  }, [videoGenerating]);
+
   // auto-scroll al cestino rimosso: disturbava il caricamento della pagina
 
   useEffect(() => {
@@ -786,6 +806,8 @@ function GestionePage() {
     setExistingFlatUrl((b as unknown as Record<string, string | null>).copertina_flat_url ?? null);
     setExistingRottaUrl((b as unknown as Record<string, string | null>).copertina_rotta_url ?? null);
     setExistingLastraUrl(b.lastra_url);
+    setExistingVideoUrl(b.video_url ?? null);
+    setVideoError(null);
     setExistingFileUrl(b.file_url);
     setExistingEpubUrl(b.epub_url);
     setExistingMobiUrl(b.mobi_url);
@@ -875,6 +897,42 @@ function GestionePage() {
   const handleModifica = () => {
     if (!selected) return;
     openEditForm(selected);
+  };
+
+  const handleGenerateVideo = async () => {
+    if (!editingId || !userId) return;
+    if (!isAdmin && (!abbonamentoAttivo || videoCrediti <= 0)) return;
+    setVideoGenerating(true);
+    setVideoError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-video`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ book_id: editingId }),
+        },
+      );
+      const data = await res.json();
+      if (!res.ok) {
+        if (data.error === "no_credits") setVideoError("no_credits");
+        else setVideoError(data.error ?? "Errore nella generazione. Riprova.");
+        return;
+      }
+
+      setExistingVideoUrl(data.video_url);
+      if (!isAdmin) setVideoCrediti(c => Math.max(0, c - 1));
+    } catch (e) {
+      setVideoError(e instanceof Error ? e.message : "Errore di connessione. Riprova.");
+    } finally {
+      setVideoGenerating(false);
+    }
   };
 
   const handleGenerateCover = async () => {
@@ -2991,6 +3049,67 @@ function GestionePage() {
                     )}
                   </div>
 
+                  {/* Video promozionale AI */}
+                  <div className="border border-magenta/40 bg-magenta/5 p-5 space-y-4 relative">
+                    <span className="absolute -top-px left-0 right-0 h-px bg-gradient-to-r from-transparent via-magenta/60 to-transparent" />
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="font-mono text-[11px] tracking-[0.3em] text-magenta uppercase font-bold">◈ Video promozionale AI (10")</div>
+                      {isAdmin
+                        ? <span className="font-mono text-xs tracking-widest uppercase text-magenta border border-magenta bg-magenta/10 px-3 py-1 font-bold">∞ Accesso illimitato</span>
+                        : <span className="font-mono text-[10px] text-bone/70 border border-magenta/30 px-2 py-0.5">{videoCrediti} video disponibili</span>
+                      }
+                    </div>
+                    <p className="font-serif italic text-bone/60 text-sm">
+                      Genera un breve videoclip promozionale a partire dalla descrizione dell'opera. Il risultato non è modificabile né rigenerabile gratuitamente: ogni generazione consuma un credito.
+                    </p>
+
+                    {(isAdmin || (abbonamentoAttivo && videoCrediti > 0)) ? (
+                      <div className="flex items-center gap-4 flex-wrap">
+                        <HudButton variant="ghost" onClick={handleGenerateVideo} disabled={videoGenerating || !descrizione.trim()}>
+                          {videoGenerating ? "▸ Generazione in corso..." : "◈ Genera video promozionale"}
+                        </HudButton>
+                        {videoGenerating && (
+                          <div className="flex flex-col gap-1.5">
+                            <span className="font-mono text-[11px] tracking-widest text-magenta uppercase">
+                              ◈ Sintesi video in corso...{" "}
+                              <span className="text-magenta/40 normal-case">~60-120 sec</span>
+                            </span>
+                            <div className="flex gap-1">
+                              {Array.from({ length: 10 }).map((_, i) => (
+                                <span key={i} className={`w-3 h-3 border transition-all duration-500 ${i < Math.min(videoProgress, 10) ? "bg-magenta border-magenta" : "bg-transparent border-magenta/30"}`} />
+                              ))}
+                            </div>
+                            <div className="flex gap-1">
+                              {Array.from({ length: 10 }).map((_, i) => (
+                                <span key={i} className={`w-3 h-3 border transition-all duration-500 ${i < Math.max(0, videoProgress - 10) ? "bg-magenta border-magenta" : "bg-transparent border-magenta/30"}`} />
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="font-serif italic text-bone/60 text-sm">
+                        Non hai crediti video disponibili. <a href="/abbonamento" className="text-magenta underline">Scopri i pacchetti</a>.
+                      </p>
+                    )}
+
+                    {!descrizione.trim() && (isAdmin || (abbonamentoAttivo && videoCrediti > 0)) && (
+                      <p className="font-mono text-[10px] text-bone/40">Scrivi prima una descrizione/sinossi dell'opera: è il testo da cui nasce il video.</p>
+                    )}
+                    {videoError === "no_credits" && (
+                      <p className="font-mono text-[11px] text-magenta">⚠ Nessun credito video disponibile.</p>
+                    )}
+                    {videoError && videoError !== "no_credits" && (
+                      <p className="font-mono text-[11px] text-magenta">⚠ {videoError}</p>
+                    )}
+                    {existingVideoUrl && (
+                      <div className="pt-1">
+                        <p className="font-mono text-[10px] text-magenta uppercase tracking-widest mb-2">Video attuale</p>
+                        <video src={existingVideoUrl} controls className="w-64 ring-1 ring-magenta/40" />
+                        <p className="font-mono text-[9px] text-bone/50 leading-relaxed mt-2">⚠ Video generato da intelligenza artificiale (AI). Ai sensi del Regolamento UE sull'IA (AI Act), questo contenuto è prodotto automaticamente e potrebbe non essere tutelabile da copyright.</p>
+                      </div>
+                    )}
+                  </div>
 
                 </div>
               )}
