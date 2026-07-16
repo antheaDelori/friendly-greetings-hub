@@ -31,24 +31,6 @@ function bytesToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
-async function pollRunwayTask(taskId: string, maxAttempts = 40): Promise<{ output: string[] }> {
-  for (let i = 0; i < maxAttempts; i++) {
-    await new Promise((r) => setTimeout(r, 3000));
-    const res = await fetch(`https://api.dev.runwayml.com/v1/tasks/${taskId}`, {
-      headers: {
-        Authorization: `Bearer ${RUNWAY_API_KEY}`,
-        "X-Runway-Version": RUNWAY_VERSION,
-      },
-    });
-    const task = await res.json();
-    if (task.status === "SUCCEEDED") return task;
-    if (task.status === "FAILED") {
-      throw new Error(`Runway: ${task.failure ?? task.failureCode ?? "errore sconosciuto"}`);
-    }
-  }
-  throw new Error("Timeout: generazione video troppo lenta (>2 min)");
-}
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
 
@@ -119,30 +101,31 @@ Deno.serve(async (req) => {
     if (gptRes.ok) {
       const gptData = await gptRes.json();
       const text: string = gptData.choices?.[0]?.message?.content?.trim() ?? "";
-      const imgMatch = text.match(/IMAGE:\s*(.+?)(?=\nMOTION:|$)/is);
-      const motionMatch = text.match(/MOTION:\s*(.+)/is);
-      if (imgMatch?.[1]) imagePrompt = imgMatch[1].trim();
-      if (motionMatch?.[1]) motionPrompt = motionMatch[1].trim();
+      // GPT a volte aggiunge markdown (**IMAGE:** invece di IMAGE:) nonostante
+      // le istruzioni — il lookahead ignora eventuali asterischi/spazi extra.
+      const imgMatch = text.match(/\**\s*IMAGE:\s*\**\s*(.+?)(?=\**\s*MOTION:|$)/is);
+      const motionMatch = text.match(/\**\s*MOTION:\s*\**\s*(.+)/is);
+      if (imgMatch?.[1]) imagePrompt = imgMatch[1].replace(/\*+\s*$/, "").trim();
+      if (motionMatch?.[1]) motionPrompt = motionMatch[1].replace(/\*+\s*$/, "").trim();
     }
   } catch (_) { /* fallback: usa la descrizione grezza */ }
 
   // 2. gpt-image-1: genera il fotogramma di partenza
-  const imgFormData = new FormData();
-  imgFormData.append("model", "gpt-image-1");
-  imgFormData.append(
-    "prompt",
-    `Photorealistic cinematic still frame for a book promotional video. NOT painted or illustrated, NOT a book cover, ` +
-    `no text or typography anywhere in the image. Full bleed, sharp focus, dramatic cinematic lighting. ` +
-    `SCENE: ${imagePrompt}`,
-  );
-  imgFormData.append("size", "1536x1024");
-  imgFormData.append("quality", "high");
-  imgFormData.append("n", "1");
-
+  //    (images/generations vuole JSON, a differenza di images/edits che
+  //    richiede multipart per via del file immagine di riferimento)
   const imgRes = await fetch("https://api.openai.com/v1/images/generations", {
     method: "POST",
-    headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
-    body: imgFormData,
+    headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "gpt-image-1",
+      prompt:
+        `Photorealistic cinematic still frame for a book promotional video. NOT painted or illustrated, NOT a book cover, ` +
+        `no text or typography anywhere in the image. Full bleed, sharp focus, dramatic cinematic lighting. ` +
+        `SCENE: ${imagePrompt}`,
+      size: "1536x1024",
+      quality: "high",
+      n: 1,
+    }),
   });
   if (!imgRes.ok) return json({ error: await imgRes.text() }, 502);
 
@@ -181,45 +164,9 @@ Deno.serve(async (req) => {
   const taskId = createData.id;
   if (!taskId) return json({ error: "Runway non ha restituito un task id" }, 502);
 
-  let task: { output: string[] };
-  try {
-    task = await pollRunwayTask(taskId);
-  } catch (e) {
-    return json({ error: e instanceof Error ? e.message : "Errore generazione video" }, 502);
-  }
-
-  const videoSourceUrl = task.output?.[0];
-  if (!videoSourceUrl) return json({ error: "Nessun video nella risposta Runway" }, 502);
-
-  // 4. Scarica il video finale e caricalo su Storage
-  const videoFetchRes = await fetch(videoSourceUrl);
-  if (!videoFetchRes.ok) return json({ error: "Impossibile scaricare il video generato" }, 502);
-  const videoBytes = new Uint8Array(await videoFetchRes.arrayBuffer());
-
-  const ts = Date.now();
-  const videoPath = `video/${user.id}/${book_id}/${ts}.mp4`;
-  const { error: uploadErr } = await supabase.storage
-    .from("copertine")
-    .upload(videoPath, videoBytes, { contentType: "video/mp4", upsert: false });
-  if (uploadErr) return json({ error: uploadErr.message }, 500);
-
-  const { data: urlData } = supabase.storage.from("copertine").getPublicUrl(videoPath);
-  const videoUrl = urlData.publicUrl;
-
-  // 5. Solo ora che la generazione è andata a buon fine: salva libro, log, credito.
-  //    Un errore tecnico nei passaggi precedenti NON deve consumare il credito —
-  //    è diverso da "il video non piace", che invece non dà diritto a rigenerare gratis.
-  await supabase.from("books").update({ video_url: videoUrl }).eq("id", book_id);
-  await supabase.from("video_generation_attempts").insert({
-    book_id,
-    author_id: user.id,
-    video_url: videoUrl,
-    image_prompt: imagePrompt,
-    motion_prompt: motionPrompt,
-  });
-  if (!isAdmin) {
-    await supabase.rpc("decrement_video_crediti", { p_user_id: user.id });
-  }
-
-  return json({ video_url: videoUrl });
+  // Le edge function Supabase hanno un limite fisso di 150s (idle timeout) —
+  // Runway può impiegare più di così. Sottomettiamo il task e rispondiamo
+  // subito: il frontend interroga check-video-status a intervalli finché
+  // non è pronto, invece di restare bloccato su questa chiamata.
+  return json({ task_id: taskId, image_prompt: imagePrompt, motion_prompt: motionPrompt });
 });

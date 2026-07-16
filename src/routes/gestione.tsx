@@ -907,27 +907,48 @@ function GestionePage() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
+      const token = session.access_token;
+      const base = import.meta.env.VITE_SUPABASE_URL as string;
 
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-video`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ book_id: editingId }),
-        },
-      );
+      // 1. Sottomette il lavoro: gpt-4o + gpt-image-1 + creazione task Runway.
+      //    Risponde subito con un task_id — il video vero arriva più tardi.
+      const res = await fetch(`${base}/functions/v1/generate-video`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ book_id: editingId }),
+      });
       const data = await res.json();
       if (!res.ok) {
         if (data.error === "no_credits") setVideoError("no_credits");
         else setVideoError(data.error ?? "Errore nella generazione. Riprova.");
+        setVideoGenerating(false);
         return;
       }
 
-      setExistingVideoUrl(data.video_url);
-      if (!isAdmin) setVideoCrediti(c => Math.max(0, c - 1));
+      // 2. Interroga check-video-status a intervalli finché Runway non ha finito.
+      //    Osservato ~135s reali di generazione Runway: margine ampio a 4 min.
+      const { task_id, image_prompt, motion_prompt } = data;
+      const maxAttempts = 80; // ~4 min a passi di 3s
+      for (let i = 0; i < maxAttempts; i++) {
+        await new Promise(r => setTimeout(r, 3000));
+        const pollRes = await fetch(`${base}/functions/v1/check-video-status`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ task_id, book_id: editingId, image_prompt, motion_prompt }),
+        });
+        const pollData = await pollRes.json();
+        if (!pollRes.ok || pollData.status === "failed") {
+          setVideoError(pollData.error ?? "Errore nella generazione. Riprova.");
+          return;
+        }
+        if (pollData.status === "done") {
+          setExistingVideoUrl(pollData.video_url);
+          if (!isAdmin) setVideoCrediti(c => Math.max(0, c - 1));
+          return;
+        }
+        // status === "pending" → continua
+      }
+      setVideoError("Timeout: generazione video troppo lenta. Riprova più tardi.");
     } catch (e) {
       setVideoError(e instanceof Error ? e.message : "Errore di connessione. Riprova.");
     } finally {
@@ -3072,7 +3093,7 @@ function GestionePage() {
                           <div className="flex flex-col gap-1.5">
                             <span className="font-mono text-[11px] tracking-widest text-magenta uppercase">
                               ◈ Sintesi video in corso...{" "}
-                              <span className="text-magenta/40 normal-case">~60-120 sec</span>
+                              <span className="text-magenta/40 normal-case">~90-180 sec</span>
                             </span>
                             <div className="flex gap-1">
                               {Array.from({ length: 10 }).map((_, i) => (
