@@ -448,6 +448,10 @@ function GestionePage() {
     id: string; video_url: string; image_prompt: string | null; motion_prompt: string | null; created_at: string;
   }[]>([]);
   const [deletingVideoId, setDeletingVideoId] = useState<string | null>(null);
+  const [startFrameBase64, setStartFrameBase64] = useState<string | null>(null);
+  const [startFrameSourceId, setStartFrameSourceId] = useState<string | null>(null);
+  const [extractingFrameId, setExtractingFrameId] = useState<string | null>(null);
+  const [extractFrameError, setExtractFrameError] = useState<string | null>(null);
 
   const [cleaningUp, setCleaningUp] = useState(false);
   const [cleanupResult, setCleanupResult] = useState<{ deleted: number; total_in_bucket: number; errors: string[] } | null>(null);
@@ -606,6 +610,7 @@ function GestionePage() {
     setEditingId(null); setConfirmMode(null);
     setExistingCopertinaUrl(null); setExistingLastraUrl(null); setExistingFileUrl(null);
     setExistingVideoUrl(null); setVideoError(null); setVideoPrompt(""); setVideoAttempts([]);
+    setStartFrameBase64(null); setStartFrameSourceId(null); setExtractFrameError(null);
     setCollanaId("");
     setCoverFormato("a5"); setCoverNumeroPagine(""); setCoverQuartaTesto("");
     setCoverAlettaSxTesto(""); setCoverAlettaDxTesto(""); setCoverIsbn("");
@@ -826,6 +831,7 @@ function GestionePage() {
     setExistingVideoUrl(b.video_url ?? null);
     setVideoPrompt((b as unknown as Record<string, string | null>).video_prompt ?? "");
     loadVideoAttempts(b.id);
+    setStartFrameBase64(null); setStartFrameSourceId(null); setExtractFrameError(null);
     setVideoError(null);
     setExistingFileUrl(b.file_url);
     setExistingEpubUrl(b.epub_url);
@@ -934,7 +940,11 @@ function GestionePage() {
       const res = await fetch(`${base}/functions/v1/generate-video`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ book_id: editingId, video_prompt: videoPrompt.trim() || null }),
+        body: JSON.stringify({
+          book_id: editingId,
+          video_prompt: videoPrompt.trim() || null,
+          start_image_base64: startFrameBase64,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -964,6 +974,8 @@ function GestionePage() {
           setExistingVideoUrl(pollData.video_url);
           if (!isAdmin) setVideoCrediti(c => Math.max(0, c - 1));
           if (editingId) loadVideoAttempts(editingId);
+          setStartFrameBase64(null);
+          setStartFrameSourceId(null);
           return;
         }
         // status === "pending" → continua
@@ -1000,6 +1012,44 @@ function GestionePage() {
       await supabase.from("books").update({ video_url: nextUrl }).eq("id", editingId);
     }
     setDeletingVideoId(null);
+  };
+
+  const handleUseAsStartFrame = async (attempt: { id: string; video_url: string }) => {
+    setExtractingFrameId(attempt.id);
+    setExtractFrameError(null);
+    try {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const video = document.createElement("video");
+        video.crossOrigin = "anonymous";
+        video.muted = true;
+        video.preload = "auto";
+        video.src = attempt.video_url;
+        video.onloadedmetadata = () => {
+          video.currentTime = Math.max(0, video.duration - 0.15);
+        };
+        video.onseeked = () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) { reject(new Error("Canvas non disponibile")); return; }
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          try {
+            const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+            resolve(dataUrl.split(",")[1]);
+          } catch (e) {
+            reject(e);
+          }
+        };
+        video.onerror = () => reject(new Error("Impossibile caricare il video"));
+      });
+      setStartFrameBase64(base64);
+      setStartFrameSourceId(attempt.id);
+    } catch (e) {
+      setExtractFrameError("Non sono riuscito a estrarre il fotogramma da questo video. Riprova.");
+    } finally {
+      setExtractingFrameId(null);
+    }
   };
 
   const handleGenerateCover = async () => {
@@ -3673,6 +3723,19 @@ function GestionePage() {
                       </div>
                     </div>
 
+                    {startFrameBase64 && (
+                      <div className="flex items-center gap-3 border border-magenta/30 bg-magenta/10 px-3 py-2">
+                        <span className="font-mono text-[9px] uppercase tracking-widest text-magenta">◈ Fotogramma iniziale impostato — continuerà da quel video</span>
+                        <button type="button" onClick={() => { setStartFrameBase64(null); setStartFrameSourceId(null); }}
+                          className="font-mono text-[9px] uppercase tracking-widest text-bone/40 hover:text-magenta transition-colors cursor-pointer">
+                          ✕ rimuovi
+                        </button>
+                      </div>
+                    )}
+                    {extractFrameError && (
+                      <p className="font-mono text-[11px] text-magenta">⚠ {extractFrameError}</p>
+                    )}
+
                     {(isAdmin || (abbonamentoAttivo && videoCrediti > 0)) ? (
                       <div className="flex items-center gap-4 flex-wrap">
                         <HudButton variant="ghost" onClick={handleGenerateVideo} disabled={videoGenerating || (!videoPrompt.trim() && !descrizione.trim())}>
@@ -3724,12 +3787,20 @@ function GestionePage() {
                               {a.image_prompt && (
                                 <p className="font-mono text-[9px] text-bone/50 leading-relaxed line-clamp-3">{a.image_prompt}</p>
                               )}
-                              <div className="flex items-center justify-between">
+                              <div className="flex items-center justify-between flex-wrap gap-2">
                                 <span className="font-mono text-[8px] text-bone/30">{new Date(a.created_at).toLocaleString("it-IT")}</span>
-                                <button type="button" onClick={() => handleDeleteVideoAttempt(a)} disabled={deletingVideoId === a.id}
-                                  className="font-mono text-[9px] uppercase tracking-widest text-bone/40 hover:text-magenta transition-colors cursor-pointer">
-                                  {deletingVideoId === a.id ? "▸ elimino..." : "✕ cancella"}
-                                </button>
+                                <div className="flex items-center gap-3">
+                                  <button type="button" onClick={() => handleUseAsStartFrame(a)} disabled={extractingFrameId === a.id}
+                                    className={`font-mono text-[9px] uppercase tracking-widest transition-colors cursor-pointer ${
+                                      startFrameSourceId === a.id ? "text-magenta" : "text-bone/40 hover:text-magenta"
+                                    }`}>
+                                    {extractingFrameId === a.id ? "▸ estraggo..." : startFrameSourceId === a.id ? "✓ fotogramma impostato" : "▸ usa come fotogramma iniziale"}
+                                  </button>
+                                  <button type="button" onClick={() => handleDeleteVideoAttempt(a)} disabled={deletingVideoId === a.id}
+                                    className="font-mono text-[9px] uppercase tracking-widest text-bone/40 hover:text-magenta transition-colors cursor-pointer">
+                                    {deletingVideoId === a.id ? "▸ elimino..." : "✕ cancella"}
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           ))}
