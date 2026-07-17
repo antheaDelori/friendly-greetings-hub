@@ -43,8 +43,9 @@ Deno.serve(async (req) => {
   );
   if (authErr || !user) return json({ error: "Unauthorized" }, 401);
 
-  const { book_id } = await req.json();
+  const { book_id, video_prompt } = await req.json();
   if (!book_id) return json({ error: "book_id richiesto" }, 400);
+  const manualPrompt: string | null = typeof video_prompt === "string" && video_prompt.trim() ? video_prompt.trim() : null;
 
   const isAdmin = user.email?.toLowerCase() === ADMIN_LOGIN_EMAIL.toLowerCase();
 
@@ -68,12 +69,35 @@ Deno.serve(async (req) => {
     .eq("author_id", user.id)
     .maybeSingle();
   if (bookErr || !book) return json({ error: "Libro non trovato" }, 404);
-  if (!book.descrizione?.trim()) return json({ error: "Il libro non ha una descrizione da cui generare il video" }, 400);
+  if (!manualPrompt && !book.descrizione?.trim()) {
+    return json({ error: "Serve un prompt video o una descrizione da cui generare il video" }, 400);
+  }
 
-  // 1. GPT-4o: descrizione → prompt immagine (fotogramma) + prompt movimento
-  let imagePrompt = book.descrizione;
+  // 1. GPT-4o: prompt video (se scritto) o descrizione → prompt immagine (fotogramma) + prompt movimento.
+  //    Con un prompt video manuale il regista AI segue quello alla lettera (l'autore
+  //    ha già in mente l'inquadratura); senza, interpreta liberamente la sinossi.
+  let imagePrompt = manualPrompt ?? book.descrizione;
   let motionPrompt = "Slow, subtle cinematic camera movement, atmospheric.";
   try {
+    const systemPrompt = manualPrompt
+      ? `You are preparing an exact shot list for a 10-second AI video generation pipeline, from the user's own scene direction. ` +
+        `Produce exactly two lines, no explanations: ` +
+        `IMAGE: the single opening frame to generate — capture the strongest frame implied by their direction, photorealistic, ` +
+        `cinematic photography, specific dramatic lighting, rich color palette, 8K detail. Include any on-screen text/signage they ` +
+        `mention literally. Do not invent elements they didn't ask for. Max 100 words. ` +
+        `MOTION: the motion/camera movement across the 10 seconds, following their direction as closely as possible. Max 40 words.`
+      : `You are a cinematic art director creating a 10-second promotional teaser video for a book. ` +
+        `From the book description, produce exactly two lines, no explanations: ` +
+        `IMAGE: a single, powerful, photorealistic scene that captures the book's soul. ` +
+        `If the description involves characters, they MUST be visibly present and doing something specific in the ` +
+        `frame — never an empty landscape or object alone, even as a small silhouette against a vast backdrop. ` +
+        `Use scale and composition to convey the story's emotional core (isolation, danger, wonder, whatever fits): ` +
+        `e.g. tiny figures against an immense, desolate expanse reads as apocalyptic/hopeless far better than a ` +
+        `single object in isolation. Specific dramatic lighting, rich color palette, cinematic photography, 8K detail. Max 100 words. ` +
+        `MOTION: describe what actually MOVES in the 10 seconds — prioritize the characters' physical action ` +
+        `(walking, supporting one another, reaching, turning) over generic camera moves. A subtle camera move ` +
+        `(slow push-in, slow pull-back to reveal scale) can combine with that action but must not replace it. Max 40 words.`;
+
     const gptRes = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
@@ -81,24 +105,12 @@ Deno.serve(async (req) => {
         model: "gpt-4o",
         max_tokens: 300,
         messages: [
-          {
-            role: "system",
-            content:
-              `You are a cinematic art director creating a 10-second promotional teaser video for a book. ` +
-              `From the book description, produce exactly two lines, no explanations: ` +
-              `IMAGE: a single, powerful, photorealistic scene that captures the book's soul. ` +
-              `If the description involves characters, they MUST be visibly present and doing something specific in the ` +
-              `frame — never an empty landscape or object alone, even as a small silhouette against a vast backdrop. ` +
-              `Use scale and composition to convey the story's emotional core (isolation, danger, wonder, whatever fits): ` +
-              `e.g. tiny figures against an immense, desolate expanse reads as apocalyptic/hopeless far better than a ` +
-              `single object in isolation. Specific dramatic lighting, rich color palette, cinematic photography, 8K detail. Max 100 words. ` +
-              `MOTION: describe what actually MOVES in the 10 seconds — prioritize the characters' physical action ` +
-              `(walking, supporting one another, reaching, turning) over generic camera moves. A subtle camera move ` +
-              `(slow push-in, slow pull-back to reveal scale) can combine with that action but must not replace it. Max 40 words.`,
-          },
+          { role: "system", content: systemPrompt },
           {
             role: "user",
-            content: `Title: "${book.titolo ?? ""}"\nAuthor: "${book.author_name ?? ""}"\nDescription: ${book.descrizione}`,
+            content: manualPrompt
+              ? `Scene direction: ${manualPrompt}`
+              : `Title: "${book.titolo ?? ""}"\nAuthor: "${book.author_name ?? ""}"\nDescription: ${book.descrizione}`,
           },
         ],
       }),

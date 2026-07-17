@@ -80,6 +80,7 @@ type Book = {
   status: string;
   data_pubblicazione: string | null;
   video_url: string | null;
+  video_prompt: string | null;
 };
 
 const GENERI = ["libro", "racconto", "saggio", "articolo", "novelle", "poesia", "fumetto", "illustrato"] as const;
@@ -440,6 +441,9 @@ function GestionePage() {
   const [videoError, setVideoError] = useState<string | null>(null);
   const [videoProgress, setVideoProgress] = useState(0);
   const [existingVideoUrl, setExistingVideoUrl] = useState<string | null>(null);
+  const [videoPrompt, setVideoPrompt] = useState("");
+  const [savingVideoPrompt, setSavingVideoPrompt] = useState(false);
+  const [videoPromptSaved, setVideoPromptSaved] = useState(false);
 
   const [cleaningUp, setCleaningUp] = useState(false);
   const [cleanupResult, setCleanupResult] = useState<{ deleted: number; total_in_bucket: number; errors: string[] } | null>(null);
@@ -597,7 +601,7 @@ function GestionePage() {
     setCopertina(null); setLastra(null); setFilePdf(null); setSaveError(null);
     setEditingId(null); setConfirmMode(null);
     setExistingCopertinaUrl(null); setExistingLastraUrl(null); setExistingFileUrl(null);
-    setExistingVideoUrl(null); setVideoError(null);
+    setExistingVideoUrl(null); setVideoError(null); setVideoPrompt("");
     setCollanaId("");
     setCoverFormato("a5"); setCoverNumeroPagine(""); setCoverQuartaTesto("");
     setCoverAlettaSxTesto(""); setCoverAlettaDxTesto(""); setCoverIsbn("");
@@ -807,6 +811,7 @@ function GestionePage() {
     setExistingRottaUrl((b as unknown as Record<string, string | null>).copertina_rotta_url ?? null);
     setExistingLastraUrl(b.lastra_url);
     setExistingVideoUrl(b.video_url ?? null);
+    setVideoPrompt((b as unknown as Record<string, string | null>).video_prompt ?? "");
     setVideoError(null);
     setExistingFileUrl(b.file_url);
     setExistingEpubUrl(b.epub_url);
@@ -915,7 +920,7 @@ function GestionePage() {
       const res = await fetch(`${base}/functions/v1/generate-video`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ book_id: editingId }),
+        body: JSON.stringify({ book_id: editingId, video_prompt: videoPrompt.trim() || null }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -954,6 +959,14 @@ function GestionePage() {
     } finally {
       setVideoGenerating(false);
     }
+  };
+
+  const handleSaveVideoPrompt = async () => {
+    if (!editingId) return;
+    setSavingVideoPrompt(true); setVideoPromptSaved(false);
+    await supabase.from("books").update({ video_prompt: videoPrompt.trim() || null }).eq("id", editingId);
+    setSavingVideoPrompt(false); setVideoPromptSaved(true);
+    setTimeout(() => setVideoPromptSaved(false), 3000);
   };
 
   const handleGenerateCover = async () => {
@@ -3070,68 +3083,6 @@ function GestionePage() {
                     )}
                   </div>
 
-                  {/* Video promozionale AI */}
-                  <div className="border border-magenta/40 bg-magenta/5 p-5 space-y-4 relative">
-                    <span className="absolute -top-px left-0 right-0 h-px bg-gradient-to-r from-transparent via-magenta/60 to-transparent" />
-                    <div className="flex items-center justify-between flex-wrap gap-2">
-                      <div className="font-mono text-[11px] tracking-[0.3em] text-magenta uppercase font-bold">◈ Video promozionale AI (10")</div>
-                      {isAdmin
-                        ? <span className="font-mono text-xs tracking-widest uppercase text-magenta border border-magenta bg-magenta/10 px-3 py-1 font-bold">∞ Accesso illimitato</span>
-                        : <span className="font-mono text-[10px] text-bone/70 border border-magenta/30 px-2 py-0.5">{videoCrediti} video disponibili</span>
-                      }
-                    </div>
-                    <p className="font-serif italic text-bone/60 text-sm">
-                      Genera un breve videoclip promozionale a partire dalla descrizione dell'opera. Il risultato non è modificabile né rigenerabile gratuitamente: ogni generazione consuma un credito.
-                    </p>
-
-                    {(isAdmin || (abbonamentoAttivo && videoCrediti > 0)) ? (
-                      <div className="flex items-center gap-4 flex-wrap">
-                        <HudButton variant="ghost" onClick={handleGenerateVideo} disabled={videoGenerating || !descrizione.trim()}>
-                          {videoGenerating ? "▸ Generazione in corso..." : "◈ Genera video promozionale"}
-                        </HudButton>
-                        {videoGenerating && (
-                          <div className="flex flex-col gap-1.5">
-                            <span className="font-mono text-[11px] tracking-widest text-magenta uppercase">
-                              ◈ Sintesi video in corso...{" "}
-                              <span className="text-magenta/40 normal-case">~90-180 sec</span>
-                            </span>
-                            <div className="flex gap-1">
-                              {Array.from({ length: 10 }).map((_, i) => (
-                                <span key={i} className={`w-3 h-3 border transition-all duration-500 ${i < Math.min(videoProgress, 10) ? "bg-magenta border-magenta" : "bg-transparent border-magenta/30"}`} />
-                              ))}
-                            </div>
-                            <div className="flex gap-1">
-                              {Array.from({ length: 10 }).map((_, i) => (
-                                <span key={i} className={`w-3 h-3 border transition-all duration-500 ${i < Math.max(0, videoProgress - 10) ? "bg-magenta border-magenta" : "bg-transparent border-magenta/30"}`} />
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <p className="font-serif italic text-bone/60 text-sm">
-                        Non hai crediti video disponibili. <a href="/abbonamento" className="text-magenta underline">Scopri i pacchetti</a>.
-                      </p>
-                    )}
-
-                    {!descrizione.trim() && (isAdmin || (abbonamentoAttivo && videoCrediti > 0)) && (
-                      <p className="font-mono text-[10px] text-bone/40">Scrivi prima una descrizione/sinossi dell'opera: è il testo da cui nasce il video.</p>
-                    )}
-                    {videoError === "no_credits" && (
-                      <p className="font-mono text-[11px] text-magenta">⚠ Nessun credito video disponibile.</p>
-                    )}
-                    {videoError && videoError !== "no_credits" && (
-                      <p className="font-mono text-[11px] text-magenta">⚠ {videoError}</p>
-                    )}
-                    {existingVideoUrl && (
-                      <div className="pt-1">
-                        <p className="font-mono text-[10px] text-magenta uppercase tracking-widest mb-2">Video attuale</p>
-                        <video src={existingVideoUrl} controls className="w-64 ring-1 ring-magenta/40" />
-                        <p className="font-mono text-[9px] text-bone/50 leading-relaxed mt-2">⚠ Video generato da intelligenza artificiale (AI). Ai sensi del Regolamento UE sull'IA (AI Act), questo contenuto è prodotto automaticamente e potrebbe non essere tutelabile da copyright.</p>
-                      </div>
-                    )}
-                  </div>
-
                 </div>
               )}
 
@@ -3630,6 +3581,112 @@ function GestionePage() {
                       </div>
                     </div>
                   )}
+
+                </div>
+              )}
+
+              {/* ══════════ 06 — VIDEO PROMOZIONALE AI ══════════ */}
+              <button type="button" onClick={() => editingId && setOpenSection(openSection === 6 ? 0 : 6)} disabled={!editingId}
+                className={`w-full flex items-center gap-3 px-5 py-4 border transition-all ${
+                  !editingId ? "border-magenta/10 cursor-not-allowed" :
+                  openSection === 6 ? "border-magenta bg-magenta/5 cursor-pointer" : "border-magenta/30 hover:border-magenta cursor-pointer"
+                }`}>
+                <span className={`font-mono text-[11px] w-7 h-7 border flex items-center justify-center flex-shrink-0 ${
+                  !editingId ? "border-magenta/15 text-bone/20" :
+                  openSection === 6 ? "border-magenta text-magenta" : "border-magenta/40 text-bone/50"
+                }`}>06</span>
+                <div className="flex-1 text-left">
+                  <div className={`font-mono text-[11px] tracking-[0.3em] uppercase ${
+                    !editingId ? "text-bone/20" : openSection === 6 ? "text-magenta" : "text-bone/70"
+                  }`}>Video promozionale AI</div>
+                  <div className={`font-mono text-[9px] tracking-widest mt-0.5 ${!editingId ? "text-bone/15" : "text-bone/40"}`}>
+                    {editingId ? "10 secondi · prompt dedicato" : "— salva prima i metadati —"}
+                  </div>
+                </div>
+                <span className={`font-mono text-[9px] tracking-widest uppercase ${
+                  !editingId ? "text-bone/20" : openSection === 6 ? "text-magenta" : "text-bone/40"
+                }`}>{!editingId ? "⊗" : openSection === 6 ? "▲" : "▼"}</span>
+              </button>
+              {openSection === 6 && editingId && (
+                <div className="border border-magenta/20 border-t-0 p-5 space-y-5">
+
+                  <div className="border border-magenta/40 bg-magenta/5 p-5 space-y-4 relative">
+                    <span className="absolute -top-px left-0 right-0 h-px bg-gradient-to-r from-transparent via-magenta/60 to-transparent" />
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="font-mono text-[11px] tracking-[0.3em] text-magenta uppercase font-bold">◈ Video promozionale AI (10")</div>
+                      {isAdmin
+                        ? <span className="font-mono text-xs tracking-widest uppercase text-magenta border border-magenta bg-magenta/10 px-3 py-1 font-bold">∞ Accesso illimitato</span>
+                        : <span className="font-mono text-[10px] text-bone/70 border border-magenta/30 px-2 py-0.5">{videoCrediti} video disponibili</span>
+                      }
+                    </div>
+                    <p className="font-serif italic text-bone/60 text-sm">
+                      Il risultato non è modificabile né rigenerabile gratuitamente: ogni generazione consuma un credito.
+                    </p>
+
+                    <div>
+                      <span className={labelClass}>↳ Prompt video (opzionale)</span>
+                      <p className="font-mono text-[9px] text-bone/40 mt-1 mb-2">
+                        Descrivi esattamente la scena/inquadratura per il video — resta separato dalla descrizione/sinossi del libro, che non viene toccata. Se lo lasci vuoto, il video parte dalla descrizione dell'opera.
+                      </p>
+                      <textarea value={videoPrompt} onChange={e => setVideoPrompt(e.target.value)}
+                        placeholder="Es. Un drone sorvola una città futuristica per 3-4 secondi, poi si avvicina fino a una cupola con la scritta LISUM; l'inquadratura entra in una tormenta di neve e si vede in lontananza una luce..."
+                        className="w-full min-h-24 bg-void/40 border border-magenta/30 px-4 py-3 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-magenta transition-all" />
+                      <div className="flex items-center gap-3 mt-2">
+                        <button type="button" onClick={handleSaveVideoPrompt} disabled={savingVideoPrompt}
+                          className="font-mono text-[9px] uppercase tracking-widest text-bone/40 hover:text-magenta transition-colors cursor-pointer">
+                          {savingVideoPrompt ? "▸ salvataggio..." : "▸ salva prompt"}
+                        </button>
+                        {videoPromptSaved && <span className="font-mono text-[9px] uppercase tracking-widest text-magenta">✓ salvato</span>}
+                      </div>
+                    </div>
+
+                    {(isAdmin || (abbonamentoAttivo && videoCrediti > 0)) ? (
+                      <div className="flex items-center gap-4 flex-wrap">
+                        <HudButton variant="ghost" onClick={handleGenerateVideo} disabled={videoGenerating || (!videoPrompt.trim() && !descrizione.trim())}>
+                          {videoGenerating ? "▸ Generazione in corso..." : "◈ Genera video promozionale"}
+                        </HudButton>
+                        {videoGenerating && (
+                          <div className="flex flex-col gap-1.5">
+                            <span className="font-mono text-[11px] tracking-widest text-magenta uppercase">
+                              ◈ Sintesi video in corso...{" "}
+                              <span className="text-magenta/40 normal-case">~90-180 sec</span>
+                            </span>
+                            <div className="flex gap-1">
+                              {Array.from({ length: 10 }).map((_, i) => (
+                                <span key={i} className={`w-3 h-3 border transition-all duration-500 ${i < Math.min(videoProgress, 10) ? "bg-magenta border-magenta" : "bg-transparent border-magenta/30"}`} />
+                              ))}
+                            </div>
+                            <div className="flex gap-1">
+                              {Array.from({ length: 10 }).map((_, i) => (
+                                <span key={i} className={`w-3 h-3 border transition-all duration-500 ${i < Math.max(0, videoProgress - 10) ? "bg-magenta border-magenta" : "bg-transparent border-magenta/30"}`} />
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="font-serif italic text-bone/60 text-sm">
+                        Non hai crediti video disponibili. <a href="/abbonamento" className="text-magenta underline">Scopri i pacchetti</a>.
+                      </p>
+                    )}
+
+                    {!videoPrompt.trim() && !descrizione.trim() && (isAdmin || (abbonamentoAttivo && videoCrediti > 0)) && (
+                      <p className="font-mono text-[10px] text-bone/40">Scrivi un prompt video o una descrizione/sinossi dell'opera: serve almeno uno dei due.</p>
+                    )}
+                    {videoError === "no_credits" && (
+                      <p className="font-mono text-[11px] text-magenta">⚠ Nessun credito video disponibile.</p>
+                    )}
+                    {videoError && videoError !== "no_credits" && (
+                      <p className="font-mono text-[11px] text-magenta">⚠ {videoError}</p>
+                    )}
+                    {existingVideoUrl && (
+                      <div className="pt-1">
+                        <p className="font-mono text-[10px] text-magenta uppercase tracking-widest mb-2">Video attuale</p>
+                        <video src={existingVideoUrl} controls className="w-64 ring-1 ring-magenta/40" />
+                        <p className="font-mono text-[9px] text-bone/50 leading-relaxed mt-2">⚠ Video generato da intelligenza artificiale (AI). Ai sensi del Regolamento UE sull'IA (AI Act), questo contenuto è prodotto automaticamente e potrebbe non essere tutelabile da copyright.</p>
+                      </div>
+                    )}
+                  </div>
 
                 </div>
               )}
