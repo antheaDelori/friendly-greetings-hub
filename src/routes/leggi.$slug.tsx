@@ -287,8 +287,50 @@ function ReadPage() {
   const [guestLoading, setGuestLoading] = useState(false);
   const router = useRouter();
   const promoVideoRef = useRef<HTMLVideoElement>(null);
-  const [promoVideoReady, setPromoVideoReady] = useState(false);
+  const [promoVideoBlobUrl, setPromoVideoBlobUrl] = useState<string | null>(null);
+  const [promoVideoProgress, setPromoVideoProgress] = useState(0);
+  const [promoVideoError, setPromoVideoError] = useState(false);
   const [promoVideoPlaying, setPromoVideoPlaying] = useState(false);
+
+  // Scarica il video promozionale per intero prima di collegarlo al player:
+  // l'evento "canplaythrough" del browser è solo una stima e può far partire
+  // la riproduzione prima che il file sia davvero tutto scaricato, causando
+  // blocchi a metà. Qui invece la barra riflette il download reale.
+  useEffect(() => {
+    if (!book.video) return;
+    let cancelled = false;
+    let objectUrl: string | null = null;
+
+    (async () => {
+      try {
+        const res = await fetch(book.video!);
+        if (!res.ok || !res.body) throw new Error("fetch fallita");
+        const total = Number(res.headers.get("content-length")) || 0;
+        const reader = res.body.getReader();
+        const chunks: Uint8Array[] = [];
+        let received = 0;
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+          received += value.length;
+          if (total > 0 && !cancelled) setPromoVideoProgress(Math.round((received / total) * 100));
+        }
+        if (cancelled) return;
+        const blob = new Blob(chunks as BlobPart[], { type: "video/mp4" });
+        objectUrl = URL.createObjectURL(blob);
+        setPromoVideoProgress(100);
+        setPromoVideoBlobUrl(objectUrl);
+      } catch {
+        if (!cancelled) setPromoVideoError(true);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [book.video]);
 
   const handleGuestLogin = async () => {
     setGuestLoading(true);
@@ -732,27 +774,29 @@ function ReadPage() {
           <img src={book.cover} alt="" className="w-full h-auto block ring-1 ring-ink/15 bg-ink/5" />
 
           {book.video && (
-            <div className="relative mt-2 ring-1 ring-ink/15 bg-ink/5 overflow-hidden">
-              <video
-                ref={promoVideoRef}
-                src={book.video}
-                preload="auto"
-                playsInline
-                controls={promoVideoPlaying}
-                onCanPlayThrough={() => setPromoVideoReady(true)}
-                className="w-full h-auto block bg-black"
-              />
+            <div className="relative mt-2 ring-1 ring-ink/15 bg-ink/5 overflow-hidden aspect-video">
+              {promoVideoBlobUrl && (
+                <video
+                  ref={promoVideoRef}
+                  src={promoVideoBlobUrl}
+                  playsInline
+                  controls={promoVideoPlaying}
+                  className="w-full h-full block bg-black"
+                />
+              )}
               {!promoVideoPlaying && (
                 <button
                   type="button"
-                  disabled={!promoVideoReady}
+                  disabled={!promoVideoBlobUrl}
                   onClick={() => { promoVideoRef.current?.play(); setPromoVideoPlaying(true); }}
                   className="absolute inset-0 flex items-center justify-center bg-black/50 disabled:cursor-wait cursor-pointer"
                 >
-                  {promoVideoReady ? (
+                  {promoVideoError ? (
+                    <span className="font-display text-[9px] tracking-[0.2em] text-magenta uppercase px-2 text-center">video non disponibile</span>
+                  ) : promoVideoBlobUrl ? (
                     <span className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center text-ink text-base pl-0.5">▶</span>
                   ) : (
-                    <span className="font-display text-[9px] tracking-[0.2em] text-white/70 uppercase">caricamento video...</span>
+                    <span className="font-display text-[9px] tracking-[0.2em] text-white/70 uppercase">caricamento video... {promoVideoProgress}%</span>
                   )}
                 </button>
               )}
