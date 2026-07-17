@@ -287,9 +287,6 @@ function ReadPage() {
   const [guestLoading, setGuestLoading] = useState(false);
   const router = useRouter();
   const promoVideoRef = useRef<HTMLVideoElement>(null);
-  const [promoVideoBlobUrl, setPromoVideoBlobUrl] = useState<string | null>(null);
-  const [promoVideoReady, setPromoVideoReady] = useState(false);
-  const [promoVideoProgress, setPromoVideoProgress] = useState(0);
   const [promoVideoError, setPromoVideoError] = useState(false);
   const [promoVideoPlaying, setPromoVideoPlaying] = useState(false);
   const [promoVideoLineIdx, setPromoVideoLineIdx] = useState(0);
@@ -300,44 +297,6 @@ function ReadPage() {
       .filter((s: string) => s.length > 3);
     return raw.length > 0 ? raw : [book.title];
   }, [book.description, book.title]);
-
-  // Firefox in particolare non avvia il download del video solo per via di
-  // preload="auto" (resta networkState=IDLE finché non lo forziamo) — quindi
-  // lo scarichiamo esplicitamente noi con fetch, con una percentuale reale.
-  useEffect(() => {
-    if (!book.video) return;
-    let cancelled = false;
-    let objectUrl: string | null = null;
-    (async () => {
-      try {
-        const res = await fetch(book.video!);
-        if (!res.ok || !res.body) throw new Error("fetch fallita");
-        const total = Number(res.headers.get("content-length")) || 0;
-        const reader = res.body.getReader();
-        const chunks: Uint8Array[] = [];
-        let received = 0;
-        for (;;) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          chunks.push(value);
-          received += value.length;
-          if (total > 0 && !cancelled) setPromoVideoProgress(Math.round((received / total) * 100));
-        }
-        if (cancelled) return;
-        const blob = new Blob(chunks as BlobPart[], { type: "video/mp4" });
-        objectUrl = URL.createObjectURL(blob);
-        setPromoVideoProgress(100);
-        setPromoVideoBlobUrl(objectUrl);
-        setPromoVideoReady(true);
-      } catch {
-        if (!cancelled) setPromoVideoError(true);
-      }
-    })();
-    return () => {
-      cancelled = true;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [book.video]);
 
   const handleGuestLogin = async () => {
     setGuestLoading(true);
@@ -780,15 +739,17 @@ function ReadPage() {
           <div className="lg:overflow-y-auto lg:overflow-x-hidden lg:overscroll-y-contain lg:min-h-0 flex-1">
           <img src={book.cover} alt="" className="w-full h-auto block ring-1 ring-ink/15 bg-ink/5" />
 
-          {book.video && (
+          {book.video && !promoVideoError && (
             <div className="relative mt-2 ring-1 ring-ink/15 bg-ink/5 overflow-hidden aspect-video">
-              {promoVideoBlobUrl && (
               <video
                 ref={promoVideoRef}
-                src={promoVideoBlobUrl}
+                src={book.video}
+                preload="metadata"
                 playsInline
-                controls={promoVideoPlaying}
+                controls
                 onError={() => setPromoVideoError(true)}
+                onPlay={() => setPromoVideoPlaying(true)}
+                onPause={() => setPromoVideoPlaying(false)}
                 onTimeUpdate={e => {
                   const { currentTime, duration } = e.currentTarget;
                   if (!duration) return;
@@ -802,24 +763,7 @@ function ReadPage() {
                 }}
                 className="w-full h-full block bg-black"
               />
-              )}
-              {!promoVideoPlaying && (
-                <button
-                  type="button"
-                  disabled={!promoVideoReady}
-                  onClick={() => { promoVideoRef.current?.play(); setPromoVideoPlaying(true); }}
-                  className="absolute inset-0 flex items-center justify-center bg-black/50 disabled:cursor-wait cursor-pointer"
-                >
-                  {promoVideoError ? (
-                    <span className="font-display text-[9px] tracking-[0.2em] text-magenta uppercase px-2 text-center">video non disponibile</span>
-                  ) : promoVideoReady ? (
-                    <span className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center text-ink text-base pl-0.5">▶</span>
-                  ) : (
-                    <span className="font-display text-[9px] tracking-[0.2em] text-white/70 uppercase">caricamento video... {promoVideoProgress}%</span>
-                  )}
-                </button>
-              )}
-              <div className="absolute bottom-0 left-0 right-0 px-2 py-1.5 bg-gradient-to-t from-black/80 to-transparent pointer-events-none">
+              <div className="absolute top-0 left-0 right-0 px-2 py-1.5 bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
                 {promoVideoPlaying ? (
                   <p key={promoVideoLineIdx} className="font-serif italic text-[10px] text-white leading-snug line-clamp-2 animate-in fade-in duration-300">
                     {promoDescLines[promoVideoLineIdx]}
