@@ -39,7 +39,7 @@ export const Route = createFileRoute("/leggi/$slug")({
     // Poi cerca su Supabase
     const { data } = await supabase
       .from("books")
-      .select("id, slug, titolo, descrizione, estratto, genere, fumetto_formato, anno, data_pubblicazione, letture, copertina_url, copertina_flat_url, file_url, epub_url, mobi_url, author_name, author_id, cestinato, voti_cestino, recuperato, accesso, status")
+      .select("id, slug, titolo, descrizione, estratto, genere, fumetto_formato, anno, data_pubblicazione, letture, copertina_url, copertina_flat_url, video_url, file_url, epub_url, mobi_url, author_name, author_id, cestinato, voti_cestino, recuperato, accesso, status")
       .eq("slug", params.slug)
       .or("disponibile.eq.true,cestinato.eq.true")
       .maybeSingle();
@@ -77,6 +77,7 @@ export const Route = createFileRoute("/leggi/$slug")({
       reads: data.letture,
       rating: 0,
       cover: data.copertina_flat_url ?? data.copertina_url ?? logo,
+      video: data.video_url ?? null,
       tagline: data.descrizione?.slice(0, 140) ?? "",
       description: data.descrizione ?? "",
       chapters,
@@ -726,6 +727,24 @@ function ReadPage() {
           {/* Contenuto scrollabile: copertina, meta, capitoli */}
           <div className="lg:overflow-y-auto lg:overflow-x-hidden lg:overscroll-y-contain lg:min-h-0 flex-1">
           <img src={book.cover} alt="" className="w-full h-auto block ring-1 ring-ink/15 bg-ink/5" />
+
+          {book.video && (
+            <div className="relative mt-2 ring-1 ring-ink/15 bg-ink/5 overflow-hidden">
+              <video
+                src={book.video}
+                muted
+                autoPlay
+                loop
+                playsInline
+                controls
+                className="w-full h-auto block"
+              />
+              <div className="absolute bottom-0 left-0 right-0 px-2 py-1.5 bg-gradient-to-t from-black/80 to-transparent pointer-events-none">
+                <p className="font-display text-[10px] tracking-[0.15em] text-white uppercase truncate">{book.title}</p>
+                <p className="font-serif italic text-[9px] text-white/70 truncate">di {book.author}</p>
+              </div>
+            </div>
+          )}
 
           <div className="mt-4">
             <div className="font-display tracking-[0.25em] text-[10px] text-blood uppercase">
