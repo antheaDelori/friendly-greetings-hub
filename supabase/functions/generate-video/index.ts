@@ -86,10 +86,15 @@ Deno.serve(async (req) => {
             content:
               `You are a cinematic art director creating a 10-second promotional teaser video for a book. ` +
               `From the book description, produce exactly two lines, no explanations: ` +
-              `IMAGE: a single, powerful, photorealistic scene that captures the book's soul — one clear subject, ` +
-              `specific dramatic lighting, rich color palette, cinematic photography, 8K detail. Max 100 words. ` +
-              `MOTION: a short camera/motion instruction for animating that exact image (e.g. slow push-in, gentle pan, ` +
-              `drifting particles, rippling water) — subtle and atmospheric, not chaotic. Max 30 words.`,
+              `IMAGE: a single, powerful, photorealistic scene that captures the book's soul. ` +
+              `If the description involves characters, they MUST be visibly present and doing something specific in the ` +
+              `frame — never an empty landscape or object alone, even as a small silhouette against a vast backdrop. ` +
+              `Use scale and composition to convey the story's emotional core (isolation, danger, wonder, whatever fits): ` +
+              `e.g. tiny figures against an immense, desolate expanse reads as apocalyptic/hopeless far better than a ` +
+              `single object in isolation. Specific dramatic lighting, rich color palette, cinematic photography, 8K detail. Max 100 words. ` +
+              `MOTION: describe what actually MOVES in the 10 seconds — prioritize the characters' physical action ` +
+              `(walking, struggling, dragging, reaching, falling) over generic camera moves. A subtle camera move ` +
+              `(slow push-in, slow pull-back to reveal scale) can combine with that action but must not replace it. Max 40 words.`,
           },
           {
             role: "user",
