@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
               `e.g. tiny figures against an immense, desolate expanse reads as apocalyptic/hopeless far better than a ` +
               `single object in isolation. Specific dramatic lighting, rich color palette, cinematic photography, 8K detail. Max 100 words. ` +
               `MOTION: describe what actually MOVES in the 10 seconds — prioritize the characters' physical action ` +
-              `(walking, struggling, dragging, reaching, falling) over generic camera moves. A subtle camera move ` +
+              `(walking, supporting one another, reaching, turning) over generic camera moves. A subtle camera move ` +
               `(slow push-in, slow pull-back to reveal scale) can combine with that action but must not replace it. Max 40 words.`,
           },
           {
