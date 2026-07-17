@@ -287,7 +287,7 @@ function ReadPage() {
   const [guestLoading, setGuestLoading] = useState(false);
   const router = useRouter();
   const promoVideoRef = useRef<HTMLVideoElement>(null);
-  const [promoVideoBlobUrl, setPromoVideoBlobUrl] = useState<string | null>(null);
+  const [promoVideoReady, setPromoVideoReady] = useState(false);
   const [promoVideoProgress, setPromoVideoProgress] = useState(0);
   const [promoVideoError, setPromoVideoError] = useState(false);
   const [promoVideoPlaying, setPromoVideoPlaying] = useState(false);
@@ -300,45 +300,15 @@ function ReadPage() {
     return raw.length > 0 ? raw : [book.title];
   }, [book.description, book.title]);
 
-  // Scarica il video promozionale per intero prima di collegarlo al player:
-  // l'evento "canplaythrough" del browser è solo una stima e può far partire
-  // la riproduzione prima che il file sia davvero tutto scaricato, causando
-  // blocchi a metà. Qui invece la barra riflette il download reale.
-  useEffect(() => {
-    if (!book.video) return;
-    let cancelled = false;
-    let objectUrl: string | null = null;
-
-    (async () => {
-      try {
-        const res = await fetch(book.video!);
-        if (!res.ok || !res.body) throw new Error("fetch fallita");
-        const total = Number(res.headers.get("content-length")) || 0;
-        const reader = res.body.getReader();
-        const chunks: Uint8Array[] = [];
-        let received = 0;
-        for (;;) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          chunks.push(value);
-          received += value.length;
-          if (total > 0 && !cancelled) setPromoVideoProgress(Math.round((received / total) * 100));
-        }
-        if (cancelled) return;
-        const blob = new Blob(chunks as BlobPart[], { type: "video/mp4" });
-        objectUrl = URL.createObjectURL(blob);
-        setPromoVideoProgress(100);
-        setPromoVideoBlobUrl(objectUrl);
-      } catch {
-        if (!cancelled) setPromoVideoError(true);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [book.video]);
+  // Verifica il buffer REALE del video (non una stima come "canplaythrough")
+  // prima di abilitare il play: evita che parta e si blocchi a metà.
+  const checkPromoVideoBuffered = () => {
+    const v = promoVideoRef.current;
+    if (!v || !v.duration || v.buffered.length === 0) return;
+    const bufferedEnd = v.buffered.end(v.buffered.length - 1);
+    setPromoVideoProgress(Math.min(100, Math.round((bufferedEnd / v.duration) * 100)));
+    if (bufferedEnd >= v.duration - 0.3) setPromoVideoReady(true);
+  };
 
   const handleGuestLogin = async () => {
     setGuestLoading(true);
@@ -783,36 +753,39 @@ function ReadPage() {
 
           {book.video && (
             <div className="relative mt-2 ring-1 ring-ink/15 bg-ink/5 overflow-hidden aspect-video">
-              {promoVideoBlobUrl && (
-                <video
-                  ref={promoVideoRef}
-                  src={promoVideoBlobUrl}
-                  playsInline
-                  controls={promoVideoPlaying}
-                  onTimeUpdate={e => {
-                    const { currentTime, duration } = e.currentTarget;
-                    if (!duration) return;
-                    const idx = Math.min(promoDescLines.length - 1, Math.floor((currentTime / duration) * promoDescLines.length));
-                    setPromoVideoLineIdx(prev => (prev === idx ? prev : idx));
-                  }}
-                  onEnded={() => {
-                    if (promoVideoRef.current) promoVideoRef.current.currentTime = 0;
-                    setPromoVideoPlaying(false);
-                    setPromoVideoLineIdx(0);
-                  }}
-                  className="w-full h-full block bg-black"
-                />
-              )}
+              <video
+                ref={promoVideoRef}
+                src={book.video}
+                preload="auto"
+                playsInline
+                controls={promoVideoPlaying}
+                onProgress={checkPromoVideoBuffered}
+                onLoadedMetadata={checkPromoVideoBuffered}
+                onCanPlayThrough={checkPromoVideoBuffered}
+                onError={() => setPromoVideoError(true)}
+                onTimeUpdate={e => {
+                  const { currentTime, duration } = e.currentTarget;
+                  if (!duration) return;
+                  const idx = Math.min(promoDescLines.length - 1, Math.floor((currentTime / duration) * promoDescLines.length));
+                  setPromoVideoLineIdx(prev => (prev === idx ? prev : idx));
+                }}
+                onEnded={() => {
+                  if (promoVideoRef.current) promoVideoRef.current.currentTime = 0;
+                  setPromoVideoPlaying(false);
+                  setPromoVideoLineIdx(0);
+                }}
+                className="w-full h-full block bg-black"
+              />
               {!promoVideoPlaying && (
                 <button
                   type="button"
-                  disabled={!promoVideoBlobUrl}
+                  disabled={!promoVideoReady}
                   onClick={() => { promoVideoRef.current?.play(); setPromoVideoPlaying(true); }}
                   className="absolute inset-0 flex items-center justify-center bg-black/50 disabled:cursor-wait cursor-pointer"
                 >
                   {promoVideoError ? (
                     <span className="font-display text-[9px] tracking-[0.2em] text-magenta uppercase px-2 text-center">video non disponibile</span>
-                  ) : promoVideoBlobUrl ? (
+                  ) : promoVideoReady ? (
                     <span className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center text-ink text-base pl-0.5">▶</span>
                   ) : (
                     <span className="font-display text-[9px] tracking-[0.2em] text-white/70 uppercase">caricamento video... {promoVideoProgress}%</span>
