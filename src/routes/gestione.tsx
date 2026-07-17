@@ -175,7 +175,7 @@ function GestionePage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmMode, setConfirmMode] = useState<"archivia" | "cestino" | null>(null);
-  const [openSection, setOpenSection] = useState<0 | 1 | 2 | 3 | 4 | 5>(1);
+  const [openSection, setOpenSection] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(1);
   const [savingMateriali, setSavingMateriali] = useState(false);
   const [saveMaterialiError, setSaveMaterialiError] = useState<string | null>(null);
   const [authorName, setAuthorName] = useState("");
@@ -444,6 +444,10 @@ function GestionePage() {
   const [videoPrompt, setVideoPrompt] = useState("");
   const [savingVideoPrompt, setSavingVideoPrompt] = useState(false);
   const [videoPromptSaved, setVideoPromptSaved] = useState(false);
+  const [videoAttempts, setVideoAttempts] = useState<{
+    id: string; video_url: string; image_prompt: string | null; motion_prompt: string | null; created_at: string;
+  }[]>([]);
+  const [deletingVideoId, setDeletingVideoId] = useState<string | null>(null);
 
   const [cleaningUp, setCleaningUp] = useState(false);
   const [cleanupResult, setCleanupResult] = useState<{ deleted: number; total_in_bucket: number; errors: string[] } | null>(null);
@@ -601,7 +605,7 @@ function GestionePage() {
     setCopertina(null); setLastra(null); setFilePdf(null); setSaveError(null);
     setEditingId(null); setConfirmMode(null);
     setExistingCopertinaUrl(null); setExistingLastraUrl(null); setExistingFileUrl(null);
-    setExistingVideoUrl(null); setVideoError(null); setVideoPrompt("");
+    setExistingVideoUrl(null); setVideoError(null); setVideoPrompt(""); setVideoAttempts([]);
     setCollanaId("");
     setCoverFormato("a5"); setCoverNumeroPagine(""); setCoverQuartaTesto("");
     setCoverAlettaSxTesto(""); setCoverAlettaDxTesto(""); setCoverIsbn("");
@@ -770,6 +774,15 @@ function GestionePage() {
     else setFumettoPagine([]);
   };
 
+  const loadVideoAttempts = async (bookId: string) => {
+    const { data } = await supabase
+      .from("video_generation_attempts")
+      .select("id, video_url, image_prompt, motion_prompt, created_at")
+      .eq("book_id", bookId)
+      .order("created_at", { ascending: false });
+    setVideoAttempts((data ?? []).filter(a => a.video_url) as typeof videoAttempts);
+  };
+
   const openEditForm = (b: Book) => {
     setTitolo(b.titolo);
     setSottotitolo(b.sottotitolo ?? "");
@@ -812,6 +825,7 @@ function GestionePage() {
     setExistingLastraUrl(b.lastra_url);
     setExistingVideoUrl(b.video_url ?? null);
     setVideoPrompt((b as unknown as Record<string, string | null>).video_prompt ?? "");
+    loadVideoAttempts(b.id);
     setVideoError(null);
     setExistingFileUrl(b.file_url);
     setExistingEpubUrl(b.epub_url);
@@ -949,6 +963,7 @@ function GestionePage() {
         if (pollData.status === "done") {
           setExistingVideoUrl(pollData.video_url);
           if (!isAdmin) setVideoCrediti(c => Math.max(0, c - 1));
+          if (editingId) loadVideoAttempts(editingId);
           return;
         }
         // status === "pending" → continua
@@ -967,6 +982,24 @@ function GestionePage() {
     await supabase.from("books").update({ video_prompt: videoPrompt.trim() || null }).eq("id", editingId);
     setSavingVideoPrompt(false); setVideoPromptSaved(true);
     setTimeout(() => setVideoPromptSaved(false), 3000);
+  };
+
+  const handleDeleteVideoAttempt = async (attempt: { id: string; video_url: string }) => {
+    if (!editingId) return;
+    setDeletingVideoId(attempt.id);
+    const path = attempt.video_url.split("/copertine/")[1];
+    if (path) await supabase.storage.from("copertine").remove([path]);
+    await supabase.from("video_generation_attempts").delete().eq("id", attempt.id);
+
+    const remaining = videoAttempts.filter(a => a.id !== attempt.id);
+    setVideoAttempts(remaining);
+
+    if (attempt.video_url === existingVideoUrl) {
+      const nextUrl = remaining[0]?.video_url ?? null;
+      setExistingVideoUrl(nextUrl);
+      await supabase.from("books").update({ video_url: nextUrl }).eq("id", editingId);
+    }
+    setDeletingVideoId(null);
   };
 
   const handleGenerateCover = async () => {
@@ -3679,11 +3712,29 @@ function GestionePage() {
                     {videoError && videoError !== "no_credits" && (
                       <p className="font-mono text-[11px] text-magenta">⚠ {videoError}</p>
                     )}
-                    {existingVideoUrl && (
+                    {videoAttempts.length > 0 && (
                       <div className="pt-1">
-                        <p className="font-mono text-[10px] text-magenta uppercase tracking-widest mb-2">Video attuale</p>
-                        <video src={existingVideoUrl} controls className="w-64 ring-1 ring-magenta/40" />
-                        <p className="font-mono text-[9px] text-bone/50 leading-relaxed mt-2">⚠ Video generato da intelligenza artificiale (AI). Ai sensi del Regolamento UE sull'IA (AI Act), questo contenuto è prodotto automaticamente e potrebbe non essere tutelabile da copyright.</p>
+                        <p className="font-mono text-[10px] text-magenta uppercase tracking-widest mb-3">
+                          Tentativi ({videoAttempts.length}) — {existingVideoUrl ? "quello in cima è il video attivo" : "nessuno attivo"}
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {videoAttempts.map(a => (
+                            <div key={a.id} className={`border p-3 space-y-2 ${a.video_url === existingVideoUrl ? "border-magenta ring-1 ring-magenta/40" : "border-magenta/25"}`}>
+                              <video src={a.video_url} controls className="w-full ring-1 ring-magenta/20" />
+                              {a.image_prompt && (
+                                <p className="font-mono text-[9px] text-bone/50 leading-relaxed line-clamp-3">{a.image_prompt}</p>
+                              )}
+                              <div className="flex items-center justify-between">
+                                <span className="font-mono text-[8px] text-bone/30">{new Date(a.created_at).toLocaleString("it-IT")}</span>
+                                <button type="button" onClick={() => handleDeleteVideoAttempt(a)} disabled={deletingVideoId === a.id}
+                                  className="font-mono text-[9px] uppercase tracking-widest text-bone/40 hover:text-magenta transition-colors cursor-pointer">
+                                  {deletingVideoId === a.id ? "▸ elimino..." : "✕ cancella"}
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <p className="font-mono text-[9px] text-bone/50 leading-relaxed mt-3">⚠ Video generati da intelligenza artificiale (AI). Ai sensi del Regolamento UE sull'IA (AI Act), questi contenuti sono prodotti automaticamente e potrebbero non essere tutelabili da copyright.</p>
                       </div>
                     )}
                   </div>
