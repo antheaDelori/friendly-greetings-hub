@@ -287,6 +287,7 @@ function ReadPage() {
   const [guestLoading, setGuestLoading] = useState(false);
   const router = useRouter();
   const promoVideoRef = useRef<HTMLVideoElement>(null);
+  const [promoVideoBlobUrl, setPromoVideoBlobUrl] = useState<string | null>(null);
   const [promoVideoReady, setPromoVideoReady] = useState(false);
   const [promoVideoProgress, setPromoVideoProgress] = useState(0);
   const [promoVideoError, setPromoVideoError] = useState(false);
@@ -300,15 +301,43 @@ function ReadPage() {
     return raw.length > 0 ? raw : [book.title];
   }, [book.description, book.title]);
 
-  // Verifica il buffer REALE del video (non una stima come "canplaythrough")
-  // prima di abilitare il play: evita che parta e si blocchi a metà.
-  const checkPromoVideoBuffered = () => {
-    const v = promoVideoRef.current;
-    if (!v || !v.duration || v.buffered.length === 0) return;
-    const bufferedEnd = v.buffered.end(v.buffered.length - 1);
-    setPromoVideoProgress(Math.min(100, Math.round((bufferedEnd / v.duration) * 100)));
-    if (bufferedEnd >= v.duration - 0.3) setPromoVideoReady(true);
-  };
+  // Firefox in particolare non avvia il download del video solo per via di
+  // preload="auto" (resta networkState=IDLE finché non lo forziamo) — quindi
+  // lo scarichiamo esplicitamente noi con fetch, con una percentuale reale.
+  useEffect(() => {
+    if (!book.video) return;
+    let cancelled = false;
+    let objectUrl: string | null = null;
+    (async () => {
+      try {
+        const res = await fetch(book.video!);
+        if (!res.ok || !res.body) throw new Error("fetch fallita");
+        const total = Number(res.headers.get("content-length")) || 0;
+        const reader = res.body.getReader();
+        const chunks: Uint8Array[] = [];
+        let received = 0;
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+          received += value.length;
+          if (total > 0 && !cancelled) setPromoVideoProgress(Math.round((received / total) * 100));
+        }
+        if (cancelled) return;
+        const blob = new Blob(chunks as BlobPart[], { type: "video/mp4" });
+        objectUrl = URL.createObjectURL(blob);
+        setPromoVideoProgress(100);
+        setPromoVideoBlobUrl(objectUrl);
+        setPromoVideoReady(true);
+      } catch {
+        if (!cancelled) setPromoVideoError(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [book.video]);
 
   const handleGuestLogin = async () => {
     setGuestLoading(true);
@@ -753,15 +782,12 @@ function ReadPage() {
 
           {book.video && (
             <div className="relative mt-2 ring-1 ring-ink/15 bg-ink/5 overflow-hidden aspect-video">
+              {promoVideoBlobUrl && (
               <video
                 ref={promoVideoRef}
-                src={book.video}
-                preload="auto"
+                src={promoVideoBlobUrl}
                 playsInline
                 controls={promoVideoPlaying}
-                onProgress={checkPromoVideoBuffered}
-                onLoadedMetadata={checkPromoVideoBuffered}
-                onCanPlayThrough={checkPromoVideoBuffered}
                 onError={() => setPromoVideoError(true)}
                 onTimeUpdate={e => {
                   const { currentTime, duration } = e.currentTarget;
@@ -776,6 +802,7 @@ function ReadPage() {
                 }}
                 className="w-full h-full block bg-black"
               />
+              )}
               {!promoVideoPlaying && (
                 <button
                   type="button"
