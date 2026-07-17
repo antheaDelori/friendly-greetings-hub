@@ -784,7 +784,7 @@ function GestionePage() {
       .from("video_generation_attempts")
       .select("id, video_url, image_prompt, motion_prompt, created_at")
       .eq("book_id", bookId)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: true });
     setVideoAttempts((data ?? []).filter(a => a.video_url) as typeof videoAttempts);
   };
 
@@ -1007,7 +1007,7 @@ function GestionePage() {
     setVideoAttempts(remaining);
 
     if (attempt.video_url === existingVideoUrl) {
-      const nextUrl = remaining[0]?.video_url ?? null;
+      const nextUrl = remaining[remaining.length - 1]?.video_url ?? null;
       setExistingVideoUrl(nextUrl);
       await supabase.from("books").update({ video_url: nextUrl }).eq("id", editingId);
     }
@@ -3778,7 +3778,7 @@ function GestionePage() {
                     {videoAttempts.length > 0 && (
                       <div className="pt-1">
                         <p className="font-mono text-[10px] text-magenta uppercase tracking-widest mb-3">
-                          Tentativi ({videoAttempts.length}) — {existingVideoUrl ? "quello in cima è il video attivo" : "nessuno attivo"}
+                          Tentativi ({videoAttempts.length}) — {existingVideoUrl ? "quello con il bordo evidenziato è il video attivo" : "nessuno attivo"}
                         </p>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           {videoAttempts.map(a => (
