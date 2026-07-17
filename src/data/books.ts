@@ -20,6 +20,7 @@ export type Book = {
   coverRotta?: string;
   lastra?: string;
   video?: string | null;
+  videoCaptions?: string | null;
   tagline: string;
   description: string;
   chapters: Chapter[];

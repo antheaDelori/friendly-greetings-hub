@@ -83,7 +83,8 @@ Deno.serve(async (req) => {
   // Solo ora che la generazione è andata a buon fine: salva libro, log, credito.
   // Un errore tecnico nei passaggi precedenti NON deve consumare il credito —
   // è diverso da "il video non piace", che invece non dà diritto a rigenerare gratis.
-  await supabase.from("books").update({ video_url: videoUrl }).eq("id", book_id);
+  // video_captions azzerati: sono legati al vecchio video, non a quello nuovo appena generato.
+  await supabase.from("books").update({ video_url: videoUrl, video_captions: null }).eq("id", book_id);
   await supabase.from("video_generation_attempts").insert({
     book_id,
     author_id: user.id,

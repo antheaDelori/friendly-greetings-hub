@@ -39,7 +39,7 @@ export const Route = createFileRoute("/leggi/$slug")({
     // Poi cerca su Supabase
     const { data } = await supabase
       .from("books")
-      .select("id, slug, titolo, descrizione, estratto, genere, fumetto_formato, anno, data_pubblicazione, letture, copertina_url, copertina_flat_url, video_url, file_url, epub_url, mobi_url, author_name, author_id, cestinato, voti_cestino, recuperato, accesso, status")
+      .select("id, slug, titolo, descrizione, estratto, genere, fumetto_formato, anno, data_pubblicazione, letture, copertina_url, copertina_flat_url, video_url, video_captions, file_url, epub_url, mobi_url, author_name, author_id, cestinato, voti_cestino, recuperato, accesso, status")
       .eq("slug", params.slug)
       .or("disponibile.eq.true,cestinato.eq.true")
       .maybeSingle();
@@ -78,6 +78,7 @@ export const Route = createFileRoute("/leggi/$slug")({
       rating: 0,
       cover: data.copertina_flat_url ?? data.copertina_url ?? logo,
       video: data.video_url ?? null,
+      videoCaptions: data.video_captions ?? null,
       tagline: data.descrizione?.slice(0, 140) ?? "",
       description: data.descrizione ?? "",
       chapters,
@@ -291,6 +292,12 @@ function ReadPage() {
   const [promoVideoPlaying, setPromoVideoPlaying] = useState(false);
   const [promoVideoLineIdx, setPromoVideoLineIdx] = useState(0);
   const promoDescLines = useMemo(() => {
+    // Sottotitoli scritti a mano per il video (una riga per frase): se presenti,
+    // hanno la precedenza sulla sinossi spezzata automaticamente.
+    if (book.videoCaptions?.trim()) {
+      const manual = book.videoCaptions.split("\n").map((s: string) => s.trim()).filter((s: string) => s.length > 0);
+      if (manual.length > 0) return manual;
+    }
     const sentences = (book.description ?? "")
       .split(/(?<=[.!?])\s+/)
       .map((s: string) => s.trim())
@@ -310,7 +317,7 @@ function ReadPage() {
       if (rest) chunks.push(rest);
     }
     return chunks.length > 0 ? chunks : [book.title];
-  }, [book.description, book.title]);
+  }, [book.description, book.title, book.videoCaptions]);
 
   const handleGuestLogin = async () => {
     setGuestLoading(true);

@@ -445,9 +445,11 @@ function GestionePage() {
   const [savingVideoPrompt, setSavingVideoPrompt] = useState(false);
   const [videoPromptSaved, setVideoPromptSaved] = useState(false);
   const [videoAttempts, setVideoAttempts] = useState<{
-    id: string; video_url: string; image_prompt: string | null; motion_prompt: string | null; created_at: string;
+    id: string; video_url: string; image_prompt: string | null; motion_prompt: string | null; created_at: string; captions: string | null;
   }[]>([]);
   const [deletingVideoId, setDeletingVideoId] = useState<string | null>(null);
+  const [captionsDraft, setCaptionsDraft] = useState<Record<string, string>>({});
+  const [savingCaptionsId, setSavingCaptionsId] = useState<string | null>(null);
   const [startFrameBase64, setStartFrameBase64] = useState<string | null>(null);
   const [startFrameSourceId, setStartFrameSourceId] = useState<string | null>(null);
   const [extractingFrameId, setExtractingFrameId] = useState<string | null>(null);
@@ -609,7 +611,7 @@ function GestionePage() {
     setCopertina(null); setLastra(null); setFilePdf(null); setSaveError(null);
     setEditingId(null); setConfirmMode(null);
     setExistingCopertinaUrl(null); setExistingLastraUrl(null); setExistingFileUrl(null);
-    setExistingVideoUrl(null); setVideoError(null); setVideoPrompt(""); setVideoAttempts([]);
+    setExistingVideoUrl(null); setVideoError(null); setVideoPrompt(""); setVideoAttempts([]); setCaptionsDraft({});
     setStartFrameBase64(null); setStartFrameSourceId(null); setExtractFrameError(null);
     setCollanaId("");
     setCoverFormato("a5"); setCoverNumeroPagine(""); setCoverQuartaTesto("");
@@ -782,10 +784,24 @@ function GestionePage() {
   const loadVideoAttempts = async (bookId: string) => {
     const { data } = await supabase
       .from("video_generation_attempts")
-      .select("id, video_url, image_prompt, motion_prompt, created_at")
+      .select("id, video_url, image_prompt, motion_prompt, created_at, captions")
       .eq("book_id", bookId)
       .order("created_at", { ascending: true });
-    setVideoAttempts((data ?? []).filter(a => a.video_url) as typeof videoAttempts);
+    const attempts = (data ?? []).filter(a => a.video_url) as typeof videoAttempts;
+    setVideoAttempts(attempts);
+    setCaptionsDraft(Object.fromEntries(attempts.map(a => [a.id, a.captions ?? ""])));
+  };
+
+  const handleSaveCaptions = async (attemptId: string) => {
+    setSavingCaptionsId(attemptId);
+    const text = captionsDraft[attemptId]?.trim() || null;
+    await supabase.from("video_generation_attempts").update({ captions: text }).eq("id", attemptId);
+    const attempt = videoAttempts.find(a => a.id === attemptId);
+    if (attempt && attempt.video_url === existingVideoUrl && editingId) {
+      await supabase.from("books").update({ video_captions: text }).eq("id", editingId);
+    }
+    setVideoAttempts(prev => prev.map(a => a.id === attemptId ? { ...a, captions: text } : a));
+    setSavingCaptionsId(null);
   };
 
   const openEditForm = (b: Book) => {
@@ -1007,9 +1023,9 @@ function GestionePage() {
     setVideoAttempts(remaining);
 
     if (attempt.video_url === existingVideoUrl) {
-      const nextUrl = remaining[remaining.length - 1]?.video_url ?? null;
-      setExistingVideoUrl(nextUrl);
-      await supabase.from("books").update({ video_url: nextUrl }).eq("id", editingId);
+      const next = remaining[remaining.length - 1];
+      setExistingVideoUrl(next?.video_url ?? null);
+      await supabase.from("books").update({ video_url: next?.video_url ?? null, video_captions: next?.captions ?? null }).eq("id", editingId);
     }
     setDeletingVideoId(null);
   };
@@ -3787,6 +3803,18 @@ function GestionePage() {
                               {a.image_prompt && (
                                 <p className="font-mono text-[9px] text-bone/50 leading-relaxed line-clamp-3">{a.image_prompt}</p>
                               )}
+                              <div>
+                                <span className="font-mono text-[8px] text-magenta/70 uppercase tracking-widest">↳ sottotitoli (una riga per frase)</span>
+                                <textarea
+                                  value={captionsDraft[a.id] ?? ""}
+                                  onChange={e => setCaptionsDraft(prev => ({ ...prev, [a.id]: e.target.value }))}
+                                  placeholder={"Es. LISUM\nUn viaggio senza ritorno.\nSolo la fede resta."}
+                                  className="mt-1 w-full min-h-14 bg-void/40 border border-magenta/25 px-2 py-1.5 font-serif text-bone text-xs placeholder:text-bone/30 focus:outline-none focus:border-magenta transition-all" />
+                                <button type="button" onClick={() => handleSaveCaptions(a.id)} disabled={savingCaptionsId === a.id}
+                                  className="mt-1 font-mono text-[9px] uppercase tracking-widest text-bone/40 hover:text-magenta transition-colors cursor-pointer">
+                                  {savingCaptionsId === a.id ? "▸ salvataggio..." : "▸ salva sottotitoli"}
+                                </button>
+                              </div>
                               <div className="flex items-center justify-between flex-wrap gap-2">
                                 <span className="font-mono text-[8px] text-bone/30">{new Date(a.created_at).toLocaleString("it-IT")}</span>
                                 <div className="flex items-center gap-3">
