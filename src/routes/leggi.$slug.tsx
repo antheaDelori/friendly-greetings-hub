@@ -286,6 +286,9 @@ function ReadPage() {
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [guestLoading, setGuestLoading] = useState(false);
   const router = useRouter();
+  const promoVideoRef = useRef<HTMLVideoElement>(null);
+  const [promoVideoReady, setPromoVideoReady] = useState(false);
+  const [promoVideoPlaying, setPromoVideoPlaying] = useState(false);
 
   const handleGuestLogin = async () => {
     setGuestLoading(true);
@@ -731,14 +734,28 @@ function ReadPage() {
           {book.video && (
             <div className="relative mt-2 ring-1 ring-ink/15 bg-ink/5 overflow-hidden">
               <video
+                ref={promoVideoRef}
                 src={book.video}
-                muted
-                autoPlay
-                loop
+                preload="auto"
                 playsInline
-                controls
-                className="w-full h-auto block"
+                controls={promoVideoPlaying}
+                onCanPlayThrough={() => setPromoVideoReady(true)}
+                className="w-full h-auto block bg-black"
               />
+              {!promoVideoPlaying && (
+                <button
+                  type="button"
+                  disabled={!promoVideoReady}
+                  onClick={() => { promoVideoRef.current?.play(); setPromoVideoPlaying(true); }}
+                  className="absolute inset-0 flex items-center justify-center bg-black/50 disabled:cursor-wait cursor-pointer"
+                >
+                  {promoVideoReady ? (
+                    <span className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center text-ink text-base pl-0.5">▶</span>
+                  ) : (
+                    <span className="font-display text-[9px] tracking-[0.2em] text-white/70 uppercase">caricamento video...</span>
+                  )}
+                </button>
+              )}
               <div className="absolute bottom-0 left-0 right-0 px-2 py-1.5 bg-gradient-to-t from-black/80 to-transparent pointer-events-none">
                 <p className="font-display text-[10px] tracking-[0.15em] text-white uppercase truncate">{book.title}</p>
                 <p className="font-serif italic text-[9px] text-white/70 truncate">di {book.author}</p>
