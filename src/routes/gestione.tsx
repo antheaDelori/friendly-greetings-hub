@@ -1572,6 +1572,19 @@ function GestionePage() {
     }
   };
 
+  // Ancora nascosta (non un'opera vera, mai visibile nel catalogo) usata solo
+  // per generare il video promozionale della piattaforma stessa, riusando la
+  // stessa pipeline video già costruita per le opere.
+  const PLATFORM_VIDEO_BOOK_ID = "ed38344f-2ae2-4a77-b8e1-5ec3ff16c2d6";
+  const handleOpenPlatformVideo = async () => {
+    const { data } = await supabase.from("books").select("*").eq("id", PLATFORM_VIDEO_BOOK_ID).maybeSingle();
+    if (!data) return;
+    openEditForm(data as unknown as Book);
+    setShowForm(true);
+    setOpenSection(6);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   // Pulizia storage: elimina tutti i file copertine non referenziati nel DB
   const handleCleanupCovers = async () => {
     setCleaningUp(true); setCleanupResult(null);
@@ -2083,6 +2096,9 @@ function GestionePage() {
         {isAdmin && (
           <div className="mb-6 border border-amber/30 bg-amber/5 p-4 flex items-center gap-4 flex-wrap">
             <span className="font-mono text-[10px] tracking-[0.25em] text-amber uppercase">◈ Admin</span>
+            <HudButton variant="ghost" onClick={handleOpenPlatformVideo}>
+              ▸ Video Piattaforma LIBeRIAMO
+            </HudButton>
             <HudButton variant="ghost" onClick={handleCleanupCovers} disabled={cleaningUp}>
               {cleaningUp ? "▸ Pulizia in corso..." : "▸ Elimina copertine inutilizzate"}
             </HudButton>
