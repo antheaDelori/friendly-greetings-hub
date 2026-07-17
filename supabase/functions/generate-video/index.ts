@@ -4,7 +4,7 @@ const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY")!;
 const RUNWAY_API_KEY = Deno.env.get("RUNWAY_API_KEY")!;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const ADMIN_EMAIL = Deno.env.get("ADMIN_EMAIL")!;
+const ADMIN_LOGIN_EMAIL = Deno.env.get("ADMIN_LOGIN_EMAIL")!;
 
 const RUNWAY_VERSION = "2024-11-06";
 const VIDEO_DURATION = 10; // secondi — v1: solo 10", nessuna unione di spezzoni
@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
   const { book_id } = await req.json();
   if (!book_id) return json({ error: "book_id richiesto" }, 400);
 
-  const isAdmin = user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+  const isAdmin = user.email?.toLowerCase() === ADMIN_LOGIN_EMAIL.toLowerCase();
 
   // ── Entitlement: admin illimitato, altrimenti abbonamento attivo + crediti ──
   if (!isAdmin) {

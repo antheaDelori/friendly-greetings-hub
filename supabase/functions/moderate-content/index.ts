@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const OPENAI_API_KEY        = Deno.env.get("OPENAI_API_KEY")!;
 const SUPABASE_URL          = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const ADMIN_EMAIL           = Deno.env.get("ADMIN_EMAIL")!;
+const ADMIN_LOGIN_EMAIL     = Deno.env.get("ADMIN_LOGIN_EMAIL")!;
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -116,7 +116,7 @@ Deno.serve(async (req) => {
     const { recensione_id } = body;
     if (!recensione_id) return json({ error: "recensione_id richiesto" }, 400);
 
-    if (user.email?.toLowerCase() !== ADMIN_EMAIL) {
+    if (user.email?.toLowerCase() !== ADMIN_LOGIN_EMAIL.toLowerCase()) {
       const { data: recensione } = await supabase
         .from("recensioni")
         .select("books(author_id)")

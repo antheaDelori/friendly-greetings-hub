@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const RUNWAY_API_KEY = Deno.env.get("RUNWAY_API_KEY")!;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const ADMIN_EMAIL = Deno.env.get("ADMIN_EMAIL")!;
+const ADMIN_LOGIN_EMAIL = Deno.env.get("ADMIN_LOGIN_EMAIL")!;
 
 const RUNWAY_VERSION = "2024-11-06";
 
@@ -92,7 +92,7 @@ Deno.serve(async (req) => {
     motion_prompt: motion_prompt ?? null,
   });
 
-  const isAdmin = user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+  const isAdmin = user.email?.toLowerCase() === ADMIN_LOGIN_EMAIL.toLowerCase();
   if (!isAdmin) {
     await supabase.rpc("decrement_video_crediti", { p_user_id: user.id });
   }

@@ -6,6 +6,7 @@ const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")!;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ADMIN_EMAIL = Deno.env.get("ADMIN_EMAIL")!;
+const ADMIN_LOGIN_EMAIL = Deno.env.get("ADMIN_LOGIN_EMAIL")!;
 
 const FREE_LIMIT = 10;
 const LOGO_URL      = `${SUPABASE_URL}/storage/v1/object/public/copertine/brand/anthea-delori-logo.png`;
@@ -474,7 +475,7 @@ Deno.serve(async (req) => {
     .eq("book_id", book_id)
     .eq("author_id", user.id);
 
-  const isAdmin = user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+  const isAdmin = user.email?.toLowerCase() === ADMIN_LOGIN_EMAIL.toLowerCase();
   if (!isAdmin && (count ?? 0) >= FREE_LIMIT) {
     return json({ error: "limit_reached", used: count, limit: FREE_LIMIT }, 429);
   }

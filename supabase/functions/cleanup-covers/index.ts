@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const SUPABASE_URL              = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const ADMIN_EMAIL               = Deno.env.get("ADMIN_EMAIL")!;
+const ADMIN_LOGIN_EMAIL         = Deno.env.get("ADMIN_LOGIN_EMAIL")!;
 const BUCKET                    = "copertine";
 
 // Protezione: la cartella "brand" e tutti i suoi file non vengono mai eliminati.
@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
   // Admin only
   const token = (req.headers.get("Authorization") ?? "").replace("Bearer ", "");
   const { data: { user }, error: authErr } = await supabase.auth.getUser(token);
-  if (authErr || !user || user.email?.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+  if (authErr || !user || user.email?.toLowerCase() !== ADMIN_LOGIN_EMAIL.toLowerCase()) {
     return new Response(JSON.stringify({ error: "Non autorizzato" }), {
       status: 403,
       headers: { "Content-Type": "application/json" },
