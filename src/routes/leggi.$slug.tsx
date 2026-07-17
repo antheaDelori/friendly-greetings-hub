@@ -1,5 +1,5 @@
 import { createFileRoute, Link, notFound, redirect, useRouter } from "@tanstack/react-router";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { ComicViewer } from "@/components/ComicViewer";
@@ -291,6 +291,14 @@ function ReadPage() {
   const [promoVideoProgress, setPromoVideoProgress] = useState(0);
   const [promoVideoError, setPromoVideoError] = useState(false);
   const [promoVideoPlaying, setPromoVideoPlaying] = useState(false);
+  const [promoVideoLineIdx, setPromoVideoLineIdx] = useState(0);
+  const promoDescLines = useMemo(() => {
+    const raw = (book.description ?? "")
+      .split(/(?<=[.!?])\s+/)
+      .map((s: string) => s.trim())
+      .filter((s: string) => s.length > 3);
+    return raw.length > 0 ? raw : [book.title];
+  }, [book.description, book.title]);
 
   // Scarica il video promozionale per intero prima di collegarlo al player:
   // l'evento "canplaythrough" del browser è solo una stima e può far partire
@@ -781,6 +789,17 @@ function ReadPage() {
                   src={promoVideoBlobUrl}
                   playsInline
                   controls={promoVideoPlaying}
+                  onTimeUpdate={e => {
+                    const { currentTime, duration } = e.currentTarget;
+                    if (!duration) return;
+                    const idx = Math.min(promoDescLines.length - 1, Math.floor((currentTime / duration) * promoDescLines.length));
+                    setPromoVideoLineIdx(prev => (prev === idx ? prev : idx));
+                  }}
+                  onEnded={() => {
+                    if (promoVideoRef.current) promoVideoRef.current.currentTime = 0;
+                    setPromoVideoPlaying(false);
+                    setPromoVideoLineIdx(0);
+                  }}
                   className="w-full h-full block bg-black"
                 />
               )}
@@ -801,8 +820,16 @@ function ReadPage() {
                 </button>
               )}
               <div className="absolute bottom-0 left-0 right-0 px-2 py-1.5 bg-gradient-to-t from-black/80 to-transparent pointer-events-none">
-                <p className="font-display text-[10px] tracking-[0.15em] text-white uppercase truncate">{book.title}</p>
-                <p className="font-serif italic text-[9px] text-white/70 truncate">di {book.author}</p>
+                {promoVideoPlaying ? (
+                  <p key={promoVideoLineIdx} className="font-serif italic text-[10px] text-white leading-snug line-clamp-2 animate-in fade-in duration-300">
+                    {promoDescLines[promoVideoLineIdx]}
+                  </p>
+                ) : (
+                  <>
+                    <p className="font-display text-[10px] tracking-[0.15em] text-white uppercase truncate">{book.title}</p>
+                    <p className="font-serif italic text-[9px] text-white/70 truncate">di {book.author}</p>
+                  </>
+                )}
               </div>
             </div>
           )}
