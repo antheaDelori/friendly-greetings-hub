@@ -291,11 +291,25 @@ function ReadPage() {
   const [promoVideoPlaying, setPromoVideoPlaying] = useState(false);
   const [promoVideoLineIdx, setPromoVideoLineIdx] = useState(0);
   const promoDescLines = useMemo(() => {
-    const raw = (book.description ?? "")
+    const sentences = (book.description ?? "")
       .split(/(?<=[.!?])\s+/)
       .map((s: string) => s.trim())
       .filter((s: string) => s.length > 3);
-    return raw.length > 0 ? raw : [book.title];
+    // Spezza le frasi troppo lunghe in pezzi più corti (a capo sulla parola più
+    // vicina) così il testo sovrimpresso sul video non viene mai troncato con "...".
+    const MAX_CHARS = 90;
+    const chunks: string[] = [];
+    for (const sentence of sentences) {
+      let rest = sentence;
+      while (rest.length > MAX_CHARS) {
+        let cut = rest.lastIndexOf(" ", MAX_CHARS);
+        if (cut <= 0) cut = MAX_CHARS;
+        chunks.push(rest.slice(0, cut).trim());
+        rest = rest.slice(cut).trim();
+      }
+      if (rest) chunks.push(rest);
+    }
+    return chunks.length > 0 ? chunks : [book.title];
   }, [book.description, book.title]);
 
   const handleGuestLogin = async () => {
@@ -765,7 +779,7 @@ function ReadPage() {
               />
               <div className="absolute top-0 left-0 right-0 px-2 py-1.5 bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
                 {promoVideoPlaying ? (
-                  <p key={promoVideoLineIdx} className="font-serif italic text-[10px] text-white leading-snug line-clamp-2 animate-in fade-in duration-300">
+                  <p key={promoVideoLineIdx} className="font-serif italic text-[10px] text-white leading-snug animate-in fade-in duration-300">
                     {promoDescLines[promoVideoLineIdx]}
                   </p>
                 ) : (
