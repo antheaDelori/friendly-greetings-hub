@@ -817,7 +817,7 @@ function ReadPage() {
                 {book.chapters.map((c: { id: string; title: string; content: string[] }, i: number) => (
                   <li key={c.id}>
                     <button
-                      onClick={() => setCurrentIdx(i)}
+                      onClick={() => { setCurrentIdx(i); window.scrollTo({ top: 0, behavior: "smooth" }); }}
                       className={`w-full text-left px-3 py-2 font-serif text-sm transition-colors border-l-2 cursor-pointer ${
                         i === currentIdx
                           ? "border-blood bg-card text-ink"
@@ -1414,7 +1414,7 @@ function ReadPage() {
                 <div className="mt-10 flex items-center justify-between border-t border-ink/10 pt-6">
                   <button
                     disabled={currentIdx === 0}
-                    onClick={() => setCurrentIdx((i) => Math.max(0, i - 1))}
+                    onClick={() => { setCurrentIdx((i) => Math.max(0, i - 1)); window.scrollTo({ top: 0, behavior: "smooth" }); }}
                     className="font-display tracking-widest text-xs uppercase text-ink hover:text-blood disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                   >
                     ← Capitolo precedente
@@ -1424,7 +1424,7 @@ function ReadPage() {
                   </span>
                   <button
                     disabled={currentIdx === book.chapters.length - 1}
-                    onClick={() => setCurrentIdx((i) => Math.min(book.chapters.length - 1, i + 1))}
+                    onClick={() => { setCurrentIdx((i) => Math.min(book.chapters.length - 1, i + 1)); window.scrollTo({ top: 0, behavior: "smooth" }); }}
                     className="font-display tracking-widest text-xs uppercase text-ink hover:text-blood disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                   >
                     Capitolo successivo →
