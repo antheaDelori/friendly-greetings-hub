@@ -7,7 +7,7 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ADMIN_LOGIN_EMAIL = Deno.env.get("ADMIN_LOGIN_EMAIL")!;
 
 const RUNWAY_VERSION = "2024-11-06";
-const VIDEO_DURATION = 10; // secondi — v1: solo 10", nessuna unione di spezzoni
+const DEFAULT_VIDEO_DURATION = 10; // secondi
 const VIDEO_RATIO = "1280:720";
 
 const CORS = {
@@ -43,9 +43,13 @@ Deno.serve(async (req) => {
   );
   if (authErr || !user) return json({ error: "Unauthorized" }, 401);
 
-  const { book_id, video_prompt } = await req.json();
+  const { book_id, video_prompt, start_image_base64, duration } = await req.json();
   if (!book_id) return json({ error: "book_id richiesto" }, 400);
   const manualPrompt: string | null = typeof video_prompt === "string" && video_prompt.trim() ? video_prompt.trim() : null;
+  const videoDuration = Number.isInteger(duration) && duration >= 2 && duration <= 10 ? duration : DEFAULT_VIDEO_DURATION;
+  // Fotogramma di partenza fissato a mano (es. ultimo frame di un video precedente,
+  // per continuità visiva tra due clip) — se presente, salta gpt-image-1.
+  const startImage: string | null = typeof start_image_base64 === "string" && start_image_base64.trim() ? start_image_base64.trim() : null;
 
   const isAdmin = user.email?.toLowerCase() === ADMIN_LOGIN_EMAIL.toLowerCase();
 
@@ -79,7 +83,12 @@ Deno.serve(async (req) => {
   let imagePrompt = manualPrompt ?? book.descrizione;
   let motionPrompt = "Slow, subtle cinematic camera movement, atmospheric.";
   try {
-    const systemPrompt = manualPrompt
+    const systemPrompt = startImage
+      ? `You are preparing a MOTION-only instruction for an AI video pipeline that continues from a FIXED starting frame ` +
+        `(a specific image is already set, you are not generating one). From the user's scene direction, produce exactly ` +
+        `one line, no explanations: MOTION: the motion/camera movement across the 10 seconds starting from that frame, ` +
+        `following their direction as closely as possible. Max 40 words.`
+      : manualPrompt
       ? `You are preparing an exact shot list for a 10-second AI video generation pipeline, from the user's own scene direction. ` +
         `Produce exactly two lines, no explanations: ` +
         `IMAGE: the single opening frame to generate — capture the strongest frame implied by their direction, photorealistic, ` +
@@ -127,39 +136,44 @@ Deno.serve(async (req) => {
     }
   } catch (_) { /* fallback: usa la descrizione grezza */ }
 
-  // 2. gpt-image-1: genera il fotogramma di partenza
+  // 2. Fotogramma di partenza: quello fissato a mano (continuità da un video
+  //    precedente) oppure uno nuovo generato con gpt-image-1.
   //    (images/generations vuole JSON, a differenza di images/edits che
   //    richiede multipart per via del file immagine di riferimento)
-  const imgRes = await fetch("https://api.openai.com/v1/images/generations", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "gpt-image-1",
-      prompt:
-        `Photorealistic cinematic still frame for a book promotional video. NOT painted or illustrated, NOT a book cover, ` +
-        `no text or typography anywhere in the image. Full bleed, sharp focus, dramatic cinematic lighting. ` +
-        `SCENE: ${imagePrompt}`,
-      size: "1536x1024",
-      quality: "high",
-      n: 1,
-    }),
-  });
-  if (!imgRes.ok) return json({ error: await imgRes.text() }, 502);
-
-  const imgData = await imgRes.json();
-  let keyframeBytes: Uint8Array;
-  if (imgData.data[0].b64_json) {
-    keyframeBytes = Uint8Array.from(atob(imgData.data[0].b64_json), (c) => c.charCodeAt(0));
-  } else if (imgData.data[0].url) {
-    const fetchRes = await fetch(imgData.data[0].url);
-    keyframeBytes = new Uint8Array(await fetchRes.arrayBuffer());
+  let promptImage: string;
+  if (startImage) {
+    promptImage = `data:image/jpeg;base64,${startImage}`;
   } else {
-    return json({ error: "Nessun dato immagine nella risposta AI" }, 502);
-  }
+    const imgRes = await fetch("https://api.openai.com/v1/images/generations", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "gpt-image-1",
+        prompt:
+          `Photorealistic cinematic still frame for a book promotional video. NOT painted or illustrated, NOT a book cover, ` +
+          `no text or typography anywhere in the image. Full bleed, sharp focus, dramatic cinematic lighting. ` +
+          `SCENE: ${imagePrompt}`,
+        size: "1536x1024",
+        quality: "high",
+        n: 1,
+      }),
+    });
+    if (!imgRes.ok) return json({ error: await imgRes.text() }, 502);
 
-  // 3. Runway Gen-4.5 image-to-video — il fotogramma va come data URI, niente
-  //    round-trip di upload/pubblicazione intermedio su Storage.
-  const promptImage = `data:image/png;base64,${bytesToBase64(keyframeBytes)}`;
+    const imgData = await imgRes.json();
+    let keyframeBytes: Uint8Array;
+    if (imgData.data[0].b64_json) {
+      keyframeBytes = Uint8Array.from(atob(imgData.data[0].b64_json), (c) => c.charCodeAt(0));
+    } else if (imgData.data[0].url) {
+      const fetchRes = await fetch(imgData.data[0].url);
+      keyframeBytes = new Uint8Array(await fetchRes.arrayBuffer());
+    } else {
+      return json({ error: "Nessun dato immagine nella risposta AI" }, 502);
+    }
+    // 3. Runway Gen-4.5 image-to-video — il fotogramma va come data URI, niente
+    //    round-trip di upload/pubblicazione intermedio su Storage.
+    promptImage = `data:image/png;base64,${bytesToBase64(keyframeBytes)}`;
+  }
 
   const createRes = await fetch("https://api.dev.runwayml.com/v1/image_to_video", {
     method: "POST",
@@ -173,7 +187,7 @@ Deno.serve(async (req) => {
       promptImage,
       promptText: motionPrompt,
       ratio: VIDEO_RATIO,
-      duration: VIDEO_DURATION,
+      duration: videoDuration,
     }),
   });
   if (!createRes.ok) return json({ error: await createRes.text() }, 502);

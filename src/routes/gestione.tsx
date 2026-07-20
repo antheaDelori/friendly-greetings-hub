@@ -442,6 +442,7 @@ function GestionePage() {
   const [videoProgress, setVideoProgress] = useState(0);
   const [existingVideoUrl, setExistingVideoUrl] = useState<string | null>(null);
   const [videoPrompt, setVideoPrompt] = useState("");
+  const [videoDuration, setVideoDuration] = useState(10);
   const [savingVideoPrompt, setSavingVideoPrompt] = useState(false);
   const [videoPromptSaved, setVideoPromptSaved] = useState(false);
   const [videoAttempts, setVideoAttempts] = useState<{
@@ -960,6 +961,7 @@ function GestionePage() {
           book_id: editingId,
           video_prompt: videoPrompt.trim() || null,
           start_image_base64: startFrameBase64,
+          duration: videoDuration,
         }),
       });
       const data = await res.json();
@@ -3728,7 +3730,7 @@ function GestionePage() {
                   <div className="border border-magenta/40 bg-magenta/5 p-5 space-y-4 relative">
                     <span className="absolute -top-px left-0 right-0 h-px bg-gradient-to-r from-transparent via-magenta/60 to-transparent" />
                     <div className="flex items-center justify-between flex-wrap gap-2">
-                      <div className="font-mono text-[11px] tracking-[0.3em] text-magenta uppercase font-bold">◈ Video promozionale AI (10")</div>
+                      <div className="font-mono text-[11px] tracking-[0.3em] text-magenta uppercase font-bold">◈ Video promozionale AI ({videoDuration}")</div>
                       {isAdmin
                         ? <span className="font-mono text-xs tracking-widest uppercase text-magenta border border-magenta bg-magenta/10 px-3 py-1 font-bold">∞ Accesso illimitato</span>
                         : <span className="font-mono text-[10px] text-bone/70 border border-magenta/30 px-2 py-0.5">{videoCrediti} video disponibili</span>
@@ -3752,6 +3754,16 @@ function GestionePage() {
                           {savingVideoPrompt ? "▸ salvataggio..." : "▸ salva prompt"}
                         </button>
                         {videoPromptSaved && <span className="font-mono text-[9px] uppercase tracking-widest text-magenta">✓ salvato</span>}
+                      </div>
+                    </div>
+
+                    <div>
+                      <span className={labelClass}>↳ Durata (2-10 secondi)</span>
+                      <div className="flex items-center gap-3 mt-1">
+                        <input type="range" min={2} max={10} step={1} value={videoDuration}
+                          onChange={e => setVideoDuration(Number(e.target.value))}
+                          className="w-40 accent-magenta cursor-pointer" />
+                        <span className="font-mono text-xs text-magenta">{videoDuration}"</span>
                       </div>
                     </div>
 
