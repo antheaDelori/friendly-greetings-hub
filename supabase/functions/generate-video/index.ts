@@ -77,9 +77,11 @@ Deno.serve(async (req) => {
     return json({ error: "Serve un prompt video o una descrizione da cui generare il video" }, 400);
   }
 
-  // 1. GPT-4o: prompt video (se scritto) o descrizione → prompt immagine (fotogramma) + prompt movimento.
-  //    Con un prompt video manuale il regista AI segue quello alla lettera (l'autore
-  //    ha già in mente l'inquadratura); senza, interpreta liberamente la sinossi.
+  // 1. Prompt immagine: se l'autore ha scritto un prompt video manuale, lo uso
+  //    QUASI ALLA LETTERA per generare il fotogramma — nessuna riscrittura/
+  //    riassunto da parte di GPT-4o, che in passato ha fatto perdere dettagli
+  //    precisi (es. "solo vetro, niente legno") comprimendo la descrizione.
+  //    GPT-4o serve solo per estrarre la riga di movimento separata.
   let imagePrompt = manualPrompt ?? book.descrizione;
   let motionPrompt = "Slow, subtle cinematic camera movement, atmospheric.";
   try {
@@ -89,12 +91,11 @@ Deno.serve(async (req) => {
         `one line, no explanations: MOTION: the motion/camera movement across the 10 seconds starting from that frame, ` +
         `following their direction as closely as possible. Max 40 words.`
       : manualPrompt
-      ? `You are preparing an exact shot list for a 10-second AI video generation pipeline, from the user's own scene direction. ` +
-        `Produce exactly two lines, no explanations: ` +
-        `IMAGE: the single opening frame to generate — capture the strongest frame implied by their direction, photorealistic, ` +
-        `cinematic photography, specific dramatic lighting, rich color palette, 8K detail. Include any on-screen text/signage they ` +
-        `mention literally. Do not invent elements they didn't ask for. Max 100 words. ` +
-        `MOTION: the motion/camera movement across the 10 seconds, following their direction as closely as possible. Max 40 words.`
+      ? `The user has already written their own detailed, literal scene description for an AI image generator — it must be ` +
+        `used as-is, not rewritten or summarized. Your only job: extract or invent a short MOTION line for animating that ` +
+        `exact scene. Produce exactly one line, no explanations: ` +
+        `MOTION: the motion/camera movement across the 10 seconds, following the user's description as closely as possible ` +
+        `if it already implies movement, otherwise a subtle fitting camera move. Max 40 words.`
       : `You are a cinematic art director creating a 10-second promotional teaser video for a book. ` +
         `From the book description, produce exactly two lines, no explanations: ` +
         `IMAGE: a single, powerful, photorealistic scene that captures the book's soul. ` +
@@ -149,10 +150,13 @@ Deno.serve(async (req) => {
       headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "gpt-image-1",
-        prompt:
-          `Photorealistic cinematic still frame for a book promotional video. NOT painted or illustrated, NOT a book cover, ` +
-          `no text or typography anywhere in the image. Full bleed, sharp focus, dramatic cinematic lighting. ` +
-          `SCENE: ${imagePrompt}`,
+        prompt: manualPrompt
+          // Prompt scritto a mano: nessun vincolo aggiuntivo di "niente testo" —
+          // se l'autore chiede numeri/scritte specifiche, devono poter comparire.
+          ? `Photorealistic cinematic still frame, full bleed, sharp focus, dramatic cinematic lighting. ${imagePrompt}`
+          : `Photorealistic cinematic still frame for a book promotional video. NOT painted or illustrated, NOT a book cover, ` +
+            `no text or typography anywhere in the image. Full bleed, sharp focus, dramatic cinematic lighting. ` +
+            `SCENE: ${imagePrompt}`,
         size: "1536x1024",
         quality: "high",
         n: 1,
