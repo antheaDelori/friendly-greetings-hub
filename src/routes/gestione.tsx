@@ -455,6 +455,7 @@ function GestionePage() {
   const [startFrameSourceId, setStartFrameSourceId] = useState<string | null>(null);
   const [extractingFrameId, setExtractingFrameId] = useState<string | null>(null);
   const [extractFrameError, setExtractFrameError] = useState<string | null>(null);
+  const uploadStartFrameRef = useRef<HTMLInputElement>(null);
 
   const [cleaningUp, setCleaningUp] = useState(false);
   const [cleanupResult, setCleanupResult] = useState<{ deleted: number; total_in_bucket: number; errors: string[] } | null>(null);
@@ -1068,6 +1069,18 @@ function GestionePage() {
     } finally {
       setExtractingFrameId(null);
     }
+  };
+
+  const handleUploadStartFrame = (file: File) => {
+    setExtractFrameError(null);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      setStartFrameBase64(result.split(",")[1]);
+      setStartFrameSourceId(`upload:${file.name}`);
+    };
+    reader.onerror = () => setExtractFrameError("Non sono riuscito a leggere l'immagine caricata. Riprova.");
+    reader.readAsDataURL(file);
   };
 
   const handleGenerateCover = async () => {
@@ -3767,9 +3780,20 @@ function GestionePage() {
                       </div>
                     </div>
 
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <input ref={uploadStartFrameRef} type="file" accept="image/*" className="hidden"
+                        onChange={e => { const f = e.target.files?.[0]; if (f) handleUploadStartFrame(f); e.target.value = ""; }} />
+                      <button type="button" onClick={() => uploadStartFrameRef.current?.click()}
+                        className="font-mono text-[9px] uppercase tracking-widest text-bone/40 hover:text-magenta transition-colors cursor-pointer">
+                        ▸ carica immagine come fotogramma iniziale
+                      </button>
+                    </div>
+
                     {startFrameBase64 && (
                       <div className="flex items-center gap-3 border border-magenta/30 bg-magenta/10 px-3 py-2">
-                        <span className="font-mono text-[9px] uppercase tracking-widest text-magenta">◈ Fotogramma iniziale impostato — continuerà da quel video</span>
+                        <span className="font-mono text-[9px] uppercase tracking-widest text-magenta">
+                          ◈ Fotogramma iniziale impostato {startFrameSourceId?.startsWith("upload:") ? `— immagine caricata (${startFrameSourceId.slice(7)})` : "— continuerà da quel video"}
+                        </span>
                         <button type="button" onClick={() => { setStartFrameBase64(null); setStartFrameSourceId(null); }}
                           className="font-mono text-[9px] uppercase tracking-widest text-bone/40 hover:text-magenta transition-colors cursor-pointer">
                           ✕ rimuovi
