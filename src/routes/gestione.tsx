@@ -462,6 +462,13 @@ function GestionePage() {
   const cestinoSectionRef = useRef<HTMLDivElement>(null);
   const cestinoScrolled = useRef(false);
 
+  const [authorSearchQuery, setAuthorSearchQuery] = useState("");
+  const [authorSearchResults, setAuthorSearchResults] = useState<{ id: string; nome: string; cognome: string; pseudonimo: string }[]>([]);
+  const [selectedAuthorToDelete, setSelectedAuthorToDelete] = useState<{ id: string; nome: string; cognome: string; pseudonimo: string } | null>(null);
+  const [confirmDeleteAuthor, setConfirmDeleteAuthor] = useState(false);
+  const [deletingAuthor, setDeletingAuthor] = useState(false);
+  const [deleteAuthorResult, setDeleteAuthorResult] = useState<{ ok: boolean; msg: string } | null>(null);
+
   // Copertina da stampa
   const [coverFormato, setCoverFormato] = useState("a5");
   const [coverNumeroPagine, setCoverNumeroPagine] = useState("");
@@ -1619,6 +1626,49 @@ function GestionePage() {
     }
   };
 
+  // Ricerca autori per nome/cognome/pseudonimo (solo campi già pubblici in profiles)
+  const handleSearchAuthors = async (query: string) => {
+    setAuthorSearchQuery(query);
+    setSelectedAuthorToDelete(null);
+    setConfirmDeleteAuthor(false);
+    setDeleteAuthorResult(null);
+    if (query.trim().length < 2) { setAuthorSearchResults([]); return; }
+    const { data } = await supabase
+      .from("profiles")
+      .select("id, nome, cognome, pseudonimo")
+      .eq("is_author", true)
+      .or(`nome.ilike.%${query}%,cognome.ilike.%${query}%,pseudonimo.ilike.%${query}%`)
+      .limit(10);
+    setAuthorSearchResults((data as typeof authorSearchResults) ?? []);
+  };
+
+  const handleDeleteAuthor = async () => {
+    if (!selectedAuthorToDelete) return;
+    setDeletingAuthor(true); setDeleteAuthorResult(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-author`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ author_id: selectedAuthorToDelete.id }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setDeleteAuthorResult({ ok: false, msg: data.error ?? "Errore" });
+      } else {
+        setDeleteAuthorResult({ ok: true, msg: "Autore cancellato." });
+        setSelectedAuthorToDelete(null);
+        setAuthorSearchQuery("");
+        setAuthorSearchResults([]);
+        setConfirmDeleteAuthor(false);
+      }
+    } catch (e) {
+      setDeleteAuthorResult({ ok: false, msg: e instanceof Error ? e.message : "Errore" });
+    } finally {
+      setDeletingAuthor(false);
+    }
+  };
+
   // Estrae il path relativo nel bucket da un URL pubblico Supabase Storage
   const storagePathFromUrl = (url: string | null): string | null => {
     if (!url) return null;
@@ -2125,6 +2175,53 @@ function GestionePage() {
                 }
               </span>
             )}
+
+            <div className="w-full mt-3 pt-3 border-t border-amber/20 flex items-center gap-3 flex-wrap">
+              <span className="font-mono text-[10px] tracking-widest text-magenta uppercase">⊗ Cancella autore</span>
+              <input
+                type="text"
+                value={authorSearchQuery}
+                onChange={(e) => handleSearchAuthors(e.target.value)}
+                placeholder="Cerca per nome, cognome o pseudonimo..."
+                className="bg-transparent border border-ink/20 px-3 py-1.5 font-mono text-xs text-ink w-64"
+              />
+              {authorSearchResults.length > 0 && !selectedAuthorToDelete && (
+                <div className="flex flex-col gap-1">
+                  {authorSearchResults.map(a => (
+                    <button
+                      key={a.id}
+                      onClick={() => { setSelectedAuthorToDelete(a); setAuthorSearchResults([]); }}
+                      className="text-left font-mono text-xs text-ink/70 hover:text-magenta"
+                    >
+                      ▸ {a.nome} {a.cognome} {a.pseudonimo ? `(${a.pseudonimo})` : ""}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {selectedAuthorToDelete && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-mono text-xs text-ink/80">
+                    {selectedAuthorToDelete.nome} {selectedAuthorToDelete.cognome} {selectedAuthorToDelete.pseudonimo ? `(${selectedAuthorToDelete.pseudonimo})` : ""}
+                  </span>
+                  {confirmDeleteAuthor ? (
+                    <>
+                      <span className="font-mono text-[10px] text-magenta uppercase tracking-widest">Cancellare tutto (libri, recensioni, libreria, account)?</span>
+                      <HudButton variant="magenta" onClick={handleDeleteAuthor} disabled={deletingAuthor}>
+                        {deletingAuthor ? "Cancellazione..." : "Sì"}
+                      </HudButton>
+                      <HudButton variant="ghost" onClick={() => setConfirmDeleteAuthor(false)} disabled={deletingAuthor}>No</HudButton>
+                    </>
+                  ) : (
+                    <HudButton variant="ghost" onClick={() => setConfirmDeleteAuthor(true)}>⊗ Elimina</HudButton>
+                  )}
+                </div>
+              )}
+              {deleteAuthorResult && (
+                <span className={`font-mono text-[10px] tracking-widest uppercase ${deleteAuthorResult.ok ? "text-cyan" : "text-magenta"}`}>
+                  {deleteAuthorResult.ok ? "✓" : "✗"} {deleteAuthorResult.msg}
+                </span>
+              )}
+            </div>
           </div>
         )}
 
