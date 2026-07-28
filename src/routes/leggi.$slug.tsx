@@ -439,6 +439,39 @@ function ReadPage() {
   const [userHasLiked, setUserHasLiked] = useState<boolean>(Route.useLoaderData().userHasLiked ?? false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [hoveredTip, setHoveredTip] = useState<string | null>(null);
+  const [donating, setDonating] = useState(false);
+  const [revealDonorName, setRevealDonorName] = useState(false);
+
+  const handleDona = async () => {
+    if (!donationUrl || donating) return;
+    setDonating(true);
+    try {
+      let donatoreNome: string | null = null;
+      if (revealDonorName && isLoggedIn && !isAnonymous && userId) {
+        const { data: profile } = await supabase.from("profiles").select("nome, cognome, pseudonimo").eq("id", userId).maybeSingle();
+        donatoreNome = profile?.pseudonimo || [profile?.nome, profile?.cognome].filter(Boolean).join(" ") || null;
+      }
+      const { data: { session } } = await supabase.auth.getSession();
+      await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/notify-donation`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
+        body: JSON.stringify({
+          author_id: authorId,
+          author_name: book.author,
+          book_id: bookId,
+          book_titolo: book.title,
+          book_slug: book.slug,
+          donatore_nome: donatoreNome,
+          anonimo: !donatoreNome,
+        }),
+      });
+    } catch (_) { /* fire and forget */ }
+    window.open(donationUrl, "_blank", "noopener");
+    setDonating(false);
+  };
 
   const handleToggleLike = async () => {
     if (!isLoggedIn || isAnonymous || !bookId || !userId) return;
@@ -983,17 +1016,29 @@ function ReadPage() {
           </button>
 
           {donationUrl && (
-            <a
-              href={donationUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onMouseEnter={() => setHoveredTip("i soldi non ci seguono nell'aldilà")}
-              onMouseLeave={() => setHoveredTip(null)}
-              className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-blood text-blood px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-blood hover:text-paper transition-colors cursor-pointer"
-            >
-              <span className="text-sm leading-none">♥</span>
-              <span>Sostieni</span>
-            </a>
+            <div className="flex-1 lg:flex-none flex flex-col items-center gap-1">
+              {isLoggedIn && !isAnonymous && (
+                <label className="flex items-center gap-1 font-mono text-[8px] uppercase text-blood/60 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={revealDonorName}
+                    onChange={(e) => setRevealDonorName(e.target.checked)}
+                    className="accent-blood"
+                  />
+                  rivela il tuo nome
+                </label>
+              )}
+              <button
+                onClick={handleDona}
+                disabled={donating}
+                onMouseEnter={() => setHoveredTip("i soldi non ci seguono nell'aldilà")}
+                onMouseLeave={() => setHoveredTip(null)}
+                className="w-full inline-flex flex-col items-center justify-center gap-1 border border-blood text-blood px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-blood hover:text-paper transition-colors cursor-pointer disabled:opacity-40"
+              >
+                <span className="text-sm leading-none">♥</span>
+                <span>{donating ? "…" : "Sostieni"}</span>
+              </button>
+            </div>
           )}
 
           {/* Segui autore — visibile a tutti tranne all'autore stesso */}

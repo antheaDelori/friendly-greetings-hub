@@ -469,6 +469,10 @@ function GestionePage() {
   const [deletingAuthor, setDeletingAuthor] = useState(false);
   const [deleteAuthorResult, setDeleteAuthorResult] = useState<{ ok: boolean; msg: string } | null>(null);
 
+  const [subscriptionRequests, setSubscriptionRequests] = useState<{ id: string; author_id: string; author_name: string; package: string; importo: number; created_at: string }[]>([]);
+  const [activatingRequestId, setActivatingRequestId] = useState<string | null>(null);
+  const [activateResult, setActivateResult] = useState<{ ok: boolean; msg: string } | null>(null);
+
   // Copertina da stampa
   const [coverFormato, setCoverFormato] = useState("a5");
   const [coverNumeroPagine, setCoverNumeroPagine] = useState("");
@@ -560,6 +564,7 @@ function GestionePage() {
       setUserId(user.id);
       const adminEmail = user.email?.toLowerCase() === (import.meta.env.VITE_ADMIN_EMAIL as string)?.toLowerCase();
       setIsAdmin(adminEmail);
+      if (adminEmail) loadSubscriptionRequests();
 
       const { data: profileData } = await supabase
         .from("profiles")
@@ -1669,6 +1674,42 @@ function GestionePage() {
     }
   };
 
+  const loadSubscriptionRequests = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-subscription-requests`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ action: "list" }),
+      });
+      const data = await res.json();
+      if (res.ok && data.requests) setSubscriptionRequests(data.requests);
+    } catch (_) { /* silenzioso, non bloccante */ }
+  };
+
+  const handleActivateSubscription = async (req: { id: string; author_id: string; package: string }) => {
+    setActivatingRequestId(req.id); setActivateResult(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-subscription-requests`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ action: "activate", request_id: req.id, author_id: req.author_id, package: req.package }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setActivateResult({ ok: false, msg: data.error ?? "Errore" });
+      } else {
+        setActivateResult({ ok: true, msg: "Abbonamento attivato." });
+        setSubscriptionRequests(prev => prev.filter(r => r.id !== req.id));
+      }
+    } catch (e) {
+      setActivateResult({ ok: false, msg: e instanceof Error ? e.message : "Errore" });
+    } finally {
+      setActivatingRequestId(null);
+    }
+  };
+
   // Estrae il path relativo nel bucket da un URL pubblico Supabase Storage
   const storagePathFromUrl = (url: string | null): string | null => {
     if (!url) return null;
@@ -2219,6 +2260,35 @@ function GestionePage() {
               {deleteAuthorResult && (
                 <span className={`font-mono text-[10px] tracking-widest uppercase ${deleteAuthorResult.ok ? "text-cyan" : "text-magenta"}`}>
                   {deleteAuthorResult.ok ? "✓" : "✗"} {deleteAuthorResult.msg}
+                </span>
+              )}
+            </div>
+
+            <div className="w-full mt-3 pt-3 border-t border-amber/20">
+              <span className="font-mono text-[10px] tracking-widest text-amber uppercase">◈ Richieste abbonamento pendenti</span>
+              {subscriptionRequests.length === 0 ? (
+                <p className="mt-2 font-mono text-[10px] text-ink/40 uppercase tracking-widest">Nessuna richiesta in sospeso</p>
+              ) : (
+                <div className="mt-2 flex flex-col gap-2">
+                  {subscriptionRequests.map(req => (
+                    <div key={req.id} className="flex items-center gap-3 flex-wrap font-mono text-xs">
+                      <span className="text-ink/80">{req.author_name}</span>
+                      <span className="text-amber">€{req.importo}/anno{req.package === "24" ? " + 2 crediti video" : ""}</span>
+                      <span className="text-ink/40 text-[10px]">{new Date(req.created_at).toLocaleDateString("it-IT")}</span>
+                      <HudButton
+                        variant="ghost"
+                        onClick={() => handleActivateSubscription(req)}
+                        disabled={activatingRequestId !== null}
+                      >
+                        {activatingRequestId === req.id ? "Attivazione..." : "▸ Attiva"}
+                      </HudButton>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {activateResult && (
+                <span className={`block mt-2 font-mono text-[10px] tracking-widest uppercase ${activateResult.ok ? "text-cyan" : "text-magenta"}`}>
+                  {activateResult.ok ? "✓" : "✗"} {activateResult.msg}
                 </span>
               )}
             </div>
