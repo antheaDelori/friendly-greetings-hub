@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { shouldBccAdmin } from "../_shared/email_settings.ts";
 
 const SUPABASE_URL              = Deno.env.get("SUPABASE_URL")!;
+const ANTHEA_LOGO_URL           = `${SUPABASE_URL}/storage/v1/object/public/copertine/brand/anthea-delori-logo.png`;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ADMIN_LOGIN_EMAIL         = Deno.env.get("ADMIN_LOGIN_EMAIL")!;
 const RESEND_API_KEY            = Deno.env.get("RESEND_API_KEY")!;
@@ -87,7 +88,8 @@ Deno.serve(async (req) => {
     const html = template.corpo_html
       .replaceAll("{{AUTORE_NOME}}", authorName)
       .replaceAll("{{SCADENZA}}", scadenza)
-      .replaceAll("{{CREDITI}}", String(profile.video_crediti ?? 0));
+      .replaceAll("{{CREDITI}}", String(profile.video_crediti ?? 0))
+      .replaceAll("{{ANTHEA_LOGO_URL}}", ANTHEA_LOGO_URL);
     const oggetto = template.oggetto.replaceAll("{{AUTORE_NOME}}", authorName);
 
     if (action === "preview_activation_email") {
