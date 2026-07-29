@@ -9,6 +9,7 @@ const ADMIN_LOGIN_EMAIL = Deno.env.get("ADMIN_LOGIN_EMAIL")!;
 const RUNWAY_VERSION = "2024-11-06";
 const DEFAULT_VIDEO_DURATION = 10; // secondi
 const VIDEO_RATIO = "1280:720";
+const CREDITI_PER_SECONDO = 12; // 100 crediti = 1€, stesso rapporto usato da Runway (~12 crediti/sec)
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -61,7 +62,7 @@ Deno.serve(async (req) => {
       .eq("id", user.id)
       .maybeSingle();
 
-    if (!profile?.abbonamento_attivo || (profile.video_crediti ?? 0) <= 0) {
+    if (!profile?.abbonamento_attivo || (profile.video_crediti ?? 0) < videoDuration * CREDITI_PER_SECONDO) {
       return json({ error: "no_credits" }, 403);
     }
   }

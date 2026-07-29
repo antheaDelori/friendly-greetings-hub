@@ -7,6 +7,9 @@ import { RichTextEditor } from "@/components/RichTextEditor";
 import { CoverSpreadPreview } from "@/components/CoverSpreadPreview";
 import { supabase } from "@/lib/supabase";
 
+// 100 crediti = 1€, stesso rapporto usato da Runway (~12 crediti/secondo di video)
+const CREDITI_PER_SECONDO = 12;
+
 type Capitolo = {
   id: string;
   book_id: string;
@@ -956,7 +959,7 @@ function GestionePage() {
 
   const handleGenerateVideo = async () => {
     if (!editingId || !userId) return;
-    if (!isAdmin && (!abbonamentoAttivo || videoCrediti <= 0)) return;
+    if (!isAdmin && (!abbonamentoAttivo || videoCrediti < videoDuration * CREDITI_PER_SECONDO)) return;
     setVideoGenerating(true);
     setVideoError(null);
     try {
@@ -994,7 +997,7 @@ function GestionePage() {
         const pollRes = await fetch(`${base}/functions/v1/check-video-status`, {
           method: "POST",
           headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ task_id, book_id: editingId, image_prompt, motion_prompt }),
+          body: JSON.stringify({ task_id, book_id: editingId, image_prompt, motion_prompt, duration: videoDuration }),
         });
         const pollData = await pollRes.json();
         if (!pollRes.ok || pollData.status === "failed") {
@@ -2273,7 +2276,7 @@ function GestionePage() {
                   {subscriptionRequests.map(req => (
                     <div key={req.id} className="flex items-center gap-3 flex-wrap font-mono text-xs">
                       <span className="text-ink/80">{req.author_name}</span>
-                      <span className="text-amber">€{req.importo}/anno{req.package === "24" ? " + 2 crediti video" : ""}</span>
+                      <span className="text-amber">€{req.importo}/anno{req.package === "24" ? " + 1200 crediti video" : ""}</span>
                       <span className="text-ink/40 text-[10px]">{new Date(req.created_at).toLocaleDateString("it-IT")}</span>
                       <HudButton
                         variant="ghost"
@@ -3913,12 +3916,21 @@ function GestionePage() {
                       <div className="font-mono text-[11px] tracking-[0.3em] text-magenta uppercase font-bold">◈ Video promozionale AI ({videoDuration}")</div>
                       {isAdmin
                         ? <span className="font-mono text-xs tracking-widest uppercase text-magenta border border-magenta bg-magenta/10 px-3 py-1 font-bold">∞ Accesso illimitato</span>
-                        : <span className="font-mono text-[10px] text-bone/70 border border-magenta/30 px-2 py-0.5">{videoCrediti} video disponibili</span>
+                        : <span className="font-mono text-[10px] text-bone/70 border border-magenta/30 px-2 py-0.5">{videoCrediti} crediti disponibili</span>
                       }
                     </div>
                     <p className="font-serif italic text-bone/60 text-sm">
-                      Il risultato non è modificabile né rigenerabile gratuitamente: ogni generazione consuma un credito.
+                      Il risultato non è modificabile né rigenerabile gratuitamente: ogni generazione consuma crediti in base alla durata scelta.
                     </p>
+                    {!isAdmin && (
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 font-mono text-[9px] text-bone/40">
+                        {[2, 3, 4, 5, 6, 7, 8, 9, 10].map(s => (
+                          <span key={s} className={videoCrediti >= s * CREDITI_PER_SECONDO ? "text-bone/50" : "text-bone/20 line-through"}>
+                            {s}" = {s * CREDITI_PER_SECONDO}cr
+                          </span>
+                        ))}
+                      </div>
+                    )}
 
                     <div>
                       <span className={labelClass}>↳ Prompt video (opzionale)</span>
@@ -3971,7 +3983,7 @@ function GestionePage() {
                       <p className="font-mono text-[11px] text-magenta">⚠ {extractFrameError}</p>
                     )}
 
-                    {(isAdmin || (abbonamentoAttivo && videoCrediti > 0)) ? (
+                    {(isAdmin || (abbonamentoAttivo && videoCrediti >= videoDuration * CREDITI_PER_SECONDO)) ? (
                       <div className="flex items-center gap-4 flex-wrap">
                         <HudButton variant="ghost" onClick={handleGenerateVideo} disabled={videoGenerating || (!videoPrompt.trim() && !descrizione.trim())}>
                           {videoGenerating ? "▸ Generazione in corso..." : "◈ Genera video promozionale"}
@@ -3997,11 +4009,14 @@ function GestionePage() {
                       </div>
                     ) : (
                       <p className="font-serif italic text-bone/60 text-sm">
-                        Non hai crediti video disponibili. <a href="/abbonamento" className="text-magenta underline">Scopri i pacchetti</a>.
+                        {abbonamentoAttivo
+                          ? `Ti servono ${videoDuration * CREDITI_PER_SECONDO} crediti per un video da ${videoDuration}" (ne hai ${videoCrediti}). Accorcia la durata o `
+                          : "Non hai un abbonamento attivo. "}
+                        <a href="/abbonamento" className="text-magenta underline">Scopri i pacchetti</a>.
                       </p>
                     )}
 
-                    {!videoPrompt.trim() && !descrizione.trim() && (isAdmin || (abbonamentoAttivo && videoCrediti > 0)) && (
+                    {!videoPrompt.trim() && !descrizione.trim() && (isAdmin || (abbonamentoAttivo && videoCrediti >= videoDuration * CREDITI_PER_SECONDO)) && (
                       <p className="font-mono text-[10px] text-bone/40">Scrivi un prompt video o una descrizione/sinossi dell'opera: serve almeno uno dei due.</p>
                     )}
                     {videoError === "no_credits" && (

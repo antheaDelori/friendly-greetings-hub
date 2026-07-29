@@ -6,6 +6,7 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ADMIN_LOGIN_EMAIL = Deno.env.get("ADMIN_LOGIN_EMAIL")!;
 
 const RUNWAY_VERSION = "2024-11-06";
+const CREDITI_PER_SECONDO = 12; // 100 crediti = 1€, stesso rapporto usato da Runway (~12 crediti/sec)
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -34,8 +35,9 @@ Deno.serve(async (req) => {
   );
   if (authErr || !user) return json({ error: "Unauthorized" }, 401);
 
-  const { task_id, book_id, image_prompt, motion_prompt } = await req.json();
+  const { task_id, book_id, image_prompt, motion_prompt, duration } = await req.json();
   if (!task_id || !book_id) return json({ error: "task_id e book_id richiesti" }, 400);
+  const videoDuration = Number.isInteger(duration) && duration >= 2 && duration <= 10 ? duration : 10;
 
   // Verifica che il libro appartenga davvero a chi chiama
   const { data: book, error: bookErr } = await supabase
@@ -95,7 +97,7 @@ Deno.serve(async (req) => {
 
   const isAdmin = user.email?.toLowerCase() === ADMIN_LOGIN_EMAIL.toLowerCase();
   if (!isAdmin) {
-    await supabase.rpc("decrement_video_crediti", { p_user_id: user.id });
+    await supabase.rpc("decrement_video_crediti", { p_user_id: user.id, p_amount: videoDuration * CREDITI_PER_SECONDO });
   }
 
   return json({ status: "done", video_url: videoUrl });

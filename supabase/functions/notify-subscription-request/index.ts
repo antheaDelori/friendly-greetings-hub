@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
     .maybeSingle();
 
   if (template) {
-    const dettaglio = pkg === "24" ? " (include 2 crediti video promozionale)" : "";
+    const dettaglio = pkg === "24" ? " (include 1200 crediti video promozionale)" : "";
     const html = template.corpo_html
       .replaceAll("{{AUTORE_NOME}}", authorName)
       .replaceAll("{{AUTORE_EMAIL}}", user.email ?? "")
