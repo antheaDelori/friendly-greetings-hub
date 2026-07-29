@@ -383,6 +383,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         from: "Liberiamo la mente <notifiche@liberiamo2076.com>",
         to: email,
+        bcc: ADMIN_EMAIL,
         subject: "Liberiamo la mente — Richiesta lingua ricevuta",
         html: `<p>Ciao${name ? ` ${name}` : ""}!</p><p>Abbiamo ricevuto la tua richiesta per la lingua <strong>${language}</strong>.</p><p>Ti contatteremo al più presto per confermarti la disponibilità.</p><p>— Il team di Liberiamo la mente</p>`,
       }),

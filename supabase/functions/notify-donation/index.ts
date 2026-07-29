@@ -89,6 +89,7 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           from: "Liberiamo la mente <notifiche@liberiamo2076.com>",
           to: authorUser.email,
+          bcc: ADMIN_EMAIL,
           subject: oggetto,
           html,
         }),
