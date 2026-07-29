@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const SUPABASE_URL              = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ADMIN_LOGIN_EMAIL         = Deno.env.get("ADMIN_LOGIN_EMAIL")!;
+const RESEND_API_KEY            = Deno.env.get("RESEND_API_KEY")!;
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -52,6 +53,54 @@ Deno.serve(async (req) => {
     });
     if (error) return json({ error: error.message }, 500);
     return json({ activated: true });
+  }
+
+  if (action === "notify_activated") {
+    const { author_id } = body;
+    if (!author_id) return json({ error: "Parametri mancanti" }, 400);
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("nome, cognome, pseudonimo, abbonamento_scadenza, video_crediti")
+      .eq("id", author_id)
+      .maybeSingle();
+    if (!profile) return json({ error: "Autore non trovato" }, 404);
+
+    const { data: authUser, error: authUserErr } = await supabase.auth.admin.getUserById(author_id);
+    if (authUserErr || !authUser?.user?.email) return json({ error: "Email autore non trovata" }, 404);
+
+    const authorName = profile.pseudonimo || [profile.nome, profile.cognome].filter(Boolean).join(" ") || authUser.user.email;
+    const scadenza = profile.abbonamento_scadenza
+      ? new Date(profile.abbonamento_scadenza).toLocaleDateString("it-IT")
+      : "—";
+
+    const { data: template } = await supabase
+      .from("email_templates")
+      .select("oggetto, corpo_html")
+      .eq("tipo", "abbonamento_attivato")
+      .eq("lingua", "it")
+      .maybeSingle();
+    if (!template) return json({ error: "Template 'abbonamento_attivato' non trovato" }, 500);
+
+    const html = template.corpo_html
+      .replaceAll("{{AUTORE_NOME}}", authorName)
+      .replaceAll("{{SCADENZA}}", scadenza)
+      .replaceAll("{{CREDITI}}", String(profile.video_crediti ?? 0));
+    const oggetto = template.oggetto.replaceAll("{{AUTORE_NOME}}", authorName);
+
+    const resendRes = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: "Liberiamo la mente <notifiche@liberiamo2076.com>",
+        to: authUser.user.email,
+        subject: oggetto,
+        html,
+      }),
+    });
+    if (!resendRes.ok) return json({ error: "Invio email fallito" }, 500);
+
+    return json({ sent: true });
   }
 
   return json({ error: "Azione non riconosciuta" }, 400);

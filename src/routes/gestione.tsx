@@ -475,6 +475,8 @@ function GestionePage() {
   const [subscriptionRequests, setSubscriptionRequests] = useState<{ id: string; author_id: string; author_name: string; package: string; importo: number; created_at: string }[]>([]);
   const [activatingRequestId, setActivatingRequestId] = useState<string | null>(null);
   const [activateResult, setActivateResult] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [sendingActivationEmail, setSendingActivationEmail] = useState(false);
+  const [sendActivationEmailResult, setSendActivationEmailResult] = useState<{ ok: boolean; msg: string } | null>(null);
 
   // Copertina da stampa
   const [coverFormato, setCoverFormato] = useState("a5");
@@ -1713,6 +1715,28 @@ function GestionePage() {
     }
   };
 
+  const handleSendActivationEmail = async (authorId: string) => {
+    setSendingActivationEmail(true); setSendActivationEmailResult(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-subscription-requests`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ action: "notify_activated", author_id: authorId }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setSendActivationEmailResult({ ok: false, msg: data.error ?? "Errore" });
+      } else {
+        setSendActivationEmailResult({ ok: true, msg: "Mail inviata." });
+      }
+    } catch (e) {
+      setSendActivationEmailResult({ ok: false, msg: e instanceof Error ? e.message : "Errore" });
+    } finally {
+      setSendingActivationEmail(false);
+    }
+  };
+
   // Estrae il path relativo nel bucket da un URL pubblico Supabase Storage
   const storagePathFromUrl = (url: string | null): string | null => {
     if (!url) return null;
@@ -2256,13 +2280,27 @@ function GestionePage() {
                       <HudButton variant="ghost" onClick={() => setConfirmDeleteAuthor(false)} disabled={deletingAuthor}>No</HudButton>
                     </>
                   ) : (
-                    <HudButton variant="ghost" onClick={() => setConfirmDeleteAuthor(true)}>⊗ Elimina</HudButton>
+                    <>
+                      <HudButton variant="ghost" onClick={() => setConfirmDeleteAuthor(true)}>⊗ Elimina</HudButton>
+                      <HudButton
+                        variant="ghost"
+                        onClick={() => handleSendActivationEmail(selectedAuthorToDelete.id)}
+                        disabled={sendingActivationEmail}
+                      >
+                        {sendingActivationEmail ? "Invio..." : "▸ Invia mail abbonamento attivato"}
+                      </HudButton>
+                    </>
                   )}
                 </div>
               )}
               {deleteAuthorResult && (
                 <span className={`font-mono text-[10px] tracking-widest uppercase ${deleteAuthorResult.ok ? "text-cyan" : "text-magenta"}`}>
                   {deleteAuthorResult.ok ? "✓" : "✗"} {deleteAuthorResult.msg}
+                </span>
+              )}
+              {sendActivationEmailResult && (
+                <span className={`block font-mono text-[10px] tracking-widest uppercase ${sendActivationEmailResult.ok ? "text-cyan" : "text-magenta"}`}>
+                  {sendActivationEmailResult.ok ? "✓" : "✗"} {sendActivationEmailResult.msg}
                 </span>
               )}
             </div>
