@@ -1,8 +1,10 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { shouldBccAdmin } from "../_shared/email_settings.ts";
 
 const RESEND_API_KEY          = Deno.env.get("RESEND_API_KEY")!;
 const SUPABASE_URL            = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const ADMIN_EMAIL             = Deno.env.get("ADMIN_EMAIL")!;
 const FROM_EMAIL              = "Liberiamo la mente <notifiche@liberiamo2076.com>";
 const SITE_URL                = "https://liberiamo2076.com";
 const ANTHEA_LOGO_URL         = `${SUPABASE_URL}/storage/v1/object/public/copertine/brand/anthea-delori-logo.png`;
@@ -197,9 +199,11 @@ Deno.serve(async (req) => {
   // i BCC di massa, ed è la causa più probabile di consegne parziali su liste anche piccole.
   const subject = `Nuova pubblicazione: ${b.titolo}`;
   const recipients = [authorEmail, ...followerEmails];
+  const bccAdmin = await shouldBccAdmin(supabase, "newsletter", false);
   const batch = recipients.map(to => ({
     from:     FROM_EMAIL,
     to:       [to],
+    ...(bccAdmin ? { bcc: ADMIN_EMAIL } : {}),
     reply_to: `${authorName} <${authorEmail}>`,
     subject,
     html,

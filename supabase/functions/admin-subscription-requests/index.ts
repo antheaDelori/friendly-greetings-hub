@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { shouldBccAdmin } from "../_shared/email_settings.ts";
 
 const SUPABASE_URL              = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -56,7 +57,7 @@ Deno.serve(async (req) => {
     return json({ activated: true });
   }
 
-  if (action === "notify_activated") {
+  if (action === "preview_activation_email" || action === "notify_activated") {
     const { author_id } = body;
     if (!author_id) return json({ error: "Parametri mancanti" }, 400);
 
@@ -89,13 +90,17 @@ Deno.serve(async (req) => {
       .replaceAll("{{CREDITI}}", String(profile.video_crediti ?? 0));
     const oggetto = template.oggetto.replaceAll("{{AUTORE_NOME}}", authorName);
 
+    if (action === "preview_activation_email") {
+      return json({ to: authUser.user.email, oggetto, html });
+    }
+
     const resendRes = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         from: "Liberiamo la mente <notifiche@liberiamo2076.com>",
         to: authUser.user.email,
-        bcc: ADMIN_EMAIL,
+        ...(await shouldBccAdmin(supabase, "abbonamento_attivato", true) ? { bcc: ADMIN_EMAIL } : {}),
         subject: oggetto,
         html,
       }),

@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Image } from "https://deno.land/x/imagescript@1.2.15/mod.ts";
+import { shouldBccAdmin } from "../_shared/email_settings.ts";
 
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY")!;
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")!;
@@ -367,6 +368,8 @@ Deno.serve(async (req) => {
     const { name, email, language } = body;
     if (!email || !language) return json({ error: "email e lingua richiesti" }, 400);
     const authorDisplay = name ? `${name} <${email}>` : email;
+    const langRequestSupabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const bccAdminLang = await shouldBccAdmin(langRequestSupabase, "richiesta_lingua", true);
     await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
@@ -383,7 +386,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         from: "Liberiamo la mente <notifiche@liberiamo2076.com>",
         to: email,
-        bcc: ADMIN_EMAIL,
+        ...(bccAdminLang ? { bcc: ADMIN_EMAIL } : {}),
         subject: "Liberiamo la mente — Richiesta lingua ricevuta",
         html: `<p>Ciao${name ? ` ${name}` : ""}!</p><p>Abbiamo ricevuto la tua richiesta per la lingua <strong>${language}</strong>.</p><p>Ti contatteremo al più presto per confermarti la disponibilità.</p><p>— Il team di Liberiamo la mente</p>`,
       }),

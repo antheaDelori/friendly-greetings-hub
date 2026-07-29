@@ -477,6 +477,13 @@ function GestionePage() {
   const [activateResult, setActivateResult] = useState<{ ok: boolean; msg: string } | null>(null);
   const [sendingActivationEmail, setSendingActivationEmail] = useState(false);
   const [sendActivationEmailResult, setSendActivationEmailResult] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [activationEmailPreview, setActivationEmailPreview] = useState<{ to: string; oggetto: string; html: string } | null>(null);
+  const [loadingActivationPreview, setLoadingActivationPreview] = useState(false);
+
+  const [emailSettings, setEmailSettings] = useState<{ tipo: string; label: string; bcc_admin: boolean }[]>([]);
+  const [loadingEmailSettings, setLoadingEmailSettings] = useState(false);
+  const [emailSettingsOpen, setEmailSettingsOpen] = useState(false);
+  const [updatingEmailSettingTipo, setUpdatingEmailSettingTipo] = useState<string | null>(null);
 
   // Copertina da stampa
   const [coverFormato, setCoverFormato] = useState("a5");
@@ -1737,6 +1744,63 @@ function GestionePage() {
     }
   };
 
+  const handlePreviewActivationEmail = async (authorId: string) => {
+    setLoadingActivationPreview(true); setActivationEmailPreview(null); setSendActivationEmailResult(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-subscription-requests`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ action: "preview_activation_email", author_id: authorId }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setSendActivationEmailResult({ ok: false, msg: data.error ?? "Errore" });
+      } else {
+        setActivationEmailPreview(data);
+      }
+    } catch (e) {
+      setSendActivationEmailResult({ ok: false, msg: e instanceof Error ? e.message : "Errore" });
+    } finally {
+      setLoadingActivationPreview(false);
+    }
+  };
+
+  const loadEmailSettings = async () => {
+    setLoadingEmailSettings(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-email-settings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ action: "list" }),
+      });
+      const data = await res.json();
+      if (res.ok && data.settings) setEmailSettings(data.settings);
+    } catch (_) { /* silenzioso, non bloccante */ }
+    finally { setLoadingEmailSettings(false); }
+  };
+
+  const handleToggleEmailSetting = async (tipo: string, next: boolean) => {
+    setUpdatingEmailSettingTipo(tipo);
+    setEmailSettings(prev => prev.map(s => s.tipo === tipo ? { ...s, bcc_admin: next } : s));
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-email-settings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ action: "update", tipo, bcc_admin: next }),
+      });
+      if (!res.ok) {
+        setEmailSettings(prev => prev.map(s => s.tipo === tipo ? { ...s, bcc_admin: !next } : s));
+      }
+    } catch (_) {
+      setEmailSettings(prev => prev.map(s => s.tipo === tipo ? { ...s, bcc_admin: !next } : s));
+    } finally {
+      setUpdatingEmailSettingTipo(null);
+    }
+  };
+
   // Estrae il path relativo nel bucket da un URL pubblico Supabase Storage
   const storagePathFromUrl = (url: string | null): string | null => {
     if (!url) return null;
@@ -2284,6 +2348,13 @@ function GestionePage() {
                       <HudButton variant="ghost" onClick={() => setConfirmDeleteAuthor(true)}>⊗ Elimina</HudButton>
                       <HudButton
                         variant="ghost"
+                        onClick={() => handlePreviewActivationEmail(selectedAuthorToDelete.id)}
+                        disabled={loadingActivationPreview}
+                      >
+                        {loadingActivationPreview ? "Carico anteprima..." : "◈ Anteprima mail abbonamento"}
+                      </HudButton>
+                      <HudButton
+                        variant="ghost"
                         onClick={() => handleSendActivationEmail(selectedAuthorToDelete.id)}
                         disabled={sendingActivationEmail}
                       >
@@ -2302,6 +2373,23 @@ function GestionePage() {
                 <span className={`block font-mono text-[10px] tracking-widest uppercase ${sendActivationEmailResult.ok ? "text-cyan" : "text-magenta"}`}>
                   {sendActivationEmailResult.ok ? "✓" : "✗"} {sendActivationEmailResult.msg}
                 </span>
+              )}
+              {activationEmailPreview && (
+                <div className="mt-3 border border-cyan/30 bg-void/40 p-3 space-y-2">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <span className="font-mono text-[10px] text-cyan/70 uppercase tracking-widest">
+                      A: {activationEmailPreview.to}
+                    </span>
+                    <HudButton variant="ghost" onClick={() => setActivationEmailPreview(null)}>✕ Chiudi anteprima</HudButton>
+                  </div>
+                  <div className="font-mono text-xs text-ink/90">Oggetto: {activationEmailPreview.oggetto}</div>
+                  <iframe
+                    title="Anteprima mail"
+                    sandbox=""
+                    srcDoc={activationEmailPreview.html}
+                    className="w-full h-96 bg-white border border-ink/10"
+                  />
+                </div>
               )}
             </div>
 
@@ -2331,6 +2419,40 @@ function GestionePage() {
                 <span className={`block mt-2 font-mono text-[10px] tracking-widest uppercase ${activateResult.ok ? "text-cyan" : "text-magenta"}`}>
                   {activateResult.ok ? "✓" : "✗"} {activateResult.msg}
                 </span>
+              )}
+            </div>
+
+            <div className="w-full mt-3 pt-3 border-t border-amber/20">
+              <button
+                type="button"
+                onClick={() => {
+                  const next = !emailSettingsOpen;
+                  setEmailSettingsOpen(next);
+                  if (next && emailSettings.length === 0) loadEmailSettings();
+                }}
+                className="font-mono text-[10px] tracking-widest text-amber uppercase cursor-pointer"
+              >
+                {emailSettingsOpen ? "▼" : "▶"} ◈ Notifiche email — copia a me
+              </button>
+              {emailSettingsOpen && (
+                loadingEmailSettings ? (
+                  <p className="mt-2 font-mono text-[10px] text-ink/40 uppercase tracking-widest">Caricamento...</p>
+                ) : (
+                  <div className="mt-2 flex flex-col gap-1.5">
+                    {emailSettings.map(s => (
+                      <label key={s.tipo} className="flex items-center gap-3 font-mono text-xs cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={s.bcc_admin}
+                          disabled={updatingEmailSettingTipo === s.tipo}
+                          onChange={(e) => handleToggleEmailSetting(s.tipo, e.target.checked)}
+                          className="accent-amber"
+                        />
+                        <span className={s.bcc_admin ? "text-ink/80" : "text-ink/40"}>{s.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                )
               )}
             </div>
           </div>

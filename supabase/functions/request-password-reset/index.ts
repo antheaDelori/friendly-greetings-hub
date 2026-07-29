@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { shouldBccAdmin } from "../_shared/email_settings.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -84,7 +85,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         from: "Liberiamo la mente <notifiche@liberiamo2076.com>",
         to: user.email,
-        bcc: ADMIN_EMAIL,
+        ...(await shouldBccAdmin(supabase, "reset_password", true) ? { bcc: ADMIN_EMAIL } : {}),
         subject: template.oggetto,
         html,
       }),

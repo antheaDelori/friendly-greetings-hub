@@ -1,8 +1,10 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { shouldBccAdmin } from "../_shared/email_settings.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")!;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const ADMIN_EMAIL = Deno.env.get("ADMIN_EMAIL")!;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -37,6 +39,7 @@ Deno.serve(async (req) => {
   const linkLibro = `https://liberiamo2076.com/libri-aperti/${book_slug}`;
   const errors: string[] = [];
   let sent = 0;
+  const bccAdmin = await shouldBccAdmin(supabase, "nuovo_capitolo", false);
 
   for (const sub of subscriptions) {
     const { data: { user } } = await supabase.auth.admin.getUserById(sub.user_id);
@@ -84,6 +87,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         from: "Liberiamo la mente <notifiche@liberiamo2076.com>",
         to: user.email,
+        ...(bccAdmin ? { bcc: ADMIN_EMAIL } : {}),
         subject: oggetto,
         html,
       }),
