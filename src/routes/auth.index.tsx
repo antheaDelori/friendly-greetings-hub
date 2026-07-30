@@ -354,25 +354,12 @@ function AuthLanding() {
         <HudPanel label="opzione 02 — autore" tone="cyan">
           <h3 className="font-display text-2xl text-bone tracking-tight">Diventa autore</h3>
 
-          <div className="mt-4 flex items-start gap-2 font-serif text-sm text-bone">
-            <span className="text-cyan mt-0.5 shrink-0">◆</span>
-            <span>
-              Prima opera gratuita — poi{" "}
-              <Link to="/abbonamento" className="text-cyan underline underline-offset-2 hover:text-cyan/70">
-                abbonamento annuo €12
-              </Link>
-            </span>
-          </div>
-
-          <div className="my-4 border-t border-cyan/40" />
-
-          <ul className="space-y-2">
+          <ul className="mt-4 space-y-2">
             {[
               "Tutti i vantaggi del lettore",
-              "Pubblica libri, racconti, saggi e poesie",
-              "Il tuo libro, tra mani che lo cercavano",
-              "Gestisci le tue opere con un'area dedicata",
-              "Ricevi donazioni dirette dai lettori",
+              "Pubblica le tue opere",
+              "Area riservata",
+              "Ricevi donazioni",
             ].map(v => (
               <li key={v} className="flex items-start gap-2 font-serif text-sm text-bone/70">
                 <span className="text-cyan mt-0.5 shrink-0">◆</span>{v}
@@ -380,9 +367,32 @@ function AuthLanding() {
             ))}
           </ul>
 
-          <Link to="/auth/registrazione" search={{ autore: true }} className="mt-6 inline-block">
-            <HudButton variant="primary">▸ {t("authLogin.opt01Btn")}</HudButton>
-          </Link>
+          <div className="my-4 border-t border-cyan/40" />
+
+          <div className="space-y-5">
+            <div>
+              <div className="font-mono text-[10px] tracking-[0.2em] text-cyan uppercase">account libero</div>
+              <p className="mt-1 font-serif text-sm text-bone/70">Un'opera gratuita.</p>
+              <Link to="/auth/registrazione" search={{ autore: true }} className="mt-3 inline-block">
+                <HudButton variant="primary">▸ {t("authLogin.opt01Btn")}</HudButton>
+              </Link>
+            </div>
+
+            <div>
+              <div className="font-mono text-[10px] tracking-[0.2em] text-cyan uppercase">abbonati — €12/anno</div>
+              <p className="mt-1 font-serif text-sm text-bone/70">2 libri, 5 opere e 25 articoli (circa bisettimanali).</p>
+              <Link to="/abbonamento" className="mt-3 inline-block">
+                <HudButton variant="ghost">▸ Richiedi abbonamento</HudButton>
+              </Link>
+            </div>
+          </div>
+
+          <p className="mt-5 font-mono text-[9px] text-bone/40">
+            Nota: variazioni al piano? Scrivi a{" "}
+            <a href="mailto:admin@liberiamo2076.com" className="text-cyan/70 hover:text-cyan underline underline-offset-2">
+              admin@liberiamo2076.com
+            </a>
+          </p>
         </HudPanel>
 
         {/* Esploratore */}
