@@ -193,7 +193,7 @@ function RegistrazionePage() {
           password: data.password!,
           options: {
             emailRedirectTo: autore
-              ? `${window.location.origin}/auth/profilo-autore`
+              ? "https://liberiamo2076.com/auth/profilo-autore"
               : undefined,
             data: {
               nome: data.nome,
