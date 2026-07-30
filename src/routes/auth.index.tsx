@@ -369,7 +369,7 @@ function AuthLanding() {
 
           <div className="mt-5">
             <div className="font-mono text-[10px] tracking-[0.2em] text-cyan uppercase">account libero</div>
-            <p className="mt-1 font-serif text-sm text-bone/70">Pubblica la tua prima opera.</p>
+            <p className="mt-1 font-serif text-sm text-bone">Condividi una tua opera.</p>
             <Link to="/auth/registrazione" search={{ autore: true }} className="mt-3 inline-block">
               <HudButton variant="primary">▸ {t("authLogin.opt01Btn")}</HudButton>
             </Link>
@@ -385,7 +385,7 @@ function AuthLanding() {
 
           <div className="mt-5 pt-5 border-t border-cyan/40">
             <p className="font-serif text-sm text-bone">
-              Nota: variazioni al piano? Scrivi a{" "}
+              Nota: piano personalizzato? Scrivi a{" "}
               <a href="mailto:admin@liberiamo2076.com" className="text-cyan hover:text-cyan/70 underline underline-offset-2">
                 admin@liberiamo2076.com
               </a>
@@ -396,7 +396,8 @@ function AuthLanding() {
         {/* Esploratore */}
         <HudPanel label="opzione 03 — esplora" tone="amber">
           <h3 className="font-display text-2xl text-bone tracking-tight">Esploratore</h3>
-          <p className="mt-3 font-serif italic text-bone/70">Entra subito, senza moduli e senza password. Tutto il catalogo è aperto. L'unico biglietto d'ingresso è la tua voglia di leggere.</p>
+          <p className="mt-3 font-serif italic text-bone/70">Entra subito, senza moduli e senza password. Tutto il catalogo è aperto.</p>
+          <p className="mt-3 font-serif italic text-bone/70">L'unico biglietto d'ingresso è la tua voglia di leggere.</p>
           <button onClick={handleGuestLogin} disabled={loading} className="mt-6 inline-block">
             <HudButton variant="ghost" disabled={loading}>
               {loading ? `▸ ${t("authLogin.opt02BtnLoading")}` : `▸ ${t("authLogin.opt03Btn")}`}
