@@ -201,6 +201,14 @@ function AuthLanding() {
     setLoading(true);
     loginAttempted.current = true;
     try {
+      // Se c'era già una sessione attiva (cambio account senza passare da "Esci"),
+      // i progressi di lettura locali appartengono all'account precedente: non vanno migrati su quello nuovo.
+      const { data: { session: existingSession } } = await supabase.auth.getSession();
+      if (existingSession) {
+        Object.keys(localStorage)
+          .filter(k => k.startsWith("reading_pos_") || k.startsWith("bookmark_para_"))
+          .forEach(k => localStorage.removeItem(k));
+      }
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         loginAttempted.current = false;
