@@ -1,4 +1,5 @@
 import { useEditor, EditorContent } from "@tiptap/react";
+import { Mark, mergeAttributes } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import TextAlign from "@tiptap/extension-text-align";
@@ -6,6 +7,17 @@ import Image from "@tiptap/extension-image";
 import Link from "@tiptap/extension-link";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
+
+// Testo piccolo per didascalie immagini — mark minimale, nessuna extension ufficiale copre questo caso
+const SmallText = Mark.create({
+  name: "smallText",
+  parseHTML() {
+    return [{ tag: "small" }];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ["small", mergeAttributes(HTMLAttributes), 0];
+  },
+});
 
 type Props = {
   value: string;
@@ -43,6 +55,7 @@ export function RichTextEditor({ value, onChange, userId, bookId }: Props) {
     extensions: [
       StarterKit,
       Underline,
+      SmallText,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Image.configure({ inline: false, allowBase64: true }),
       Link.configure({
@@ -123,6 +136,11 @@ export function RichTextEditor({ value, onChange, userId, bookId }: Props) {
     editor.chain().focus().extendMarkRange("link").unsetLink().run();
   };
 
+  const handleInsertSpacer = () => {
+    if (!editor) return;
+    editor.chain().focus().insertContent({ type: "paragraph", content: [{ type: "text", text: "\u00A0" }] }).run();
+  };
+
   if (!editor) return null;
 
   const btnBase =
@@ -153,6 +171,9 @@ export function RichTextEditor({ value, onChange, userId, bookId }: Props) {
           className={`${btnBase} ${editor.isActive("heading", { level: 2 }) ? btnActive : btnInactive}`}>H2</button>
         <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
           className={`${btnBase} ${editor.isActive("heading", { level: 3 }) ? btnActive : btnInactive}`}>H3</button>
+        <button type="button" onClick={() => editor.chain().focus().toggleMark("smallText").run()}
+          title="Testo piccolo (didascalie)"
+          className={`${btnBase} ${editor.isActive("smallText") ? btnActive : btnInactive} text-[9px]`}>sm</button>
 
         <span className="w-px h-4 bg-cyan/20 mx-1" />
 
@@ -167,6 +188,11 @@ export function RichTextEditor({ value, onChange, userId, bookId }: Props) {
 
         <button type="button" onClick={() => editor.chain().focus().toggleBulletList().run()}
           className={`${btnBase} ${editor.isActive("bulletList") ? btnActive : btnInactive}`}>≡</button>
+
+        <span className="w-px h-4 bg-cyan/20 mx-1" />
+
+        <button type="button" onClick={handleInsertSpacer} title="Inserisci riga vuota (interlinea tra blocchi)"
+          className={`${btnBase} ${btnInactive}`}>↕ interlinea</button>
 
         {userId && bookId && (
           <>
