@@ -332,9 +332,9 @@ function AuthLanding() {
       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
 
         {/* Lettore */}
-        <HudPanel label="opzione 01 — lettore" tone="cyan">
+        <HudPanel label="opzione 01 — lettore" tone="cyan" className="h-full flex flex-col">
           <h3 className="font-display text-2xl text-bone tracking-tight">Diventa lettore</h3>
-          <ul className="mt-4 space-y-2">
+          <ul className="mt-4 space-y-2 min-h-[150px]">
             {[
               "Segnalibro automatico — riprendi da dove hai smesso",
               "Salva dal dimenticatoio le opere che meritano — vota nel Cestino",
@@ -351,10 +351,10 @@ function AuthLanding() {
         </HudPanel>
 
         {/* Autore */}
-        <HudPanel label="opzione 02 — autore" tone="cyan">
+        <HudPanel label="opzione 02 — autore" tone="cyan" className="h-full flex flex-col">
           <h3 className="font-display text-2xl text-bone tracking-tight">Diventa autore</h3>
 
-          <ul className="mt-4 space-y-2">
+          <ul className="mt-4 space-y-2 min-h-[150px]">
             {[
               "Tutti i vantaggi del lettore",
               "Pubblica le tue opere",
@@ -367,38 +367,34 @@ function AuthLanding() {
             ))}
           </ul>
 
-          <div className="my-4 border-t border-cyan/40" />
-
-          <div className="space-y-5">
-            <div>
-              <div className="font-mono text-[10px] tracking-[0.2em] text-cyan uppercase">account libero</div>
-              <p className="mt-1 font-serif text-sm text-bone/70">Un'opera gratuita.</p>
-              <Link to="/auth/registrazione" search={{ autore: true }} className="mt-3 inline-block">
-                <HudButton variant="primary">▸ {t("authLogin.opt01Btn")}</HudButton>
-              </Link>
-            </div>
-
-            <div>
-              <div className="font-mono text-[10px] tracking-[0.2em] text-cyan uppercase">abbonati — €12/anno</div>
-              <p className="mt-1 font-serif text-sm text-bone/70">2 libri, 5 opere e 25 articoli (circa bisettimanali).</p>
-              <Link to="/abbonamento" className="mt-3 inline-block">
-                <HudButton variant="ghost">▸ Richiedi abbonamento</HudButton>
-              </Link>
-            </div>
+          <div>
+            <div className="font-mono text-[10px] tracking-[0.2em] text-cyan uppercase">gratis</div>
+            <p className="mt-1 font-serif text-sm text-bone/70">La tua prima opera è gratuita.</p>
+            <Link to="/auth/registrazione" search={{ autore: true }} className="mt-3 inline-block">
+              <HudButton variant="primary">▸ {t("authLogin.opt01Btn")}</HudButton>
+            </Link>
           </div>
 
-          <p className="mt-5 font-mono text-[9px] text-bone/40">
-            Nota: variazioni al piano? Scrivi a{" "}
-            <a href="mailto:admin@liberiamo2076.com" className="text-cyan/70 hover:text-cyan underline underline-offset-2">
-              admin@liberiamo2076.com
-            </a>
-          </p>
+          <div className="mt-auto pt-5">
+            <div className="my-4 border-t border-cyan/40" />
+            <div className="font-mono text-[10px] tracking-[0.2em] text-magenta uppercase">abbonati — €12/anno</div>
+            <p className="mt-1 font-serif text-sm text-bone/70">2 libri, 5 opere e 25 articoli.</p>
+            <Link to="/abbonamento" className="mt-3 inline-block">
+              <HudButton variant="magenta">▸ Richiedi abbonamento</HudButton>
+            </Link>
+            <p className="mt-4 font-serif text-xs text-bone/60">
+              Nota: variazioni al piano? Scrivi a{" "}
+              <a href="mailto:admin@liberiamo2076.com" className="text-cyan hover:text-cyan/70 underline underline-offset-2">
+                admin@liberiamo2076.com
+              </a>
+            </p>
+          </div>
         </HudPanel>
 
         {/* Esploratore */}
-        <HudPanel label="opzione 03 — esplora" tone="amber">
+        <HudPanel label="opzione 03 — esplora" tone="amber" className="h-full flex flex-col">
           <h3 className="font-display text-2xl text-bone tracking-tight">Esploratore</h3>
-          <p className="mt-3 font-serif italic text-bone/70">Entra subito, senza moduli e senza password. Tutto il catalogo è aperto. L'unico biglietto d'ingresso è la tua voglia di leggere.</p>
+          <p className="mt-3 font-serif italic text-bone/70 min-h-[150px]">Entra subito, senza moduli e senza password. Tutto il catalogo è aperto. L'unico biglietto d'ingresso è la tua voglia di leggere.</p>
           <button onClick={handleGuestLogin} disabled={loading} className="mt-6 inline-block">
             <HudButton variant="ghost" disabled={loading}>
               {loading ? `▸ ${t("authLogin.opt02BtnLoading")}` : `▸ ${t("authLogin.opt03Btn")}`}
@@ -407,10 +403,10 @@ function AuthLanding() {
         </HudPanel>
 
         {/* Login */}
-        <HudPanel label="opzione 04 — accedi" tone="magenta" className="border border-magenta/40">
+        <HudPanel label="opzione 04 — accedi" tone="magenta" className="border border-magenta/40 h-full flex flex-col">
           <h3 className="font-display text-2xl text-bone tracking-tight">{t("authLogin.opt02Title")}</h3>
           <p className="mt-3 font-serif italic text-bone/70">{t("authLogin.opt02Desc")}</p>
-          <form onSubmit={handleLogin} className="mt-6 space-y-4">
+          <form onSubmit={handleLogin} className="mt-auto pt-6 space-y-4">
             <div>
               <span className={labelClass}>↳ email</span>
               <input
