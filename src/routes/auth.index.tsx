@@ -357,7 +357,7 @@ function AuthLanding() {
           <ul className="mt-4 space-y-2">
             {[
               { text: "Tutti i vantaggi del lettore", marker: "◆" },
-              { text: "Pubblica le tue opere", marker: "+" },
+              { text: "Pubblica la tua opera", marker: "+" },
               { text: "Area riservata", marker: "+" },
               { text: "Ricevi donazioni", marker: "+" },
             ].map(({ text, marker }) => (
@@ -367,20 +367,13 @@ function AuthLanding() {
             ))}
           </ul>
 
-          <div className="mt-5">
-            <div className="font-mono text-[10px] tracking-[0.2em] text-cyan uppercase">account libero</div>
-            <p className="mt-1 font-serif text-sm text-bone">Condividi una tua opera.</p>
-            <Link to="/auth/registrazione" search={{ autore: true }} className="mt-3 inline-block">
-              <HudButton variant="primary">▸ {t("authLogin.opt01Btn")}</HudButton>
-            </Link>
-          </div>
+          <Link to="/auth/registrazione" search={{ autore: true }} className="mt-6 inline-block">
+            <HudButton variant="primary">▸ {t("authLogin.opt01Btn")}</HudButton>
+          </Link>
 
-          <div className="mt-5">
-            <div className="font-mono text-[10px] tracking-[0.2em] text-magenta uppercase">abbonati — €12/anno</div>
+          <div className="mt-5 pt-5 border-t border-cyan/40">
+            <div className="font-mono text-[10px] tracking-[0.2em] text-magenta uppercase">Abbonamento — 12€ annui</div>
             <p className="mt-1 font-serif text-sm text-bone/70">2 libri, 5 opere e 25 articoli.</p>
-            <Link to="/abbonamento" className="mt-3 inline-block">
-              <HudButton variant="magenta">▸ Abbonamento</HudButton>
-            </Link>
           </div>
 
           <div className="mt-5 pt-5 border-t border-cyan/40">
