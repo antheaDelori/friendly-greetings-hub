@@ -259,9 +259,6 @@ function RegistrazionePage() {
               <p className="font-serif italic text-bone/70 text-sm leading-relaxed">
                 {t("registrazione.emailSentDopoAutore")}
               </p>
-              <Link to="/auth/profilo-autore" className="mt-3 inline-flex items-center gap-2 font-mono text-[10px] tracking-widest uppercase text-magenta hover:text-bone transition-colors">
-                ◆ {t("registrazione.emailSentVaiAutore")}
-              </Link>
             </div>
           )}
           <div className="mt-6 border-t border-cyan/10 pt-6 space-y-2">
