@@ -356,12 +356,12 @@ function AuthLanding() {
 
           <ul className="mt-4 space-y-2">
             {[
-              { text: "Tutti i vantaggi del lettore", marker: "◆" },
-              { text: "Pubblica la tua opera", marker: "+" },
-              { text: "Area riservata", marker: "+" },
-              { text: "Ricevi donazioni", marker: "+" },
-            ].map(({ text, marker }) => (
-              <li key={text} className="flex items-start gap-2 font-serif text-sm text-bone/70">
+              { text: "Tutti i vantaggi del lettore", marker: "◆", bright: false },
+              { text: "Pubblica la tua opera", marker: "+", bright: true },
+              { text: "Area riservata", marker: "+", bright: false },
+              { text: "Ricevi donazioni", marker: "+", bright: false },
+            ].map(({ text, marker, bright }) => (
+              <li key={text} className={`flex items-start gap-2 font-serif text-sm ${bright ? "text-bone" : "text-bone/70"}`}>
                 <span className="text-cyan mt-0.5 shrink-0">{marker}</span>{text}
               </li>
             ))}
@@ -372,7 +372,8 @@ function AuthLanding() {
           </Link>
 
           <div className="mt-5 pt-5 border-t border-cyan/40">
-            <div className="font-mono text-[10px] tracking-[0.2em] text-magenta uppercase">Abbonamento — 12€ annui</div>
+            <p className="font-serif italic text-sm text-bone/70">Hai altro da raccontare?</p>
+            <div className="mt-3 font-mono text-[10px] tracking-[0.2em] text-magenta uppercase">Abbonamento — 12€ annui</div>
             <p className="mt-1 font-serif text-sm text-bone/70">2 libri, 5 opere e 25 articoli.</p>
           </div>
 
