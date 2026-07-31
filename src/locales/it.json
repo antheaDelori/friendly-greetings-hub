@@ -257,9 +257,12 @@
     "emailSentAttiva": "Clicca il link per attivare il tuo account",
     "emailSentAutore": " e poi completa il tuo profilo autore",
     "emailSentValido": ". Il link è valido per 24 ore.",
-    "emailSentDopoAutore": "Puoi chiudere questa pagina: cliccando il link nella mail si aprirà automaticamente una nuova sessione già collegata al tuo profilo autore.",
+    "emailSentDopoAutore": "Controlla nella tua casella postale la mail che ti abbiamo mandato da notifiche@liberiamo2076.com, o cerca \"Attiva il tuo account — Liberiamo la mente\" anche nello spam. Clicca sul link per aprire una nuova sessione collegata al tuo profilo autore. Questa pagina può essere chiusa.",
     "emailSentSpam": "Non trovi l'email? Cerca nello spam:",
     "emailSentSoggetto": "liberiamo2076.com — Attiva il tuo account",
+    "emailSentNonTrovata": "Non trovi l'email? Ti attiviamo manualmente",
+    "emailSentInviaSegnalazione": "Invia la segnalazione",
+    "emailSentSegnalazioneInviata": "Segnalazione inviata — verrai attivato manualmente al più presto.",
     "aggiornato": "Profilo aggiornato.",
     "aggiornatoDesc": "Le modifiche sono state salvate.",
     "tornaLibreria": "Torna alla libreria"

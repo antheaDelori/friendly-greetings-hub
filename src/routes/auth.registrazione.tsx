@@ -97,6 +97,11 @@ function RegistrazionePage() {
   const navigate = useNavigate();
   const [serverError, setServerError] = useState<string | null>(null);
   const [emailInviata, setEmailInviata] = useState<string | null>(null);
+  const [inviatoNome, setInviatoNome] = useState("");
+  const [inviatoCognome, setInviatoCognome] = useState("");
+  const [reportSending, setReportSending] = useState(false);
+  const [reportSent, setReportSent] = useState(false);
+  const [reportError, setReportError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [aggiornato, setAggiornato] = useState(false);
   const [originalEmail, setOriginalEmail] = useState("");
@@ -209,11 +214,32 @@ function RegistrazionePage() {
         });
         if (result.error) { setServerError(result.error.message); return; }
         setEmailInviata(data.email!);
+        setInviatoNome(data.nome ?? "");
+        setInviatoCognome(data.cognome ?? "");
       }
     } catch (e: unknown) {
       setServerError(e instanceof Error ? e.message : "Errore di connessione. Riprova.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleReportMissingEmail = async () => {
+    if (!emailInviata) return;
+    setReportSending(true); setReportError(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("report-missing-confirmation", {
+        body: { email: emailInviata, nome: inviatoNome, cognome: inviatoCognome },
+      });
+      if (error || data?.error) {
+        setReportError(data?.error ?? "Errore durante l'invio della segnalazione.");
+      } else {
+        setReportSent(true);
+      }
+    } catch (e) {
+      setReportError(e instanceof Error ? e.message : "Errore durante l'invio della segnalazione.");
+    } finally {
+      setReportSending(false);
     }
   };
 
@@ -266,6 +292,23 @@ function RegistrazionePage() {
             <p className="font-mono text-[11px] text-cyan/70 border border-cyan/20 bg-cyan/5 px-4 py-2 inline-block">
               {t("registrazione.emailSentSoggetto")}
             </p>
+          </div>
+          <div className="mt-6 border-t border-magenta/15 pt-6 text-left">
+            <p className="font-mono text-[10px] tracking-widest text-magenta uppercase mb-3">{t("registrazione.emailSentNonTrovata")}</p>
+            {reportSent ? (
+              <p className="font-serif italic text-bone/70 text-sm leading-relaxed">{t("registrazione.emailSentSegnalazioneInviata")}</p>
+            ) : (
+              <>
+                <button type="button" onClick={handleReportMissingEmail} disabled={reportSending} className="inline-block">
+                  <HudButton variant="ghost" disabled={reportSending}>
+                    {reportSending ? "▸ Invio..." : `◆ ${t("registrazione.emailSentInviaSegnalazione")}`}
+                  </HudButton>
+                </button>
+                {reportError && (
+                  <p className="mt-2 font-mono text-[11px] text-magenta">⚠ {reportError}</p>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>
