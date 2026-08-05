@@ -537,7 +537,6 @@ function GestionePage() {
   const [newFollowerNome, setNewFollowerNome] = useState("");
   const [addingFollower, setAddingFollower] = useState(false);
   const [sendingNewsletter, setSendingNewsletter] = useState(false);
-  const [newsletterBookId, setNewsletterBookId] = useState("");
   const [newsletterMessage, setNewsletterMessage] = useState("");
   const [newsletterResult, setNewsletterResult] = useState<{ sent: number; failed?: string[] } | { error: string } | null>(null);
   const [selectedNewsletterListIds, setSelectedNewsletterListIds] = useState<Set<string>>(new Set());
@@ -886,6 +885,9 @@ function GestionePage() {
     setExistingMobiUrl(b.mobi_url);
     setExistingDocxUrl(b.docx_url ?? null);
     setExistingEbookFromPdf(!!b.ebook_from_pdf);
+    setSelectedNewsletterListIds(new Set());
+    setNewsletterMessage("");
+    setNewsletterResult(null);
     setDocxFile(null);
     setDocGenPdfOk(false);
     setDocGenEpubOk(false);
@@ -2073,14 +2075,14 @@ function GestionePage() {
   };
 
   const handleSendNewsletter = async () => {
-    if (!newsletterBookId || selectedNewsletterListIds.size === 0 || sendingNewsletter) return;
+    if (!editingId || selectedNewsletterListIds.size === 0 || sendingNewsletter) return;
     setSendingNewsletter(true); setNewsletterResult(null);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-newsletter`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session?.access_token}` },
-        body: JSON.stringify({ book_id: newsletterBookId, custom_message: newsletterMessage, list_ids: Array.from(selectedNewsletterListIds) }),
+        body: JSON.stringify({ book_id: editingId, custom_message: newsletterMessage, list_ids: Array.from(selectedNewsletterListIds) }),
       });
       const data = await res.json();
       setNewsletterResult(data);
@@ -3039,6 +3041,87 @@ function GestionePage() {
                       </div>
                     )}
                   </div>
+
+                  {/* Invia comunicazione su questa opera — sempre disponibile, anche per opere gratuite */}
+                  {editingId && (
+                    <div className="border border-amber/20 bg-amber/5 p-4 space-y-3">
+                      <div className="font-mono text-[10px] tracking-[0.25em] text-amber uppercase">◈ Invia comunicazione su questa opera</div>
+                      {distributionLists.length === 0 ? (
+                        <p className="font-mono text-[10px] text-bone/30 tracking-widest uppercase">
+                          Nessuna lista di distribuzione ancora — <Link to="/gestione/liste" className="underline hover:text-amber">creane una</Link>.
+                        </p>
+                      ) : (
+                        <>
+                          <div>
+                            <label className="font-mono text-[10px] tracking-[0.2em] text-bone/50 uppercase block mb-1">Liste di distribuzione destinatarie</label>
+                            <div className="space-y-1">
+                              {distributionLists.map(list => {
+                                const isOpen = expandedListIds.has(list.id);
+                                const members = listMembersCache[list.id];
+                                return (
+                                  <div key={list.id} className="border border-amber/10">
+                                    <div className="flex items-center gap-3 px-2 py-1.5 flex-wrap">
+                                      <label className="flex items-center gap-2 cursor-pointer font-mono text-xs flex-1">
+                                        <input type="checkbox" checked={selectedNewsletterListIds.has(list.id)}
+                                          onChange={() => setSelectedNewsletterListIds(prev => {
+                                            const next = new Set(prev);
+                                            if (next.has(list.id)) next.delete(list.id); else next.add(list.id);
+                                            return next;
+                                          })}
+                                          className="accent-amber" />
+                                        <span className={selectedNewsletterListIds.has(list.id) ? "text-bone/80" : "text-bone/40"}>
+                                          {list.nome}{members ? ` (${members.length})` : ""}
+                                        </span>
+                                      </label>
+                                      <button type="button" onClick={() => handleToggleListExpand(list.id)}
+                                        className="font-mono text-[9px] text-amber/50 hover:text-amber transition-colors cursor-pointer">
+                                        {isOpen ? "▼" : "+"} membri
+                                      </button>
+                                    </div>
+                                    {isOpen && (
+                                      <div className="px-3 pb-2 space-y-0.5">
+                                        {(members ?? []).map(m => (
+                                          <div key={m.id} className="font-serif text-xs text-bone/60">{m.email}</div>
+                                        ))}
+                                        {members && members.length === 0 && (
+                                          <p className="font-mono text-[9px] text-bone/30 uppercase tracking-widest">Nessun membro in questa lista.</p>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                          <div>
+                            <label className="font-mono text-[10px] tracking-[0.2em] text-bone/50 uppercase block mb-1">Messaggio personale <span className="normal-case text-bone/30">(opzionale)</span></label>
+                            <textarea value={newsletterMessage} onChange={e => setNewsletterMessage(e.target.value)}
+                              placeholder="Un pensiero diretto ai tuoi lettori..."
+                              rows={3}
+                              className="w-full border border-amber/30 bg-void/40 px-3 py-2 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-amber transition-all resize-y text-sm" />
+                          </div>
+                          <div className="flex items-center gap-4 flex-wrap">
+                            <HudButton variant="primary" onClick={handleSendNewsletter} disabled={sendingNewsletter || selectedNewsletterListIds.size === 0}>
+                              {sendingNewsletter ? "◈ Invio in corso..." : "◈ Invia alle liste selezionate"}
+                            </HudButton>
+                            {newsletterResult && (
+                              <span className={`font-mono text-[10px] tracking-widest uppercase ${"error" in newsletterResult ? "text-magenta" : "text-cyan"}`}>
+                                {"error" in newsletterResult ? `✗ ${newsletterResult.error}` : `✓ Inviata a ${newsletterResult.sent} lettori`}
+                              </span>
+                            )}
+                          </div>
+                          {newsletterResult && "failed" in newsletterResult && newsletterResult.failed && newsletterResult.failed.length > 0 && (
+                            <p className="font-mono text-[10px] text-magenta tracking-widest">
+                              ✗ Non consegnata a: {newsletterResult.failed.join(", ")}
+                            </p>
+                          )}
+                          <p className="font-mono text-[9px] text-bone/25 tracking-widest">
+                            ↳ L'email arriva anche a te in copia — ogni lettore riceve un invio individuale, non si vedono tra loro
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  )}
 
                   <div>
                     <span className={labelClass}>↳ Descrizione / Sinossi</span>
@@ -4675,87 +4758,11 @@ function GestionePage() {
               )}
             </div>
 
-            {/* Invia comunicazione */}
+            {/* L'invio comunicazioni è ora dentro la scheda di ogni opera (sezione "Accesso"), per evitare ambiguità sul libro selezionato */}
             {distributionLists.length > 0 && (
-              <div className="border-t border-amber/20 pt-5 space-y-3">
-                <div className="font-mono text-[10px] tracking-[0.25em] text-amber uppercase">◈ Invia comunicazione</div>
-                <div>
-                  <label className="font-mono text-[10px] tracking-[0.2em] text-bone/50 uppercase block mb-1">Opera da presentare</label>
-                  <select value={newsletterBookId} onChange={e => setNewsletterBookId(e.target.value)}
-                    className="w-full border border-amber/30 bg-void/40 px-3 py-2 font-serif text-bone focus:outline-none focus:border-amber transition-all text-sm">
-                    <option value="">— seleziona un libro —</option>
-                    {books.filter(b => b.disponibile).map(b => (
-                      <option key={b.id} value={b.id}>{b.titolo}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="font-mono text-[10px] tracking-[0.2em] text-bone/50 uppercase block mb-1">Liste di distribuzione destinatarie</label>
-                  <div className="space-y-1">
-                    {distributionLists.map(list => {
-                      const isOpen = expandedListIds.has(list.id);
-                      const members = listMembersCache[list.id];
-                      return (
-                        <div key={list.id} className="border border-amber/10">
-                          <div className="flex items-center gap-3 px-2 py-1.5 flex-wrap">
-                            <label className="flex items-center gap-2 cursor-pointer font-mono text-xs flex-1">
-                              <input type="checkbox" checked={selectedNewsletterListIds.has(list.id)}
-                                onChange={() => setSelectedNewsletterListIds(prev => {
-                                  const next = new Set(prev);
-                                  if (next.has(list.id)) next.delete(list.id); else next.add(list.id);
-                                  return next;
-                                })}
-                                className="accent-amber" />
-                              <span className={selectedNewsletterListIds.has(list.id) ? "text-bone/80" : "text-bone/40"}>
-                                {list.nome}{members ? ` (${members.length})` : ""}
-                              </span>
-                            </label>
-                            <button type="button" onClick={() => handleToggleListExpand(list.id)}
-                              className="font-mono text-[9px] text-amber/50 hover:text-amber transition-colors cursor-pointer">
-                              {isOpen ? "▼" : "+"} membri
-                            </button>
-                          </div>
-                          {isOpen && (
-                            <div className="px-3 pb-2 space-y-0.5">
-                              {(members ?? []).map(m => (
-                                <div key={m.id} className="font-serif text-xs text-bone/60">{m.email}</div>
-                              ))}
-                              {members && members.length === 0 && (
-                                <p className="font-mono text-[9px] text-bone/30 uppercase tracking-widest">Nessun membro in questa lista.</p>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-                <div>
-                  <label className="font-mono text-[10px] tracking-[0.2em] text-bone/50 uppercase block mb-1">Messaggio personale <span className="normal-case text-bone/30">(opzionale)</span></label>
-                  <textarea value={newsletterMessage} onChange={e => setNewsletterMessage(e.target.value)}
-                    placeholder="Un pensiero diretto ai tuoi lettori..."
-                    rows={3}
-                    className="w-full border border-amber/30 bg-void/40 px-3 py-2 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-amber transition-all resize-y text-sm" />
-                </div>
-                <div className="flex items-center gap-4 flex-wrap">
-                  <HudButton variant="primary" onClick={handleSendNewsletter} disabled={sendingNewsletter || !newsletterBookId || selectedNewsletterListIds.size === 0}>
-                    {sendingNewsletter ? "◈ Invio in corso..." : "◈ Invia alle liste selezionate"}
-                  </HudButton>
-                  {newsletterResult && (
-                    <span className={`font-mono text-[10px] tracking-widest uppercase ${"error" in newsletterResult ? "text-magenta" : "text-cyan"}`}>
-                      {"error" in newsletterResult ? `✗ ${newsletterResult.error}` : `✓ Inviata a ${newsletterResult.sent} lettori`}
-                    </span>
-                  )}
-                </div>
-                {newsletterResult && "failed" in newsletterResult && newsletterResult.failed && newsletterResult.failed.length > 0 && (
-                  <p className="font-mono text-[10px] text-magenta tracking-widest">
-                    ✗ Non consegnata a: {newsletterResult.failed.join(", ")}
-                  </p>
-                )}
-                <p className="font-mono text-[9px] text-bone/25 tracking-widest">
-                  ↳ L'email arriva anche a te in copia — ogni lettore riceve un invio individuale, non si vedono tra loro
-                </p>
-              </div>
+              <p className="border-t border-amber/20 pt-5 font-mono text-[10px] text-bone/30 tracking-widest uppercase">
+                ↳ Per inviare una comunicazione, apri l'opera che vuoi presentare e usa "Invia comunicazione su questa opera"
+              </p>
             )}
 
           </div>
