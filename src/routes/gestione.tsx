@@ -2334,6 +2334,14 @@ function GestionePage() {
       <SiteHeader />
       <PageShell code="// MODULE/WORK_MGMT" title="Gestione opere" subtitle="Scrivi, modifica, pubblica. Tutto da qui.">
 
+        <Link to="/gestione/liste"
+          className="mb-6 flex items-center justify-between gap-3 border border-magenta/30 bg-magenta/5 px-5 py-3 hover:border-magenta hover:bg-magenta/10 transition-all group">
+          <span className="font-mono text-[10px] tracking-[0.25em] text-magenta uppercase">
+            ◈ Liste di Distribuzione — crea e gestisci i gruppi di lettori
+          </span>
+          <span className="font-mono text-[10px] text-magenta/60 group-hover:text-magenta uppercase tracking-widest">▸ apri</span>
+        </Link>
+
         {/* Pannello admin — visibile solo ad Anthea */}
         {isAdmin && (
           <div className="mb-6 border border-amber/30 bg-amber/5 p-4 flex items-center gap-4 flex-wrap">
