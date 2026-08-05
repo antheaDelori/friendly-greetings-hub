@@ -17,6 +17,7 @@ export const Route = createFileRoute("/gestione_/liste")({
 
 type DistributionList = { id: string; nome: string; created_at: string };
 type Member = { id: string; email: string; nome: string | null };
+type KnownContact = { email: string; nome: string | null };
 
 const inputClass =
   "border border-amber/30 bg-void/40 px-3 py-2 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-amber transition-all text-sm";
@@ -29,7 +30,11 @@ function GestioneListePage() {
   const [newListName, setNewListName] = useState("");
   const [creatingList, setCreatingList] = useState(false);
   const [listError, setListError] = useState<string | null>(null);
-  const [knownEmails, setKnownEmails] = useState<string[]>([]);
+  const [knownContacts, setKnownContacts] = useState<KnownContact[]>([]);
+
+  const [pickerOpenFor, setPickerOpenFor] = useState<string | null>(null);
+  const [pickerSelected, setPickerSelected] = useState<Set<string>>(new Set());
+  const [addingSelected, setAddingSelected] = useState(false);
 
   const [renamingListId, setRenamingListId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
@@ -81,18 +86,27 @@ function GestioneListePage() {
     setLists(data ?? []);
   };
 
-  // Email già note all'autore (follower + membri di qualunque sua DL), per
-  // l'autocompletamento quando aggiunge un nominativo — evita di doverle
-  // riscrivere se sono già presenti altrove.
+  // Contatti già noti all'autore (follower + membri di qualunque sua DL), per
+  // l'autocompletamento e per il selettore "scegli dai contatti già noti" —
+  // evita di dover riscrivere un'email già presente altrove.
   const loadKnownEmails = async (uid: string) => {
     const [{ data: followerRows }, { data: memberRows }] = await Promise.all([
-      supabase.from("author_followers").select("email").eq("author_id", uid),
-      supabase.from("distribution_list_members").select("email, distribution_lists!inner(author_id)").eq("distribution_lists.author_id", uid),
+      supabase.from("author_followers").select("email, nome").eq("author_id", uid),
+      supabase.from("distribution_list_members").select("email, nome, distribution_lists!inner(author_id)").eq("distribution_lists.author_id", uid),
     ]);
-    const emails = new Set<string>();
-    (followerRows ?? []).forEach((r: { email: string }) => emails.add(r.email));
-    (memberRows ?? []).forEach((r: { email: string }) => emails.add(r.email));
-    setKnownEmails(Array.from(emails).sort());
+    const byEmail = new Map<string, string | null>();
+    const merge = (rows: { email: string; nome: string | null }[] | null) => {
+      (rows ?? []).forEach(r => {
+        if (!byEmail.has(r.email) || (!byEmail.get(r.email) && r.nome)) byEmail.set(r.email, r.nome);
+      });
+    };
+    merge(followerRows);
+    merge(memberRows);
+    setKnownContacts(
+      Array.from(byEmail.entries())
+        .map(([email, nome]) => ({ email, nome }))
+        .sort((a, b) => a.email.localeCompare(b.email))
+    );
   };
 
   const handleCreateList = async () => {
@@ -168,11 +182,50 @@ function GestioneListePage() {
         .eq("list_id", listId)
         .order("email");
       setMembersByList(prev => ({ ...prev, [listId]: data ?? [] }));
-      setKnownEmails(prev => prev.includes(email) ? prev : [...prev, email].sort());
+      setKnownContacts(prev =>
+        prev.some(c => c.email === email)
+          ? prev
+          : [...prev, { email, nome }].sort((a, b) => a.email.localeCompare(b.email))
+      );
     } else {
       setListError(error.message);
     }
     setAddingMemberFor(null);
+  };
+
+  const handleTogglePicker = (listId: string) => {
+    if (pickerOpenFor === listId) {
+      setPickerOpenFor(null);
+    } else {
+      setPickerOpenFor(listId);
+      setPickerSelected(new Set());
+    }
+  };
+
+  const handleAddSelectedContacts = async (listId: string) => {
+    if (pickerSelected.size === 0 || addingSelected) return;
+    setAddingSelected(true);
+    const rows = Array.from(pickerSelected).map(email => ({
+      list_id: listId,
+      email,
+      nome: knownContacts.find(c => c.email === email)?.nome ?? null,
+    }));
+    const { error } = await supabase
+      .from("distribution_list_members")
+      .upsert(rows, { onConflict: "list_id,email", ignoreDuplicates: true });
+    if (!error) {
+      const { data } = await supabase
+        .from("distribution_list_members")
+        .select("id, email, nome")
+        .eq("list_id", listId)
+        .order("email");
+      setMembersByList(prev => ({ ...prev, [listId]: data ?? [] }));
+      setPickerSelected(new Set());
+      setPickerOpenFor(null);
+    } else {
+      setListError(error.message);
+    }
+    setAddingSelected(false);
   };
 
   const handleRemoveMember = async (listId: string, memberId: string) => {
@@ -250,6 +303,7 @@ function GestioneListePage() {
               const members = membersByList[list.id];
               const isOpen = expandedListIds.has(list.id);
               const isLoadingMembers = loadingMembersFor.has(list.id);
+              const availableContacts = knownContacts.filter(c => !(members ?? []).some(m => m.email === c.email));
               return (
                 <HudPanel key={list.id} tone="cyan" label={list.nome} code={members ? `${members.length} membri` : undefined}>
                   <div className="space-y-3">
@@ -324,6 +378,50 @@ function GestioneListePage() {
                               ))}
                             </div>
                           )}
+
+                          {availableContacts.length > 0 && (
+                            <div className="border-t border-cyan/10 pt-2">
+                              <button
+                                type="button"
+                                onClick={() => handleTogglePicker(list.id)}
+                                className="font-mono text-[9px] tracking-widest text-cyan/60 hover:text-cyan uppercase transition-colors cursor-pointer"
+                              >
+                                {pickerOpenFor === list.id ? "▼" : "▶"} scegli dai contatti già noti ({availableContacts.length})
+                              </button>
+                              {pickerOpenFor === list.id && (
+                                <div className="mt-2 space-y-2">
+                                  <div className="max-h-56 overflow-y-auto space-y-0.5 border border-cyan/10 p-2">
+                                    {availableContacts.map(c => (
+                                      <label key={c.email} className="flex items-center gap-2 py-0.5 cursor-pointer">
+                                        <input
+                                          type="checkbox"
+                                          checked={pickerSelected.has(c.email)}
+                                          onChange={() => setPickerSelected(prev => {
+                                            const next = new Set(prev);
+                                            if (next.has(c.email)) next.delete(c.email); else next.add(c.email);
+                                            return next;
+                                          })}
+                                          className="accent-cyan"
+                                        />
+                                        <span className="font-serif text-sm text-bone/80">{c.email}</span>
+                                        {c.nome && <span className="font-mono text-[9px] text-bone/40">{c.nome}</span>}
+                                      </label>
+                                    ))}
+                                  </div>
+                                  <HudButton
+                                    variant="ghost"
+                                    onClick={() => handleAddSelectedContacts(list.id)}
+                                    disabled={pickerSelected.size === 0 || addingSelected}
+                                  >
+                                    {addingSelected
+                                      ? "▸ Aggiunta..."
+                                      : `→ Aggiungi ${pickerSelected.size} selezionat${pickerSelected.size === 1 ? "o" : "i"}`}
+                                  </HudButton>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
                           <div className="flex gap-2 flex-wrap">
                             <input
                               type="text"
@@ -364,7 +462,7 @@ function GestioneListePage() {
         </div>
 
         <datalist id="known-emails">
-          {knownEmails.map(email => <option key={email} value={email} />)}
+          {knownContacts.map(c => <option key={c.email} value={c.email} />)}
         </datalist>
       </PageShell>
       <SiteFooter />
