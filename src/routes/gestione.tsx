@@ -4691,19 +4691,43 @@ function GestionePage() {
                 </div>
                 <div>
                   <label className="font-mono text-[10px] tracking-[0.2em] text-bone/50 uppercase block mb-1">Liste di distribuzione destinatarie</label>
-                  <div className="flex flex-wrap gap-3">
-                    {distributionLists.map(list => (
-                      <label key={list.id} className="flex items-center gap-2 cursor-pointer font-mono text-xs">
-                        <input type="checkbox" checked={selectedNewsletterListIds.has(list.id)}
-                          onChange={() => setSelectedNewsletterListIds(prev => {
-                            const next = new Set(prev);
-                            if (next.has(list.id)) next.delete(list.id); else next.add(list.id);
-                            return next;
-                          })}
-                          className="accent-amber" />
-                        <span className={selectedNewsletterListIds.has(list.id) ? "text-bone/80" : "text-bone/40"}>{list.nome}</span>
-                      </label>
-                    ))}
+                  <div className="space-y-1">
+                    {distributionLists.map(list => {
+                      const isOpen = expandedListIds.has(list.id);
+                      const members = listMembersCache[list.id];
+                      return (
+                        <div key={list.id} className="border border-amber/10">
+                          <div className="flex items-center gap-3 px-2 py-1.5 flex-wrap">
+                            <label className="flex items-center gap-2 cursor-pointer font-mono text-xs flex-1">
+                              <input type="checkbox" checked={selectedNewsletterListIds.has(list.id)}
+                                onChange={() => setSelectedNewsletterListIds(prev => {
+                                  const next = new Set(prev);
+                                  if (next.has(list.id)) next.delete(list.id); else next.add(list.id);
+                                  return next;
+                                })}
+                                className="accent-amber" />
+                              <span className={selectedNewsletterListIds.has(list.id) ? "text-bone/80" : "text-bone/40"}>
+                                {list.nome}{members ? ` (${members.length})` : ""}
+                              </span>
+                            </label>
+                            <button type="button" onClick={() => handleToggleListExpand(list.id)}
+                              className="font-mono text-[9px] text-amber/50 hover:text-amber transition-colors cursor-pointer">
+                              {isOpen ? "▼" : "+"} membri
+                            </button>
+                          </div>
+                          {isOpen && (
+                            <div className="px-3 pb-2 space-y-0.5">
+                              {(members ?? []).map(m => (
+                                <div key={m.id} className="font-serif text-xs text-bone/60">{m.email}</div>
+                              ))}
+                              {members && members.length === 0 && (
+                                <p className="font-mono text-[9px] text-bone/30 uppercase tracking-widest">Nessun membro in questa lista.</p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
                 <div>

@@ -29,6 +29,7 @@ function GestioneListePage() {
   const [newListName, setNewListName] = useState("");
   const [creatingList, setCreatingList] = useState(false);
   const [listError, setListError] = useState<string | null>(null);
+  const [knownEmails, setKnownEmails] = useState<string[]>([]);
 
   const [renamingListId, setRenamingListId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
@@ -65,6 +66,7 @@ function GestioneListePage() {
       }
 
       await loadLists(user.id);
+      await loadKnownEmails(user.id);
       setLoading(false);
     };
     init();
@@ -77,6 +79,20 @@ function GestioneListePage() {
       .eq("author_id", uid)
       .order("nome");
     setLists(data ?? []);
+  };
+
+  // Email già note all'autore (follower + membri di qualunque sua DL), per
+  // l'autocompletamento quando aggiunge un nominativo — evita di doverle
+  // riscrivere se sono già presenti altrove.
+  const loadKnownEmails = async (uid: string) => {
+    const [{ data: followerRows }, { data: memberRows }] = await Promise.all([
+      supabase.from("author_followers").select("email").eq("author_id", uid),
+      supabase.from("distribution_list_members").select("email, distribution_lists!inner(author_id)").eq("distribution_lists.author_id", uid),
+    ]);
+    const emails = new Set<string>();
+    (followerRows ?? []).forEach((r: { email: string }) => emails.add(r.email));
+    (memberRows ?? []).forEach((r: { email: string }) => emails.add(r.email));
+    setKnownEmails(Array.from(emails).sort());
   };
 
   const handleCreateList = async () => {
@@ -152,6 +168,7 @@ function GestioneListePage() {
         .eq("list_id", listId)
         .order("email");
       setMembersByList(prev => ({ ...prev, [listId]: data ?? [] }));
+      setKnownEmails(prev => prev.includes(email) ? prev : [...prev, email].sort());
     } else {
       setListError(error.message);
     }
@@ -317,6 +334,7 @@ function GestioneListePage() {
                             />
                             <input
                               type="email"
+                              list="known-emails"
                               value={newMemberEmail[list.id] ?? ""}
                               onChange={e => setNewMemberEmail(prev => ({ ...prev, [list.id]: e.target.value }))}
                               onKeyDown={e => e.key === "Enter" && handleAddMember(list.id)}
@@ -344,6 +362,10 @@ function GestioneListePage() {
             ← Torna a Gestione
           </Link>
         </div>
+
+        <datalist id="known-emails">
+          {knownEmails.map(email => <option key={email} value={email} />)}
+        </datalist>
       </PageShell>
       <SiteFooter />
     </div>
