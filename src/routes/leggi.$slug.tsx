@@ -138,13 +138,19 @@ export const Route = createFileRoute("/leggi/$slug")({
       if (!session?.user || session.user.is_anonymous || !session.user.email) {
         hasAccess = false;
       } else {
+        const email = session.user.email.toLowerCase();
         const { data: accessRow } = await supabase
           .from("book_access_list")
           .select("id")
           .eq("book_id", data.id)
-          .eq("email", session.user.email.toLowerCase())
+          .eq("email", email)
           .maybeSingle();
-        hasAccess = !!accessRow;
+        if (accessRow) {
+          hasAccess = true;
+        } else {
+          const { data: dlAccess } = await supabase.rpc("reader_has_dl_access", { p_book_id: data.id, p_email: email });
+          hasAccess = !!dlAccess;
+        }
       }
     }
 
@@ -1323,7 +1329,7 @@ function ReadPage() {
                 <div className="mb-10">
                   <div className="font-display tracking-[0.25em] text-xs text-magenta mb-4">— estratto</div>
                   <div className="font-serif text-ink/90 leading-[1.8] space-y-5 max-w-prose">
-                    {estratto.split(/\n\n+/).filter(Boolean).map((p, i) => (
+                    {estratto.split(/\n\n+/).filter(Boolean).map((p: string, i: number) => (
                       <p key={i} className={i === 0 ? "first-letter:font-display first-letter:text-7xl first-letter:float-left first-letter:mr-3 first-letter:leading-none first-letter:text-blood" : ""}>
                         {p}
                       </p>

@@ -38,6 +38,7 @@ import { Route as GuidaCatalogoRouteImport } from './routes/guida.catalogo'
 import { Route as GuidaAutoriRouteImport } from './routes/guida.autori'
 import { Route as GuidaAreaAutoreRouteImport } from './routes/guida.area-autore'
 import { Route as GuidaAccessiRouteImport } from './routes/guida.accessi'
+import { Route as GestioneListeRouteImport } from './routes/gestione_.liste'
 import { Route as DownloadSlugRouteImport } from './routes/download.$slug'
 import { Route as CommunitySlugRouteImport } from './routes/community.$slug'
 import { Route as CollaneSlugRouteImport } from './routes/collane.$slug'
@@ -192,6 +193,11 @@ const GuidaAccessiRoute = GuidaAccessiRouteImport.update({
   path: '/accessi',
   getParentRoute: () => GuidaRoute,
 } as any)
+const GestioneListeRoute = GestioneListeRouteImport.update({
+  id: '/gestione_/liste',
+  path: '/gestione/liste',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DownloadSlugRoute = DownloadSlugRouteImport.update({
   id: '/download/$slug',
   path: '/download/$slug',
@@ -259,6 +265,7 @@ export interface FileRoutesByFullPath {
   '/collane/$slug': typeof CollaneSlugRoute
   '/community/$slug': typeof CommunitySlugRoute
   '/download/$slug': typeof DownloadSlugRoute
+  '/gestione/liste': typeof GestioneListeRoute
   '/guida/accessi': typeof GuidaAccessiRoute
   '/guida/area-autore': typeof GuidaAreaAutoreRoute
   '/guida/autori': typeof GuidaAutoriRoute
@@ -296,6 +303,7 @@ export interface FileRoutesByTo {
   '/collane/$slug': typeof CollaneSlugRoute
   '/community/$slug': typeof CommunitySlugRoute
   '/download/$slug': typeof DownloadSlugRoute
+  '/gestione/liste': typeof GestioneListeRoute
   '/guida/accessi': typeof GuidaAccessiRoute
   '/guida/area-autore': typeof GuidaAreaAutoreRoute
   '/guida/autori': typeof GuidaAutoriRoute
@@ -336,6 +344,7 @@ export interface FileRoutesById {
   '/collane/$slug': typeof CollaneSlugRoute
   '/community/$slug': typeof CommunitySlugRoute
   '/download/$slug': typeof DownloadSlugRoute
+  '/gestione_/liste': typeof GestioneListeRoute
   '/guida/accessi': typeof GuidaAccessiRoute
   '/guida/area-autore': typeof GuidaAreaAutoreRoute
   '/guida/autori': typeof GuidaAutoriRoute
@@ -377,6 +386,7 @@ export interface FileRouteTypes {
     | '/collane/$slug'
     | '/community/$slug'
     | '/download/$slug'
+    | '/gestione/liste'
     | '/guida/accessi'
     | '/guida/area-autore'
     | '/guida/autori'
@@ -414,6 +424,7 @@ export interface FileRouteTypes {
     | '/collane/$slug'
     | '/community/$slug'
     | '/download/$slug'
+    | '/gestione/liste'
     | '/guida/accessi'
     | '/guida/area-autore'
     | '/guida/autori'
@@ -453,6 +464,7 @@ export interface FileRouteTypes {
     | '/collane/$slug'
     | '/community/$slug'
     | '/download/$slug'
+    | '/gestione_/liste'
     | '/guida/accessi'
     | '/guida/area-autore'
     | '/guida/autori'
@@ -489,6 +501,7 @@ export interface RootRouteChildren {
   AutoriSlugRoute: typeof AutoriSlugRoute
   CollaneSlugRoute: typeof CollaneSlugRoute
   DownloadSlugRoute: typeof DownloadSlugRoute
+  GestioneListeRoute: typeof GestioneListeRoute
   LeggiSlugRoute: typeof LeggiSlugRoute
   LibreriaTesseraRoute: typeof LibreriaTesseraRoute
 }
@@ -698,6 +711,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GuidaAccessiRouteImport
       parentRoute: typeof GuidaRoute
     }
+    '/gestione_/liste': {
+      id: '/gestione_/liste'
+      path: '/gestione/liste'
+      fullPath: '/gestione/liste'
+      preLoaderRoute: typeof GestioneListeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/download/$slug': {
       id: '/download/$slug'
       path: '/download/$slug'
@@ -843,6 +863,7 @@ const rootRouteChildren: RootRouteChildren = {
   AutoriSlugRoute: AutoriSlugRoute,
   CollaneSlugRoute: CollaneSlugRoute,
   DownloadSlugRoute: DownloadSlugRoute,
+  GestioneListeRoute: GestioneListeRoute,
   LeggiSlugRoute: LeggiSlugRoute,
   LibreriaTesseraRoute: LibreriaTesseraRoute,
 }

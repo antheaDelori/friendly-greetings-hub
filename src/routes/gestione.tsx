@@ -287,9 +287,6 @@ function GestionePage() {
   const [pdfConvUsed, setPdfConvUsed] = useState(0);
   const [epubConvUsed, setEpubConvUsed] = useState(0);
   const [mobiConvUsed, setMobiConvUsed] = useState(0);
-  // Sorgente alternativa: PDF già pronto dell'autore invece del manoscritto .docx
-  const [docSourceMode, setDocSourceMode] = useState<"docx" | "pdf">("docx");
-  const [pdfSourceFile, setPdfSourceFile] = useState<File | null>(null);
   const [existingEbookFromPdf, setExistingEbookFromPdf] = useState(false);
 
   const copertRef = useRef<HTMLInputElement>(null);
@@ -297,7 +294,6 @@ function GestionePage() {
   const pdfRef = useRef<HTMLInputElement>(null);
   const epubRef = useRef<HTMLInputElement>(null);
   const docxRef = useRef<HTMLInputElement>(null);
-  const pdfSourceRef = useRef<HTMLInputElement>(null);
 
   // Import testo capitolo
   const importDocxRef = useRef<HTMLInputElement>(null);
@@ -544,6 +540,15 @@ function GestionePage() {
   const [newsletterBookId, setNewsletterBookId] = useState("");
   const [newsletterMessage, setNewsletterMessage] = useState("");
   const [newsletterResult, setNewsletterResult] = useState<{ sent: number; failed?: string[] } | { error: string } | null>(null);
+  const [selectedNewsletterListIds, setSelectedNewsletterListIds] = useState<Set<string>>(new Set());
+
+  // ── Liste di distribuzione ──────────────────────────────────────────────────
+  const [distributionLists, setDistributionLists] = useState<{ id: string; nome: string }[]>([]);
+  const [linkedListIds, setLinkedListIds] = useState<Set<string>>(new Set());
+  const [bookExclusions, setBookExclusions] = useState<{ id: string; list_id: string | null; email: string }[]>([]);
+  const [expandedListIds, setExpandedListIds] = useState<Set<string>>(new Set());
+  const [listMembersCache, setListMembersCache] = useState<Record<string, { id: string; email: string; nome: string | null }[]>>({});
+  const [linkingListId, setLinkingListId] = useState<string | null>(null);
 
   // Fumetti — pagine
   const [fumettoPagine, setFumettoPagine] = useState<{ id: string; ordine: number; image_url: string; testo?: string | null }[]>([]);
@@ -609,6 +614,7 @@ function GestionePage() {
       await loadBooks(user.id);
       await loadCollane(user.id);
       await loadFollowers(user.id);
+      await loadDistributionLists(user.id);
       await loadFlaggedReviews(user.id, adminEmail);
       setLoading(false);
     };
@@ -880,8 +886,6 @@ function GestionePage() {
     setExistingMobiUrl(b.mobi_url);
     setExistingDocxUrl(b.docx_url ?? null);
     setExistingEbookFromPdf(!!b.ebook_from_pdf);
-    setDocSourceMode("docx");
-    setPdfSourceFile(null);
     setDocxFile(null);
     setDocGenPdfOk(false);
     setDocGenEpubOk(false);
@@ -1184,37 +1188,27 @@ function GestionePage() {
     }
   };
 
-  // Carica .docx (o PDF già pronto) e genera PDF + ePub in sequenza
+  // Carica il .docx e genera PDF (se non già caricato a mano) + ePub + MOBI in sequenza
   const handleGenerateDocs = async () => {
     if (!editingId || !userId) return;
-    if (docSourceMode === "docx" && !docxFile && !existingDocxUrl) return;
-    if (docSourceMode === "pdf" && !pdfSourceFile && !existingFileUrl) return;
+    if (!docxFile && !existingDocxUrl) return;
     setDocGenerating(true);
     setDocGenError(null);
     setDocGenPdfOk(false);
     setDocGenEpubOk(false);
     setDocGenMobiOk(false);
     try {
-      if (docSourceMode === "docx") {
-        // 1. Carica il .docx se è nuovo
-        if (docxFile) {
-          const path = `${userId}/${editingId}-source.docx`;
-          const { error: upErr } = await supabase.storage.from("libri").upload(path, docxFile, { upsert: true });
-          if (upErr) { setDocGenError(upErr.message); return; }
-          await supabase.from("books").update({ docx_url: path }).eq("id", editingId);
-          setExistingDocxUrl(path);
-          setDocxFile(null);
-        }
-      } else if (pdfSourceFile) {
-        // 1bis. PDF già pronto dell'autore: caricato direttamente, nessuna generazione da fare
-        const path = `${userId}/${editingId}-generated.pdf`;
-        const { error: upErr } = await supabase.storage.from("libri").upload(path, pdfSourceFile, { upsert: true, contentType: "application/pdf" });
+      // 1. Carica il .docx se è nuovo
+      if (docxFile) {
+        const path = `${userId}/${editingId}-source.docx`;
+        const { error: upErr } = await supabase.storage.from("libri").upload(path, docxFile, { upsert: true });
         if (upErr) { setDocGenError(upErr.message); return; }
-        await supabase.from("books").update({ file_url: path }).eq("id", editingId);
-        setExistingFileUrl(path);
-        setPdfSourceFile(null);
+        await supabase.from("books").update({ docx_url: path }).eq("id", editingId);
+        setExistingDocxUrl(path);
+        setDocxFile(null);
       }
-      if (docSourceMode === "pdf") setDocGenPdfOk(true);
+      // Se un PDF è già stato caricato a mano, non va rigenerato dal .docx
+      if (existingFileUrl) setDocGenPdfOk(true);
 
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
@@ -1222,12 +1216,12 @@ function GestionePage() {
         const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-pdf`, {
           method: "POST",
           headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ book_id: editingId, format, source: docSourceMode }),
+          body: JSON.stringify({ book_id: editingId, format, source: "docx" }),
         });
         return { ok: res.ok, data: await res.json() };
       };
-      // 2. Genera PDF dal .docx (se entro limite) — non in modalità "PDF già pronto"
-      if (docSourceMode === "docx" && (isAdmin || pdfConvUsed < 10)) {
+      // 2. Genera PDF dal .docx (se non ne esiste già uno caricato a mano, ed entro il limite)
+      if (!existingFileUrl && (isAdmin || pdfConvUsed < 10)) {
         const { ok, data } = await call("pdf");
         if (ok) { setExistingFileUrl(data.file_path); setPdfConvUsed(data.used); setDocGenPdfOk(true); }
         else if (data.error !== "limit_reached") { setDocGenError(`PDF: ${data.error ?? "errore"}`); return; }
@@ -1865,6 +1859,11 @@ function GestionePage() {
     setFollowers(data ?? []);
   };
 
+  const loadDistributionLists = async (uid: string) => {
+    const { data } = await supabase.from("distribution_lists").select("id, nome").eq("author_id", uid).order("nome");
+    setDistributionLists(data ?? []);
+  };
+
   const loadFlaggedReviews = async (uid: string, isAdminUser: boolean) => {
     let query = supabase
       .from("recensioni")
@@ -1979,6 +1978,52 @@ function GestionePage() {
   const loadAccessList = async (bookId: string) => {
     const { data } = await supabase.from("book_access_list").select("id, email, created_at").eq("book_id", bookId).order("created_at");
     setAccessList(data ?? []);
+
+    const { data: linked } = await supabase.from("book_distribution_lists").select("list_id").eq("book_id", bookId);
+    setLinkedListIds(new Set((linked ?? []).map((r: { list_id: string }) => r.list_id)));
+
+    const { data: exclusions } = await supabase.from("book_distribution_list_exclusions").select("id, list_id, email").eq("book_id", bookId);
+    setBookExclusions(exclusions ?? []);
+  };
+
+  const handleToggleListLink = async (listId: string) => {
+    if (!editingId || linkingListId) return;
+    setLinkingListId(listId);
+    if (linkedListIds.has(listId)) {
+      await supabase.from("book_distribution_lists").delete().eq("book_id", editingId).eq("list_id", listId);
+      setLinkedListIds(prev => { const n = new Set(prev); n.delete(listId); return n; });
+    } else {
+      await supabase.from("book_distribution_lists").upsert(
+        { book_id: editingId, list_id: listId },
+        { onConflict: "book_id,list_id", ignoreDuplicates: true }
+      );
+      setLinkedListIds(prev => new Set(prev).add(listId));
+    }
+    setLinkingListId(null);
+  };
+
+  const handleToggleListExpand = async (listId: string) => {
+    const next = new Set(expandedListIds);
+    const opening = !next.has(listId);
+    if (opening) next.add(listId); else next.delete(listId);
+    setExpandedListIds(next);
+    if (opening && !listMembersCache[listId]) {
+      const { data } = await supabase.from("distribution_list_members").select("id, email, nome").eq("list_id", listId).order("email");
+      setListMembersCache(prev => ({ ...prev, [listId]: data ?? [] }));
+    }
+  };
+
+  const handleExcludeMember = async (listId: string, email: string) => {
+    if (!editingId) return;
+    const { data } = await supabase.from("book_distribution_list_exclusions")
+      .insert({ book_id: editingId, list_id: listId, email })
+      .select("id, list_id, email").single();
+    if (data) setBookExclusions(prev => [...prev, data]);
+  };
+
+  const handleIncludeMember = async (exclusionId: string) => {
+    await supabase.from("book_distribution_list_exclusions").delete().eq("id", exclusionId);
+    setBookExclusions(prev => prev.filter(e => e.id !== exclusionId));
   };
 
   const handleAddAccess = async () => {
@@ -2028,14 +2073,14 @@ function GestionePage() {
   };
 
   const handleSendNewsletter = async () => {
-    if (!newsletterBookId || sendingNewsletter) return;
+    if (!newsletterBookId || selectedNewsletterListIds.size === 0 || sendingNewsletter) return;
     setSendingNewsletter(true); setNewsletterResult(null);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-newsletter`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session?.access_token}` },
-        body: JSON.stringify({ book_id: newsletterBookId, custom_message: newsletterMessage }),
+        body: JSON.stringify({ book_id: newsletterBookId, custom_message: newsletterMessage, list_ids: Array.from(selectedNewsletterListIds) }),
       });
       const data = await res.json();
       setNewsletterResult(data);
@@ -2921,6 +2966,68 @@ function GestionePage() {
                           </button>
                         </div>
                         {accessError && <p className="font-mono text-[9px] text-magenta">✗ {accessError}</p>}
+
+                        {/* Liste di distribuzione collegate */}
+                        {distributionLists.length > 0 && (
+                          <div className="mt-4 pt-4 border-t border-magenta/20 space-y-2">
+                            <div className="font-mono text-[10px] tracking-[0.25em] text-magenta uppercase">
+                              ◈ Liste di distribuzione collegate
+                            </div>
+                            {distributionLists.map(list => {
+                              const linked = linkedListIds.has(list.id);
+                              const isOpen = expandedListIds.has(list.id);
+                              const members = listMembersCache[list.id];
+                              return (
+                                <div key={list.id} className="border border-magenta/10">
+                                  <div className="flex items-center gap-3 px-3 py-2 flex-wrap">
+                                    <label className="flex items-center gap-2 cursor-pointer flex-1">
+                                      <input type="checkbox" checked={linked}
+                                        onChange={() => handleToggleListLink(list.id)}
+                                        disabled={linkingListId === list.id}
+                                        className="accent-magenta" />
+                                      <span className="font-serif text-sm text-bone/80">{list.nome}</span>
+                                    </label>
+                                    {linked && (
+                                      <button onClick={() => handleToggleListExpand(list.id)}
+                                        className="font-mono text-[9px] text-magenta/60 hover:text-magenta transition-colors cursor-pointer">
+                                        {isOpen ? "▼" : "+"} membri
+                                      </button>
+                                    )}
+                                  </div>
+                                  {linked && isOpen && (
+                                    <div className="px-3 pb-3 space-y-1">
+                                      {(members ?? []).map(m => {
+                                        const exclusion = bookExclusions.find(e => e.email.toLowerCase() === m.email.toLowerCase());
+                                        return (
+                                          <div key={m.id} className="flex items-center justify-between gap-3 py-1 text-sm">
+                                            <span className={`font-serif ${exclusion ? "text-bone/30 line-through" : "text-bone/70"}`}>{m.email}</span>
+                                            {exclusion ? (
+                                              <button onClick={() => handleIncludeMember(exclusion.id)}
+                                                className="font-mono text-[9px] text-cyan/50 hover:text-cyan transition-colors cursor-pointer shrink-0">
+                                                ↺ reincludi
+                                              </button>
+                                            ) : (
+                                              <button onClick={() => handleExcludeMember(list.id, m.email)}
+                                                className="font-mono text-[9px] text-magenta/40 hover:text-magenta transition-colors cursor-pointer shrink-0">
+                                                ✕ escludi per questo libro
+                                              </button>
+                                            )}
+                                          </div>
+                                        );
+                                      })}
+                                      {members && members.length === 0 && (
+                                        <p className="font-mono text-[9px] text-bone/30 uppercase tracking-widest">Nessun membro in questa lista.</p>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                        <Link to="/gestione/liste" className="inline-block mt-2 font-mono text-[9px] tracking-widest text-bone/30 hover:text-magenta uppercase transition-colors">
+                          ▸ gestisci le liste di distribuzione
+                        </Link>
                       </div>
                     )}
                   </div>
@@ -3584,61 +3691,26 @@ function GestionePage() {
                         }
                       </div>
                       <p className="font-serif italic text-bone/60 text-sm">
-                        {docSourceMode === "docx"
-                          ? "Carica il manoscritto Word (.docx): PDF ed E-Book vengono generati automaticamente in un click."
-                          : "Hai già il PDF pronto (es. impaginato professionalmente)? Caricalo direttamente: proviamo comunque a ricavarne l'E-Book."}
+                        Carica il manoscritto Word (.docx): serve per generare l'E-Book. Se non hai ancora un PDF caricato, viene generato automaticamente anche quello.
                         {!isAdmin && <span className="text-amber not-italic font-mono text-[10px] tracking-widest uppercase ml-2">10 generazioni gratuite</span>}
                       </p>
 
-                      {/* Scelta sorgente */}
-                      <div className="flex items-center gap-2">
-                        <button type="button"
-                          onClick={() => { setDocSourceMode("docx"); setDocGenError(null); }}
-                          className={`font-mono text-[9px] uppercase tracking-widest px-3 py-1.5 border transition-all ${
-                            docSourceMode === "docx" ? "border-amber bg-amber/15 text-amber" : "border-amber/25 text-bone/40 hover:border-amber/50"
-                          }`}>
-                          Ho il manoscritto .docx
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <input ref={docxRef} type="file" accept=".docx"
+                          onChange={e => { setDocxFile(e.target.files?.[0] ?? null); setDocGenPdfOk(false); setDocGenEpubOk(false); setDocGenMobiOk(false); setDocGenError(null); }}
+                          className="hidden" />
+                        <button type="button" onClick={() => docxRef.current?.click()}
+                          className="border border-amber/40 px-4 py-2 font-mono text-[10px] uppercase tracking-widest hover:border-amber hover:text-amber transition-all text-bone/60 cursor-pointer">
+                          {docxFile ? `✓ ${docxFile.name}` : existingDocxUrl ? "✓ .docx caricato (sostituisci)" : "▸ Scegli .docx"}
                         </button>
-                        <button type="button"
-                          onClick={() => { setDocSourceMode("pdf"); setDocGenError(null); }}
-                          className={`font-mono text-[9px] uppercase tracking-widest px-3 py-1.5 border transition-all ${
-                            docSourceMode === "pdf" ? "border-amber bg-amber/15 text-amber" : "border-amber/25 text-bone/40 hover:border-amber/50"
-                          }`}>
-                          Ho già il PDF pronto
-                        </button>
+                        <HudButton variant="ghost" onClick={handleGenerateDocs} disabled={docGenerating || (!docxFile && !existingDocxUrl)}>
+                          {docGenerating ? "▸ Generazione in corso..." : existingDocxUrl && !docxFile ? "◈ Rigenera E-Book + Kindle" : "◈ Carica e genera PDF + E-Book + Kindle"}
+                        </HudButton>
                       </div>
-
-                      {docSourceMode === "docx" ? (
-                        <div className="flex items-center gap-3 flex-wrap">
-                          <input ref={docxRef} type="file" accept=".docx"
-                            onChange={e => { setDocxFile(e.target.files?.[0] ?? null); setDocGenPdfOk(false); setDocGenEpubOk(false); setDocGenMobiOk(false); setDocGenError(null); }}
-                            className="hidden" />
-                          <button type="button" onClick={() => docxRef.current?.click()}
-                            className="border border-amber/40 px-4 py-2 font-mono text-[10px] uppercase tracking-widest hover:border-amber hover:text-amber transition-all text-bone/60 cursor-pointer">
-                            {docxFile ? `✓ ${docxFile.name}` : existingDocxUrl ? "✓ .docx caricato (sostituisci)" : "▸ Scegli .docx"}
-                          </button>
-                          <HudButton variant="ghost" onClick={handleGenerateDocs} disabled={docGenerating || (!docxFile && !existingDocxUrl)}>
-                            {docGenerating ? "▸ Generazione in corso..." : existingDocxUrl && !docxFile ? "◈ Rigenera PDF + E-Book + Kindle" : "◈ Carica e genera PDF + E-Book + Kindle"}
-                          </HudButton>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-3 flex-wrap">
-                          <input ref={pdfSourceRef} type="file" accept=".pdf"
-                            onChange={e => { setPdfSourceFile(e.target.files?.[0] ?? null); setDocGenPdfOk(false); setDocGenEpubOk(false); setDocGenMobiOk(false); setDocGenError(null); }}
-                            className="hidden" />
-                          <button type="button" onClick={() => pdfSourceRef.current?.click()}
-                            className="border border-amber/40 px-4 py-2 font-mono text-[10px] uppercase tracking-widest hover:border-amber hover:text-amber transition-all text-bone/60 cursor-pointer">
-                            {pdfSourceFile ? `✓ ${pdfSourceFile.name}` : existingFileUrl ? "✓ PDF caricato (sostituisci)" : "▸ Scegli PDF"}
-                          </button>
-                          <HudButton variant="ghost" onClick={handleGenerateDocs} disabled={docGenerating || (!pdfSourceFile && !existingFileUrl)}>
-                            {docGenerating ? "▸ Generazione in corso..." : "◈ Carica PDF e genera E-Book + Kindle"}
-                          </HudButton>
-                        </div>
-                      )}
                       {docGenerating && (
                         <div className="flex items-center gap-3 flex-wrap">
                           <span className="font-mono text-[11px] tracking-widest text-amber uppercase animate-pulse">
-                            {docSourceMode === "docx" && !docGenPdfOk ? "◈ Generazione PDF..." : !docGenEpubOk ? "◈ Generazione E-Book..." : "◈ Generazione MOBI (Kindle)..."}
+                            {!docGenPdfOk ? "◈ Generazione PDF..." : !docGenEpubOk ? "◈ Generazione E-Book..." : "◈ Generazione MOBI (Kindle)..."}
                           </span>
                           <div className="flex gap-1">
                             {Array.from({ length: 10 }).map((_, i) => (
@@ -4596,7 +4668,7 @@ function GestionePage() {
             </div>
 
             {/* Invia comunicazione */}
-            {followers.length > 0 && (
+            {distributionLists.length > 0 && (
               <div className="border-t border-amber/20 pt-5 space-y-3">
                 <div className="font-mono text-[10px] tracking-[0.25em] text-amber uppercase">◈ Invia comunicazione</div>
                 <div>
@@ -4610,6 +4682,23 @@ function GestionePage() {
                   </select>
                 </div>
                 <div>
+                  <label className="font-mono text-[10px] tracking-[0.2em] text-bone/50 uppercase block mb-1">Liste di distribuzione destinatarie</label>
+                  <div className="flex flex-wrap gap-3">
+                    {distributionLists.map(list => (
+                      <label key={list.id} className="flex items-center gap-2 cursor-pointer font-mono text-xs">
+                        <input type="checkbox" checked={selectedNewsletterListIds.has(list.id)}
+                          onChange={() => setSelectedNewsletterListIds(prev => {
+                            const next = new Set(prev);
+                            if (next.has(list.id)) next.delete(list.id); else next.add(list.id);
+                            return next;
+                          })}
+                          className="accent-amber" />
+                        <span className={selectedNewsletterListIds.has(list.id) ? "text-bone/80" : "text-bone/40"}>{list.nome}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div>
                   <label className="font-mono text-[10px] tracking-[0.2em] text-bone/50 uppercase block mb-1">Messaggio personale <span className="normal-case text-bone/30">(opzionale)</span></label>
                   <textarea value={newsletterMessage} onChange={e => setNewsletterMessage(e.target.value)}
                     placeholder="Un pensiero diretto ai tuoi lettori..."
@@ -4617,8 +4706,8 @@ function GestionePage() {
                     className="w-full border border-amber/30 bg-void/40 px-3 py-2 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-amber transition-all resize-y text-sm" />
                 </div>
                 <div className="flex items-center gap-4 flex-wrap">
-                  <HudButton variant="primary" onClick={handleSendNewsletter} disabled={sendingNewsletter || !newsletterBookId}>
-                    {sendingNewsletter ? "◈ Invio in corso..." : `◈ Invia a ${followers.length} lettor${followers.length === 1 ? "e" : "i"}`}
+                  <HudButton variant="primary" onClick={handleSendNewsletter} disabled={sendingNewsletter || !newsletterBookId || selectedNewsletterListIds.size === 0}>
+                    {sendingNewsletter ? "◈ Invio in corso..." : "◈ Invia alle liste selezionate"}
                   </HudButton>
                   {newsletterResult && (
                     <span className={`font-mono text-[10px] tracking-widest uppercase ${"error" in newsletterResult ? "text-magenta" : "text-cyan"}`}>

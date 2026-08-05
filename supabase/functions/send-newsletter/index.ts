@@ -151,8 +151,11 @@ Deno.serve(async (req) => {
   if (authErr || !user) return json({ error: "Non autorizzato" }, 401);
 
   const body = await req.json().catch(() => ({}));
-  const { book_id, custom_message = "" } = body;
+  const { book_id, custom_message = "", list_ids = [] } = body;
   if (!book_id) return json({ error: "book_id richiesto" }, 400);
+  if (!Array.isArray(list_ids) || list_ids.length === 0) {
+    return json({ error: "Seleziona almeno una lista di distribuzione" }, 400);
+  }
 
   // Fetch libro (verifica ownership)
   const { data: book, error: bookErr } = await supabase
@@ -164,16 +167,30 @@ Deno.serve(async (req) => {
 
   if (bookErr || !book) return json({ error: "Libro non trovato o non autorizzato" }, 404);
 
-  // Fetch follower del questo autore
-  const { data: followers } = await supabase
-    .from("author_followers")
-    .select("email")
-    .eq("author_id", user.id);
+  // Verifica che le liste selezionate appartengano davvero all'autore autenticato
+  const { data: ownedLists } = await supabase
+    .from("distribution_lists")
+    .select("id")
+    .eq("author_id", user.id)
+    .in("id", list_ids);
 
-  const followerEmails = (followers ?? []).map((f: { email: string }) => f.email).filter(Boolean);
+  const validListIds = (ownedLists ?? []).map((l: { id: string }) => l.id);
+  if (validListIds.length === 0) {
+    return json({ error: "Nessuna lista di distribuzione valida selezionata" }, 400);
+  }
+
+  // Membri delle liste selezionate, deduplicati per email
+  const { data: members } = await supabase
+    .from("distribution_list_members")
+    .select("email")
+    .in("list_id", validListIds);
+
+  const followerEmails = Array.from(
+    new Set((members ?? []).map((m: { email: string }) => m.email.toLowerCase()).filter(Boolean))
+  );
 
   if (followerEmails.length === 0) {
-    return json({ error: "Nessun follower da raggiungere" }, 400);
+    return json({ error: "Nessun destinatario nelle liste selezionate" }, 400);
   }
 
   const b = book as Record<string, unknown>;

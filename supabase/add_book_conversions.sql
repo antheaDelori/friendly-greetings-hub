@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS public.book_conversions (
   id          uuid primary key default gen_random_uuid(),
   book_id     uuid not null references public.books(id) on delete cascade,
   author_id   uuid not null references auth.users(id) on delete cascade,
-  format      text not null check (format in ('pdf', 'epub')),
+  format      text not null check (format in ('pdf', 'epub', 'mobi')),
   file_path   text not null,
   created_at  timestamptz not null default now()
 );
