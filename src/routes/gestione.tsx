@@ -537,6 +537,8 @@ function GestionePage() {
   const [newsletterMessage, setNewsletterMessage] = useState("");
   const [newsletterResult, setNewsletterResult] = useState<{ sent: number; failed?: string[] } | { error: string } | null>(null);
   const [selectedNewsletterListIds, setSelectedNewsletterListIds] = useState<Set<string>>(new Set());
+  const [extraNewsletterEmail, setExtraNewsletterEmail] = useState("");
+  const [extraNewsletterEmails, setExtraNewsletterEmails] = useState<string[]>([]);
 
   // ── Liste di distribuzione ──────────────────────────────────────────────────
   const [distributionLists, setDistributionLists] = useState<{ id: string; nome: string }[]>([]);
@@ -883,6 +885,8 @@ function GestionePage() {
     setExistingDocxUrl(b.docx_url ?? null);
     setExistingEbookFromPdf(!!b.ebook_from_pdf);
     setSelectedNewsletterListIds(new Set());
+    setExtraNewsletterEmail("");
+    setExtraNewsletterEmails([]);
     setNewsletterMessage("");
     setNewsletterResult(null);
     setDocxFile(null);
@@ -2053,15 +2057,27 @@ function GestionePage() {
     setTimeout(() => setPaypalSaved(false), 3000);
   };
 
+  const handleAddExtraNewsletterEmail = () => {
+    const email = extraNewsletterEmail.trim().toLowerCase();
+    if (!email.includes("@") || extraNewsletterEmails.includes(email)) return;
+    setExtraNewsletterEmails(prev => [...prev, email]);
+    setExtraNewsletterEmail("");
+  };
+
   const handleSendNewsletter = async () => {
-    if (!editingId || selectedNewsletterListIds.size === 0 || sendingNewsletter) return;
+    if (!editingId || (selectedNewsletterListIds.size === 0 && extraNewsletterEmails.length === 0) || sendingNewsletter) return;
     setSendingNewsletter(true); setNewsletterResult(null);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-newsletter`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session?.access_token}` },
-        body: JSON.stringify({ book_id: editingId, custom_message: newsletterMessage, list_ids: Array.from(selectedNewsletterListIds) }),
+        body: JSON.stringify({
+          book_id: editingId,
+          custom_message: newsletterMessage,
+          list_ids: Array.from(selectedNewsletterListIds),
+          extra_emails: extraNewsletterEmails,
+        }),
       });
       const data = await res.json();
       setNewsletterResult(data);
@@ -4324,14 +4340,13 @@ function GestionePage() {
                     <div className="font-mono text-[10px] tracking-[0.25em] text-amber uppercase">◈ Invia comunicazione su questa opera</div>
                     {distributionLists.length === 0 ? (
                       <p className="font-mono text-[10px] text-bone/30 tracking-widest uppercase">
-                        Nessuna lista di distribuzione ancora — <Link to="/gestione/liste" className="underline hover:text-amber">creane una</Link>.
+                        Nessuna lista di distribuzione ancora — <Link to="/gestione/liste" className="underline hover:text-amber">creane una</Link>, oppure aggiungi un indirizzo qui sotto per un invio singolo.
                       </p>
                     ) : (
-                      <>
-                        <div>
-                          <label className="font-mono text-[10px] tracking-[0.2em] text-bone/50 uppercase block mb-1">Liste di distribuzione destinatarie</label>
-                          <div className="space-y-1">
-                            {distributionLists.map(list => {
+                      <div>
+                        <label className="font-mono text-[10px] tracking-[0.2em] text-bone/50 uppercase block mb-1">Liste di distribuzione destinatarie</label>
+                        <div className="space-y-1">
+                          {distributionLists.map(list => {
                               const isOpen = expandedListIds.has(list.id);
                               const members = listMembersCache[list.id];
                               return (
@@ -4369,6 +4384,30 @@ function GestionePage() {
                             })}
                           </div>
                         </div>
+                      )}
+                        <div>
+                          <label className="font-mono text-[10px] tracking-[0.2em] text-bone/50 uppercase block mb-1">Indirizzo aggiuntivo <span className="normal-case text-bone/30">(solo per questo invio, opzionale)</span></label>
+                          <div className="flex gap-2 flex-wrap">
+                            <input type="email" value={extraNewsletterEmail} onChange={e => setExtraNewsletterEmail(e.target.value)}
+                              onKeyDown={e => e.key === "Enter" && handleAddExtraNewsletterEmail()}
+                              placeholder="email@esempio.it"
+                              className="flex-1 min-w-48 border border-amber/30 bg-void/40 px-3 py-2 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-amber transition-all text-sm" />
+                            <HudButton variant="ghost" onClick={handleAddExtraNewsletterEmail} disabled={!extraNewsletterEmail.includes("@")}>
+                              ▸ Aggiungi
+                            </HudButton>
+                          </div>
+                          {extraNewsletterEmails.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              {extraNewsletterEmails.map(email => (
+                                <span key={email} className="flex items-center gap-2 border border-amber/30 px-2 py-1 font-mono text-[10px] text-bone/70">
+                                  {email}
+                                  <button onClick={() => setExtraNewsletterEmails(prev => prev.filter(e => e !== email))}
+                                    className="text-bone/30 hover:text-magenta transition-colors cursor-pointer">✕</button>
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                         <div>
                           <label className="font-mono text-[10px] tracking-[0.2em] text-bone/50 uppercase block mb-1">Messaggio personale <span className="normal-case text-bone/30">(opzionale)</span></label>
                           <textarea value={newsletterMessage} onChange={e => setNewsletterMessage(e.target.value)}
@@ -4377,8 +4416,8 @@ function GestionePage() {
                             className="w-full border border-amber/30 bg-void/40 px-3 py-2 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-amber transition-all resize-y text-sm" />
                         </div>
                         <div className="flex items-center gap-4 flex-wrap">
-                          <HudButton variant="primary" onClick={handleSendNewsletter} disabled={sendingNewsletter || selectedNewsletterListIds.size === 0}>
-                            {sendingNewsletter ? "◈ Invio in corso..." : "◈ Invia alle liste selezionate"}
+                          <HudButton variant="primary" onClick={handleSendNewsletter} disabled={sendingNewsletter || (selectedNewsletterListIds.size === 0 && extraNewsletterEmails.length === 0)}>
+                            {sendingNewsletter ? "◈ Invio in corso..." : "◈ Invia"}
                           </HudButton>
                           {newsletterResult && (
                             <span className={`font-mono text-[10px] tracking-widest uppercase ${"error" in newsletterResult ? "text-magenta" : "text-cyan"}`}>
@@ -4394,8 +4433,6 @@ function GestionePage() {
                         <p className="font-mono text-[9px] text-bone/25 tracking-widest">
                           ↳ L'email arriva anche a te in copia — ogni lettore riceve un invio individuale, non si vedono tra loro
                         </p>
-                      </>
-                    )}
                   </div>
                 </div>
               )}

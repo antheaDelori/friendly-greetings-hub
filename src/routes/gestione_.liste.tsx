@@ -370,7 +370,7 @@ function GestioneListePage() {
                                   </div>
                                   <button
                                     onClick={() => handleRemoveMember(list.id, m.id)}
-                                    className="font-mono text-[9px] text-bone/20 hover:text-magenta transition-colors cursor-pointer shrink-0"
+                                    className="font-mono text-[9px] text-bone/80 hover:text-magenta transition-colors cursor-pointer shrink-0"
                                   >
                                     ✕ rimuovi
                                   </button>

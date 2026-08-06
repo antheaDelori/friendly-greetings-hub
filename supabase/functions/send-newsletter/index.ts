@@ -122,7 +122,7 @@ function buildEmailHtml(opts: {
   <tr><td style="padding:20px 24px 28px 24px;text-align:center;">
     <p style="margin:0 0 6px 0;font-family:Georgia,serif;font-size:11px;font-style:italic;
       color:${textSub};opacity:0.6;white-space:nowrap;">
-      Hai ricevuto questa email perché segui ${authorName} su Liberiamo la mente.
+      Hai ricevuto questa email da ${authorName} tramite Liberiamo la mente.
     </p>
     <p style="margin:0 0 10px 0;font-family:Georgia,serif;font-size:11px;font-style:italic;
       color:${textSub};opacity:0.6;">
@@ -151,10 +151,15 @@ Deno.serve(async (req) => {
   if (authErr || !user) return json({ error: "Non autorizzato" }, 401);
 
   const body = await req.json().catch(() => ({}));
-  const { book_id, custom_message = "", list_ids = [] } = body;
+  const { book_id, custom_message = "", list_ids = [], extra_emails = [] } = body;
   if (!book_id) return json({ error: "book_id richiesto" }, 400);
-  if (!Array.isArray(list_ids) || list_ids.length === 0) {
-    return json({ error: "Seleziona almeno una lista di distribuzione" }, 400);
+
+  const cleanExtraEmails: string[] = Array.isArray(extra_emails)
+    ? extra_emails.map((e: unknown) => String(e).trim().toLowerCase()).filter((e: string) => e.includes("@"))
+    : [];
+
+  if ((!Array.isArray(list_ids) || list_ids.length === 0) && cleanExtraEmails.length === 0) {
+    return json({ error: "Seleziona almeno una lista di distribuzione o aggiungi un indirizzo" }, 400);
   }
 
   // Fetch libro (verifica ownership)
@@ -167,23 +172,26 @@ Deno.serve(async (req) => {
 
   if (bookErr || !book) return json({ error: "Libro non trovato o non autorizzato" }, 404);
 
-  // Verifica che le liste selezionate appartengano davvero all'autore autenticato
-  const { data: ownedLists } = await supabase
-    .from("distribution_lists")
-    .select("id")
-    .eq("author_id", user.id)
-    .in("id", list_ids);
+  // Membri delle liste selezionate (verificando che appartengano davvero
+  // all'autore autenticato) + eventuali indirizzi aggiunti solo per questo invio
+  let members: { email: string }[] = [];
+  if (Array.isArray(list_ids) && list_ids.length > 0) {
+    const { data: ownedLists } = await supabase
+      .from("distribution_lists")
+      .select("id")
+      .eq("author_id", user.id)
+      .in("id", list_ids);
 
-  const validListIds = (ownedLists ?? []).map((l: { id: string }) => l.id);
-  if (validListIds.length === 0) {
-    return json({ error: "Nessuna lista di distribuzione valida selezionata" }, 400);
+    const validListIds = (ownedLists ?? []).map((l: { id: string }) => l.id);
+    if (validListIds.length > 0) {
+      const { data: listMembers } = await supabase
+        .from("distribution_list_members")
+        .select("email")
+        .in("list_id", validListIds);
+      members = listMembers ?? [];
+    }
   }
-
-  // Membri delle liste selezionate, deduplicati per email
-  const { data: members } = await supabase
-    .from("distribution_list_members")
-    .select("email")
-    .in("list_id", validListIds);
+  members = [...members, ...cleanExtraEmails.map(email => ({ email }))];
 
   const followerEmails = Array.from(
     new Set((members ?? []).map((m: { email: string }) => m.email.toLowerCase()).filter(Boolean))
