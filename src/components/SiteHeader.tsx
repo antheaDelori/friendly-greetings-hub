@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import logo from "@/assets/liberiamo-hero.webp";
 import { supabase } from "@/lib/supabase";
 import { getCestinoTranslation } from "@/lib/cestinoI18n";
+import { loadResumeBooks, type ResumeBook } from "@/lib/readingProgress";
 
 type AuthorEntry = { name: string; count: number };
 
@@ -21,6 +22,11 @@ export function SiteHeader() {
   const [autoriList, setAutoriList] = useState<AuthorEntry[]>([]);
   const [autoriLoaded, setAutoriLoaded] = useState(false);
   const autoriRef = useRef<HTMLDivElement>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [resumeOpen, setResumeOpen] = useState(false);
+  const [resumeList, setResumeList] = useState<ResumeBook[]>([]);
+  const [resumeLoaded, setResumeLoaded] = useState(false);
+  const resumeRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const routerState = useRouterState();
   const isInAreaAutore = routerState.location.pathname.startsWith("/area-autore");
@@ -48,6 +54,24 @@ export function SiteHeader() {
     return () => document.removeEventListener("mousedown", handler);
   }, [autoriOpen]);
 
+  // chiude il dropdown "libri in lettura" cliccando fuori
+  useEffect(() => {
+    if (!resumeOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (resumeRef.current && !resumeRef.current.contains(e.target as Node)) setResumeOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [resumeOpen]);
+
+  const handleResumeToggle = async () => {
+    setResumeOpen(v => !v);
+    if (resumeLoaded || !userId) return;
+    const { books } = await loadResumeBooks(userId);
+    setResumeList(books);
+    setResumeLoaded(true);
+  };
+
   const handleAutoriToggle = async () => {
     setAutoriOpen(v => !v);
     if (autoriLoaded) return;
@@ -72,7 +96,8 @@ export function SiteHeader() {
   useEffect(() => {
     const loadUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setDisplayName(null); setIsAnonymous(false); return; }
+      if (!user) { setDisplayName(null); setIsAnonymous(false); setUserId(null); setResumeLoaded(false); setResumeList([]); return; }
+      setUserId(user.id);
       setIsAnonymous(user.is_anonymous ?? false);
       if (user.is_anonymous) { setDisplayName("ospite"); return; }
       const meta = user.user_metadata;
@@ -238,9 +263,45 @@ export function SiteHeader() {
         </div>
       </div>
 
-      {/* cestino strip — sotto la linea del menu, allineato a destra */}
+      {/* strip secondaria — sotto la linea del menu: libri in lettura a sinistra, cestino a destra */}
       <div className="hidden sm:block py-1">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10 flex justify-end">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10 flex justify-between items-start">
+          {!isAnonymous && displayName ? (
+            <div ref={resumeRef} className="relative">
+              <button
+                onClick={handleResumeToggle}
+                className={`font-mono text-[9px] tracking-[0.22em] uppercase transition-opacity flex items-center gap-1 ${
+                  resumeOpen ? "text-cyan opacity-100" : "text-cyan/70 hover:opacity-70"
+                }`}
+              >
+                ▸ Libri in lettura
+                <span className={`text-[8px] transition-transform duration-200 ${resumeOpen ? "rotate-180" : ""}`}>▾</span>
+              </button>
+              {resumeOpen && (
+                <div className="absolute top-full left-0 mt-3 w-64 bg-void border border-cyan/30 z-50 shadow-[0_0_30px_oklch(0.82_0.16_200/0.2)]">
+                  <span className="absolute -top-px left-0 right-0 h-px bg-cyan/60" />
+                  {!resumeLoaded ? (
+                    <p className="px-4 py-3 font-mono text-[10px] text-bone/40 animate-pulse">Caricamento...</p>
+                  ) : resumeList.length === 0 ? (
+                    <p className="px-4 py-3 font-mono text-[10px] text-bone/40">Nessun libro in corso — inizia a leggere qualcosa dal catalogo.</p>
+                  ) : (
+                    resumeList.map(b => (
+                      <button
+                        key={b.slug}
+                        onClick={() => { setResumeOpen(false); window.location.href = `/leggi/${b.slug}?riprendi=1`; }}
+                        className="w-full text-left px-4 py-2.5 group hover:bg-cyan/5 transition-colors border-b border-cyan/10 last:border-b-0"
+                      >
+                        <div className="font-serif text-sm text-bone/80 group-hover:text-cyan transition-colors truncate">{b.title}</div>
+                        {b.author && <div className="font-mono text-[9px] text-bone/30 truncate">{b.author}</div>}
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          ) : (
+            <span />
+          )}
           <div className="group relative">
             <Link
               to="/cestino"

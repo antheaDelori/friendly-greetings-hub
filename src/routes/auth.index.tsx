@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { HudPanel, PageShell, HudButton } from "@/components/HudPanel";
 import { supabase } from "@/lib/supabase";
+import { loadResumeBooks, type ResumeBook } from "@/lib/readingProgress";
 
 export const Route = createFileRoute("/auth/")({
   validateSearch: z.object({
@@ -59,7 +60,6 @@ function AuthLanding() {
     setContactLoading(false);
   };
 
-  type ResumeBook = { slug: string; title: string; author: string };
   const [resumeBooks, setResumeBooks] = useState<ResumeBook[]>([]);
   const [resumeTotal, setResumeTotal] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
@@ -145,43 +145,11 @@ function AuthLanding() {
           }
 
           // Recupera i progressi dal database
-          const { data: progressData, count } = await supabase
-            .from("reading_progress")
-            .select("book_slug, book_title, book_author", { count: "exact" })
-            .eq("user_id", userId)
-            .order("updated_at", { ascending: false })
-            .limit(4);
-
-          if (progressData && progressData.length > 0) {
-            // Valida tutti gli slug contro la tabella books (slug vecchi/rimossi vanno scartati)
-            const allSlugs = progressData.map((p: { book_slug: string }) => p.book_slug);
-            const { data: dbBooks } = await supabase.from("books").select("slug, titolo, author_name").in("slug", allSlugs);
-            const dbBookMap: Record<string, { titolo: string; author_name: string }> = Object.fromEntries(
-              (dbBooks ?? []).map((b: { slug: string; titolo: string; author_name: string }) => [b.slug, b])
-            );
-            const validSlugs = new Set(Object.keys(dbBookMap));
-
-            // Pulisci reading_progress e localStorage per slug non più esistenti
-            const invalidSlugs = allSlugs.filter((s: string) => !validSlugs.has(s));
-            if (invalidSlugs.length > 0) {
-              await supabase.from("reading_progress").delete().eq("user_id", userId).in("book_slug", invalidSlugs);
-              invalidSlugs.forEach((s: string) => {
-                localStorage.removeItem(`reading_pos_${s}`);
-                localStorage.removeItem(`bookmark_para_${s}`);
-              });
-            }
-
-            const validProgress = progressData.filter((p: { book_slug: string }) => validSlugs.has(p.book_slug));
-            if (validProgress.length === 0) { window.location.replace("/"); return; }
-
-            const inProgress: ResumeBook[] = validProgress.map((p: { book_slug: string; book_title: string | null; book_author: string | null }) => ({
-              slug: p.book_slug,
-              title: p.book_title || dbBookMap[p.book_slug]?.titolo || p.book_slug,
-              author: p.book_author || dbBookMap[p.book_slug]?.author_name || "",
-            }));
+          const { books: inProgress, total } = await loadResumeBooks(userId);
+          if (inProgress.length > 0) {
             setCurrentUserId(userId);
             setResumeBooks(inProgress);
-            setResumeTotal(count ?? validProgress.length);
+            setResumeTotal(total);
             setLoading(false);
             return;
           }
