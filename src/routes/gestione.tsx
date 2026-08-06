@@ -533,9 +533,6 @@ function GestionePage() {
 
   // ── Follower / newsletter ─────────────────────────────────────────────────
   const [followers, setFollowers] = useState<{ id: string; email: string; nome: string | null; source: string; created_at: string }[]>([]);
-  const [newFollowerEmail, setNewFollowerEmail] = useState("");
-  const [newFollowerNome, setNewFollowerNome] = useState("");
-  const [addingFollower, setAddingFollower] = useState(false);
   const [sendingNewsletter, setSendingNewsletter] = useState(false);
   const [newsletterMessage, setNewsletterMessage] = useState("");
   const [newsletterResult, setNewsletterResult] = useState<{ sent: number; failed?: string[] } | { error: string } | null>(null);
@@ -1952,30 +1949,12 @@ function GestionePage() {
     if (userId) await loadFlaggedReviews(userId, isAdmin);
   };
 
-  const [followerError, setFollowerError] = useState<string | null>(null);
-
   // ── Lista accesso libro (riservato/premium) ───────────────────────────────
   const [accessList, setAccessList] = useState<{ id: string; email: string; created_at: string }[]>([]);
   const [newAccessEmail, setNewAccessEmail] = useState("");
   const [addingAccess, setAddingAccess] = useState(false);
   const [accessError, setAccessError] = useState<string | null>(null);
   const [importingFrom, setImportingFrom] = useState(false);
-
-  const handleAddFollower = async () => {
-    if (!userId || !newFollowerEmail.trim() || addingFollower) return;
-    setAddingFollower(true);
-    setFollowerError(null);
-    const { error } = await supabase.from("author_followers").upsert(
-      { author_id: userId, email: newFollowerEmail.trim().toLowerCase(), nome: newFollowerNome.trim() || null, source: "manual" },
-      { onConflict: "author_id,email", ignoreDuplicates: true }
-    );
-    if (error) {
-      setFollowerError(error.message);
-    } else {
-      setNewFollowerEmail(""); setNewFollowerNome(""); await loadFollowers(userId);
-    }
-    setAddingFollower(false);
-  };
 
   const loadAccessList = async (bookId: string) => {
     const { data } = await supabase.from("book_access_list").select("id, email, created_at").eq("book_id", bookId).order("created_at");
@@ -4709,8 +4688,8 @@ function GestionePage() {
 
         </div>
 
-        {/* ── I tuoi lettori ── */}
-        <HudPanel label="i tuoi lettori" code={`${followers.length}`} tone="amber" className="mt-6">
+        {/* ── I tuoi lettori (followers) ── */}
+        <HudPanel label="i tuoi lettori (followers)" code={`${followers.length}`} tone="amber" className="mt-6">
           <div className="space-y-6">
 
             {/* Lista follower */}
@@ -4738,27 +4717,7 @@ function GestionePage() {
               </div>
             )}
 
-            {/* Aggiungi manualmente */}
-            <div>
-              <div className="font-mono text-[10px] tracking-[0.25em] text-amber uppercase mb-3">◈ Aggiungi indirizzo</div>
-              <div className="flex gap-2 flex-wrap">
-                <input type="text" value={newFollowerNome} onChange={e => setNewFollowerNome(e.target.value)}
-                  placeholder="Nome (opzionale)"
-                  className="border border-amber/30 bg-void/40 px-3 py-2 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-amber transition-all text-sm w-40" />
-                <input type="email" value={newFollowerEmail} onChange={e => setNewFollowerEmail(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && handleAddFollower()}
-                  placeholder="email@esempio.it"
-                  className="border border-amber/30 bg-void/40 px-3 py-2 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-amber transition-all text-sm flex-1 min-w-48" />
-                <HudButton variant="ghost" onClick={handleAddFollower} disabled={addingFollower || !newFollowerEmail.includes("@")}>
-                  {addingFollower ? "▸ Aggiunta..." : "▸ Aggiungi"}
-                </HudButton>
-              </div>
-              {followerError && (
-                <p className="mt-2 font-mono text-[10px] text-magenta tracking-widest">✗ {followerError}</p>
-              )}
-            </div>
-
-            {/* L'invio comunicazioni è ora dentro la scheda di ogni opera (sezione "Accesso"), per evitare ambiguità sul libro selezionato */}
+            {/* Per aggiungere un indirizzo, si usa una Lista di Distribuzione */}
             {distributionLists.length > 0 && (
               <p className="border-t border-amber/20 pt-5 font-mono text-[10px] text-bone/30 tracking-widest uppercase">
                 ↳ Per inviare una comunicazione, apri l'opera che vuoi presentare e usa "Invia comunicazione su questa opera"
