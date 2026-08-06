@@ -178,7 +178,7 @@ function GestionePage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmMode, setConfirmMode] = useState<"archivia" | "cestino" | null>(null);
-  const [openSection, setOpenSection] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(1);
+  const [openSection, setOpenSection] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6 | 7>(1);
   const [savingMateriali, setSavingMateriali] = useState(false);
   const [saveMaterialiError, setSaveMaterialiError] = useState<string | null>(null);
   const [authorName, setAuthorName] = useState("");
@@ -3021,87 +3021,6 @@ function GestionePage() {
                     )}
                   </div>
 
-                  {/* Invia comunicazione su questa opera — sempre disponibile, anche per opere gratuite */}
-                  {editingId && (
-                    <div className="border border-amber/20 bg-amber/5 p-4 space-y-3">
-                      <div className="font-mono text-[10px] tracking-[0.25em] text-amber uppercase">◈ Invia comunicazione su questa opera</div>
-                      {distributionLists.length === 0 ? (
-                        <p className="font-mono text-[10px] text-bone/30 tracking-widest uppercase">
-                          Nessuna lista di distribuzione ancora — <Link to="/gestione/liste" className="underline hover:text-amber">creane una</Link>.
-                        </p>
-                      ) : (
-                        <>
-                          <div>
-                            <label className="font-mono text-[10px] tracking-[0.2em] text-bone/50 uppercase block mb-1">Liste di distribuzione destinatarie</label>
-                            <div className="space-y-1">
-                              {distributionLists.map(list => {
-                                const isOpen = expandedListIds.has(list.id);
-                                const members = listMembersCache[list.id];
-                                return (
-                                  <div key={list.id} className="border border-amber/10">
-                                    <div className="flex items-center gap-3 px-2 py-1.5 flex-wrap">
-                                      <label className="flex items-center gap-2 cursor-pointer font-mono text-xs flex-1">
-                                        <input type="checkbox" checked={selectedNewsletterListIds.has(list.id)}
-                                          onChange={() => setSelectedNewsletterListIds(prev => {
-                                            const next = new Set(prev);
-                                            if (next.has(list.id)) next.delete(list.id); else next.add(list.id);
-                                            return next;
-                                          })}
-                                          className="accent-amber" />
-                                        <span className={selectedNewsletterListIds.has(list.id) ? "text-bone/80" : "text-bone/40"}>
-                                          {list.nome}{members ? ` (${members.length})` : ""}
-                                        </span>
-                                      </label>
-                                      <button type="button" onClick={() => handleToggleListExpand(list.id)}
-                                        className="font-mono text-[9px] text-amber/50 hover:text-amber transition-colors cursor-pointer">
-                                        {isOpen ? "▼" : "+"} membri
-                                      </button>
-                                    </div>
-                                    {isOpen && (
-                                      <div className="px-3 pb-2 space-y-0.5">
-                                        {(members ?? []).map(m => (
-                                          <div key={m.id} className="font-serif text-xs text-bone/60">{m.email}</div>
-                                        ))}
-                                        {members && members.length === 0 && (
-                                          <p className="font-mono text-[9px] text-bone/30 uppercase tracking-widest">Nessun membro in questa lista.</p>
-                                        )}
-                                      </div>
-                                    )}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                          <div>
-                            <label className="font-mono text-[10px] tracking-[0.2em] text-bone/50 uppercase block mb-1">Messaggio personale <span className="normal-case text-bone/30">(opzionale)</span></label>
-                            <textarea value={newsletterMessage} onChange={e => setNewsletterMessage(e.target.value)}
-                              placeholder="Un pensiero diretto ai tuoi lettori..."
-                              rows={3}
-                              className="w-full border border-amber/30 bg-void/40 px-3 py-2 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-amber transition-all resize-y text-sm" />
-                          </div>
-                          <div className="flex items-center gap-4 flex-wrap">
-                            <HudButton variant="primary" onClick={handleSendNewsletter} disabled={sendingNewsletter || selectedNewsletterListIds.size === 0}>
-                              {sendingNewsletter ? "◈ Invio in corso..." : "◈ Invia alle liste selezionate"}
-                            </HudButton>
-                            {newsletterResult && (
-                              <span className={`font-mono text-[10px] tracking-widest uppercase ${"error" in newsletterResult ? "text-magenta" : "text-cyan"}`}>
-                                {"error" in newsletterResult ? `✗ ${newsletterResult.error}` : `✓ Inviata a ${newsletterResult.sent} lettori`}
-                              </span>
-                            )}
-                          </div>
-                          {newsletterResult && "failed" in newsletterResult && newsletterResult.failed && newsletterResult.failed.length > 0 && (
-                            <p className="font-mono text-[10px] text-magenta tracking-widest">
-                              ✗ Non consegnata a: {newsletterResult.failed.join(", ")}
-                            </p>
-                          )}
-                          <p className="font-mono text-[9px] text-bone/25 tracking-widest">
-                            ↳ L'email arriva anche a te in copia — ogni lettore riceve un invio individuale, non si vedono tra loro
-                          </p>
-                        </>
-                      )}
-                    </div>
-                  )}
-
                   <div>
                     <span className={labelClass}>↳ Descrizione / Sinossi</span>
                     <textarea value={descrizione} onChange={e => setDescrizione(e.target.value)}
@@ -4374,6 +4293,110 @@ function GestionePage() {
                     )}
                   </div>
 
+                </div>
+              )}
+
+              {/* ══════════ 07 — INVIA COMUNICAZIONE ══════════ */}
+              <button type="button" onClick={() => editingId && setOpenSection(openSection === 7 ? 0 : 7)} disabled={!editingId}
+                className={`w-full flex items-center gap-3 px-5 py-4 border transition-all ${
+                  !editingId ? "border-cyan/10 cursor-not-allowed" :
+                  openSection === 7 ? "border-amber bg-amber/5 cursor-pointer" : "border-amber/30 hover:border-amber cursor-pointer"
+                }`}>
+                <span className={`font-mono text-[11px] w-7 h-7 border flex items-center justify-center flex-shrink-0 ${
+                  !editingId ? "border-cyan/15 text-bone/20" :
+                  openSection === 7 ? "border-amber text-amber" : "border-amber/40 text-bone/50"
+                }`}>07</span>
+                <div className="flex-1 text-left">
+                  <div className={`font-mono text-[11px] tracking-[0.3em] uppercase ${
+                    !editingId ? "text-bone/20" : openSection === 7 ? "text-amber" : "text-bone/70"
+                  }`}>Invia comunicazione</div>
+                  <div className={`font-mono text-[9px] tracking-widest mt-0.5 ${!editingId ? "text-bone/15" : "text-bone/40"}`}>
+                    {editingId ? "avvisa una o più liste di distribuzione" : "— salva prima i metadati —"}
+                  </div>
+                </div>
+                <span className={`font-mono text-[9px] tracking-widest uppercase ${
+                  !editingId ? "text-bone/20" : openSection === 7 ? "text-amber" : "text-bone/40"
+                }`}>{!editingId ? "⊗" : openSection === 7 ? "▲" : "▼"}</span>
+              </button>
+              {openSection === 7 && editingId && (
+                <div className="border border-amber/20 border-t-0 p-5">
+                  <div className="border border-amber/20 bg-amber/5 p-4 space-y-3">
+                    <div className="font-mono text-[10px] tracking-[0.25em] text-amber uppercase">◈ Invia comunicazione su questa opera</div>
+                    {distributionLists.length === 0 ? (
+                      <p className="font-mono text-[10px] text-bone/30 tracking-widest uppercase">
+                        Nessuna lista di distribuzione ancora — <Link to="/gestione/liste" className="underline hover:text-amber">creane una</Link>.
+                      </p>
+                    ) : (
+                      <>
+                        <div>
+                          <label className="font-mono text-[10px] tracking-[0.2em] text-bone/50 uppercase block mb-1">Liste di distribuzione destinatarie</label>
+                          <div className="space-y-1">
+                            {distributionLists.map(list => {
+                              const isOpen = expandedListIds.has(list.id);
+                              const members = listMembersCache[list.id];
+                              return (
+                                <div key={list.id} className="border border-amber/10">
+                                  <div className="flex items-center gap-3 px-2 py-1.5 flex-wrap">
+                                    <label className="flex items-center gap-2 cursor-pointer font-mono text-xs flex-1">
+                                      <input type="checkbox" checked={selectedNewsletterListIds.has(list.id)}
+                                        onChange={() => setSelectedNewsletterListIds(prev => {
+                                          const next = new Set(prev);
+                                          if (next.has(list.id)) next.delete(list.id); else next.add(list.id);
+                                          return next;
+                                        })}
+                                        className="accent-amber" />
+                                      <span className={selectedNewsletterListIds.has(list.id) ? "text-bone/80" : "text-bone/40"}>
+                                        {list.nome}{members ? ` (${members.length})` : ""}
+                                      </span>
+                                    </label>
+                                    <button type="button" onClick={() => handleToggleListExpand(list.id)}
+                                      className="font-mono text-[9px] text-amber/50 hover:text-amber transition-colors cursor-pointer">
+                                      {isOpen ? "▼" : "+"} membri
+                                    </button>
+                                  </div>
+                                  {isOpen && (
+                                    <div className="px-3 pb-2 space-y-0.5">
+                                      {(members ?? []).map(m => (
+                                        <div key={m.id} className="font-serif text-xs text-bone/60">{m.email}</div>
+                                      ))}
+                                      {members && members.length === 0 && (
+                                        <p className="font-mono text-[9px] text-bone/30 uppercase tracking-widest">Nessun membro in questa lista.</p>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="font-mono text-[10px] tracking-[0.2em] text-bone/50 uppercase block mb-1">Messaggio personale <span className="normal-case text-bone/30">(opzionale)</span></label>
+                          <textarea value={newsletterMessage} onChange={e => setNewsletterMessage(e.target.value)}
+                            placeholder="Un pensiero diretto ai tuoi lettori..."
+                            rows={3}
+                            className="w-full border border-amber/30 bg-void/40 px-3 py-2 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-amber transition-all resize-y text-sm" />
+                        </div>
+                        <div className="flex items-center gap-4 flex-wrap">
+                          <HudButton variant="primary" onClick={handleSendNewsletter} disabled={sendingNewsletter || selectedNewsletterListIds.size === 0}>
+                            {sendingNewsletter ? "◈ Invio in corso..." : "◈ Invia alle liste selezionate"}
+                          </HudButton>
+                          {newsletterResult && (
+                            <span className={`font-mono text-[10px] tracking-widest uppercase ${"error" in newsletterResult ? "text-magenta" : "text-cyan"}`}>
+                              {"error" in newsletterResult ? `✗ ${newsletterResult.error}` : `✓ Inviata a ${newsletterResult.sent} lettori`}
+                            </span>
+                          )}
+                        </div>
+                        {newsletterResult && "failed" in newsletterResult && newsletterResult.failed && newsletterResult.failed.length > 0 && (
+                          <p className="font-mono text-[10px] text-magenta tracking-widest">
+                            ✗ Non consegnata a: {newsletterResult.failed.join(", ")}
+                          </p>
+                        )}
+                        <p className="font-mono text-[9px] text-bone/25 tracking-widest">
+                          ↳ L'email arriva anche a te in copia — ogni lettore riceve un invio individuale, non si vedono tra loro
+                        </p>
+                      </>
+                    )}
+                  </div>
                 </div>
               )}
 
