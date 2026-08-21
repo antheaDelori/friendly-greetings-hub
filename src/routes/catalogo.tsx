@@ -29,6 +29,7 @@ type DbBook = {
   author_name: string | null;
   tag: string[] | null;
   collana_id: string | null;
+  ritirato: boolean | null;
 };
 
 function dbToBook(b: DbBook): Book {
@@ -48,6 +49,7 @@ function dbToBook(b: DbBook): Book {
     tagline: b.descrizione?.slice(0, 140) ?? "",
     description: b.descrizione ?? "",
     chapters: [],
+    ritirato: b.ritirato ?? false,
   };
 }
 
@@ -139,8 +141,8 @@ function CatalogoPage() {
     const fetchBooks = async () => {
       const { data: publicData } = await supabase
         .from("books")
-        .select("id, slug, titolo, descrizione, genere, anno, letture, copertina_url, copertina_rotta_url, lastra_url, author_name, tag, collana_id")
-        .eq("disponibile", true)
+        .select("id, slug, titolo, descrizione, genere, anno, letture, copertina_url, copertina_rotta_url, lastra_url, author_name, tag, collana_id, ritirato")
+        .or("disponibile.eq.true,ritirato.eq.true")
         .eq("accesso", "gratuito")
         .or("status.neq.open,status.is.null")
         .order("created_at", { ascending: false });
@@ -156,8 +158,8 @@ function CatalogoPage() {
         if (authorizedIds.length > 0) {
           const { data: privBooks } = await supabase
             .from("books")
-            .select("id, slug, titolo, descrizione, genere, anno, letture, copertina_url, copertina_rotta_url, lastra_url, author_name, tag, collana_id")
-            .eq("disponibile", true)
+            .select("id, slug, titolo, descrizione, genere, anno, letture, copertina_url, copertina_rotta_url, lastra_url, author_name, tag, collana_id, ritirato")
+            .or("disponibile.eq.true,ritirato.eq.true")
             .in("id", authorizedIds)
             .or("status.neq.open,status.is.null")
             .order("created_at", { ascending: false });
@@ -197,7 +199,7 @@ function CatalogoPage() {
       const { data: booksData } = await supabase
         .from("books")
         .select("collana_id")
-        .eq("disponibile", true)
+        .or("disponibile.eq.true,ritirato.eq.true")
         .not("collana_id", "is", null);
       const counts: Record<string, number> = {};
       for (const b of booksData ?? []) {

@@ -33,19 +33,70 @@ export const Route = createFileRoute("/leggi/$slug")({
     const staticBook = getBookBySlug(params.slug);
     if (staticBook) {
       const { data: { session } } = await supabase.auth.getSession();
-      return { book: staticBook, fileUrl: null as string | null, epubUrl: null as string | null, donationUrl: null as string | null, isLoggedIn: !!session, isAnonymous: session?.user?.is_anonymous ?? false, userId: session?.user?.id ?? null, allegati: [] as { id: string; titolo: string; descrizione: string | null; file_url: string; tipo: string; ordine: number }[], isCestinato: false, votiCestino: 0, recuperato: false, bookId: "", authorId: null as string | null, recensioni: [] as RecensioneItem[] };
+      return { book: staticBook, fileUrl: null as string | null, epubUrl: null as string | null, donationUrl: null as string | null, isLoggedIn: !!session, isAnonymous: session?.user?.is_anonymous ?? false, userId: session?.user?.id ?? null, allegati: [] as { id: string; titolo: string; descrizione: string | null; file_url: string; tipo: string; ordine: number }[], isCestinato: false, votiCestino: 0, recuperato: false, bookId: "", authorId: null as string | null, recensioni: [] as RecensioneItem[], isRitirato: false };
     }
 
     // Poi cerca su Supabase
     const { data } = await supabase
       .from("books")
-      .select("id, slug, titolo, descrizione, estratto, genere, fumetto_formato, anno, data_pubblicazione, letture, copertina_url, copertina_flat_url, video_url, video_captions, file_url, epub_url, mobi_url, author_name, author_id, cestinato, voti_cestino, recuperato, accesso, status")
+      .select("id, slug, titolo, descrizione, estratto, genere, fumetto_formato, anno, data_pubblicazione, letture, copertina_url, copertina_flat_url, video_url, video_captions, file_url, epub_url, mobi_url, author_name, author_id, cestinato, voti_cestino, recuperato, accesso, status, ritirato")
       .eq("slug", params.slug)
-      .or("disponibile.eq.true,cestinato.eq.true")
+      .or("disponibile.eq.true,cestinato.eq.true,ritirato.eq.true")
       .maybeSingle();
 
     if (!data) throw notFound();
     if (data.status === "open") throw redirect({ to: "/libri-aperti/$slug", params: { slug: params.slug } });
+
+    // Opera ritirata dal catalogo dall'autore: nessun contenuto da mostrare,
+    // solo un placeholder — saltiamo capitoli/allegati/recensioni/accessi.
+    if (data.ritirato) {
+      const { data: { session } } = await supabase.auth.getSession();
+      const author = data.author_name || "Autore";
+      const book: Book = {
+        slug: data.slug,
+        title: data.titolo,
+        author,
+        authorSlug: author.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-"),
+        genere: (ALL_GENRES.includes(data.genere as Genre) ? data.genere : "libro") as Genre,
+        year: data.anno ?? new Date().getFullYear(),
+        reads: data.letture,
+        rating: 0,
+        cover: logo,
+        tagline: "",
+        description: "",
+        chapters: [],
+        ritirato: true,
+      };
+      return {
+        book,
+        fileUrl: null as string | null,
+        epubUrl: null as string | null,
+        mobiUrl: null as string | null,
+        donationUrl: null as string | null,
+        isLoggedIn: !!session,
+        isAnonymous: session?.user?.is_anonymous ?? false,
+        userId: session?.user?.id ?? null,
+        userEmail: session?.user?.email ?? null,
+        allegati: [] as { id: string; titolo: string; descrizione: string | null; file_url: string; tipo: string; ordine: number }[],
+        isCestinato: false,
+        votiCestino: 0,
+        recuperato: false,
+        bookId: data.id as string,
+        authorId: (data.author_id ?? null) as string | null,
+        recensioni: [] as RecensioneItem[],
+        likesCount: 0,
+        userHasLiked: false,
+        userIsFollowing: false,
+        hasAccess: true,
+        bookAccesso: (data.accesso as string) ?? "gratuito",
+        authorBio: null as string | null,
+        fumettoPagine: [] as { id: string; ordine: number; image_url: string; testo?: string | null }[],
+        fumettoFormato: "a4v" as "a4v" | "a4h" | "manga" | "illustrato",
+        estratto: null as string | null,
+        dataPubblicazione: null as string | null,
+        isRitirato: true,
+      };
+    }
 
     // Carica i capitoli dalla tabella capitoli
     const { data: capData } = await supabase
@@ -192,6 +243,7 @@ export const Route = createFileRoute("/leggi/$slug")({
       fumettoFormato: (data.fumetto_formato ?? "a4v") as "a4v" | "a4h" | "manga" | "illustrato",
       estratto: (data.estratto ?? null) as string | null,
       dataPubblicazione: (data.data_pubblicazione ?? null) as string | null,
+      isRitirato: false,
     };
   },
   head: ({ loaderData }) => {
@@ -266,6 +318,33 @@ function ReadNotFound() {
   );
 }
 
+function OperaRitirataView({ book, isAuthor }: { book: Book; isAuthor: boolean }) {
+  return (
+    <div className="min-h-screen paper-texture flex flex-col">
+      <SiteHeader />
+      <div className="flex-1 flex items-center justify-center p-10 text-center">
+        <div>
+          <div className="font-display text-2xl text-ink/40 tracking-widest uppercase">// {book.author}</div>
+          <h1 className="mt-2 font-display text-3xl text-ink">{book.title}</h1>
+          <p className="mt-4 font-serif italic text-xl text-ink/60">L'opera ha preso il volo.</p>
+          <p className="mt-2 font-serif text-ink/50 text-sm">L'autore ha ritirato questa opera dal catalogo.</p>
+          <div className="mt-6 flex flex-wrap gap-3 justify-center">
+            <Link to="/catalogo" className="inline-block bg-ink text-paper px-6 py-3 font-display tracking-widest text-xs uppercase hover:bg-blood transition-colors">
+              ← Torna al catalogo
+            </Link>
+            {isAuthor && (
+              <Link to="/gestione" className="inline-block border border-ink/30 text-ink px-6 py-3 font-display tracking-widest text-xs uppercase hover:border-ink transition-colors">
+                Gestisci le tue opere
+              </Link>
+            )}
+          </div>
+        </div>
+      </div>
+      <SiteFooter />
+    </div>
+  );
+}
+
 function chapterReadingTime(chapter: import("@/data/books").Chapter): string {
   const raw = chapter.isHtml
     ? chapter.content[0].replace(/<[^>]+>/g, " ")
@@ -288,7 +367,7 @@ function getOrCreateVisitorId(userId?: string | null): string {
 
 
 function ReadPage() {
-  const { book, fileUrl, epubUrl, mobiUrl, donationUrl, isLoggedIn, isAnonymous, userId, userEmail, allegati, isCestinato, votiCestino: initialVoti, recuperato, bookId, authorId, recensioni: inizialiRecensioni, userIsFollowing: initFollowing, hasAccess, bookAccesso, authorBio, fumettoPagine, fumettoFormato, estratto, dataPubblicazione } = Route.useLoaderData();
+  const { book, fileUrl, epubUrl, mobiUrl, donationUrl, isLoggedIn, isAnonymous, userId, userEmail, allegati, isCestinato, votiCestino: initialVoti, recuperato, bookId, authorId, recensioni: inizialiRecensioni, userIsFollowing: initFollowing, hasAccess, bookAccesso, authorBio, fumettoPagine, fumettoFormato, estratto, dataPubblicazione, isRitirato } = Route.useLoaderData();
   const isAuthor = !!userId && !!authorId && userId === authorId;
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [guestLoading, setGuestLoading] = useState(false);
@@ -380,8 +459,8 @@ function ReadPage() {
 
   useEffect(() => {
     // Le query supabase-js sono "thenable": senza .then()/await la richiesta non parte mai.
-    if (bookId) supabase.rpc("increment_reads", { p_book_id: bookId }).then();
-  }, [bookId]);
+    if (bookId && !isRitirato) supabase.rpc("increment_reads", { p_book_id: bookId }).then();
+  }, [bookId, isRitirato]);
 
   // Auto-aggiorna libreria: da_leggere → in_lettura all'apertura del libro
   useEffect(() => {
@@ -776,6 +855,8 @@ function ReadPage() {
 
   const hasChapters = book.chapters.length > 0;
   const chapter = hasChapters ? book.chapters[currentIdx] : null;
+
+  if (isRitirato) return <OperaRitirataView book={book} isAuthor={isAuthor} />;
 
   return (
     <div className="min-h-screen paper-texture flex flex-col">
@@ -1254,20 +1335,20 @@ function ReadPage() {
                         onClick={() => setConfirmDeleteBook(true)}
                         className="font-mono text-[10px] uppercase tracking-widest border border-magenta/50 text-magenta/70 hover:bg-magenta hover:text-void px-4 py-2 transition-all"
                       >
-                        ✕ Cancella
+                        ✕ Ritira dal catalogo
                       </button>
                     </div>
                   ) : (
                     <div className="flex flex-wrap gap-3 items-center">
-                      <span className="font-mono text-[10px] text-magenta">Eliminare definitivamente?</span>
+                      <span className="font-mono text-[10px] text-magenta">Ritirare dal catalogo? Resterà come teca vuota, ripristinabile in ogni momento.</span>
                       <button
                         onClick={async () => {
-                          await supabase.from("books").delete().eq("id", bookId);
+                          await supabase.from("books").update({ ritirato: true, disponibile: false, cestinato: false }).eq("id", bookId);
                           window.location.replace("/gestione");
                         }}
                         className="font-mono text-[10px] uppercase tracking-widest border border-magenta bg-magenta/10 text-magenta hover:bg-magenta hover:text-void px-4 py-2 transition-all"
                       >
-                        ✕ Sì, elimina
+                        ✕ Sì, ritira
                       </button>
                       <button
                         onClick={() => setConfirmDeleteBook(false)}

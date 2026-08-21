@@ -75,6 +75,7 @@ type Book = {
   cestinato: boolean;
   recuperato: boolean;
   voti_cestino: number;
+  ritirato: boolean;
   slug: string;
   letture: number;
   downloads: number;
@@ -177,7 +178,7 @@ function GestionePage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [confirmMode, setConfirmMode] = useState<"archivia" | "cestino" | null>(null);
+  const [confirmMode, setConfirmMode] = useState<"archivia" | "cestino" | "ritira" | null>(null);
   const [openSection, setOpenSection] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6 | 7>(1);
   const [savingMateriali, setSavingMateriali] = useState(false);
   const [saveMaterialiError, setSaveMaterialiError] = useState<string | null>(null);
@@ -2111,18 +2112,27 @@ function GestionePage() {
     await loadBooks(userId);
   };
 
-  const handleEliminaDefinitivamente = async () => {
+  const handleRitiraDalCatalogo = async () => {
     if (!selected || !userId) return;
-    await supabase.from("books").delete().eq("id", selected.id);
-    setSelected(null);
-    setConfirmMode(null);
-    await loadBooks(userId);
+    const { error } = await supabase.from("books").update({ ritirato: true, disponibile: false }).eq("id", selected.id);
+    if (!error) {
+      setSelected(null);
+      setConfirmMode(null);
+      await loadBooks(userId);
+    }
   };
 
   const handleRipristina = async (book: Book) => {
     if (!userId) return;
     await supabase.from("books").update({ disponibile: true }).eq("id", book.id);
     if (selected?.id === book.id) setSelected({ ...book, disponibile: true });
+    await loadBooks(userId);
+  };
+
+  const handleRipristinaDalRitiro = async (book: Book) => {
+    if (!userId) return;
+    await supabase.from("books").update({ ritirato: false, disponibile: true }).eq("id", book.id);
+    if (selected?.id === book.id) setSelected({ ...book, ritirato: false, disponibile: true });
     await loadBooks(userId);
   };
 
@@ -2307,9 +2317,10 @@ function GestionePage() {
   const [booksPage, setBooksPage] = useState(0);
 
   const BOOKS_PER_PAGE = 4;
-  const activeBooks = books.filter(b => b.disponibile && !b.collana_id && !b.cestinato);
-  const archivedBooks = books.filter(b => !b.disponibile && !b.collana_id && !b.cestinato);
+  const activeBooks = books.filter(b => b.disponibile && !b.collana_id && !b.cestinato && !b.ritirato);
+  const archivedBooks = books.filter(b => !b.disponibile && !b.collana_id && !b.cestinato && !b.ritirato);
   const cestinatoBooks = books.filter(b => b.cestinato && !b.collana_id);
+  const ritiratoBooks = books.filter(b => b.ritirato && !b.collana_id);
   const filteredBooks = filterGenere ? activeBooks.filter(b => b.genere === filterGenere) : activeBooks;
   const booksTotalPages = Math.ceil(filteredBooks.length / BOOKS_PER_PAGE);
   const pagedBooks = filteredBooks.slice(booksPage * BOOKS_PER_PAGE, (booksPage + 1) * BOOKS_PER_PAGE);
@@ -2672,6 +2683,37 @@ function GestionePage() {
                         <div className="font-display text-sm tracking-tight truncate">{b.titolo}</div>
                         <div className="font-mono text-[9px] tracking-widest text-magenta/60 uppercase mt-1">
                           ⊗ cestino · {b.voti_cestino}/5 voti
+                        </div>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {ritiratoBooks.length > 0 && (
+              <div>
+                <div className="hud-divider my-4" />
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="font-mono text-[9px] tracking-[0.3em] text-cyan uppercase">// ritirate</span>
+                  <span className="font-mono text-[9px] text-cyan bg-cyan/15 border border-cyan/40 px-2 py-0.5">
+                    {ritiratoBooks.length}
+                  </span>
+                </div>
+                <ul className="space-y-2">
+                  {ritiratoBooks.map((b) => (
+                    <li key={b.id}>
+                      <button
+                        onClick={() => handleSelectBook(b)}
+                        className={`w-full text-left p-3 border transition-all ${
+                          selected?.id === b.id && !showForm
+                            ? "border-cyan bg-cyan/10 text-cyan"
+                            : "border-cyan/30 text-bone/70 hover:border-cyan/60 hover:bg-cyan/5"
+                        }`}
+                      >
+                        <div className="font-display text-sm tracking-tight truncate">{b.titolo}</div>
+                        <div className="font-mono text-[9px] tracking-widest text-cyan/60 uppercase mt-1">
+                          ritirata dal catalogo
                         </div>
                       </button>
                     </li>
@@ -4463,8 +4505,8 @@ function GestionePage() {
                     <span className="font-mono text-[9px] uppercase tracking-widest border border-cyan/30 px-2 py-1 text-cyan/70">{selected.accesso}</span>
                     {selected.tipo && <span className="font-mono text-[9px] uppercase tracking-widest border border-cyan/30 px-2 py-1 text-bone/60">{selected.tipo}</span>}
                     {selected.target && <span className="font-mono text-[9px] uppercase tracking-widest border border-magenta/30 px-2 py-1 text-magenta/60">{selected.target}</span>}
-                    <span className={`font-mono text-[9px] uppercase tracking-widest border px-2 py-1 ${selected.disponibile ? "border-cyan/30 text-bone/50" : "border-magenta/40 text-magenta/60"}`}>
-                      {selected.disponibile ? "disponibile" : "archiviata"}
+                    <span className={`font-mono text-[9px] uppercase tracking-widest border px-2 py-1 ${selected.ritirato ? "border-cyan/40 text-cyan/70" : selected.disponibile ? "border-cyan/30 text-bone/50" : "border-magenta/40 text-magenta/60"}`}>
+                      {selected.ritirato ? "ritirata dal catalogo" : selected.disponibile ? "disponibile" : "archiviata"}
                     </span>
                   </div>
                   {selected.isbn && (
@@ -4512,6 +4554,18 @@ function GestionePage() {
                       ▸ Ripristina dal cestino
                     </HudButton>
                   </div>
+                ) : selected.ritirato ? (
+                  <div className="border border-cyan/40 bg-cyan/5 p-4 space-y-3">
+                    <div className="font-mono text-[10px] tracking-widest text-cyan uppercase">
+                      ⊗ Ritirata dal catalogo
+                    </div>
+                    <p className="font-serif italic text-bone/60 text-sm">
+                      In catalogo compare come teca vuota, con la scritta "L'opera ha preso il volo." Nessuno può leggerla finché non la ripristini.
+                    </p>
+                    <HudButton variant="primary" onClick={() => handleRipristinaDalRitiro(selected)}>
+                      ▸ Ripristina
+                    </HudButton>
+                  </div>
                 ) : (
                   <>
                     <div className="flex flex-wrap gap-3">
@@ -4520,12 +4574,14 @@ function GestionePage() {
                           <HudButton variant="ghost" onClick={handleModifica} disabled={!!confirmMode}>◆ Modifica</HudButton>
                           <HudButton variant="ghost" onClick={() => setConfirmMode("archivia")} disabled={!!confirmMode}>⊗ Archivia</HudButton>
                           <HudButton variant="ghost" onClick={() => setConfirmMode("cestino")} disabled={!!confirmMode}>⊗ Cestino</HudButton>
+                          <HudButton variant="ghost" onClick={() => setConfirmMode("ritira")} disabled={!!confirmMode}>⊗ Ritira dal catalogo</HudButton>
                         </>
                       ) : (
                         <>
                           <HudButton variant="ghost" onClick={handleModifica}>◆ Modifica</HudButton>
                           <HudButton variant="primary" onClick={() => handleRipristina(selected)}>▸ Ripristina</HudButton>
                           <HudButton variant="ghost" onClick={() => setConfirmMode("cestino")} disabled={!!confirmMode}>⊗ Cestino</HudButton>
+                          <HudButton variant="ghost" onClick={() => setConfirmMode("ritira")} disabled={!!confirmMode}>⊗ Ritira dal catalogo</HudButton>
                         </>
                       )}
                     </div>
@@ -4536,7 +4592,6 @@ function GestionePage() {
                         </p>
                         <div className="flex flex-wrap gap-3">
                           <HudButton variant="magenta" onClick={handleElimina}>⊗ Archivia</HudButton>
-                          <HudButton variant="magenta" onClick={handleEliminaDefinitivamente}>Elimina definitivamente</HudButton>
                           <HudButton variant="ghost" onClick={() => setConfirmMode(null)}>Annulla</HudButton>
                         </div>
                       </div>
@@ -4548,6 +4603,17 @@ function GestionePage() {
                         </p>
                         <div className="flex flex-wrap gap-3">
                           <HudButton variant="magenta" onClick={handleGettaNelCestino}>⊗ Sposta nel cestino</HudButton>
+                          <HudButton variant="ghost" onClick={() => setConfirmMode(null)}>Annulla</HudButton>
+                        </div>
+                      </div>
+                    )}
+                    {confirmMode === "ritira" && (
+                      <div className="border border-cyan/50 bg-cyan/5 p-4 space-y-3">
+                        <p className="font-mono text-[10px] tracking-widest text-cyan uppercase">
+                          ⚠ L'opera resterà visibile in catalogo come teca vuota, con la scritta "L'opera ha preso il volo." — non cancella nulla, e potrai ripristinarla quando vuoi.
+                        </p>
+                        <div className="flex flex-wrap gap-3">
+                          <HudButton variant="magenta" onClick={handleRitiraDalCatalogo}>⊗ Ritira dal catalogo</HudButton>
                           <HudButton variant="ghost" onClick={() => setConfirmMode(null)}>Annulla</HudButton>
                         </div>
                       </div>
@@ -4679,7 +4745,7 @@ function GestionePage() {
                               {confirmDeleteNovella === b.id && (
                                 <div className="border-t border-magenta/20 bg-magenta/5 px-3 py-3 space-y-2">
                                   <p className="font-mono text-[9px] tracking-widest text-magenta uppercase">
-                                    ⚠ Archivia per nasconderla (recuperabile) oppure elimina dal database.
+                                    ⚠ Archivia per nasconderla (recuperabile) oppure ritirala dal catalogo (resta come teca vuota).
                                   </p>
                                   <div className="flex flex-wrap gap-2">
                                     <button
@@ -4688,9 +4754,9 @@ function GestionePage() {
                                       Archivia
                                     </button>
                                     <button
-                                      onClick={async () => { await supabase.from("books").delete().eq("id", b.id); setConfirmDeleteNovella(null); if (userId) await loadBooks(userId); }}
+                                      onClick={async () => { await supabase.from("books").update({ ritirato: true, disponibile: false }).eq("id", b.id); setConfirmDeleteNovella(null); if (userId) await loadBooks(userId); }}
                                       className="font-mono text-[9px] uppercase tracking-widest border border-magenta/50 text-magenta bg-magenta/10 hover:bg-magenta/20 px-3 py-1.5 transition-colors">
-                                      Elimina definitivamente
+                                      Ritira dal catalogo
                                     </button>
                                     <button
                                       onClick={() => setConfirmDeleteNovella(null)}

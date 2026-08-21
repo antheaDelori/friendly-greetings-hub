@@ -25,6 +25,7 @@ type OpenBook = {
   author_name: string | null;
   copertina_url: string | null;
   chapterCount: number;
+  ritirato: boolean | null;
 };
 
 function LibriApertiPage() {
@@ -36,9 +37,9 @@ function LibriApertiPage() {
     const load = async () => {
       const { data } = await supabase
         .from("books")
-        .select("id, slug, titolo, descrizione, genere, author_name, copertina_url")
+        .select("id, slug, titolo, descrizione, genere, author_name, copertina_url, ritirato")
         .eq("status", "open")
-        .eq("disponibile", true)
+        .or("disponibile.eq.true,ritirato.eq.true")
         .eq("cestinato", false)
         .order("created_at", { ascending: false });
 
@@ -88,7 +89,13 @@ function LibriApertiPage() {
                   className="group block glass border border-cyan/15 hover:border-cyan/40 transition-all duration-200 overflow-hidden"
                 >
                   <div className="relative aspect-[2/3] bg-deep/60 overflow-hidden">
-                    {book.copertina_url ? (
+                    {book.ritirato ? (
+                      <div className="w-full h-full flex items-center justify-center p-4 text-center border border-dashed border-cyan/20">
+                        <p className="font-serif italic text-[13px] text-bone/40 leading-relaxed">
+                          L'opera ha preso il volo.
+                        </p>
+                      </div>
+                    ) : book.copertina_url ? (
                       <img
                         src={book.copertina_url}
                         alt={book.titolo}
@@ -101,20 +108,24 @@ function LibriApertiPage() {
                         </p>
                       </div>
                     )}
-                    <div className="absolute top-2 left-2">
-                      <span className="font-mono text-[8px] tracking-widest uppercase bg-cyan/20 border border-cyan/40 text-cyan px-2 py-0.5">
-                        {t("libriAperti.badgeInScrittura")}
-                      </span>
-                    </div>
+                    {!book.ritirato && (
+                      <div className="absolute top-2 left-2">
+                        <span className="font-mono text-[8px] tracking-widest uppercase bg-cyan/20 border border-cyan/40 text-cyan px-2 py-0.5">
+                          {t("libriAperti.badgeInScrittura")}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <div className="p-4">
                     <p className="font-mono text-[9px] tracking-widest text-bone/40 uppercase mb-1">{book.author_name ?? "—"}</p>
                     <h2 className="font-serif text-bone text-base leading-snug mb-2 group-hover:text-cyan transition-colors line-clamp-2">
                       {book.titolo}
                     </h2>
-                    <p className="font-mono text-[9px] tracking-widest text-bone/35 uppercase">
-                      {book.chapterCount} {book.chapterCount === 1 ? t("libriAperti.capitoloSing") : t("libriAperti.capitoloPlur")}
-                    </p>
+                    {!book.ritirato && (
+                      <p className="font-mono text-[9px] tracking-widest text-bone/35 uppercase">
+                        {book.chapterCount} {book.chapterCount === 1 ? t("libriAperti.capitoloSing") : t("libriAperti.capitoloPlur")}
+                      </p>
+                    )}
                   </div>
                 </Link>
               ))}

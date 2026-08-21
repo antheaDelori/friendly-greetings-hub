@@ -24,6 +24,7 @@ export type Book = {
   tagline: string;
   description: string;
   chapters: Chapter[];
+  ritirato?: boolean;
 };
 
 export const books: Book[] = [];

@@ -21,6 +21,7 @@ type Novella = {
   letture: number;
   data_pubblicazione: string | null;
   genere: string;
+  ritirato: boolean | null;
 };
 
 function CollanePage() {
@@ -44,9 +45,9 @@ function CollanePage() {
 
       const { data: booksData } = await supabase
         .from("books")
-        .select("slug, titolo, sottotitolo, descrizione, estratto, copertina_url, author_name, letture, data_pubblicazione, genere")
+        .select("slug, titolo, sottotitolo, descrizione, estratto, copertina_url, author_name, letture, data_pubblicazione, genere, ritirato")
         .eq("collana_id", collanaData.id)
-        .eq("disponibile", true)
+        .or("disponibile.eq.true,ritirato.eq.true")
         .order("data_pubblicazione", { ascending: true, nullsFirst: false });
 
       setNovelle(booksData ?? []);
@@ -133,6 +134,27 @@ function CollanePage() {
             {novelle.map((n, i) => {
               const titolo = n.sottotitolo || n.titolo;
               const preview = n.descrizione;
+              if (n.ritirato) {
+                return (
+                  <div key={n.slug}>
+                    {i > 0 && <div className="border-t border-cyan/[0.08]" />}
+                    <div className="py-8 flex gap-6 items-start opacity-60">
+                      <div className="w-20 sm:w-24 aspect-[3/4] flex-shrink-0 bg-void/60 border border-dashed border-cyan/30 flex items-center justify-center" />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-mono text-[9px] tracking-[0.3em] text-cyan/50 uppercase mb-1">
+                          {n.author_name ?? "Autore"}
+                        </div>
+                        <h2 className="font-display text-xl sm:text-2xl text-bone/70 tracking-tight leading-snug">
+                          {titolo}
+                        </h2>
+                        <p className="mt-3 font-serif italic text-bone/45">
+                          L'opera ha preso il volo.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
               return (
                 <div key={n.slug}>
                   {i > 0 && <div className="border-t border-cyan/[0.08]" />}

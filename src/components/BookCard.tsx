@@ -25,6 +25,7 @@ export function BookCard({ book, compact = false, libreriaStato = null, onLibrer
   isLoggedIn?: boolean;
 }) {
   const isLetto = libreriaStato === "letto";
+  const isRitirato = !!book.ritirato;
   const [coverLoaded, setCoverLoaded] = useState(false);
 
   // Copertine AI (path /copertine/ai/) hanno la teca baked-in server-side.
@@ -55,60 +56,81 @@ export function BookCard({ book, compact = false, libreriaStato = null, onLibrer
       {/* Image area */}
       <div className="relative aspect-[3/4] overflow-hidden bg-void mx-1.5 mt-1.5">
 
-        {/* Copertina — per copertine con teca baked-in: full fill; per le altre: finestra interna */}
-        <div className={`absolute ${!showOverlay ? "inset-0" : "left-[31%] right-[18%] top-[15%] bottom-[18%]"} overflow-hidden`}>
-          <img
-            src={coverSrc}
-            alt={book.title}
-            onLoad={() => setCoverLoaded(true)}
-            className={`w-full h-full object-cover transition-all duration-700 ${
-              !coverLoaded
-                ? "opacity-0"
-                : isLetto
-                  ? "saturate-[55%] brightness-[0.70] group-hover:saturate-100 group-hover:brightness-100"
-                  : "saturate-[35%] brightness-[0.60] group-hover:saturate-100 group-hover:brightness-100"
-            }`}
-          />
-        </div>
+        {isRitirato ? (
+          <>
+            {/* Teca vuota — l'opera è stata ritirata dal catalogo dall'autore */}
+            <div className="absolute inset-[6%] border border-dashed border-cyan/30" />
+            <div className="absolute inset-0 flex items-center justify-center px-6 text-center">
+              <p className="font-serif italic text-[13px] text-bone/45 leading-snug">
+                L'opera ha preso il volo.
+              </p>
+            </div>
 
-        {/* Teca intera — visibile se non letto e overlay abilitato */}
-        {showOverlay && (
-          <img
-            src={TECA_INTERA}
-            alt=""
-            className={`absolute inset-0 w-full h-full object-fill pointer-events-none transition-opacity duration-700 ${
-              isLetto ? "opacity-0" : "group-hover:opacity-0"
-            }`}
-            style={{ zIndex: 7 }}
-          />
+            {/* Scanlines */}
+            <div className="absolute inset-0 pointer-events-none" style={{
+              backgroundImage: "repeating-linear-gradient(0deg, transparent 0, transparent 2px, oklch(0.82 0.16 200 / 0.06) 2px, oklch(0.82 0.16 200 / 0.06) 3px)"
+            }} />
+
+            <div className="absolute bottom-0 inset-x-0 h-24 bg-gradient-to-t from-void via-void/70 to-transparent" />
+          </>
+        ) : (
+          <>
+            {/* Copertina — per copertine con teca baked-in: full fill; per le altre: finestra interna */}
+            <div className={`absolute ${!showOverlay ? "inset-0" : "left-[31%] right-[18%] top-[15%] bottom-[18%]"} overflow-hidden`}>
+              <img
+                src={coverSrc}
+                alt={book.title}
+                onLoad={() => setCoverLoaded(true)}
+                className={`w-full h-full object-cover transition-all duration-700 ${
+                  !coverLoaded
+                    ? "opacity-0"
+                    : isLetto
+                      ? "saturate-[55%] brightness-[0.70] group-hover:saturate-100 group-hover:brightness-100"
+                      : "saturate-[35%] brightness-[0.60] group-hover:saturate-100 group-hover:brightness-100"
+                }`}
+              />
+            </div>
+
+            {/* Teca intera — visibile se non letto e overlay abilitato */}
+            {showOverlay && (
+              <img
+                src={TECA_INTERA}
+                alt=""
+                className={`absolute inset-0 w-full h-full object-fill pointer-events-none transition-opacity duration-700 ${
+                  isLetto ? "opacity-0" : "group-hover:opacity-0"
+                }`}
+                style={{ zIndex: 7 }}
+              />
+            )}
+
+            {/* Teca rotta — visibile se letto e overlay abilitato */}
+            {showOverlay && (
+              <img
+                src={TECA_ROTTA}
+                alt=""
+                className={`absolute inset-0 w-full h-full object-fill pointer-events-none transition-opacity duration-700 ${
+                  !isLetto ? "opacity-0" : "group-hover:opacity-0"
+                }`}
+                style={{ zIndex: 7 }}
+              />
+            )}
+
+            {/* Scanlines */}
+            <div className="absolute inset-0 pointer-events-none" style={{
+              backgroundImage: "repeating-linear-gradient(0deg, transparent 0, transparent 2px, oklch(0.82 0.16 200 / 0.06) 2px, oklch(0.82 0.16 200 / 0.06) 3px)"
+            }} />
+
+            <span className={`absolute top-3 left-3 ${genreColor[book.genere]} bg-void/70 backdrop-blur font-mono tracking-[0.2em] text-[9px] uppercase px-2 py-1 border z-10`}>
+              ◆ {book.genere}
+            </span>
+
+            <div className="absolute top-3 right-3 font-mono text-[9px] tracking-widest text-cyan/80 z-10">
+              ID:{book.slug.slice(0, 6).toUpperCase()}
+            </div>
+
+            <div className="absolute bottom-0 inset-x-0 h-24 bg-gradient-to-t from-void via-void/70 to-transparent" />
+          </>
         )}
-
-        {/* Teca rotta — visibile se letto e overlay abilitato */}
-        {showOverlay && (
-          <img
-            src={TECA_ROTTA}
-            alt=""
-            className={`absolute inset-0 w-full h-full object-fill pointer-events-none transition-opacity duration-700 ${
-              !isLetto ? "opacity-0" : "group-hover:opacity-0"
-            }`}
-            style={{ zIndex: 7 }}
-          />
-        )}
-
-        {/* Scanlines */}
-        <div className="absolute inset-0 pointer-events-none" style={{
-          backgroundImage: "repeating-linear-gradient(0deg, transparent 0, transparent 2px, oklch(0.82 0.16 200 / 0.06) 2px, oklch(0.82 0.16 200 / 0.06) 3px)"
-        }} />
-
-        <span className={`absolute top-3 left-3 ${genreColor[book.genere]} bg-void/70 backdrop-blur font-mono tracking-[0.2em] text-[9px] uppercase px-2 py-1 border z-10`}>
-          ◆ {book.genere}
-        </span>
-
-        <div className="absolute top-3 right-3 font-mono text-[9px] tracking-widest text-cyan/80 z-10">
-          ID:{book.slug.slice(0, 6).toUpperCase()}
-        </div>
-
-        <div className="absolute bottom-0 inset-x-0 h-24 bg-gradient-to-t from-void via-void/70 to-transparent" />
       </div>
 
       <div className={`p-3 flex flex-col flex-1 relative ${compact ? "p-3" : "p-4"}`}>
@@ -118,7 +140,12 @@ export function BookCard({ book, compact = false, libreriaStato = null, onLibrer
         <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-cyan/70 truncate">
           ↳ {book.author}
         </p>
-        {!compact && (
+        {!compact && isRitirato && (
+          <div className="mt-3 flex-1 flex items-end">
+            <span className="font-mono text-[9px] tracking-widest uppercase text-magenta/50">⊗ ritirata dal catalogo</span>
+          </div>
+        )}
+        {!compact && !isRitirato && (
           <>
             <p className="mt-3 font-serif italic text-[14px] text-bone/65 line-clamp-2 flex-1 leading-snug">
               {book.tagline}

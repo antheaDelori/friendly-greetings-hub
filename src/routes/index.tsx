@@ -87,8 +87,8 @@ function Index() {
       // Libri pubblici (gratuito)
       const { data: publicData } = await supabase
         .from("books")
-        .select("slug, titolo, descrizione, genere, anno, letture, copertina_url, lastra_url, author_name, accesso, created_at")
-        .eq("disponibile", true)
+        .select("slug, titolo, descrizione, genere, anno, letture, copertina_url, lastra_url, author_name, accesso, created_at, ritirato")
+        .or("disponibile.eq.true,ritirato.eq.true")
         .eq("accesso", "gratuito")
         .order("created_at", { ascending: false });
 
@@ -104,8 +104,8 @@ function Index() {
         if (authorizedIds.length > 0) {
           const { data: privBooks } = await supabase
             .from("books")
-            .select("slug, titolo, descrizione, genere, anno, letture, copertina_url, lastra_url, author_name, accesso, created_at")
-            .eq("disponibile", true)
+            .select("slug, titolo, descrizione, genere, anno, letture, copertina_url, lastra_url, author_name, accesso, created_at, ritirato")
+            .or("disponibile.eq.true,ritirato.eq.true")
             .in("id", authorizedIds)
             .order("created_at", { ascending: false });
           privateData = privBooks ?? [];
@@ -133,6 +133,7 @@ function Index() {
             tagline: b.descrizione?.slice(0, 140) ?? "",
             description: b.descrizione ?? "",
             chapters: [],
+            ritirato: b.ritirato ?? false,
           };
         });
         setFeatured(pickFeatured(dbBooks));

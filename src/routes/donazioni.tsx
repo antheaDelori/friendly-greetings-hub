@@ -40,7 +40,7 @@ function DonazioniPage() {
     supabase
       .from("books")
       .select("author_name, author_id, profiles!author_id(max_opere, paypal_url)")
-      .eq("disponibile", true)
+      .or("disponibile.eq.true,ritirato.eq.true")
       .not("author_name", "is", null)
       .then(({ data }) => {
         if (!data) return;

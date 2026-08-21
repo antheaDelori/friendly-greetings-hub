@@ -19,6 +19,7 @@ type Book = {
   author_name: string | null;
   copertina_url: string | null;
   status: string;
+  ritirato: boolean | null;
 };
 
 type Chapter = {
@@ -69,14 +70,16 @@ function LibroApertoPage() {
     const load = async () => {
       const { data: bookData } = await supabase
         .from("books")
-        .select("id, slug, titolo, descrizione, genere, author_name, copertina_url, status")
+        .select("id, slug, titolo, descrizione, genere, author_name, copertina_url, status, ritirato")
         .eq("slug", slug)
-        .eq("disponibile", true)
+        .or("disponibile.eq.true,ritirato.eq.true")
         .eq("cestinato", false)
         .maybeSingle();
 
       if (!bookData) { setNotFound(true); setLoading(false); return; }
       setBook(bookData);
+
+      if (bookData.ritirato) { setLoading(false); return; }
 
       const { data: chaptersData } = await supabase
         .from("capitoli")
@@ -215,6 +218,25 @@ function LibroApertoPage() {
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10 py-16">
             <p className="font-mono text-[11px] tracking-widest text-bone/40 uppercase mb-6">{t("libriAperti.nonTrovato")}</p>
             <Link to="/libri-aperti" className="font-mono text-[10px] tracking-widest uppercase text-cyan hover:text-cyan/70 transition-colors">
+              ◂ {t("libriAperti.tornaListaAperti")}
+            </Link>
+          </div>
+        </PageShell>
+        <SiteFooter />
+      </>
+    );
+  }
+
+  if (book.ritirato) {
+    return (
+      <>
+        <SiteHeader />
+        <PageShell title="Libro Aperto">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10 py-16 text-center">
+            <p className="font-mono text-[9px] tracking-[0.3em] text-cyan/50 uppercase mb-3">{book.author_name ?? "Autore"}</p>
+            <h1 className="font-display text-3xl text-bone mb-4">{book.titolo}</h1>
+            <p className="font-serif italic text-xl text-bone/60">L'opera ha preso il volo.</p>
+            <Link to="/libri-aperti" className="mt-8 inline-block font-mono text-[10px] tracking-widest uppercase text-cyan hover:text-cyan/70 transition-colors">
               ◂ {t("libriAperti.tornaListaAperti")}
             </Link>
           </div>

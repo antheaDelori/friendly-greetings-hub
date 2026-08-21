@@ -78,7 +78,7 @@ export function SiteHeader() {
     const { data } = await supabase
       .from("books")
       .select("author_name")
-      .eq("disponibile", true)
+      .or("disponibile.eq.true,ritirato.eq.true")
       .eq("cestinato", false);
     if (!data) return;
     const map = new Map<string, number>();

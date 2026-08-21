@@ -47,7 +47,7 @@ function AutoriPage() {
       const { data } = await supabase
         .from("books")
         .select("author_name, genere")
-        .eq("disponibile", true)
+        .or("disponibile.eq.true,ritirato.eq.true")
         .eq("cestinato", false);
 
       if (!data) { setLoading(false); return; }
