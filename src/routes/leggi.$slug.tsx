@@ -967,7 +967,7 @@ function ReadPage() {
           </div>
           {/* Pulsanti — flex-nowrap su lg evita il wrap in colonna, overflow-y-auto gestisce lo scroll */}
           <div className="flex flex-row flex-wrap lg:flex-col lg:flex-nowrap gap-2 lg:overflow-y-auto lg:overflow-x-hidden lg:overscroll-y-contain lg:max-h-[calc(100vh_-_9rem_-_239px)]">
-          {fileUrl && isLoggedIn && !isAnonymous ? (
+          {fileUrl && (
             <button
               onClick={handleDownload}
               disabled={downloading}
@@ -978,30 +978,8 @@ function ReadPage() {
               <span className="text-sm leading-none">↓</span>
               <span>{downloading ? "Apertura…" : "PDF"}</span>
             </button>
-          ) : fileUrl && isLoggedIn && isAnonymous ? (
-            <Link
-              to="/auth/"
-              search={{ returnTo: `/leggi/${book.slug}` }}
-              onMouseEnter={() => setHoveredTip("scarica la versione PDF del libro")}
-              onMouseLeave={() => setHoveredTip(null)}
-              className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors"
-            >
-              <span className="text-sm leading-none">↓</span>
-              <span>Registrati</span>
-            </Link>
-          ) : fileUrl && !isLoggedIn ? (
-            <Link
-              to="/auth/"
-              search={{ returnTo: `/leggi/${book.slug}` }}
-              onMouseEnter={() => setHoveredTip("scarica la versione PDF del libro")}
-              onMouseLeave={() => setHoveredTip(null)}
-              className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors"
-            >
-              <span className="text-sm leading-none">↓</span>
-              <span>PDF</span>
-            </Link>
-          ) : null}
-          {epubUrl && (isLoggedIn && !isAnonymous ? (
+          )}
+          {epubUrl && (
             <button
               onClick={handleDownloadEpub}
               disabled={downloadingEpub}
@@ -1012,19 +990,8 @@ function ReadPage() {
               <span className="text-sm leading-none">↓</span>
               <span>{downloadingEpub ? "Apertura…" : "E-Book"}</span>
             </button>
-          ) : (
-            <Link
-              to="/auth/"
-              search={{ returnTo: `/leggi/${book.slug}` }}
-              onMouseEnter={() => setHoveredTip("scarica l'e-book (Kindle 2022+, Kobo, Apple Books)")}
-              onMouseLeave={() => setHoveredTip(null)}
-              className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors"
-            >
-              <span className="text-sm leading-none">↓</span>
-              <span>E-Book</span>
-            </Link>
-          ))}
-          {mobiUrl && (isLoggedIn && !isAnonymous ? (
+          )}
+          {mobiUrl && (
             <button
               onClick={handleDownloadMobi}
               disabled={downloadingMobi}
@@ -1035,18 +1002,7 @@ function ReadPage() {
               <span className="text-sm leading-none">↓</span>
               <span>{downloadingMobi ? "Apertura…" : "Kindle"}</span>
             </button>
-          ) : mobiUrl ? (
-            <Link
-              to="/auth/"
-              search={{ returnTo: `/leggi/${book.slug}` }}
-              onMouseEnter={() => setHoveredTip("scarica per Kindle classico (fino al 2021)")}
-              onMouseLeave={() => setHoveredTip(null)}
-              className="flex-1 lg:flex-none inline-flex flex-col items-center justify-center gap-1 border border-ink text-ink px-2 py-3 font-display tracking-[0.12em] text-[9px] uppercase hover:bg-ink hover:text-paper transition-colors"
-            >
-              <span className="text-sm leading-none">↓</span>
-              <span>Kindle</span>
-            </Link>
-          ) : null)}
+          )}
           {/* Like — solo per libri Supabase (bookId non vuoto) */}
           {bookId && (isLoggedIn && !isAnonymous ? (
             <button
@@ -1441,7 +1397,7 @@ function ReadPage() {
                     <button
                       onClick={handleGuestLogin}
                       disabled={guestLoading}
-                      className="font-display tracking-widest text-[10px] uppercase border border-ink/20 text-ink/60 px-4 py-2 hover:border-ink/50 hover:text-ink transition-colors disabled:opacity-40"
+                      className="font-display tracking-widest text-[10px] uppercase border border-ink/20 text-ink/60 px-4 py-2 hover:border-ink/50 hover:text-ink transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       {guestLoading ? "▸ Entro..." : "▸ Entra subito"}
                     </button>
