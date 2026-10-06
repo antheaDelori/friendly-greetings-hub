@@ -432,6 +432,7 @@ function GestionePage() {
   const [savingAiCover, setSavingAiCover] = useState(false);
   const [saveAiCoverError, setSaveAiCoverError] = useState<string | null>(null);
   const [saveFlash, setSaveFlash] = useState(false);
+  const [showContenutiPrompt, setShowContenutiPrompt] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
   // Video promozionale AI
@@ -1407,6 +1408,21 @@ function GestionePage() {
 
   const handleSave = async () => {
     if (!userId || !titolo.trim()) return;
+
+    const descTrim = descrizione.trim();
+    const estrattoTrim = estratto.trim();
+    if (!descTrim && !estrattoTrim) {
+      setSaveError("Inserisci una descrizione o una sinossi prima di salvare.");
+      return;
+    }
+    // Se ne manca una delle due, copia l'altra — nessuna scheda deve restare senza testo
+    const finalDescrizione = descTrim || estrattoTrim;
+    const finalEstratto = estrattoTrim || descTrim;
+    if (finalDescrizione !== descTrim) setDescrizione(finalDescrizione);
+    if (finalEstratto !== estrattoTrim) setEstratto(finalEstratto);
+    const finalEdizione = edizione.trim() || "Prima Edizione";
+    if (finalEdizione !== edizione.trim()) setEdizione(finalEdizione);
+
     setSaving(true);
     setSaveError(null);
 
@@ -1433,7 +1449,7 @@ function GestionePage() {
           tipo: tipo === ALTRO_TIPO ? (tipoAltro.trim() || null) : (tipo || null),
           target: target || null,
           isbn: isbn.trim() || null,
-          edizione: edizione.trim() || null,
+          edizione: finalEdizione,
           anno: genere === "articolo" && dataPubblicazione
             ? new Date(dataPubblicazione).getFullYear()
             : anno ? parseInt(anno) : null,
@@ -1441,8 +1457,8 @@ function GestionePage() {
           lingua,
           accesso,
           status: isLibroAperto ? "open" : "published",
-          descrizione: descrizione.trim() || null,
-          estratto: estratto.trim() || null,
+          descrizione: finalDescrizione,
+          estratto: finalEstratto,
           tag: tagStr ? tagStr.split(",").map(t => t.trim()).filter(Boolean) : [],
           author_name: authorName || null,
           collana_id: collanaId || null,
@@ -1462,7 +1478,7 @@ function GestionePage() {
           tipo: tipo === ALTRO_TIPO ? (tipoAltro.trim() || null) : (tipo || null),
           target: target || null,
           isbn: isbn.trim() || null,
-          edizione: edizione.trim() || null,
+          edizione: finalEdizione,
           anno: genere === "articolo" && dataPubblicazione
             ? new Date(dataPubblicazione).getFullYear()
             : anno ? parseInt(anno) : null,
@@ -1470,8 +1486,8 @@ function GestionePage() {
           lingua,
           accesso,
           status: isLibroAperto ? "open" : "published",
-          descrizione: descrizione.trim() || null,
-          estratto: estratto.trim() || null,
+          descrizione: finalDescrizione,
+          estratto: finalEstratto,
           tag: tagStr ? tagStr.split(",").map(t => t.trim()).filter(Boolean) : [],
           author_name: authorName || null,
           collana_id: collanaId || null,
@@ -1500,6 +1516,7 @@ function GestionePage() {
         const { data: nb } = await supabase.from("books").select("*").eq("id", newBookId).single();
         if (nb) setSelected(nb as Book);
         setOpenSection(2);
+        setShowContenutiPrompt(true);
         window.scrollTo({ top: 0, behavior: "smooth" });
       } else if (editingId) {
         // Aggiornamento → chiudi tutti i box e lampeggia CHIUDI
@@ -2800,6 +2817,20 @@ function GestionePage() {
                 </button>
               </div>
 
+              {showContenutiPrompt && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-void/80 backdrop-blur-sm p-4">
+                  <div className="max-w-sm w-full border border-cyan bg-void p-6 text-center glow-cyan">
+                    <div className="font-mono text-[10px] tracking-[0.3em] text-cyan uppercase">✓ salvataggio completato</div>
+                    <p className="mt-4 font-serif text-bone/90">
+                      I metadati sono salvati. Ora inserisci i contenuti: apri la sezione <strong className="text-cyan">02 — Capitoli</strong> qui sotto e aggiungi il testo della tua opera.
+                    </p>
+                    <HudButton variant="primary" className="mt-6" onClick={() => setShowContenutiPrompt(false)}>
+                      ▸ Ho capito
+                    </HudButton>
+                  </div>
+                </div>
+              )}
+
               {/* ═══════════ 01 — METADATI ═══════════ */}
               <button type="button" onClick={() => setOpenSection(openSection === 1 ? 0 : 1)}
                 className={`w-full flex items-center gap-3 px-5 py-4 border transition-all cursor-pointer ${
@@ -3274,14 +3305,18 @@ function GestionePage() {
                         setCapError(null);
                         setShowCapitoloForm(true);
                       }}
-                        className="font-mono text-[10px] tracking-widest text-magenta uppercase hover:text-cyan transition-colors">
+                        className={`font-mono text-[10px] tracking-widest uppercase transition-colors border px-3 py-1.5 ${
+                          capitoli.length === 0
+                            ? "text-cyan border-cyan bg-cyan/10 glow-cyan animate-pulse hover:bg-cyan hover:text-void"
+                            : "text-magenta border-transparent hover:text-cyan"
+                        }`}>
                         + nuovo {contenutoLabel}
                       </button>
                     )}
                   </div>
 
                   {capitoli.length === 0 && !showCapitoloForm && (
-                    <p className="font-serif italic text-bone/40 text-sm">Nessun {contenutoLabel} aggiunto.</p>
+                    <p className="font-serif italic text-bone/40 text-sm">Inserisci un nuovo {contenutoLabel}.</p>
                   )}
 
                   {capitoli.map((c) => (
