@@ -260,7 +260,6 @@ function GestionePage() {
   const [isbn, setIsbn] = useState("");
   const [descrizione, setDescrizione] = useState("");
   const [estratto, setEstratto] = useState("");
-  const [testoCompleto, setTestoCompleto] = useState("");
   const [tagStr, setTagStr] = useState("");
   const [copertina, setCopertina] = useState<File | null>(null);
   const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(null);
@@ -641,7 +640,7 @@ function GestionePage() {
     setTitolo(""); setSottotitolo(""); setGenere("libro"); setEdizione("");
     setAnno(String(new Date().getFullYear())); setDataPubblicazione(""); setLingua("it"); setAccesso("gratuito"); setIsLibroAperto(false);
     setTipo(""); setTipoAltro(""); setTarget("tutti"); setIsbn("");
-    setDescrizione(""); setEstratto(""); setTestoCompleto(""); setTagStr("");
+    setDescrizione(""); setEstratto(""); setTagStr("");
     setCopertina(null); setLastra(null); setFilePdf(null); setSaveError(null);
     setEditingId(null); setConfirmMode(null);
     setExistingCopertinaUrl(null); setExistingLastraUrl(null); setExistingFileUrl(null);
@@ -864,12 +863,6 @@ function GestionePage() {
     setDescrizione(b.descrizione ?? "");
     setEstratto(b.estratto ?? "");
     setTagStr(b.tag.join(", "));
-    if (b.collana_id) {
-      supabase.from("capitoli").select("testo").eq("book_id", b.id).eq("ordine", 1).maybeSingle()
-        .then(({ data }) => setTestoCompleto(data?.testo ?? ""));
-    } else {
-      setTestoCompleto("");
-    }
     setCopertina(null);
     setLastra(null);
     setFilePdf(null);
@@ -1498,19 +1491,6 @@ function GestionePage() {
 
         if (error) { setSaveError(error.message); return; }
         newBookId = insertData?.id ?? null;
-      }
-
-      // Salva testo completo come capitolo 1 se siamo in una collana
-      const savedBookId = editingId ?? newBookId;
-      if (collanaId && testoCompleto.trim() && savedBookId) {
-        const { data: existing } = await supabase.from("capitoli").select("id").eq("book_id", savedBookId).eq("ordine", 1).maybeSingle();
-        if (existing) {
-          await supabase.from("capitoli").update({ testo: testoCompleto.trim() }).eq("id", existing.id);
-        } else {
-          await supabase.from("capitoli").insert({ book_id: savedBookId, titolo: "Racconto", testo: testoCompleto.trim(), ordine: 1 });
-        }
-      } else if (collanaId && !testoCompleto.trim() && savedBookId) {
-        await supabase.from("capitoli").delete().eq("book_id", savedBookId).eq("ordine", 1);
       }
 
       // Nuova opera salvata → sblocca sezioni 02 e 03, vai ai capitoli
@@ -3194,13 +3174,6 @@ function GestionePage() {
                       <p className="mt-1 font-mono text-[10px] text-bone/30 text-right">{estratto.trim().length} caratteri</p>
                     )}
                   </div>
-
-                  {collanaId && (
-                    <div>
-                      <span className={labelClass}>↳ Testo completo</span>
-                      <RichTextEditor value={testoCompleto} onChange={setTestoCompleto} />
-                    </div>
-                  )}
 
                   <div>
                     <span className={labelClass}>↳ Tag (separati da virgola)</span>
