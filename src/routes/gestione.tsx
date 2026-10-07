@@ -433,6 +433,8 @@ function GestionePage() {
   const [saveAiCoverError, setSaveAiCoverError] = useState<string | null>(null);
   const [saveFlash, setSaveFlash] = useState(false);
   const [showContenutiPrompt, setShowContenutiPrompt] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [publishError, setPublishError] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
   // Video promozionale AI
@@ -1471,6 +1473,7 @@ function GestionePage() {
         const { data: insertData, error } = await supabase.from("books").insert({
           author_id: userId,
           slug,
+          disponibile: false,
           titolo: titolo.trim(),
           sottotitolo: sottotitolo.trim() || null,
           genere,
@@ -1518,11 +1521,15 @@ function GestionePage() {
         setOpenSection(2);
         setShowContenutiPrompt(true);
         window.scrollTo({ top: 0, behavior: "smooth" });
-      } else if (editingId) {
-        // Aggiornamento → chiudi tutti i box e lampeggia CHIUDI
+      } else if (editingId && collanaId) {
+        // Aggiornamento novella → chiudi tutti i box e lampeggia CHIUDI
         setOpenSection(0);
         setSaveFlash(true);
         setTimeout(() => setSaveFlash(false), 4000);
+      } else if (editingId) {
+        // Aggiornamento metadati opera → chiudi 01, apri 02 (stesso avanzamento di una nuova opera)
+        setOpenSection(2);
+        window.scrollTo({ top: 0, behavior: "smooth" });
       }
       await loadBooks(userId);
     } catch {
@@ -1530,6 +1537,24 @@ function GestionePage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handlePubblica = async () => {
+    if (!editingId || !userId || !selected || !canPubblicare) return;
+    const mancaFacoltativi: string[] = [];
+    if (!existingFileUrl && !existingEpubUrl) mancaFacoltativi.push("il PDF/E-book");
+    if (!selected.video_url) mancaFacoltativi.push("il video promozionale");
+    if (mancaFacoltativi.length > 0) {
+      const ok = window.confirm(`Non hai ancora generato ${mancaFacoltativi.join(" né ")}. Vuoi pubblicare comunque?`);
+      if (!ok) return;
+    }
+    setPublishing(true);
+    setPublishError(null);
+    const { error } = await supabase.from("books").update({ disponibile: true }).eq("id", editingId);
+    setPublishing(false);
+    if (error) { setPublishError(error.message); return; }
+    setSelected({ ...selected, disponibile: true });
+    await loadBooks(userId);
   };
 
   const handleSaveMateriali = async () => {
@@ -1611,10 +1636,8 @@ function GestionePage() {
       setLastra(null);
       setFilePdf(null);
       setFileEpub(null);
-      setOpenSection(0);
-      setSaveFlash(true);
+      setOpenSection(4);
       window.scrollTo({ top: 0, behavior: "smooth" });
-      setTimeout(() => setSaveFlash(false), 4000);
       await loadBooks(userId);
     } catch (err) {
       setSaveMaterialiError(
@@ -1635,7 +1658,7 @@ function GestionePage() {
     if (!data) return;
     openEditForm(data as unknown as Book);
     setShowForm(true);
-    setOpenSection(6);
+    setOpenSection(7);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -2339,6 +2362,13 @@ function GestionePage() {
   const cestinatoBooks = books.filter(b => b.cestinato && !b.collana_id);
   const ritiratoBooks = books.filter(b => b.ritirato && !b.collana_id);
   const filteredBooks = filterGenere ? activeBooks.filter(b => b.genere === filterGenere) : activeBooks;
+
+  // Stato di completamento delle 4 sezioni obbligatorie per poter pubblicare
+  const sec01Completa = !!editingId && (descrizione.trim().length > 0 || estratto.trim().length > 0);
+  const sec02Completa = capitoli.length > 0;
+  const sec03Completa = !!existingCopertinaUrl;
+  const sec04Completa = distributionLists.length > 0;
+  const canPubblicare = sec01Completa && sec02Completa && sec03Completa && sec04Completa;
   const booksTotalPages = Math.ceil(filteredBooks.length / BOOKS_PER_PAGE);
   const pagedBooks = filteredBooks.slice(booksPage * BOOKS_PER_PAGE, (booksPage + 1) * BOOKS_PER_PAGE);
 
@@ -2802,11 +2832,41 @@ function GestionePage() {
             <div className="space-y-1">
 
               {/* Header */}
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-2 flex-wrap gap-3">
                 <div className="font-mono text-[11px] tracking-[0.3em] text-cyan/70 uppercase">
                   // {editingId ? "modifica opera" : collanaId ? "nuova novella" : "nuova opera"}
                   {editingId && <span className="text-bone/20 ml-3">· {editingId.slice(0, 6).toUpperCase()}</span>}
                 </div>
+
+                {editingId && (
+                  <div className="flex items-center gap-4 flex-wrap">
+                    {selected?.disponibile ? (
+                      <span className="font-mono text-[9px] tracking-widest uppercase text-cyan border border-cyan/50 bg-cyan/10 px-2.5 py-1">
+                        ✓ pubblicata
+                      </span>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-2 font-mono text-[9px] tracking-widest uppercase text-bone/40">
+                          {[
+                            ["sinossi", sec01Completa],
+                            ["capitoli", sec02Completa],
+                            ["copertina", sec03Completa],
+                            ["comunicazione", sec04Completa],
+                          ].map(([label, done]) => (
+                            <span key={label as string} className="flex items-center gap-1">
+                              <span className={done ? "text-cyan" : "text-bone/30"}>{done ? "●" : "○"}</span>
+                              {label as string}
+                            </span>
+                          ))}
+                        </div>
+                        <HudButton variant="primary" onClick={handlePubblica} disabled={!canPubblicare || publishing}>
+                          {publishing ? "▸ Pubblicazione..." : "▸ Pubblica"}
+                        </HudButton>
+                      </>
+                    )}
+                  </div>
+                )}
+
                 <button type="button" onClick={() => { setShowForm(false); setEditingId(null); setSaveFlash(false); }}
                   className={`font-mono text-[9px] uppercase tracking-widest transition-all duration-300 cursor-pointer ${
                     saveFlash
@@ -2816,6 +2876,9 @@ function GestionePage() {
                   {saveFlash ? "✓ salvato — chiudi" : "✕ chiudi"}
                 </button>
               </div>
+              {publishError && (
+                <p className="font-mono text-[11px] text-magenta border border-magenta/30 bg-magenta/5 px-4 py-3 mb-2">⚠ {publishError}</p>
+              )}
 
               {showContenutiPrompt && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-void/80 backdrop-blur-sm p-4">
@@ -2837,7 +2900,7 @@ function GestionePage() {
                   openSection === 1 ? "border-cyan bg-cyan/5" : "border-cyan/30 hover:border-cyan"
                 }`}>
                 <span className={`font-mono text-[11px] w-7 h-7 border flex items-center justify-center flex-shrink-0 ${
-                  openSection === 1 ? "border-cyan text-cyan" : "border-cyan/40 text-bone/50"
+                  sec01Completa ? "bg-cyan border-cyan text-void" : openSection === 1 ? "border-cyan text-cyan" : "border-cyan/40 text-bone/50"
                 }`}>01</span>
                 <div className="flex-1 text-left">
                   <div className={`font-mono text-[11px] tracking-[0.3em] uppercase ${openSection === 1 ? "text-cyan" : "text-bone/70"}`}>Metadati</div>
@@ -3159,7 +3222,7 @@ function GestionePage() {
                   )}
                   <div className="flex gap-3">
                     <HudButton variant="primary" onClick={handleSave} disabled={saving || !titolo.trim()}>
-                      {saving ? "▸ Salvataggio..." : editingId ? (collanaId ? "▸ Aggiorna novella" : "▸ Aggiorna opera") : (collanaId ? "▸ Salva novella" : "▸ Salva opera")}
+                      {saving ? "▸ Salvataggio..." : collanaId ? (editingId ? "▸ Aggiorna novella" : "▸ Salva novella") : "▸ Salva sezione"}
                     </HudButton>
                     <HudButton variant="ghost" onClick={() => { setShowForm(false); setEditingId(null); }}>
                       annulla
@@ -3176,6 +3239,7 @@ function GestionePage() {
                 }`}>
                 <span className={`font-mono text-[11px] w-7 h-7 border flex items-center justify-center flex-shrink-0 ${
                   !editingId ? "border-cyan/15 text-bone/20" :
+                  sec02Completa ? "bg-cyan border-cyan text-void" :
                   openSection === 2 ? "border-cyan text-cyan" : "border-cyan/40 text-bone/50"
                 }`}>02</span>
                 <div className="flex-1 text-left">
@@ -3514,6 +3578,12 @@ function GestionePage() {
                     </div>
                   )}
 
+                  <div className="pt-2">
+                    <HudButton variant="ghost" onClick={() => { setOpenSection(3); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
+                      → Vai alla copertina
+                    </HudButton>
+                  </div>
+
                 </div>
               )}
 
@@ -3525,6 +3595,7 @@ function GestionePage() {
                 }`}>
                 <span className={`font-mono text-[11px] w-7 h-7 border flex items-center justify-center flex-shrink-0 ${
                   !editingId ? "border-cyan/15 text-bone/20" :
+                  sec03Completa ? "bg-cyan border-cyan text-void" :
                   openSection === 3 ? "border-cyan text-cyan" : "border-cyan/40 text-bone/50"
                 }`}>03</span>
                 <div className="flex-1 text-left">
@@ -3616,7 +3687,7 @@ function GestionePage() {
                             ? savingMaterialiStep === "uploading" ? "▸ Caricamento immagine..."
                             : savingMaterialiStep === "baking"    ? "▸ Elaborazione teca..."
                             : "▸ Salvataggio..."
-                            : "▸ Salva copertina"}
+                            : "▸ Salva sezione"}
                         </HudButton>
                       </div>
                     )}
@@ -3735,30 +3806,156 @@ function GestionePage() {
                 </div>
               )}
 
-              {/* ══════════ 04 — GENERA PDF ed E-BOOK (solo non-fumetto) ══════════ */}
+              {/* ══════════ 04 — INVIA COMUNICAZIONE ══════════ */}
               <button type="button" onClick={() => editingId && setOpenSection(openSection === 4 ? 0 : 4)} disabled={!editingId}
-                style={{ display: genere === "fumetto" ? "none" : undefined }}
                 className={`w-full flex items-center gap-3 px-5 py-4 border transition-all ${
                   !editingId ? "border-cyan/10 cursor-not-allowed" :
-                  openSection === 4 ? "border-cyan bg-cyan/5 cursor-pointer" : "border-cyan/30 hover:border-cyan cursor-pointer"
+                  openSection === 4 ? "border-amber bg-amber/5 cursor-pointer" : "border-amber/30 hover:border-amber cursor-pointer"
                 }`}>
                 <span className={`font-mono text-[11px] w-7 h-7 border flex items-center justify-center flex-shrink-0 ${
                   !editingId ? "border-cyan/15 text-bone/20" :
-                  openSection === 4 ? "border-cyan text-cyan" : "border-cyan/40 text-bone/50"
+                  sec04Completa ? "bg-amber border-amber text-void" :
+                  openSection === 4 ? "border-amber text-amber" : "border-amber/40 text-bone/50"
                 }`}>04</span>
                 <div className="flex-1 text-left">
                   <div className={`font-mono text-[11px] tracking-[0.3em] uppercase ${
-                    !editingId ? "text-bone/20" : openSection === 4 ? "text-cyan" : "text-bone/70"
+                    !editingId ? "text-bone/20" : openSection === 4 ? "text-amber" : "text-bone/70"
+                  }`}>Invia comunicazione</div>
+                  <div className={`font-mono text-[9px] tracking-widest mt-0.5 ${!editingId ? "text-bone/15" : "text-bone/40"}`}>
+                    {editingId ? "avvisa una o più liste di distribuzione" : "— salva prima i metadati —"}
+                  </div>
+                </div>
+                <span className={`font-mono text-[9px] tracking-widest uppercase ${
+                  !editingId ? "text-bone/20" : openSection === 4 ? "text-amber" : "text-bone/40"
+                }`}>{!editingId ? "⊗" : openSection === 4 ? "▲" : "▼"}</span>
+              </button>
+              {openSection === 4 && editingId && (
+                <div className="border border-amber/20 border-t-0 p-5">
+                  <div className="border border-amber/20 bg-amber/5 p-4 space-y-3">
+                    <div className="font-mono text-[10px] tracking-[0.25em] text-amber uppercase">◈ Invia comunicazione su questa opera</div>
+                    {distributionLists.length === 0 ? (
+                      <p className="font-mono text-[10px] text-bone/30 tracking-widest uppercase">
+                        Nessuna lista di distribuzione ancora — <Link to="/gestione/liste" className="underline hover:text-amber">creane una</Link>, oppure aggiungi un indirizzo qui sotto per un invio singolo.
+                      </p>
+                    ) : (
+                      <div>
+                        <label className="font-mono text-[10px] tracking-[0.2em] text-bone/50 uppercase block mb-1">Liste di distribuzione destinatarie</label>
+                        <div className="space-y-1">
+                          {distributionLists.map(list => {
+                              const isOpen = expandedListIds.has(list.id);
+                              const members = listMembersCache[list.id];
+                              return (
+                                <div key={list.id} className="border border-amber/10">
+                                  <div className="flex items-center gap-3 px-2 py-1.5 flex-wrap">
+                                    <label className="flex items-center gap-2 cursor-pointer font-mono text-xs flex-1">
+                                      <input type="checkbox" checked={selectedNewsletterListIds.has(list.id)}
+                                        onChange={() => setSelectedNewsletterListIds(prev => {
+                                          const next = new Set(prev);
+                                          if (next.has(list.id)) next.delete(list.id); else next.add(list.id);
+                                          return next;
+                                        })}
+                                        className="accent-amber" />
+                                      <span className={selectedNewsletterListIds.has(list.id) ? "text-bone/80" : "text-bone/40"}>
+                                        {list.nome}{members ? ` (${members.length})` : ""}
+                                      </span>
+                                    </label>
+                                    <button type="button" onClick={() => handleToggleListExpand(list.id)}
+                                      className="font-mono text-[9px] text-amber/50 hover:text-amber transition-colors cursor-pointer">
+                                      {isOpen ? "▼" : "+"} membri
+                                    </button>
+                                  </div>
+                                  {isOpen && (
+                                    <div className="px-3 pb-2 space-y-0.5">
+                                      {(members ?? []).map(m => (
+                                        <div key={m.id} className="font-serif text-xs text-bone/60">{m.email}</div>
+                                      ))}
+                                      {members && members.length === 0 && (
+                                        <p className="font-mono text-[9px] text-bone/30 uppercase tracking-widest">Nessun membro in questa lista.</p>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                        <div>
+                          <label className="font-mono text-[10px] tracking-[0.2em] text-bone/50 uppercase block mb-1">Indirizzo aggiuntivo <span className="normal-case text-bone/30">(solo per questo invio, opzionale)</span></label>
+                          <div className="flex gap-2 flex-wrap">
+                            <input type="email" value={extraNewsletterEmail} onChange={e => setExtraNewsletterEmail(e.target.value)}
+                              onKeyDown={e => e.key === "Enter" && handleAddExtraNewsletterEmail()}
+                              placeholder="email@esempio.it"
+                              className="flex-1 min-w-48 border border-amber/30 bg-void/40 px-3 py-2 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-amber transition-all text-sm" />
+                            <HudButton variant="ghost" onClick={handleAddExtraNewsletterEmail} disabled={!extraNewsletterEmail.includes("@")}>
+                              ▸ Aggiungi
+                            </HudButton>
+                          </div>
+                          {extraNewsletterEmails.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              {extraNewsletterEmails.map(email => (
+                                <span key={email} className="flex items-center gap-2 border border-amber/30 px-2 py-1 font-mono text-[10px] text-bone/70">
+                                  {email}
+                                  <button onClick={() => setExtraNewsletterEmails(prev => prev.filter(e => e !== email))}
+                                    className="text-bone/30 hover:text-magenta transition-colors cursor-pointer">✕</button>
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <label className="font-mono text-[10px] tracking-[0.2em] text-bone/50 uppercase block mb-1">Messaggio personale <span className="normal-case text-bone/30">(opzionale)</span></label>
+                          <textarea value={newsletterMessage} onChange={e => setNewsletterMessage(e.target.value)}
+                            placeholder="Un pensiero diretto ai tuoi lettori..."
+                            rows={3}
+                            className="w-full border border-amber/30 bg-void/40 px-3 py-2 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-amber transition-all resize-y text-sm" />
+                        </div>
+                        <div className="flex items-center gap-4 flex-wrap">
+                          <HudButton variant="primary" onClick={handleSendNewsletter} disabled={sendingNewsletter || (selectedNewsletterListIds.size === 0 && extraNewsletterEmails.length === 0)}>
+                            {sendingNewsletter ? "◈ Invio in corso..." : "◈ Invia"}
+                          </HudButton>
+                          {newsletterResult && (
+                            <span className={`font-mono text-[10px] tracking-widest uppercase ${"error" in newsletterResult ? "text-magenta" : "text-cyan"}`}>
+                              {"error" in newsletterResult ? `✗ ${newsletterResult.error}` : `✓ Inviata a ${newsletterResult.sent} lettori`}
+                            </span>
+                          )}
+                        </div>
+                        {newsletterResult && "failed" in newsletterResult && newsletterResult.failed && newsletterResult.failed.length > 0 && (
+                          <p className="font-mono text-[10px] text-magenta tracking-widest">
+                            ✗ Non consegnata a: {newsletterResult.failed.join(", ")}
+                          </p>
+                        )}
+                        <p className="font-mono text-[9px] text-bone/25 tracking-widest">
+                          ↳ L'email arriva anche a te in copia — ogni lettore riceve un invio individuale, non si vedono tra loro
+                        </p>
+                  </div>
+                </div>
+              )}
+
+              {/* ══════════ 05 — GENERA PDF ed E-BOOK (solo non-fumetto) ══════════ */}
+              <button type="button" onClick={() => editingId && setOpenSection(openSection === 5 ? 0 : 5)} disabled={!editingId}
+                style={{ display: genere === "fumetto" ? "none" : undefined }}
+                className={`w-full flex items-center gap-3 px-5 py-4 border transition-all ${
+                  !editingId ? "border-cyan/10 cursor-not-allowed" :
+                  openSection === 5 ? "border-cyan bg-cyan/5 cursor-pointer" : "border-cyan/30 hover:border-cyan cursor-pointer"
+                }`}>
+                <span className={`font-mono text-[11px] w-7 h-7 border flex items-center justify-center flex-shrink-0 ${
+                  !editingId ? "border-cyan/15 text-bone/20" :
+                  openSection === 5 ? "border-cyan text-cyan" : "border-cyan/40 text-bone/50"
+                }`}>05</span>
+                <div className="flex-1 text-left">
+                  <div className={`font-mono text-[11px] tracking-[0.3em] uppercase ${
+                    !editingId ? "text-bone/20" : openSection === 5 ? "text-cyan" : "text-bone/70"
                   }`}>Genera PDF ed E-Book</div>
                   <div className={`font-mono text-[9px] tracking-widest mt-0.5 ${!editingId ? "text-bone/15" : "text-bone/40"}`}>
                     {editingId ? "dal manoscritto .docx" : "— salva prima i metadati —"}
                   </div>
                 </div>
                 <span className={`font-mono text-[9px] tracking-widest uppercase ${
-                  !editingId ? "text-bone/20" : openSection === 4 ? "text-cyan" : "text-bone/40"
-                }`}>{!editingId ? "⊗" : openSection === 4 ? "▲" : "▼"}</span>
+                  !editingId ? "text-bone/20" : openSection === 5 ? "text-cyan" : "text-bone/40"
+                }`}>{!editingId ? "⊗" : openSection === 5 ? "▲" : "▼"}</span>
               </button>
-              {openSection === 4 && editingId && genere !== "fumetto" && (
+              {openSection === 5 && editingId && genere !== "fumetto" && (
                 <div className="border border-cyan/20 border-t-0 p-5 space-y-5">
 
                   {/* Genera documenti da .docx */}
@@ -3847,30 +4044,30 @@ function GestionePage() {
                 </div>
               )}
 
-              {/* ── SEZIONE 05: Copertina da stampa (solo non-fumetto) ── */}
-              <button type="button" onClick={() => editingId && setOpenSection(openSection === 5 ? 0 : 5)} disabled={!editingId}
+              {/* ── SEZIONE 06: Copertina da stampa (solo non-fumetto) ── */}
+              <button type="button" onClick={() => editingId && setOpenSection(openSection === 6 ? 0 : 6)} disabled={!editingId}
                 style={{ display: genere === "fumetto" ? "none" : undefined }}
                 className={`w-full flex items-center gap-3 px-5 py-4 border transition-all ${
                   !editingId ? "border-cyan/10 cursor-not-allowed" :
-                  openSection === 5 ? "border-cyan bg-cyan/5 cursor-pointer" : "border-cyan/30 hover:border-cyan cursor-pointer"
+                  openSection === 6 ? "border-cyan bg-cyan/5 cursor-pointer" : "border-cyan/30 hover:border-cyan cursor-pointer"
                 }`}>
                 <span className={`font-mono text-[11px] w-7 h-7 border flex items-center justify-center flex-shrink-0 ${
                   !editingId ? "border-cyan/15 text-bone/20" :
-                  openSection === 5 ? "border-cyan text-cyan" : "border-cyan/40 text-bone/50"
-                }`}>05</span>
+                  openSection === 6 ? "border-cyan text-cyan" : "border-cyan/40 text-bone/50"
+                }`}>06</span>
                 <div className="flex-1 text-left">
                   <div className={`font-mono text-[11px] tracking-[0.3em] uppercase ${
-                    !editingId ? "text-bone/20" : openSection === 5 ? "text-cyan" : "text-bone/70"
+                    !editingId ? "text-bone/20" : openSection === 6 ? "text-cyan" : "text-bone/70"
                   }`}>Copertina da stampa</div>
                   <div className={`font-mono text-[9px] tracking-widest mt-0.5 ${!editingId ? "text-bone/15" : "text-bone/40"}`}>
                     {editingId ? "fronte · spina · retro · alette" : "— salva prima i metadati —"}
                   </div>
                 </div>
                 <span className={`font-mono text-[9px] tracking-widest uppercase ${
-                  !editingId ? "text-bone/20" : openSection === 5 ? "text-cyan" : "text-bone/40"
-                }`}>{!editingId ? "⊗" : openSection === 5 ? "▲" : "▼"}</span>
+                  !editingId ? "text-bone/20" : openSection === 6 ? "text-cyan" : "text-bone/40"
+                }`}>{!editingId ? "⊗" : openSection === 6 ? "▲" : "▼"}</span>
               </button>
-              {openSection === 5 && editingId && genere !== "fumetto" && (
+              {openSection === 6 && editingId && genere !== "fumetto" && (
                 <div className="border border-cyan/20 border-t-0 p-5 space-y-6">
 
                   {/* Formato e numero pagine */}
@@ -4199,29 +4396,29 @@ function GestionePage() {
                 </div>
               )}
 
-              {/* ══════════ 06 — VIDEO PROMOZIONALE AI ══════════ */}
-              <button type="button" onClick={() => editingId && setOpenSection(openSection === 6 ? 0 : 6)} disabled={!editingId}
+              {/* ══════════ 07 — VIDEO PROMOZIONALE AI ══════════ */}
+              <button type="button" onClick={() => editingId && setOpenSection(openSection === 7 ? 0 : 7)} disabled={!editingId}
                 className={`w-full flex items-center gap-3 px-5 py-4 border transition-all ${
                   !editingId ? "border-magenta/10 cursor-not-allowed" :
-                  openSection === 6 ? "border-magenta bg-magenta/5 cursor-pointer" : "border-magenta/30 hover:border-magenta cursor-pointer"
+                  openSection === 7 ? "border-magenta bg-magenta/5 cursor-pointer" : "border-magenta/30 hover:border-magenta cursor-pointer"
                 }`}>
                 <span className={`font-mono text-[11px] w-7 h-7 border flex items-center justify-center flex-shrink-0 ${
                   !editingId ? "border-magenta/15 text-bone/20" :
-                  openSection === 6 ? "border-magenta text-magenta" : "border-magenta/40 text-bone/50"
-                }`}>06</span>
+                  openSection === 7 ? "border-magenta text-magenta" : "border-magenta/40 text-bone/50"
+                }`}>07</span>
                 <div className="flex-1 text-left">
                   <div className={`font-mono text-[11px] tracking-[0.3em] uppercase ${
-                    !editingId ? "text-bone/20" : openSection === 6 ? "text-magenta" : "text-bone/70"
+                    !editingId ? "text-bone/20" : openSection === 7 ? "text-magenta" : "text-bone/70"
                   }`}>Video promozionale AI</div>
                   <div className={`font-mono text-[9px] tracking-widest mt-0.5 ${!editingId ? "text-bone/15" : "text-bone/40"}`}>
                     {editingId ? "10 secondi · prompt dedicato" : "— salva prima i metadati —"}
                   </div>
                 </div>
                 <span className={`font-mono text-[9px] tracking-widest uppercase ${
-                  !editingId ? "text-bone/20" : openSection === 6 ? "text-magenta" : "text-bone/40"
-                }`}>{!editingId ? "⊗" : openSection === 6 ? "▲" : "▼"}</span>
+                  !editingId ? "text-bone/20" : openSection === 7 ? "text-magenta" : "text-bone/40"
+                }`}>{!editingId ? "⊗" : openSection === 7 ? "▲" : "▼"}</span>
               </button>
-              {openSection === 6 && editingId && (
+              {openSection === 7 && editingId && (
                 <div className="border border-magenta/20 border-t-0 p-5 space-y-5">
 
                   <div className="border border-magenta/40 bg-magenta/5 p-5 space-y-4 relative">
@@ -4386,131 +4583,6 @@ function GestionePage() {
                     )}
                   </div>
 
-                </div>
-              )}
-
-              {/* ══════════ 07 — INVIA COMUNICAZIONE ══════════ */}
-              <button type="button" onClick={() => editingId && setOpenSection(openSection === 7 ? 0 : 7)} disabled={!editingId}
-                className={`w-full flex items-center gap-3 px-5 py-4 border transition-all ${
-                  !editingId ? "border-cyan/10 cursor-not-allowed" :
-                  openSection === 7 ? "border-amber bg-amber/5 cursor-pointer" : "border-amber/30 hover:border-amber cursor-pointer"
-                }`}>
-                <span className={`font-mono text-[11px] w-7 h-7 border flex items-center justify-center flex-shrink-0 ${
-                  !editingId ? "border-cyan/15 text-bone/20" :
-                  openSection === 7 ? "border-amber text-amber" : "border-amber/40 text-bone/50"
-                }`}>07</span>
-                <div className="flex-1 text-left">
-                  <div className={`font-mono text-[11px] tracking-[0.3em] uppercase ${
-                    !editingId ? "text-bone/20" : openSection === 7 ? "text-amber" : "text-bone/70"
-                  }`}>Invia comunicazione</div>
-                  <div className={`font-mono text-[9px] tracking-widest mt-0.5 ${!editingId ? "text-bone/15" : "text-bone/40"}`}>
-                    {editingId ? "avvisa una o più liste di distribuzione" : "— salva prima i metadati —"}
-                  </div>
-                </div>
-                <span className={`font-mono text-[9px] tracking-widest uppercase ${
-                  !editingId ? "text-bone/20" : openSection === 7 ? "text-amber" : "text-bone/40"
-                }`}>{!editingId ? "⊗" : openSection === 7 ? "▲" : "▼"}</span>
-              </button>
-              {openSection === 7 && editingId && (
-                <div className="border border-amber/20 border-t-0 p-5">
-                  <div className="border border-amber/20 bg-amber/5 p-4 space-y-3">
-                    <div className="font-mono text-[10px] tracking-[0.25em] text-amber uppercase">◈ Invia comunicazione su questa opera</div>
-                    {distributionLists.length === 0 ? (
-                      <p className="font-mono text-[10px] text-bone/30 tracking-widest uppercase">
-                        Nessuna lista di distribuzione ancora — <Link to="/gestione/liste" className="underline hover:text-amber">creane una</Link>, oppure aggiungi un indirizzo qui sotto per un invio singolo.
-                      </p>
-                    ) : (
-                      <div>
-                        <label className="font-mono text-[10px] tracking-[0.2em] text-bone/50 uppercase block mb-1">Liste di distribuzione destinatarie</label>
-                        <div className="space-y-1">
-                          {distributionLists.map(list => {
-                              const isOpen = expandedListIds.has(list.id);
-                              const members = listMembersCache[list.id];
-                              return (
-                                <div key={list.id} className="border border-amber/10">
-                                  <div className="flex items-center gap-3 px-2 py-1.5 flex-wrap">
-                                    <label className="flex items-center gap-2 cursor-pointer font-mono text-xs flex-1">
-                                      <input type="checkbox" checked={selectedNewsletterListIds.has(list.id)}
-                                        onChange={() => setSelectedNewsletterListIds(prev => {
-                                          const next = new Set(prev);
-                                          if (next.has(list.id)) next.delete(list.id); else next.add(list.id);
-                                          return next;
-                                        })}
-                                        className="accent-amber" />
-                                      <span className={selectedNewsletterListIds.has(list.id) ? "text-bone/80" : "text-bone/40"}>
-                                        {list.nome}{members ? ` (${members.length})` : ""}
-                                      </span>
-                                    </label>
-                                    <button type="button" onClick={() => handleToggleListExpand(list.id)}
-                                      className="font-mono text-[9px] text-amber/50 hover:text-amber transition-colors cursor-pointer">
-                                      {isOpen ? "▼" : "+"} membri
-                                    </button>
-                                  </div>
-                                  {isOpen && (
-                                    <div className="px-3 pb-2 space-y-0.5">
-                                      {(members ?? []).map(m => (
-                                        <div key={m.id} className="font-serif text-xs text-bone/60">{m.email}</div>
-                                      ))}
-                                      {members && members.length === 0 && (
-                                        <p className="font-mono text-[9px] text-bone/30 uppercase tracking-widest">Nessun membro in questa lista.</p>
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                        <div>
-                          <label className="font-mono text-[10px] tracking-[0.2em] text-bone/50 uppercase block mb-1">Indirizzo aggiuntivo <span className="normal-case text-bone/30">(solo per questo invio, opzionale)</span></label>
-                          <div className="flex gap-2 flex-wrap">
-                            <input type="email" value={extraNewsletterEmail} onChange={e => setExtraNewsletterEmail(e.target.value)}
-                              onKeyDown={e => e.key === "Enter" && handleAddExtraNewsletterEmail()}
-                              placeholder="email@esempio.it"
-                              className="flex-1 min-w-48 border border-amber/30 bg-void/40 px-3 py-2 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-amber transition-all text-sm" />
-                            <HudButton variant="ghost" onClick={handleAddExtraNewsletterEmail} disabled={!extraNewsletterEmail.includes("@")}>
-                              ▸ Aggiungi
-                            </HudButton>
-                          </div>
-                          {extraNewsletterEmails.length > 0 && (
-                            <div className="flex flex-wrap gap-2 mt-2">
-                              {extraNewsletterEmails.map(email => (
-                                <span key={email} className="flex items-center gap-2 border border-amber/30 px-2 py-1 font-mono text-[10px] text-bone/70">
-                                  {email}
-                                  <button onClick={() => setExtraNewsletterEmails(prev => prev.filter(e => e !== email))}
-                                    className="text-bone/30 hover:text-magenta transition-colors cursor-pointer">✕</button>
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        <div>
-                          <label className="font-mono text-[10px] tracking-[0.2em] text-bone/50 uppercase block mb-1">Messaggio personale <span className="normal-case text-bone/30">(opzionale)</span></label>
-                          <textarea value={newsletterMessage} onChange={e => setNewsletterMessage(e.target.value)}
-                            placeholder="Un pensiero diretto ai tuoi lettori..."
-                            rows={3}
-                            className="w-full border border-amber/30 bg-void/40 px-3 py-2 font-serif text-bone placeholder:text-bone/30 focus:outline-none focus:border-amber transition-all resize-y text-sm" />
-                        </div>
-                        <div className="flex items-center gap-4 flex-wrap">
-                          <HudButton variant="primary" onClick={handleSendNewsletter} disabled={sendingNewsletter || (selectedNewsletterListIds.size === 0 && extraNewsletterEmails.length === 0)}>
-                            {sendingNewsletter ? "◈ Invio in corso..." : "◈ Invia"}
-                          </HudButton>
-                          {newsletterResult && (
-                            <span className={`font-mono text-[10px] tracking-widest uppercase ${"error" in newsletterResult ? "text-magenta" : "text-cyan"}`}>
-                              {"error" in newsletterResult ? `✗ ${newsletterResult.error}` : `✓ Inviata a ${newsletterResult.sent} lettori`}
-                            </span>
-                          )}
-                        </div>
-                        {newsletterResult && "failed" in newsletterResult && newsletterResult.failed && newsletterResult.failed.length > 0 && (
-                          <p className="font-mono text-[10px] text-magenta tracking-widest">
-                            ✗ Non consegnata a: {newsletterResult.failed.join(", ")}
-                          </p>
-                        )}
-                        <p className="font-mono text-[9px] text-bone/25 tracking-widest">
-                          ↳ L'email arriva anche a te in copia — ogni lettore riceve un invio individuale, non si vedono tra loro
-                        </p>
-                  </div>
                 </div>
               )}
 
